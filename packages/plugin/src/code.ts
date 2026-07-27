@@ -93,10 +93,19 @@ async function main(): Promise<void> {
     }
 
     if (msg.type === 'request-export') {
-      await handleExportRequest(
-        msg as unknown as { includedFrameIds: string[]; order: string[]; options: ExportOptions; presentationTitle: string },
-        pending,
-      );
+      // Sans ce try/catch, une exception ici (p. ex. `exportAsync` qui
+      // échoue sur un nœud dégénéré) rejette silencieusement cette promesse
+      // — l'UI n'a aucun moyen de le savoir et reste bloquée indéfiniment
+      // sur "analyse en cours", sans le moindre message d'erreur.
+      try {
+        await handleExportRequest(
+          msg as unknown as { includedFrameIds: string[]; order: string[]; options: ExportOptions; presentationTitle: string },
+          pending,
+        );
+      } catch (err) {
+        console.error(err);
+        figma.ui.postMessage({ type: 'export-error', message: (err as Error).message });
+      }
     }
   };
 }
@@ -118,8 +127,17 @@ async function handleExportRequest(
     for (const [assetKey, nodes] of p.nodesToRaster) {
       const node = nodes[0];
       const scaleConstraint = { type: 'SCALE' as const, value: msg.options.rasterScale };
-      const bytes = await node.exportAsync({ format: 'PNG', constraint: scaleConstraint });
-      assets.push({ assetKey, bytes, mimeType: 'image/png' });
+      try {
+        const bytes = await node.exportAsync({ format: 'PNG', constraint: scaleConstraint });
+        assets.push({ assetKey, bytes, mimeType: 'image/png' });
+      } catch (err) {
+        // Un nœud dégénéré (p. ex. une LINE dont la bounding box a une
+        // largeur ou hauteur nulle sur un axe) fait échouer `exportAsync` —
+        // on saute cet asset plutôt que de faire échouer tout l'export : le
+        // reste des slides reste exportable, celui-ci apparaîtra juste sans
+        // cette image.
+        console.error(`[export] échec de rasterisation pour ${node.name} (${node.id})`, err);
+      }
       await yieldToUi();
     }
 

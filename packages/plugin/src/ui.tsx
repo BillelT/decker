@@ -2,6 +2,7 @@ import { render } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { ExportOptions, IRDocument, IRWarning } from '@figma-to-slides/shared';
 import { sanitizeSessionToken } from './ui/sanitizeSessionToken.js';
+import { reorderFrames } from './ui/reorderFrames.js';
 
 interface FrameCandidate {
   id: string;
@@ -82,6 +83,10 @@ function App() {
           break;
         case 'export-asset':
           pendingAssets.set(msg.assetKey, msg.bytes);
+          break;
+        case 'export-error':
+          setExportState('error');
+          setExportError(msg.message as string);
           break;
         default:
           break;
@@ -190,6 +195,10 @@ function App() {
     setFrames((prev) => ({ ...prev, [id]: { ...prev[id], included: !prev[id].included } }));
   }
 
+  function moveFrame(id: string, direction: -1 | 1) {
+    setOrder((prev) => reorderFrames(prev, id, direction));
+  }
+
   function startExport() {
     setExportState('analyzing');
     const options: ExportOptions = {
@@ -257,14 +266,32 @@ function App() {
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-        {order.map((id) => {
+        {order.map((id, index) => {
           const f = frames[id];
           if (!f) return null;
           return (
             <div key={id} style={{ border: '1px solid #444', borderRadius: 4, padding: 6 }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <input type="checkbox" checked={f.included} onChange={() => toggleFrame(id)} />
-                <strong>{f.name}</strong>
+                <strong style={{ flex: 1 }}>{f.name}</strong>
+                <button
+                  type="button"
+                  disabled={index === 0}
+                  title="Déplacer avant"
+                  onClick={() => moveFrame(id, -1)}
+                  style={{ padding: '0 6px' }}
+                >
+                  ▲
+                </button>
+                <button
+                  type="button"
+                  disabled={index === order.length - 1}
+                  title="Déplacer après"
+                  onClick={() => moveFrame(id, 1)}
+                  style={{ padding: '0 6px' }}
+                >
+                  ▼
+                </button>
               </label>
               {f.previewDataUrl && <img src={f.previewDataUrl} style={{ width: '100%', display: 'block', marginTop: 4 }} />}
               <div style={{ fontSize: 10, opacity: 0.8 }}>
