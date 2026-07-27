@@ -4,6 +4,7 @@ import { computeScale, pt, identityTransform } from './transform.js';
 import { mapShape } from './shapes.js';
 import { mapText } from './text.js';
 import { mapImage } from './images.js';
+import { mapLine } from './lines.js';
 import type { RequestBatch, SlidesRequest } from './slidesRequests.js';
 
 export * from './slidesRequests.js';
@@ -61,6 +62,9 @@ function mapSlide(
         break;
       case 'image':
         requests.push(...mapImage(el, resolveAssetUrl(el.assetKey), pageObjectId, scale, offsetXPt, offsetYPt));
+        break;
+      case 'line':
+        requests.push(...mapLine(el, pageObjectId, scale, offsetXPt, offsetYPt));
         break;
     }
   }

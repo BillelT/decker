@@ -24,7 +24,7 @@ de l'approximer silencieusement, et te le signale.
 | Plusieurs remplissages sur une forme, modes de fusion (multiply, screen…) | **Non supportés.** Convertis en image. |
 | Contour différent par côté, contour "à l'intérieur" du tracé | Approximé par un contour centré uniforme, ou converti en image si l'écart visuel est trop important. |
 | Icônes, tracés vectoriels personnalisés, formes booléennes (union/soustraction…) | **Toujours convertis en image** — Slides n'a pas d'équivalent éditable. |
-| Lignes (outil Ligne de Figma) | **Convertis en image pour l'instant.** Slides a un type d'objet dédié pour les lignes éditables, pas encore câblé côté export — voir "État du projet" ci-dessous. |
+| Lignes (outil Ligne de Figma) | **Éditables nativement** (couleur, épaisseur, pointillés) via le type de ligne dédié de Slides. Convertie en image seulement si elle a plusieurs contours, un contour en dégradé, une épaisseur non uniforme, ou une terminaison décorative (flèche, losange, cercle) non représentable nativement. |
 | Polices non disponibles dans Google Fonts ni dans la liste système de Slides | Remplacées par une police proche quand une correspondance existe (ex. *SF Pro Display* → *Inter*), sinon le texte est converti en image et un avertissement bloquant te demande de confirmer ou de changer la police. |
 | Auto-layout (agencement automatique) | Converti en positions fixes au moment de l'export — un redimensionnement ultérieur dans Slides ne réajustera pas automatiquement les éléments comme le ferait Figma. |
 | Groupes / composants Figma | Aplatis : chaque élément devient indépendant dans Slides, il n'y a pas de "groupe" Slides qu'on peut déplacer d'un bloc. |
@@ -93,12 +93,6 @@ avec les couches suivantes **testées et fonctionnelles hors ligne** :
   amorcée (état par lot en mémoire) mais l'endpoint `/export/:jobId/retry`
   ne rejoue pas encore automatiquement les lots échoués — il ne fait que
   les lister.
-- Les nœuds Figma de type `LINE` sont rasterisés (spec §3.3 les prévoyait
-  natifs, au même titre que RECTANGLE/ELLIPSE). Le mapper ne construit que
-  des `CreateShapeRequest` ; Slides représente les lignes via un type de
-  requête différent (`CreateLineRequest`, avec `lineCategory`) qui n'a pas
-  encore été implémenté. À faire si le taux de rasterisation des lignes
-  devient gênant en usage réel.
 - §7.1 (underlay de contrôle) et §7.2 (drag & drop) sont **volontairement
   non implémentés** : la spec les marque optionnels, à faire après
   validation des phases 0 à 3.

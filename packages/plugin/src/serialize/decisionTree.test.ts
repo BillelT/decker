@@ -124,8 +124,67 @@ describe('classifyNode — shape branch', () => {
 });
 
 describe('classifyNode — LINE', () => {
-  it('always rasters LINE nodes (no native createLine support yet)', () => {
-    const d = classifyNode(base({ kind: 'LINE', width: 100, height: 0 }));
+  it('goes native with a single solid stroke and a supported cap', () => {
+    const d = classifyNode(
+      base({
+        kind: 'LINE',
+        width: 100,
+        height: 0,
+        line: { visibleStrokeCount: 1, strokeIsGradient: false, strokeWeightIsMixed: false, hasUnsupportedCap: false },
+      }),
+    );
+    expect(d).toEqual({ action: 'native-line' });
+  });
+
+  it('ignores a LINE with no visible stroke (invisible)', () => {
+    const d = classifyNode(
+      base({
+        kind: 'LINE',
+        width: 100,
+        height: 0,
+        line: { visibleStrokeCount: 0, strokeIsGradient: false, strokeWeightIsMixed: false, hasUnsupportedCap: false },
+      }),
+    );
+    expect(d).toEqual({ action: 'ignore' });
+  });
+
+  it('rasters a LINE with multiple strokes (Slides supports only one)', () => {
+    const d = classifyNode(
+      base({
+        kind: 'LINE',
+        line: { visibleStrokeCount: 2, strokeIsGradient: false, strokeWeightIsMixed: false, hasUnsupportedCap: false },
+      }),
+    );
+    expect(d).toMatchObject({ action: 'raster', warningCode: 'LINE_RASTERIZED' });
+  });
+
+  it('rasters a LINE with a gradient stroke', () => {
+    const d = classifyNode(
+      base({
+        kind: 'LINE',
+        line: { visibleStrokeCount: 1, strokeIsGradient: true, strokeWeightIsMixed: false, hasUnsupportedCap: false },
+      }),
+    );
+    expect(d).toMatchObject({ action: 'raster', warningCode: 'GRADIENT_RASTERIZED' });
+  });
+
+  it('rasters a LINE with mixed stroke weight', () => {
+    const d = classifyNode(
+      base({
+        kind: 'LINE',
+        line: { visibleStrokeCount: 1, strokeIsGradient: false, strokeWeightIsMixed: true, hasUnsupportedCap: false },
+      }),
+    );
+    expect(d).toMatchObject({ action: 'raster', warningCode: 'LINE_RASTERIZED' });
+  });
+
+  it('rasters a LINE with an unsupported cap (arrow/diamond/circle decoration)', () => {
+    const d = classifyNode(
+      base({
+        kind: 'LINE',
+        line: { visibleStrokeCount: 1, strokeIsGradient: false, strokeWeightIsMixed: false, hasUnsupportedCap: true },
+      }),
+    );
     expect(d).toMatchObject({ action: 'raster', warningCode: 'LINE_RASTERIZED' });
   });
 });

@@ -39,6 +39,12 @@ export interface DecisionInput {
     hasMultipleOrOffCenterStroke: boolean;
     radiusDecision?: RadiusDecision;
   };
+  line?: {
+    visibleStrokeCount: number;
+    strokeIsGradient: boolean;
+    strokeWeightIsMixed: boolean;
+    hasUnsupportedCap: boolean;
+  };
   container?: {
     clipsContentWithOverflow: boolean;
   };
@@ -65,6 +71,7 @@ export type Decision =
   | { action: 'native-shape-preset' }
   | { action: 'native-shape-ellipse' }
   | { action: 'native-shape-round-rectangle'; approximated: boolean }
+  | { action: 'native-line' }
   | { action: 'image' }
   | { action: 'descend' };
 
@@ -95,9 +102,21 @@ export function classifyNode(input: DecisionInput): Decision {
   }
 
   if (input.kind === 'LINE') {
-    // Pas encore de support natif `createLine` côté mapper (spec §2.1) —
-    // converti en image plutôt que forcé dans un preset RECTANGLE dégénéré.
-    return { action: 'raster', warningCode: 'LINE_RASTERIZED', message: 'Les lignes ne sont pas encore supportées nativement — converties en image.' };
+    const l = input.line;
+    if (!l || l.visibleStrokeCount === 0) return { action: 'ignore' }; // pas de contour visible = ligne invisible
+    if (l.visibleStrokeCount > 1) {
+      return { action: 'raster', warningCode: 'LINE_RASTERIZED', message: 'Plusieurs contours sur une ligne — Slides n\'en supporte qu\'un seul, convertie en image.' };
+    }
+    if (l.strokeIsGradient) {
+      return { action: 'raster', warningCode: 'GRADIENT_RASTERIZED', message: 'Dégradé sur une ligne non supporté par Slides — convertie en image.' };
+    }
+    if (l.strokeWeightIsMixed) {
+      return { action: 'raster', warningCode: 'LINE_RASTERIZED', message: 'Épaisseur de contour non uniforme sur cette ligne — convertie en image.' };
+    }
+    if (l.hasUnsupportedCap) {
+      return { action: 'raster', warningCode: 'LINE_RASTERIZED', message: 'Terminaison de ligne (flèche, losange, cercle…) non supportée nativement — convertie en image.' };
+    }
+    return { action: 'native-line' };
   }
 
   if (input.kind === 'TEXT') {

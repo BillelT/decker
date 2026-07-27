@@ -97,6 +97,28 @@ describe('mapDocumentToBatches', () => {
     const imageReq = batch.requests.find((r) => 'createImage' in r) as any;
     expect(imageReq.createImage.url).toBe('https://cdn/my-asset.png');
   });
+
+  it('dispatches line elements to createLine rather than createShape/createImage', () => {
+    const doc = baseDoc([
+      baseSlide({
+        elements: [
+          {
+            kind: 'line',
+            id: 'line1',
+            sourceNodeId: 'n3',
+            rect: { x: 0, y: 0, w: 100, h: 0 },
+            rotation: 0,
+            opacity: 1,
+            stroke: { color: { r: 0, g: 0, b: 0, a: 1 }, weightPt: 1, dash: 'SOLID' },
+          },
+        ],
+      }),
+    ]);
+    const [batch] = mapDocumentToBatches(doc, () => '', UNCALIBRATED_DEFAULTS);
+    const lineReq = batch.requests.find((r) => 'createLine' in r) as any;
+    expect(lineReq.createLine.objectId).toBe('line1');
+    expect(lineReq.createLine.lineCategory).toBe('STRAIGHT');
+  });
 });
 
 describe('chunkBatchesForApi', () => {
