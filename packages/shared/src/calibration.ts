@@ -14,6 +14,18 @@ export interface CalibrationData {
   lineSpacingBaseline: number;
   /** Seuil de tolérance pour accepter un ROUND_RECTANGLE natif (spec §3.3). */
   radiusNativeTolerance: { min: number; max: number };
+  /**
+   * Marge de sécurité ajoutée à la largeur de chaque TEXT_BOX, exprimée en
+   * multiple de la taille de police du plus grand run qu'elle contient.
+   * Même police et taille nominales, le moteur de rendu de Figma et celui de
+   * Slides ne produisent jamais des largeurs de glyphes strictement
+   * identiques (hinting, shaping différents) — sans marge, un texte à
+   * largeur ajustée pile sur son contenu (`textAutoResize` hug, fréquent
+   * pour un libellé court sur son propre calque) retourne à la ligne de
+   * façon inattendue dans Slides, parfois en pleine mot, alors qu'il tenait
+   * sur une ligne dans Figma.
+   */
+  textWidthSafetyMarginEm: number;
   measuredAt: string; // ISO 8601
 }
 
@@ -30,5 +42,6 @@ export const UNCALIBRATED_DEFAULTS: CalibrationData = {
   defaultOutlineWeightPt: 1,
   lineSpacingBaseline: 1.2,
   radiusNativeTolerance: DEFAULT_RADIUS_NATIVE_TOLERANCE,
+  textWidthSafetyMarginEm: 0.15,
   measuredAt: '1970-01-01T00:00:00.000Z',
 };

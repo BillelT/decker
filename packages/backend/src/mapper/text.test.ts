@@ -44,9 +44,23 @@ describe('mapText', () => {
 
   it('compensates the calibrated text inset (spec §3.5)', () => {
     const inset = UNCALIBRATED_DEFAULTS.textInset;
+    const safetyMargin = 16 * UNCALIBRATED_DEFAULTS.textWidthSafetyMarginEm; // fontSizePx=16, scale=1
     const [createReq] = mapText(baseText(), 'page1', 1, 0, 0, UNCALIBRATED_DEFAULTS) as any;
-    expect(createReq.createShape.elementProperties.size.width.magnitude).toBeCloseTo(200 + inset.left + inset.right);
+    expect(createReq.createShape.elementProperties.size.width.magnitude).toBeCloseTo(200 + inset.left + inset.right + safetyMargin);
     expect(createReq.createShape.elementProperties.transform.translateX).toBeCloseTo(10 - inset.left);
+  });
+
+  it('scales the width safety margin with the largest run font size', () => {
+    const text = baseText({
+      runs: [
+        { start: 0, end: 5, fontFamily: 'Inter', fontWeight: 400, italic: false, fontSizePx: 16, color: { r: 0, g: 0, b: 0, a: 1 } },
+        { start: 5, end: 11, fontFamily: 'Inter', fontWeight: 700, italic: false, fontSizePx: 40, color: { r: 0, g: 0, b: 0, a: 1 } },
+      ],
+    });
+    const inset = UNCALIBRATED_DEFAULTS.textInset;
+    const safetyMargin = 40 * UNCALIBRATED_DEFAULTS.textWidthSafetyMarginEm; // largest run wins
+    const [createReq] = mapText(text, 'page1', 1, 0, 0, UNCALIBRATED_DEFAULTS) as any;
+    expect(createReq.createShape.elementProperties.size.width.magnitude).toBeCloseTo(200 + inset.left + inset.right + safetyMargin);
   });
 
   it('scales font size along with geometry', () => {

@@ -141,10 +141,16 @@ function App() {
       }
       if (job.status === 'failed') {
         setExportState('error');
+        // Priorité aux erreurs par slide (`batch.error`) : bien plus
+        // actionnables que le message générique de `job.error`, qui ne
+        // couvre que l'échec global (ex. la création de présentation
+        // elle-même a échoué, avant même le premier lot).
         const batchErrors = (job.batches as { error?: string }[] | undefined)
           ?.map((b) => b.error)
           .filter((e): e is string => Boolean(e));
-        setExportError(job.error ?? batchErrors?.join(' · ') ?? 'Échec inconnu côté serveur.');
+        setExportError(
+          batchErrors && batchErrors.length > 0 ? batchErrors.join(' · ') : (job.error ?? 'Échec inconnu côté serveur.'),
+        );
         return;
       }
       await new Promise((r) => setTimeout(r, 1500));

@@ -281,6 +281,23 @@ function relativeRect(node: SceneNode, state: WalkState): { x: number; y: number
   return { x: box.x - state.rootX, y: box.y - state.rootY, w: box.width, h: box.height };
 }
 
+/**
+ * `absoluteBoundingBox` exclut explicitement les contours et ombres portées
+ * (doc Figma : "does not include rendered properties like drop shadows or
+ * strokes"). Pour une image rasterisée — dont le contenu VIENT du rendu
+ * visuel via `exportAsync` — il faut la taille qui inclut ce rendu
+ * (`absoluteRenderBounds`), sinon une LINE (boîte de fond nulle sur un axe,
+ * tout son contenu visible venant du stroke) obtient un rect de taille 0,
+ * ce que l'API Slides rejette pour `createImage` (échec de tout l'export
+ * de la slide, spec LIMITATIONS.md — lignes toujours rasterisées).
+ */
+function relativeRenderRect(node: SceneNode, state: WalkState): { x: number; y: number; w: number; h: number } {
+  const renderBounds = 'absoluteRenderBounds' in node ? node.absoluteRenderBounds : null;
+  const box = renderBounds ?? node.absoluteBoundingBox;
+  if (!box) return { x: 0, y: 0, w: 'width' in node ? node.width : 0, h: 'height' in node ? node.height : 0 };
+  return { x: box.x - state.rootX, y: box.y - state.rootY, w: box.width, h: box.height };
+}
+
 function buildNativeShape(node: SceneNode, action: 'native-shape-preset' | 'native-shape-ellipse' | 'native-shape-round-rectangle', state: WalkState): IRShape {
   const rel = relativeRect(node, state);
   const fills = 'fills' in node && node.fills !== figma.mixed ? (node.fills as readonly Paint[]) : [];
@@ -332,7 +349,7 @@ function presetShapeType(node: SceneNode): IRShape['shapeType'] {
 }
 
 function buildImagePlaceholder(node: SceneNode, id: string, state: WalkState, isRasterFallback: boolean): IRImage {
-  const rel = relativeRect(node, state);
+  const rel = relativeRenderRect(node, state);
   return {
     kind: 'image',
     id,
