@@ -27,7 +27,14 @@ export function mapText(
   };
   const box = applyTextInset(text.rect, insetPx);
 
-  const wPt = box.w * scale;
+  // Absorbe l'écart de rendu de police Figma ↔ Slides (voir CalibrationData
+  // — sans ça, un texte à largeur ajustée pile sur son contenu retourne à la
+  // ligne de façon inattendue, faute de la moindre marge). Basée sur le plus
+  // grand run pour couvrir le caractère le plus large du texte.
+  const maxFontSizePx = text.runs.reduce((max, run) => Math.max(max, run.fontSizePx), 0);
+  const widthSafetyMarginPt = maxFontSizePx * scale * calibration.textWidthSafetyMarginEm;
+
+  const wPt = box.w * scale + widthSafetyMarginPt;
   const hPt = box.h * scale;
   const xPt = box.x * scale + offsetX;
   const yPt = box.y * scale + offsetY;

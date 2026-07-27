@@ -28,4 +28,10 @@ describe('mapImage', () => {
       },
     });
   });
+
+  it('clamps a degenerate (zero-height) rect to a positive size, e.g. a rasterized LINE', () => {
+    const image = baseImage({ rect: { x: 0, y: 0, w: 100, h: 0 } });
+    const [req] = mapImage(image, 'https://cdn.example.com/asset-1.png', 'page1', 1, 0, 0) as any;
+    expect(req.createImage.elementProperties.size.height.magnitude).toBeGreaterThan(0);
+  });
 });

@@ -20,6 +20,7 @@ de l'approximer silencieusement, et te le signale.
 | Transparence d'image | Slides ne permet pas de régler la transparence d'une image après import. Si besoin (ex. calque de contrôle), la transparence est appliquée directement dans le fichier image avant l'envoi. |
 | Recadrage, luminosité, contraste, recoloration d'image | Doivent être « cuits » dans l'image avant l'envoi — non modifiables après coup dans Slides. |
 | Marge interne des zones de texte | Slides ajoute automatiquement une marge interne aux blocs de texte, non réglable et non documentée par Google. Le plugin compense cette marge (mesurée une fois via l'outil de calibration) pour que le texte tombe pile à la bonne position. |
+| Largeur des zones de texte ajustée pile sur le contenu (« hug »/auto-largeur, fréquent pour un libellé court) | Figma et Slides ne rendent jamais une police à l'identique au pixel près (moteurs de rendu différents) : sans marge, un texte sans la moindre marge de largeur peut retourner à la ligne de façon inattendue dans Slides, y compris en plein mot. Le plugin ajoute une petite marge de sécurité à la largeur de chaque zone de texte pour absorber cet écart. |
 | Plusieurs remplissages sur une forme, modes de fusion (multiply, screen…) | **Non supportés.** Convertis en image. |
 | Contour différent par côté, contour "à l'intérieur" du tracé | Approximé par un contour centré uniforme, ou converti en image si l'écart visuel est trop important. |
 | Icônes, tracés vectoriels personnalisés, formes booléennes (union/soustraction…) | **Toujours convertis en image** — Slides n'a pas d'équivalent éditable. |
@@ -66,9 +67,12 @@ avec les couches suivantes **testées et fonctionnelles hors ligne** :
 ### Ce qui reste explicitement non calibré / non fait
 
 - `calibration.json` contient des **valeurs par défaut prudentes, non
-  mesurées** (`textInset`, `roundRectRadiusRatio`, `lineSpacingBaseline`).
-  Il faut lancer `npm run calibrate` avec un vrai compte Google pour les
-  fixer (spec §4).
+  mesurées** (`textInset`, `roundRectRadiusRatio`, `lineSpacingBaseline`,
+  `textWidthSafetyMarginEm`). Il faut lancer `npm run calibrate` avec un
+  vrai compte Google pour les fixer (spec §4) — `textWidthSafetyMarginEm`
+  n'est de toute façon pas mesuré par ce harnais actuellement (voir
+  `calibrate.ts`), sa valeur par défaut reste une marge de sécurité
+  raisonnable plutôt qu'une mesure empirique.
 - Le jeu de fixtures complet (spec §9, `01-rects` à `13-batch`) n'existe
   que pour `01-rects` (généré en code, sans fichier Figma réel). Les
   fixtures `02` à `13` nécessitent un fichier Figma dédié à créer.
