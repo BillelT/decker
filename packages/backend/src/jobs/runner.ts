@@ -57,9 +57,12 @@ export async function runExportJob(
       }).catch(() => undefined);
     }
 
-    updateJob(job.id, { status: anyFailed ? 'failed' : 'done' });
+    updateJob(job.id, {
+      status: anyFailed ? 'failed' : 'done',
+      error: anyFailed ? 'Une ou plusieurs slides ont échoué — voir le détail par slide.' : undefined,
+    });
   } catch (err) {
-    updateJob(job.id, { status: 'failed' });
+    updateJob(job.id, { status: 'failed', error: (err as Error).message });
     throw err;
   }
 }

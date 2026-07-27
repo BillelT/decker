@@ -38,6 +38,7 @@ function App() {
   const [backend] = useState<BackendConfig>({ baseUrl: typeof __BACKEND_URL__ === 'string' ? __BACKEND_URL__ : 'http://localhost:8787' });
   const [exportState, setExportState] = useState<'idle' | 'analyzing' | 'exporting' | 'done' | 'error'>('idle');
   const [resultUrl, setResultUrl] = useState<string | undefined>();
+  const [exportError, setExportError] = useState<string | undefined>();
   const pendingAssets = useMemo(() => new Map<string, ArrayBuffer>(), []);
 
   // Le handler `onMessage` ci-dessous n'est branché qu'une fois (deps: []) ;
@@ -93,6 +94,7 @@ function App() {
 
   async function handleExportPayload(doc: IRDocument) {
     setExportState('exporting');
+    setExportError(undefined);
     try {
       const form = new FormData();
       form.append('document', JSON.stringify(doc));
@@ -109,11 +111,15 @@ function App() {
         headers: sessionTokenRef.current ? { Authorization: `Bearer ${sessionTokenRef.current}` } : undefined,
         credentials: 'include',
       });
-      if (!res.ok) throw new Error(`Export refusé (${res.status})`);
+      if (!res.ok) {
+        const body = await res.json().catch(() => undefined);
+        throw new Error(body?.error ? `${body.error} (${res.status})` : `Export refusé (${res.status})`);
+      }
       const { jobId } = await res.json();
       await pollJob(jobId);
     } catch (err) {
       setExportState('error');
+      setExportError(err instanceof Error ? err.message : String(err));
       // eslint-disable-next-line no-console
       console.error(err);
     }
@@ -130,6 +136,10 @@ function App() {
       }
       if (job.status === 'failed') {
         setExportState('error');
+        const batchErrors = (job.batches as { error?: string }[] | undefined)
+          ?.map((b) => b.error)
+          .filter((e): e is string => Boolean(e));
+        setExportError(job.error ?? batchErrors?.join(' · ') ?? 'Échec inconnu côté serveur.');
         return;
       }
       await new Promise((r) => setTimeout(r, 1500));
@@ -297,7 +307,9 @@ function App() {
           ✅ Terminé — <a href={resultUrl} target="_blank" rel="noreferrer">ouvrir la présentation</a>
         </p>
       )}
-      {exportState === 'error' && <p style={{ color: '#FF6B6B' }}>❌ L'export a échoué. Voir la console pour le détail.</p>}
+      {exportState === 'error' && (
+        <p style={{ color: '#FF6B6B' }}>❌ L'export a échoué : {exportError ?? 'erreur inconnue.'}</p>
+      )}
     </div>
   );
 }
