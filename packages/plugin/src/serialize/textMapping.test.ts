@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { applyTextCase, letterSpacingImpactRatio, mapAlignment, mapLineSpacing, mapVerticalAlignment } from './textMapping.js';
+import {
+  applyTextCase,
+  letterSpacingImpactRatio,
+  mapAlignment,
+  mapLineSpacing,
+  mapVerticalAlignment,
+  normalizeSoftLineBreaks,
+} from './textMapping.js';
 
 describe('mapAlignment', () => {
   it.each([
@@ -41,6 +48,21 @@ describe('mapLineSpacing', () => {
 
   it('converts PIXELS to a percentage of fontSize', () => {
     expect(mapLineSpacing({ unit: 'PIXELS', value: 24 }, 16)).toBe(150);
+  });
+});
+
+describe('normalizeSoftLineBreaks', () => {
+  it('converts a Figma manual line break (U+2028) into the Slides soft-break marker (\\v)', () => {
+    const withSoftBreak = 'first line\u2028second line';
+    expect(normalizeSoftLineBreaks(withSoftBreak)).toBe('first line\vsecond line');
+  });
+
+  it('leaves real paragraph breaks ("\\n") untouched', () => {
+    expect(normalizeSoftLineBreaks('paragraph one\nparagraph two')).toBe('paragraph one\nparagraph two');
+  });
+
+  it('leaves plain text untouched', () => {
+    expect(normalizeSoftLineBreaks('no breaks here')).toBe('no breaks here');
   });
 });
 

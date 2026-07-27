@@ -1,6 +1,13 @@
 import type { IRParagraph, IRTextRun } from '@figma-to-slides/shared';
 import { resolveFontFamily, parseFontWeight } from './fonts.js';
-import { applyTextCase, mapAlignment, mapLineSpacing, letterSpacingImpactRatio, LETTER_SPACING_RASTER_THRESHOLD } from './textMapping.js';
+import {
+  applyTextCase,
+  mapAlignment,
+  mapLineSpacing,
+  letterSpacingImpactRatio,
+  normalizeSoftLineBreaks,
+  LETTER_SPACING_RASTER_THRESHOLD,
+} from './textMapping.js';
 
 export interface TextExtractionResult {
   content: string;
@@ -72,7 +79,12 @@ export function extractTextRuns(node: TextNode): TextExtractionResult {
     });
   }
 
-  const content = segments.map((seg) => applyTextCase(node.characters.slice(seg.start, seg.end), seg.textCase as never)).join('');
+  // `buildParagraphs` ne coupe que sur "\n" (vrai saut de paragraphe) — les
+  // retours manuels (U+2028) restent donc, à raison, dans le même paragraphe.
+  // `normalizeSoftLineBreaks` les convertit en "\v" pour l'API Slides.
+  const content = normalizeSoftLineBreaks(
+    segments.map((seg) => applyTextCase(node.characters.slice(seg.start, seg.end), seg.textCase as never)).join(''),
+  );
 
   const paragraphs = buildParagraphs(node, segments);
 

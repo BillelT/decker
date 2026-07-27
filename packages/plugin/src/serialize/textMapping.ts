@@ -69,3 +69,15 @@ export function letterSpacingImpactRatio(letterSpacingPx: number, charCount: num
 }
 
 export const LETTER_SPACING_RASTER_THRESHOLD = 0.02;
+
+/**
+ * Figma encode un retour à la ligne manuel (Maj+Entrée, à l'intérieur d'un
+ * même paragraphe) avec le caractère Unicode LINE SEPARATOR (U+2028) —
+ * distinct du "\n" d'un vrai saut de paragraphe (Entrée). L'API Slides
+ * ignore U+2028 lors d'un `insertText` (le texte se retrouve concaténé sans
+ * retour visible, puis re-réparti selon la largeur de la boîte) ; son
+ * équivalent pour un saut de ligne logiciel est le caractère "\v".
+ */
+export function normalizeSoftLineBreaks(text: string): string {
+  return text.replace(/\u2028/g, '\v');
+}
