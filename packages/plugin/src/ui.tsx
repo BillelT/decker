@@ -134,8 +134,11 @@ function App() {
     // bloque la popup sans la moindre erreur visible.
     const popup = window.open('about:blank', '_blank');
     fetch(`${backend.baseUrl}/auth/google`, { method: 'POST' })
-      .then((res) => {
-        if (!res.ok) throw new Error(`Le backend a répondu ${res.status}`);
+      .then(async (res) => {
+        if (!res.ok) {
+          const body = await res.json().catch(() => undefined);
+          throw new Error(body?.message ?? `Le backend a répondu ${res.status}`);
+        }
         return res.json();
       })
       .then(({ authUrl }) => {
