@@ -1,3 +1,5 @@
+import { getRedis } from '../kv.js';
+
 export type BatchStatus = 'pending' | 'applied' | 'failed';
 export type JobStatus = 'pending' | 'running' | 'done' | 'failed';
 
@@ -21,12 +23,15 @@ export interface JobRecord {
 /**
  * Spec §5.4 RÈGLE — idempotence : persiste l'état `pending`/`applied` par
  * lot pour qu'une reprise après échec ne rejoue pas un lot déjà appliqué.
- * En mémoire pour le dev ; à sauvegarder en DB pour survivre à un redémarrage
- * du process en production.
+ * Store via `kv.ts` (Redis en production, in-memory en dev sans
+ * credentials) : sur Vercel, la fonction qui exécute le job (via
+ * waitUntil) et celle qui répond au polling `/export/:jobId` peuvent être
+ * des invocations/instances distinctes sans mémoire partagée.
  */
-const jobs = new Map<string, JobRecord>();
+const JOB_TTL_SEC = 24 * 3600;
+const jobKey = (id: string) => `f2s:job:${id}`;
 
-export function createJob(id: string, sourceSlideIds: string[]): JobRecord {
+export async function createJob(id: string, sourceSlideIds: string[]): Promise<JobRecord> {
   const job: JobRecord = {
     id,
     status: 'pending',
@@ -34,22 +39,24 @@ export function createJob(id: string, sourceSlideIds: string[]): JobRecord {
     createdAt: Date.now(),
     updatedAt: Date.now(),
   };
-  jobs.set(id, job);
+  await getRedis().set(jobKey(id), job, { ex: JOB_TTL_SEC });
   return job;
 }
 
-export function getJob(id: string): JobRecord | undefined {
-  return jobs.get(id);
+export async function getJob(id: string): Promise<JobRecord | undefined> {
+  const job = await getRedis().get<JobRecord>(jobKey(id));
+  return job ?? undefined;
 }
 
-export function updateJob(id: string, patch: Partial<Omit<JobRecord, 'id' | 'batches'>>): void {
-  const job = jobs.get(id);
+export async function updateJob(id: string, patch: Partial<Omit<JobRecord, 'id' | 'batches'>>): Promise<void> {
+  const job = await getJob(id);
   if (!job) return;
   Object.assign(job, patch, { updatedAt: Date.now() });
+  await getRedis().set(jobKey(id), job, { ex: JOB_TTL_SEC });
 }
 
-export function updateBatchStatus(id: string, sourceSlideId: string, status: BatchStatus, error?: string): void {
-  const job = jobs.get(id);
+export async function updateBatchStatus(id: string, sourceSlideId: string, status: BatchStatus, error?: string): Promise<void> {
+  const job = await getJob(id);
   if (!job) return;
   const batch = job.batches.find((b) => b.sourceSlideId === sourceSlideId);
   if (batch) {
@@ -57,11 +64,12 @@ export function updateBatchStatus(id: string, sourceSlideId: string, status: Bat
     batch.error = error;
   }
   job.updatedAt = Date.now();
+  await getRedis().set(jobKey(id), job, { ex: JOB_TTL_SEC });
 }
 
 /** Lots restant à (ré)appliquer — utilisé pour la reprise ciblée (spec §7.0.6, §8 Phase 3). */
-export function pendingBatchIds(id: string): string[] {
-  const job = jobs.get(id);
+export async function pendingBatchIds(id: string): Promise<string[]> {
+  const job = await getJob(id);
   if (!job) return [];
   return job.batches.filter((b) => b.status !== 'applied').map((b) => b.sourceSlideId);
 }

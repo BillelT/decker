@@ -17,7 +17,7 @@ export async function runExportJob(
   resolveAssetUrl: AssetUrlResolver,
   calibration: CalibrationData,
 ): Promise<void> {
-  updateJob(job.id, { status: 'running' });
+  await updateJob(job.id, { status: 'running' });
 
   try {
     let presentationId = doc.targetPresentationId;
@@ -27,7 +27,7 @@ export async function runExportJob(
       const created = await createPresentation(accessToken, doc.presentationTitle);
       presentationId = created.presentationId;
       defaultSlideObjectId = created.firstSlideObjectId;
-      updateJob(job.id, { presentationId, presentationUrl: presentationUrl(presentationId) });
+      await updateJob(job.id, { presentationId, presentationUrl: presentationUrl(presentationId) });
     }
 
     const batches = mapDocumentToBatches(doc, resolveAssetUrl, calibration);
@@ -41,10 +41,10 @@ export async function runExportJob(
     for (const batch of batches) {
       try {
         await applyBatch(accessToken, presentationId, batch);
-        updateBatchStatus(job.id, batch.sourceSlideId, 'applied');
+        await updateBatchStatus(job.id, batch.sourceSlideId, 'applied');
       } catch (err) {
         anyFailed = true;
-        updateBatchStatus(job.id, batch.sourceSlideId, 'failed', (err as Error).message);
+        await updateBatchStatus(job.id, batch.sourceSlideId, 'failed', (err as Error).message);
       }
     }
 
@@ -57,12 +57,12 @@ export async function runExportJob(
       }).catch(() => undefined);
     }
 
-    updateJob(job.id, {
+    await updateJob(job.id, {
       status: anyFailed ? 'failed' : 'done',
       error: anyFailed ? 'Une ou plusieurs slides ont échoué — voir le détail par slide.' : undefined,
     });
   } catch (err) {
-    updateJob(job.id, { status: 'failed', error: (err as Error).message });
+    await updateJob(job.id, { status: 'failed', error: (err as Error).message });
     throw err;
   }
 }

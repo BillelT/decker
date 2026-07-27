@@ -8,7 +8,12 @@ function required(name: string, fallback?: string): string {
 
 export const env = {
   port: Number(process.env.PORT ?? 8787),
-  publicBackendUrl: process.env.PUBLIC_BACKEND_URL ?? `http://localhost:${process.env.PORT ?? 8787}`,
+  // Vercel injecte VERCEL_URL (host seul, sans protocole, toujours https)
+  // automatiquement à chaque déploiement — évite de devoir mettre à jour
+  // PUBLIC_BACKEND_URL à la main après chaque déploiement/URL de preview.
+  publicBackendUrl:
+    process.env.PUBLIC_BACKEND_URL ??
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : `http://localhost:${process.env.PORT ?? 8787}`),
 
   google: {
     get clientId() {
@@ -30,7 +35,7 @@ export const env = {
   },
 
   assets: {
-    driver: (process.env.ASSET_STORAGE_DRIVER ?? 'local-disk') as 'local-disk' | 's3',
+    driver: (process.env.ASSET_STORAGE_DRIVER ?? 'local-disk') as 'local-disk' | 's3' | 'vercel-blob',
     ttlMs: Number(process.env.ASSET_TTL_MS ?? 15 * 60 * 1000),
     localDir: process.env.ASSET_LOCAL_DIR ?? '.data/assets',
   },

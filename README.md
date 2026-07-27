@@ -131,6 +131,75 @@ Le script écrit `calibration-report.html` (à ouvrir dans un navigateur) et
 Voir [`LIMITATIONS.md`](./LIMITATIONS.md) pour l'état actuel de la
 calibration.
 
+## 8. Déploiement sur Vercel (backend)
+
+Le backend garde en mémoire (`Map`) les sessions, l'état des jobs
+d'export, et le PKCE OAuth en attente, et stocke les images exportées sur
+le disque local — rien de tout ça ne survit d'une invocation de fonction
+serverless à l'autre sur Vercel. Ce dépôt utilise donc :
+
+- [`@upstash/redis`](https://www.npmjs.com/package/@upstash/redis) pour
+  les sessions, les jobs, et le PKCE (`src/kv.ts`, `src/auth/session.ts`,
+  `src/jobs/jobStore.ts`, `src/auth/pendingAuth.ts`).
+- [`@vercel/blob`](https://www.npmjs.com/package/@vercel/blob) pour les
+  images exportées (`ASSET_STORAGE_DRIVER=vercel-blob`,
+  `src/storage/vercelBlobAssetStore.ts`).
+- [`waitUntil`](https://www.npmjs.com/package/@vercel/functions) pour que
+  l'export continue de s'exécuter après la réponse HTTP 202 (le pattern
+  "fire and forget" + polling `/export/:jobId` ne fonctionne pas tel quel
+  sur une fonction serverless, qui peut être gelée dès la réponse envoyée).
+
+### 8.1 Créer le projet Vercel
+
+1. Pousse ce dépôt sur GitHub (ou GitLab/Bitbucket), puis
+   [importe-le sur Vercel](https://vercel.com/new).
+2. Dans les réglages du projet : **Root Directory** → `packages/backend`.
+   `packages/backend/vercel.json` définit déjà la commande de build
+   (`cd ../.. && npm install && npm run build --workspace packages/backend`,
+   qui compile `packages/shared` en premier) et les rewrites qui routent
+   tout vers `api/index.js`.
+
+### 8.2 Lier Redis et Blob
+
+1. **Storage → Create Database** (ou **Marketplace**) → une intégration
+   **Redis** (Upstash) → lie-la à ce projet. Ça injecte automatiquement
+   `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN` (ou les variables
+   `KV_REST_API_*` historiques — `Redis.fromEnv()` accepte les deux).
+2. **Storage → Create → Blob** → lie-le à ce projet. Ça injecte
+   `BLOB_READ_WRITE_TOKEN` automatiquement.
+
+### 8.3 Variables d'environnement (à définir à la main)
+
+Dans **Settings → Environment Variables** :
+
+| Variable | Valeur |
+|---|---|
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Depuis la Console Google Cloud (§1). |
+| `GOOGLE_REDIRECT_URI` | `https://<ton-domaine>.vercel.app/auth/callback` |
+| `SESSION_ENCRYPTION_KEY` | Comme en local (§2). |
+| `PLUGIN_ALLOWED_ORIGINS` | Origine de l'iframe du plugin (CORS). |
+| `ASSET_STORAGE_DRIVER` | `vercel-blob` |
+
+`PUBLIC_BACKEND_URL` n'a **pas** besoin d'être définie : en son absence,
+le backend utilise automatiquement `VERCEL_URL` (le domaine du
+déploiement, injecté par Vercel).
+
+⚠️ Le **redirect URI OAuth est fixe** côté Google (ajouté une fois pour
+toutes dans Authorized redirect URIs, Console Google Cloud) — l'OAuth ne
+fonctionnera donc que sur un domaine stable (production, ou un domaine
+personnalisé), pas sur les URLs de preview générées à chaque déploiement
+(uniques à chaque fois). Teste l'OAuth sur le domaine de production.
+
+### 8.4 Pointer le plugin vers le backend déployé
+
+```bash
+F2S_BACKEND_URL=https://<ton-domaine>.vercel.app npm run build --workspace packages/plugin
+```
+
+Puis mets à jour `networkAccess.allowedDomains` dans
+`packages/plugin/manifest.json` avec cette même URL (sinon les requêtes
+de l'iframe sont bloquées silencieusement, spec §11.12).
+
 ## Licence
 
 Non spécifiée.

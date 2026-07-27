@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Router } from 'express';
 import multer from 'multer';
+import { waitUntil } from '@vercel/functions';
 import type { IRDocument } from '@figma-to-slides/shared';
 import { UNCALIBRATED_DEFAULTS } from '@figma-to-slides/shared';
 import { getValidAccessToken, UnauthenticatedError } from '../auth/getAccessToken.js';
@@ -63,28 +64,36 @@ exportRouter.post('/export', upload.any(), async (req, res) => {
   }
 
   const jobId = randomUUID();
-  const job = createJob(jobId, doc.slides.map((s) => s.sourceNodeId));
+  const job = await createJob(jobId, doc.slides.map((s) => s.sourceNodeId));
   const calibration = await loadCalibration();
 
   // Traitement asynchrone : le plugin poll GET /export/:jobId (spec §5).
-  runExportJob(job, doc, accessToken, (key) => urlByAssetKey.get(key) ?? '', calibration)
-    .catch((err) => {
-      // eslint-disable-next-line no-console
-      console.error(`[export ${jobId}] failed`, err);
-    })
-    .finally(async () => {
-      // Spec §5.3 : supprime l'asset dès que le batchUpdate a répondu 200.
-      for (const key of urlByAssetKey.keys()) {
-        await store.delete(key).catch(() => undefined);
-      }
-    });
+  // `waitUntil` (plutôt qu'un simple "fire and forget") : sur Vercel, la
+  // fonction serverless peut être gelée/tuée dès que la réponse HTTP est
+  // envoyée — sans ça, le job n'aurait aucune garantie de continuer à
+  // s'exécuter après le `res.status(202)` ci-dessous. En dehors de Vercel
+  // (dev local), `waitUntil` est un no-op inoffensif et la promesse
+  // continue de s'exécuter normalement sur l'event loop Node.
+  waitUntil(
+    runExportJob(job, doc, accessToken, (key) => urlByAssetKey.get(key) ?? '', calibration)
+      .catch((err) => {
+        // eslint-disable-next-line no-console
+        console.error(`[export ${jobId}] failed`, err);
+      })
+      .finally(async () => {
+        // Spec §5.3 : supprime l'asset dès que le batchUpdate a répondu 200.
+        for (const key of urlByAssetKey.keys()) {
+          await store.delete(key).catch(() => undefined);
+        }
+      }),
+  );
 
   res.status(202).json({ jobId });
 });
 
 /** Spec §5: GET /export/:jobId → progression (polling). */
-exportRouter.get('/export/:jobId', (req, res) => {
-  const job = getJob(req.params.jobId);
+exportRouter.get('/export/:jobId', async (req, res) => {
+  const job = await getJob(req.params.jobId);
   if (!job) {
     res.status(404).json({ error: 'not_found' });
     return;
@@ -101,10 +110,10 @@ exportRouter.get('/export/:jobId', (req, res) => {
 
 /** Reprise ciblée des lots non appliqués (spec §7.0.6). */
 exportRouter.post('/export/:jobId/retry', async (req, res) => {
-  const job = getJob(req.params.jobId);
+  const job = await getJob(req.params.jobId);
   if (!job) {
     res.status(404).json({ error: 'not_found' });
     return;
   }
-  res.json({ pendingSlideIds: pendingBatchIds(job.id) });
+  res.json({ pendingSlideIds: await pendingBatchIds(job.id) });
 });

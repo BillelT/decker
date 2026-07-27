@@ -1,9 +1,11 @@
 import { env } from '../env.js';
 import type { AssetStore } from './assetStore.js';
 import { LocalDiskAssetStore } from './localDiskAssetStore.js';
+import { VercelBlobAssetStore } from './vercelBlobAssetStore.js';
 
 export * from './assetStore.js';
 export { LocalDiskAssetStore } from './localDiskAssetStore.js';
+export { VercelBlobAssetStore } from './vercelBlobAssetStore.js';
 
 let instance: AssetStore | undefined;
 
@@ -12,6 +14,9 @@ export function getAssetStore(): AssetStore {
   switch (env.assets.driver) {
     case 'local-disk':
       instance = new LocalDiskAssetStore();
+      return instance;
+    case 'vercel-blob':
+      instance = new VercelBlobAssetStore();
       return instance;
     case 's3':
       throw new Error(
