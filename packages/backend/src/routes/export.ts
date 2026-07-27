@@ -92,6 +92,7 @@ exportRouter.get('/export/:jobId', (req, res) => {
   res.json({
     id: job.id,
     status: job.status,
+    error: job.error,
     presentationId: job.presentationId,
     presentationUrl: job.presentationUrl,
     batches: job.batches,

@@ -10,6 +10,7 @@ export interface BatchState {
 export interface JobRecord {
   id: string;
   status: JobStatus;
+  error?: string;
   presentationId?: string;
   presentationUrl?: string;
   batches: BatchState[];
