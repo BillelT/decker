@@ -24,13 +24,22 @@ describe('classifyNode — early exits (spec §3.3 top of tree)', () => {
     expect(classifyNode(base({ opacity: 0 }))).toEqual({ action: 'ignore' });
   });
 
-  it('ignores sub-0.5px dimensions', () => {
-    expect(classifyNode(base({ width: 0.3 }))).toEqual({ action: 'ignore' });
+  it('ignores nodes degenerate in both axes', () => {
+    expect(classifyNode(base({ width: 0.3, height: 0.3 }))).toEqual({ action: 'ignore' });
   });
 
-  it('rasters non-NORMAL blend modes', () => {
+  it('does NOT ignore a zero-height node (e.g. a Figma LINE, whose height is 0 by construction)', () => {
+    expect(classifyNode(base({ width: 100, height: 0 }))).not.toEqual({ action: 'ignore' });
+  });
+
+  it('rasters non-NORMAL, non-PASS_THROUGH blend modes', () => {
     const d = classifyNode(base({ blendMode: 'MULTIPLY' }));
     expect(d).toMatchObject({ action: 'raster', warningCode: 'BLEND_MODE_RASTERIZED' });
+  });
+
+  it('does NOT raster PASS_THROUGH (Figma\'s default blend mode for most layers, not a real custom blend)', () => {
+    const d = classifyNode(base({ blendMode: 'PASS_THROUGH', shape: { visibleFillCount: 1, fillIsGradient: false, fillIsImage: false, hasMultipleOrOffCenterStroke: false } }));
+    expect(d).toEqual({ action: 'native-shape-preset' });
   });
 
   it('rasters visible shadow/blur effects', () => {
@@ -111,6 +120,13 @@ describe('classifyNode — shape branch', () => {
       }),
     );
     expect(d).toMatchObject({ action: 'raster', warningCode: 'CORNER_RADIUS_RASTERIZED' });
+  });
+});
+
+describe('classifyNode — LINE', () => {
+  it('always rasters LINE nodes (no native createLine support yet)', () => {
+    const d = classifyNode(base({ kind: 'LINE', width: 100, height: 0 }));
+    expect(d).toMatchObject({ action: 'raster', warningCode: 'LINE_RASTERIZED' });
   });
 });
 
