@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import 'dotenv/config';
 import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { CalibrationData } from '@figma-to-slides/shared';
