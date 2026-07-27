@@ -8,7 +8,9 @@
     "packages/plugin"
   ],
   "scripts": {
-    "build": "npm run build --workspaces --if-present",
+    "postinstall": "npm run build --workspace packages/shared",
+    "build": "npm run build --workspace packages/shared && npm run build --workspaces --if-present",
+    "pretest": "npm run build --workspace packages/shared",
     "test": "npm run test --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "calibrate": "npm run calibrate --workspace packages/backend"
