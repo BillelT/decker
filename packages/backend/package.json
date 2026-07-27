@@ -5,12 +5,16 @@
   "type": "module",
   "main": "./dist/index.js",
   "scripts": {
+    "prebuild": "npm --prefix ../shared run build",
     "build": "tsc -p tsconfig.json",
+    "predev": "npm --prefix ../shared run build",
     "dev": "tsx watch src/index.ts",
     "start": "node dist/index.js",
+    "pretest": "npm --prefix ../shared run build",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "lint": "tsc -p tsconfig.json --noEmit",
+    "precalibrate": "npm --prefix ../shared run build",
     "calibrate": "tsx src/calibration/calibrate.ts"
   },
   "dependencies": {
