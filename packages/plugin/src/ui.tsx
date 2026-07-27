@@ -32,6 +32,7 @@ function App() {
   const [frames, setFrames] = useState<Record<string, FrameState>>({});
   const [order, setOrder] = useState<string[]>([]);
   const [sessionToken, setSessionToken] = useState<string | undefined>();
+  const [loginError, setLoginError] = useState<string | undefined>();
   const [backend] = useState<BackendConfig>({ baseUrl: typeof __BACKEND_URL__ === 'string' ? __BACKEND_URL__ : 'http://localhost:8787' });
   const [exportState, setExportState] = useState<'idle' | 'analyzing' | 'exporting' | 'done' | 'error'>('idle');
   const [resultUrl, setResultUrl] = useState<string | undefined>();
@@ -124,10 +125,35 @@ function App() {
     setExportState('error');
   }
 
-  async function startLogin() {
-    const res = await fetch(`${backend.baseUrl}/auth/google`, { method: 'POST' });
-    const { authUrl } = await res.json();
-    window.open(authUrl, '_blank');
+  function startLogin() {
+    setLoginError(undefined);
+    // Le navigateur n'autorise window.open() que dans le prolongement
+    // synchrone d'un geste utilisateur : on ouvre l'onglet TOUT DE SUITE
+    // (vide) puis on le redirige une fois l'authUrl récupérée. Faire le
+    // fetch avant l'open (comme avant) casse cette chaîne et le navigateur
+    // bloque la popup sans la moindre erreur visible.
+    const popup = window.open('about:blank', '_blank');
+    fetch(`${backend.baseUrl}/auth/google`, { method: 'POST' })
+      .then((res) => {
+        if (!res.ok) throw new Error(`Le backend a répondu ${res.status}`);
+        return res.json();
+      })
+      .then(({ authUrl }) => {
+        if (popup) {
+          popup.location.href = authUrl;
+        } else {
+          // La popup elle-même a été bloquée (bloqueur de pub, réglages
+          // navigateur…) : on retombe sur une navigation dans l'onglet
+          // courant plutôt que de rester bloqué silencieusement.
+          window.location.href = authUrl;
+        }
+      })
+      .catch((err) => {
+        popup?.close();
+        setLoginError(err instanceof Error ? err.message : String(err));
+        // eslint-disable-next-line no-console
+        console.error('[figma-to-slides] startLogin failed', err);
+      });
   }
 
   function toggleFrame(id: string) {
@@ -163,6 +189,12 @@ function App() {
       {!sessionToken && (
         <div style={{ marginBottom: 12 }}>
           <button onClick={startLogin}>Se connecter à Google</button>
+          {loginError && (
+            <p style={{ color: '#FF6B6B' }}>
+              ❌ Échec de la connexion : {loginError}. Vérifie que le backend tourne bien sur {backend.baseUrl} et
+              que <code>PLUGIN_ALLOWED_ORIGINS</code> autorise l'origine de ce plugin.
+            </p>
+          )}
           <p style={{ opacity: 0.7 }}>
             Après consentement, colle le jeton de session renvoyé par le backend :
           </p>
