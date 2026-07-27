@@ -33,6 +33,7 @@ function App() {
   const [order, setOrder] = useState<string[]>([]);
   const [sessionToken, setSessionToken] = useState<string | undefined>();
   const [loginError, setLoginError] = useState<string | undefined>();
+  const [authUrl, setAuthUrl] = useState<string | undefined>();
   const [backend] = useState<BackendConfig>({ baseUrl: typeof __BACKEND_URL__ === 'string' ? __BACKEND_URL__ : 'http://localhost:8787' });
   const [exportState, setExportState] = useState<'idle' | 'analyzing' | 'exporting' | 'done' | 'error'>('idle');
   const [resultUrl, setResultUrl] = useState<string | undefined>();
@@ -127,12 +128,16 @@ function App() {
 
   function startLogin() {
     setLoginError(undefined);
-    // Le navigateur n'autorise window.open() que dans le prolongement
-    // synchrone d'un geste utilisateur : on ouvre l'onglet TOUT DE SUITE
-    // (vide) puis on le redirige une fois l'authUrl récupérée. Faire le
-    // fetch avant l'open (comme avant) casse cette chaîne et le navigateur
-    // bloque la popup sans la moindre erreur visible.
-    const popup = window.open('about:blank', '_blank');
+    setAuthUrl(undefined);
+    // Ni fetch()-puis-window.open() ni window.open() synchrone ne
+    // marchent depuis l'iframe d'un plugin Figma Desktop : Figma essaie
+    // de rendre la popup DANS un cadre soumis à la CSP restrictive du
+    // plugin (limitée aux domaines de networkAccess), ce qui bloque
+    // accounts.google.com avec une erreur "Framing ... violates CSP".
+    // La méthode recommandée par Figma est un vrai lien <a target="_blank">
+    // cliqué par l'utilisateur — ça sort du cadre CSP du plugin comme une
+    // navigation externe normale. On récupère juste l'URL puis on affiche
+    // le lien ; c'est le clic humain dessus qui ouvre le navigateur.
     fetch(`${backend.baseUrl}/auth/google`, { method: 'POST' })
       .then(async (res) => {
         if (!res.ok) {
@@ -141,18 +146,8 @@ function App() {
         }
         return res.json();
       })
-      .then(({ authUrl }) => {
-        if (popup) {
-          popup.location.href = authUrl;
-        } else {
-          // La popup elle-même a été bloquée (bloqueur de pub, réglages
-          // navigateur…) : on retombe sur une navigation dans l'onglet
-          // courant plutôt que de rester bloqué silencieusement.
-          window.location.href = authUrl;
-        }
-      })
+      .then(({ authUrl }) => setAuthUrl(authUrl))
       .catch((err) => {
-        popup?.close();
         setLoginError(err instanceof Error ? err.message : String(err));
         // eslint-disable-next-line no-console
         console.error('[figma-to-slides] startLogin failed', err);
@@ -191,7 +186,15 @@ function App() {
 
       {!sessionToken && (
         <div style={{ marginBottom: 12 }}>
-          <button onClick={startLogin}>Se connecter à Google</button>
+          {!authUrl && <button onClick={startLogin}>Se connecter à Google</button>}
+          {authUrl && (
+            <p>
+              <a href={authUrl} target="_blank" rel="noreferrer">
+                → Continuer vers Google
+              </a>{' '}
+              (ouvre ton navigateur système)
+            </p>
+          )}
           {loginError && (
             <p style={{ color: '#FF6B6B' }}>
               ❌ Échec de la connexion : {loginError}. Vérifie que le backend tourne bien sur {backend.baseUrl} et
