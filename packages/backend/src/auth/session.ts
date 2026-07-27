@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { decryptSecret, encryptSecret } from './crypto.js';
 import { env } from '../env.js';
+import { getRedis } from '../kv.js';
 
 interface StoredSession {
   encryptedRefreshToken: string;
@@ -9,40 +10,43 @@ interface StoredSession {
 }
 
 /**
- * Stockage des sessions. En mémoire pour le dev (§5.2 — le client ne reçoit
- * qu'un jeton de session opaque). Pour un déploiement multi-instance,
- * remplacer par Redis/une table DB — l'interface reste la même.
+ * Store persistant via `kv.ts` (Redis en production, in-memory en dev sans
+ * credentials) — indispensable sur Vercel : deux requêtes du même
+ * utilisateur peuvent atterrir sur deux instances serverless distinctes,
+ * qui ne partagent aucune mémoire de process. TTL aligné sur le maxAge du
+ * cookie `f2s_session` (90 jours).
  */
-const sessions = new Map<string, StoredSession>();
+const SESSION_TTL_SEC = 90 * 24 * 3600;
+const sessionKey = (token: string) => `f2s:session:${token}`;
 
-export function createSession(refreshToken: string): string {
+export async function createSession(refreshToken: string): Promise<string> {
   const sessionToken = randomUUID();
-  sessions.set(sessionToken, {
-    encryptedRefreshToken: encryptSecret(refreshToken, env.sessionEncryptionKey),
-  });
+  const stored: StoredSession = { encryptedRefreshToken: encryptSecret(refreshToken, env.sessionEncryptionKey) };
+  await getRedis().set(sessionKey(sessionToken), stored, { ex: SESSION_TTL_SEC });
   return sessionToken;
 }
 
-export function getRefreshToken(sessionToken: string): string | undefined {
-  const s = sessions.get(sessionToken);
+export async function getRefreshToken(sessionToken: string): Promise<string | undefined> {
+  const s = await getRedis().get<StoredSession>(sessionKey(sessionToken));
   if (!s) return undefined;
   return decryptSecret(s.encryptedRefreshToken, env.sessionEncryptionKey);
 }
 
-export function cacheAccessToken(sessionToken: string, accessToken: string, expiresInSec: number): void {
-  const s = sessions.get(sessionToken);
+export async function cacheAccessToken(sessionToken: string, accessToken: string, expiresInSec: number): Promise<void> {
+  const s = await getRedis().get<StoredSession>(sessionKey(sessionToken));
   if (!s) return;
   s.accessToken = accessToken;
   s.accessTokenExpiresAt = Date.now() + expiresInSec * 1000 - 30_000; // marge de 30s
+  await getRedis().set(sessionKey(sessionToken), s, { ex: SESSION_TTL_SEC });
 }
 
-export function getCachedAccessToken(sessionToken: string): string | undefined {
-  const s = sessions.get(sessionToken);
+export async function getCachedAccessToken(sessionToken: string): Promise<string | undefined> {
+  const s = await getRedis().get<StoredSession>(sessionKey(sessionToken));
   if (!s?.accessToken || !s.accessTokenExpiresAt) return undefined;
   if (Date.now() >= s.accessTokenExpiresAt) return undefined;
   return s.accessToken;
 }
 
-export function destroySession(sessionToken: string): void {
-  sessions.delete(sessionToken);
+export async function destroySession(sessionToken: string): Promise<void> {
+  await getRedis().del(sessionKey(sessionToken));
 }

@@ -7,11 +7,11 @@ import { cacheAccessToken, createSession, destroySession } from '../auth/session
 export const authRouter = Router();
 
 /** Spec §5: POST /auth/google → démarre OAuth2 (PKCE). */
-authRouter.post('/auth/google', (_req, res) => {
+authRouter.post('/auth/google', async (_req, res) => {
   const client = createOAuthClient();
   const codeVerifier = generateCodeVerifier();
   const codeChallenge = deriveCodeChallenge(codeVerifier);
-  const state = stashCodeVerifier(codeVerifier);
+  const state = await stashCodeVerifier(codeVerifier);
   const url = buildAuthUrl(client, codeChallenge, state);
   res.json({ authUrl: url });
 });
@@ -20,7 +20,7 @@ authRouter.post('/auth/google', (_req, res) => {
 authRouter.get('/auth/callback', async (req, res) => {
   const code = String(req.query.code ?? '');
   const state = String(req.query.state ?? '');
-  const codeVerifier = popCodeVerifier(state);
+  const codeVerifier = await popCodeVerifier(state);
 
   if (!code || !codeVerifier) {
     res.status(400).json({ error: 'invalid_or_expired_state' });
@@ -30,8 +30,8 @@ authRouter.get('/auth/callback', async (req, res) => {
   try {
     const client = createOAuthClient();
     const { refreshToken, accessToken, expiresInSec } = await exchangeCodeForTokens(client, code, codeVerifier);
-    const sessionToken = createSession(refreshToken);
-    cacheAccessToken(sessionToken, accessToken, expiresInSec);
+    const sessionToken = await createSession(refreshToken);
+    await cacheAccessToken(sessionToken, accessToken, expiresInSec);
 
     // Spec §5.2 — cookie HttpOnly + SameSite=None; Secure, ou header
     // Authorization porté par l'iframe. On pose les deux : le cookie pour un
@@ -98,10 +98,10 @@ function renderErrorPage(message: string): string {
 </html>`;
 }
 
-authRouter.post('/auth/logout', (req, res) => {
+authRouter.post('/auth/logout', async (req, res) => {
   const sessionToken = extractSessionToken(req);
   if (sessionToken) {
-    destroySession(sessionToken);
+    await destroySession(sessionToken);
   }
   res.clearCookie('f2s_session');
   res.status(204).end();

@@ -6,14 +6,14 @@ export class UnauthenticatedError extends Error {}
 export async function getValidAccessToken(sessionToken: string | undefined): Promise<string> {
   if (!sessionToken) throw new UnauthenticatedError('Missing session token');
 
-  const cached = getCachedAccessToken(sessionToken);
+  const cached = await getCachedAccessToken(sessionToken);
   if (cached) return cached;
 
-  const refreshToken = getRefreshToken(sessionToken);
+  const refreshToken = await getRefreshToken(sessionToken);
   if (!refreshToken) throw new UnauthenticatedError('Unknown or expired session');
 
   const client = createOAuthClient();
   const { accessToken, expiresInSec } = await refreshAccessToken(client, refreshToken);
-  cacheAccessToken(sessionToken, accessToken, expiresInSec);
+  await cacheAccessToken(sessionToken, accessToken, expiresInSec);
   return accessToken;
 }

@@ -1,4 +1,15 @@
 import 'dotenv/config';
+// Express 4 ne route PAS automatiquement le rejet d'une promesse renvoyée
+// par un handler `async` vers le middleware d'erreur — un throw dans un
+// `await` non entouré d'un try/catch devient un rejet de promesse non géré,
+// que Node termine par défaut (tout le process crashe, pas seulement la
+// requête). C'était sans risque tant que les stores étaient de simples
+// `Map` en mémoire (rien n'y lève jamais) ; ça ne l'est plus depuis le
+// passage à Redis/Blob (erreur réseau, credentials manquants, etc.) — ce
+// patch (appliqué avant toute déclaration de route, d'où l'import tout en
+// haut) fait suivre automatiquement ces rejets à `next(err)`, où le
+// middleware d'erreur tout en bas de ce fichier les gère normalement.
+import 'express-async-errors';
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
@@ -93,7 +104,15 @@ app.use((err: unknown, _req: express.Request, res: express.Response, _next: expr
   res.status(500).json({ error: 'internal_error', message: err instanceof Error ? err.message : String(err) });
 });
 
-app.listen(env.port, () => {
-  // eslint-disable-next-line no-console
-  console.log(`figma-to-slides backend listening on :${env.port}`);
-});
+// Sur Vercel, `api/index.js` importe `app` et le passe au runtime serverless
+// (une fonction Express EST déjà un handler `(req, res) => void`) — il ne
+// faut PAS appeler `listen()` dans ce cas : il n'y a pas de port à écouter,
+// et ça empêcherait même le déploiement de démarrer correctement.
+if (!process.env.VERCEL) {
+  app.listen(env.port, () => {
+    // eslint-disable-next-line no-console
+    console.log(`figma-to-slides backend listening on :${env.port}`);
+  });
+}
+
+export default app;
