@@ -68,8 +68,11 @@ plugin appelle le backend (CORS).
 
 ```bash
 npm install
-npm run build --workspace packages/shared
 ```
+
+`packages/shared` se compile automatiquement après l'install (hook
+`postinstall`) et avant chaque `npm test` (hook `pretest`) — pas besoin de
+le builder à la main.
 
 ## 4. Lancer le backend en dev
 

@@ -18,7 +18,7 @@
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "express": "^4.21.1",
-    "google-auth-library": "^9.14.2",
+    "google-auth-library": "^10.9.1",
     "multer": "^2.0.1",
     "pixelmatch": "^5.3.0",
     "pngjs": "^7.0.0",
@@ -31,9 +31,9 @@
     "@types/multer": "^1.4.12",
     "@types/node": "^22.9.0",
     "@types/pngjs": "^6.0.5",
-    "@vitest/coverage-v8": "^2.1.4",
+    "@vitest/coverage-v8": "^4.1.10",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3",
-    "vitest": "^2.1.4"
+    "vitest": "^4.1.10"
   }
 }
