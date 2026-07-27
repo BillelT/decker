@@ -29,6 +29,20 @@ checkRequiredEnv();
 
 const app = express();
 
+// Chrome (donc le Chromium embarqué par Figma Desktop) applique Private
+// Network Access : l'iframe du plugin tourne dans un espace d'adresses
+// "public", et une requête vers localhost (espace "local") déclenche un
+// préflight portant `Access-Control-Request-Private-Network: true`, qui
+// échoue silencieusement (le fetch est bloqué avant même d'atteindre le
+// serveur) tant que la réponse ne renvoie pas ce header en retour — le
+// paquet `cors` ne l'ajoute pas de lui-même.
+app.use((req, res, next) => {
+  if (req.headers['access-control-request-private-network']) {
+    res.setHeader('Access-Control-Allow-Private-Network', 'true');
+  }
+  next();
+});
+
 app.use(
   cors({
     origin: env.allowedOrigins.length > 0 ? env.allowedOrigins : false,
