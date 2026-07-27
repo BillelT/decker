@@ -3,10 +3,31 @@ import { classifyNode, type DecisionInput, type NodeKind } from './decisionTree.
 import { decideRadius, type RadiusDecision } from './radius.js';
 import { extractTextRuns } from './textExtract.js';
 import { mapVerticalAlignment } from './textMapping.js';
+import { shouldRasterForStroke } from './stroke.js';
 import type { createIdGenerator } from './ids.js';
 
 export interface SerializeContext {
   nextId: ReturnType<typeof createIdGenerator>;
+}
+
+/**
+ * Adapte le SceneNode réel vers les primitives pures de `stroke.ts`. Le
+ * défaut Figma pour une forme SANS contour est déjà `strokeAlign: 'INSIDE'`
+ * — sans le filtre sur les strokes visibles, ça déclenchait un raster
+ * quasi systématique avant ce correctif (spec §3.3).
+ */
+function evaluateStroke(node: SceneNode): boolean {
+  if (!('strokes' in node)) return false;
+  const visibleStrokeCount = node.strokes.filter((s) => s.visible !== false).length;
+  const weight = 'strokeWeight' in node ? node.strokeWeight : 0;
+  const align = 'strokeAlign' in node ? node.strokeAlign : 'CENTER';
+
+  return shouldRasterForStroke({
+    visibleStrokeCount,
+    weightIsMixed: weight === figma.mixed,
+    weight: weight === figma.mixed ? 0 : (weight as number),
+    align: align as 'CENTER' | 'INSIDE' | 'OUTSIDE',
+  });
 }
 
 /**
@@ -235,9 +256,7 @@ function shapeInfo(node: SceneNode, kind: NodeKind): DecisionInput['shape'] {
   const fillIsGradient = visibleFills.some((f) => f.type.startsWith('GRADIENT'));
   const fillIsImage = visibleFills.length === 1 && visibleFills[0].type === 'IMAGE';
 
-  const strokes = 'strokes' in node ? node.strokes : [];
-  const strokeAlign = 'strokeAlign' in node ? node.strokeAlign : 'CENTER';
-  const hasMultipleOrOffCenterStroke = strokes.filter((s) => s.visible !== false).length > 1 || strokeAlign !== 'CENTER';
+  const hasMultipleOrOffCenterStroke = evaluateStroke(node);
 
   let radiusDecision: RadiusDecision | undefined;
   if (kind === 'RECTANGLE' && 'topLeftRadius' in node) {
