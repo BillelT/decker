@@ -1,0 +1,13 @@
+{
+  "name": "Figma → Google Slides",
+  "id": "figma-to-slides-dev",
+  "api": "1.0.0",
+  "main": "dist/code.js",
+  "ui": "dist/ui.html",
+  "editorType": ["figma"],
+  "documentAccess": "dynamic-page",
+  "networkAccess": {
+    "allowedDomains": ["http://localhost:8787"],
+    "reasoning": "L'iframe de l'UI communique avec le backend figma-to-slides (OAuth Google, upload d'assets, déclenchement de l'export). Remplacer localhost par le domaine de production avant publication (spec §5, §11.12)."
+  }
+}
