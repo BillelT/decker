@@ -1,6 +1,7 @@
 import { render } from 'preact';
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import type { ExportOptions, IRDocument, IRWarning } from '@figma-to-slides/shared';
+import { sanitizeSessionToken } from './ui/sanitizeSessionToken.js';
 
 interface FrameCandidate {
   id: string;
@@ -206,7 +207,7 @@ function App() {
           </p>
           <input
             placeholder="jeton de session"
-            onChange={(e) => setSessionToken((e.target as HTMLInputElement).value)}
+            onChange={(e) => setSessionToken(sanitizeSessionToken((e.target as HTMLInputElement).value))}
             style={{ width: '100%' }}
           />
         </div>
