@@ -80,6 +80,15 @@ avec les couches suivantes **testées et fonctionnelles hors ligne** :
   implémenté : seul un stockage disque local de développement existe
   derrière l'interface `AssetStore`. À implémenter avant tout déploiement
   multi-instance ou public.
+- Conséquence directe du point précédent en local : Slides récupère
+  chaque image/asset exporté lui-même depuis les serveurs Google, donc
+  une URL `PUBLIC_BACKEND_URL=http://localhost:...` n'est jamais
+  joignable pour lui. Tant qu'une slide n'a aucun élément rasterisé
+  (texte/formes natives uniquement), ça ne se voit pas — dès qu'une
+  image ou un élément rasterisé (dégradé, ombre, LINE…) apparaît,
+  l'export échoue avec « Localhost image URLs are invalid ». Pour tester
+  ce cas en local, exposer le backend via un tunnel public (ex. `ngrok
+  http 8787`) et pointer `PUBLIC_BACKEND_URL` dessus.
 - La reprise ciblée après échec partiel (spec §7.0.6, §8 Phase 3) est
   amorcée (état par lot en mémoire) mais l'endpoint `/export/:jobId/retry`
   ne rejoue pas encore automatiquement les lots échoués — il ne fait que

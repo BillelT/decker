@@ -27,6 +27,29 @@ function checkRequiredEnv(): void {
 }
 checkRequiredEnv();
 
+/**
+ * Slides `createImage` va chercher l'image lui-même depuis les serveurs
+ * Google — une URL `localhost`/`127.0.0.1` n'est joignable que depuis cette
+ * machine, jamais depuis l'infra Google. Ça ne casse rien tant qu'une slide
+ * n'a aucun contenu rasterisé/image (texte et formes natives s'en passent),
+ * d'où un avertissement plutôt qu'un blocage : le premier export avec une
+ * image échouera avec une erreur Slides "Localhost image URLs are invalid"
+ * sinon bien plus tard et moins clairement.
+ */
+function warnIfBackendUrlIsLocal(): void {
+  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(env.publicBackendUrl)) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `\n[backend] PUBLIC_BACKEND_URL pointe vers "${env.publicBackendUrl}" — inatteignable depuis les serveurs Google.\n` +
+        `Tout export contenant une image ou un élément rasterisé (dégradé, ombre, LINE…) échouera avec\n` +
+        `"Localhost image URLs are invalid" dès que Slides essaiera de la récupérer. Pour tester en local,\n` +
+        `expose ce backend via un tunnel public (ex. \`ngrok http 8787\`), puis mets PUBLIC_BACKEND_URL\n` +
+        `dans .env sur l'URL https donnée par le tunnel et relance ce process.\n`,
+    );
+  }
+}
+warnIfBackendUrlIsLocal();
+
 const app = express();
 
 // Chrome (donc le Chromium embarqué par Figma Desktop) applique Private
