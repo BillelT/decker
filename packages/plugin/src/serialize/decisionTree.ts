@@ -52,6 +52,7 @@ export type WarningCode =
   | 'BLEND_MODE_RASTERIZED'
   | 'MASK_RASTERIZED'
   | 'VECTOR_RASTERIZED'
+  | 'LINE_RASTERIZED'
   | 'LETTER_SPACING_LOST'
   | 'RADIUS_APPROXIMATED'
   | 'CORNER_RADIUS_RASTERIZED'
@@ -67,10 +68,23 @@ export type Decision =
   | { action: 'image' }
   | { action: 'descend' };
 
+/**
+ * `PASS_THROUGH` est la valeur renvoyée par l'API Figma pour la quasi-
+ * totalité des calques qui n'ont pas de mode de fusion explicite choisi
+ * dans l'UI (ce n'est PAS un mode de fusion "normal" au sens strict, mais
+ * il se comporte à l'identique pour le rendu) — seuls les modes vraiment
+ * différents (MULTIPLY, SCREEN, DARKEN…) doivent déclencher un raster.
+ */
+const BLEND_MODES_EQUIVALENT_TO_NORMAL = new Set(['NORMAL', 'PASS_THROUGH']);
+
 export function classifyNode(input: DecisionInput): Decision {
   if (!input.visible) return { action: 'ignore' };
-  if (input.opacity === 0 || input.width < 0.5 || input.height < 0.5) return { action: 'ignore' };
-  if (input.blendMode !== 'NORMAL') {
+  if (input.opacity === 0) return { action: 'ignore' };
+  // Une LINE Figma a par construction une largeur ou une hauteur nulle
+  // (le trait vient du stroke, pas d'une dimension de boîte) : n'ignorer
+  // que les nœuds réellement dégénérés dans les DEUX axes.
+  if (input.width < 0.5 && input.height < 0.5) return { action: 'ignore' };
+  if (!BLEND_MODES_EQUIVALENT_TO_NORMAL.has(input.blendMode)) {
     return { action: 'raster', warningCode: 'BLEND_MODE_RASTERIZED', message: `Mode de fusion « ${input.blendMode} » non supporté par Slides — converti en image.` };
   }
   if (input.hasVisibleShadowOrBlur) {
@@ -78,6 +92,12 @@ export function classifyNode(input: DecisionInput): Decision {
   }
   if (input.isMasked) {
     return { action: 'raster', warningCode: 'MASK_RASTERIZED', message: 'Masque de calque non supporté nativement — le groupe masqué est aplati en image.' };
+  }
+
+  if (input.kind === 'LINE') {
+    // Pas encore de support natif `createLine` côté mapper (spec §2.1) —
+    // converti en image plutôt que forcé dans un preset RECTANGLE dégénéré.
+    return { action: 'raster', warningCode: 'LINE_RASTERIZED', message: 'Les lignes ne sont pas encore supportées nativement — converties en image.' };
   }
 
   if (input.kind === 'TEXT') {
@@ -94,7 +114,7 @@ export function classifyNode(input: DecisionInput): Decision {
     return { action: 'native-text' };
   }
 
-  if (input.kind === 'RECTANGLE' || input.kind === 'ELLIPSE' || input.kind === 'POLYGON' || input.kind === 'STAR' || input.kind === 'LINE') {
+  if (input.kind === 'RECTANGLE' || input.kind === 'ELLIPSE' || input.kind === 'POLYGON' || input.kind === 'STAR') {
     const s = input.shape;
     if (s && s.visibleFillCount > 1) {
       return { action: 'raster', warningCode: 'MULTIPLE_FILLS_RASTERIZED', message: 'Plusieurs remplissages visibles — Slides ne supporte qu\'un seul fill, converti en image.' };
