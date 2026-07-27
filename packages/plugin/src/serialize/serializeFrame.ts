@@ -1,4 +1,4 @@
-import type { IRElement, IRImage, IRPaint, IRShape, IRSlide, IRWarning } from '@figma-to-slides/shared';
+import type { IRElement, IRImage, IRLine, IRPaint, IRShape, IRSlide, IRWarning } from '@figma-to-slides/shared';
 import { classifyNode, type DecisionInput, type NodeKind } from './decisionTree.js';
 import { decideRadius, type RadiusDecision } from './radius.js';
 import { extractTextRuns } from './textExtract.js';
@@ -160,6 +160,11 @@ async function walk(node: SceneNode, state: WalkState): Promise<void> {
       return;
     }
 
+    case 'native-line': {
+      state.elements.push(buildNativeLine(node, state));
+      return;
+    }
+
     case 'descend': {
       const container = node as FrameNode | GroupNode | ComponentNode | InstanceNode;
       for (const child of container.children) {
@@ -197,8 +202,12 @@ function toDecisionInput(node: SceneNode, maskedByAncestor: boolean): DecisionIn
     input.text = { fontUnavailable: false, letterSpacingExceedsThreshold: false, hasUnrepresentableMixedStyle: false };
   }
 
-  if (kind === 'RECTANGLE' || kind === 'ELLIPSE' || kind === 'POLYGON' || kind === 'STAR' || kind === 'LINE') {
+  if (kind === 'RECTANGLE' || kind === 'ELLIPSE' || kind === 'POLYGON' || kind === 'STAR') {
     input.shape = shapeInfo(node, kind);
+  }
+
+  if (kind === 'LINE') {
+    input.line = lineInfo(node);
   }
 
   if (kind === 'GROUP_LIKE') {
@@ -275,6 +284,23 @@ function shapeInfo(node: SceneNode, kind: NodeKind): DecisionInput['shape'] {
   return { visibleFillCount: visibleFills.length, fillIsGradient, fillIsImage, hasMultipleOrOffCenterStroke, radiusDecision };
 }
 
+// Terminaisons cosmétiques (arrondi/carré, pas de décoration) qu'on peut
+// représenter en n'ajoutant aucune flèche Slides ; toute autre valeur (flèche,
+// losange, cercle plein…) nécessiterait de mapper vers startArrow/endArrow,
+// non fait ici — la ligne est rasterisée pour rester fidèle plutôt que de
+// perdre silencieusement la décoration.
+const SUPPORTED_LINE_CAPS = new Set(['NONE', 'ROUND', 'SQUARE']);
+
+function lineInfo(node: SceneNode): DecisionInput['line'] {
+  const strokes = 'strokes' in node ? node.strokes.filter((s) => s.visible !== false) : [];
+  const strokeIsGradient = strokes.some((s) => s.type.startsWith('GRADIENT'));
+  const weight = 'strokeWeight' in node ? node.strokeWeight : 0;
+  const strokeWeightIsMixed = weight === figma.mixed;
+  const cap = 'strokeCap' in node ? node.strokeCap : 'NONE';
+  const hasUnsupportedCap = cap === figma.mixed || cap === undefined || !SUPPORTED_LINE_CAPS.has(cap);
+  return { visibleStrokeCount: strokes.length, strokeIsGradient, strokeWeightIsMixed, hasUnsupportedCap };
+}
+
 function relativeRect(node: SceneNode, state: WalkState): { x: number; y: number; w: number; h: number } {
   const box = node.absoluteBoundingBox;
   if (!box) return { x: 0, y: 0, w: 'width' in node ? node.width : 0, h: 'height' in node ? node.height : 0 };
@@ -325,6 +351,29 @@ function buildNativeShape(node: SceneNode, action: 'native-shape-preset' | 'nati
     shapeType,
     fill,
     stroke,
+  };
+}
+
+function buildNativeLine(node: SceneNode, state: WalkState): IRLine {
+  const rel = relativeRect(node, state);
+  const strokes = 'strokes' in node ? node.strokes.filter((s) => s.visible !== false) : [];
+  const strokeSolid = strokes.find((s): s is SolidPaint => s.type === 'SOLID');
+  const strokeWeight = 'strokeWeight' in node && typeof node.strokeWeight === 'number' ? node.strokeWeight : 1;
+
+  return {
+    kind: 'line',
+    id: state.ctx.nextId(),
+    sourceNodeId: node.id,
+    rect: rel,
+    rotation: 'rotation' in node ? node.rotation : 0,
+    opacity: 'opacity' in node ? node.opacity : 1,
+    stroke: {
+      color: strokeSolid
+        ? { r: strokeSolid.color.r, g: strokeSolid.color.g, b: strokeSolid.color.b, a: strokeSolid.opacity ?? 1 }
+        : { r: 0, g: 0, b: 0, a: 1 },
+      weightPt: strokeWeight,
+      dash: dashStyleOf(node),
+    },
   };
 }
 

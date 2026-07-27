@@ -34,7 +34,7 @@ export interface IRSlide {
   underlay?: IRUnderlay;
 }
 
-export type IRElement = IRText | IRShape | IRImage;
+export type IRElement = IRText | IRShape | IRImage | IRLine;
 
 interface IRBase {
   id: string; // objectId Slides, généré côté plugin
@@ -103,6 +103,12 @@ export interface IRShape extends IRBase {
     | 'TEXT_BOX';
   fill?: IRPaint;
   stroke?: { color: IRColor; weightPt: number; dash: 'SOLID' | 'DASH' | 'DOT' };
+}
+
+export interface IRLine extends IRBase {
+  kind: 'line';
+  /** Une ligne Figma n'est que son contour — toujours présent (spec — anciennement toujours rasterisée, voir LIMITATIONS.md). */
+  stroke: { color: IRColor; weightPt: number; dash: 'SOLID' | 'DASH' | 'DOT' };
 }
 
 export interface IRImage extends IRBase {

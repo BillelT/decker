@@ -68,6 +68,26 @@ export interface CreateImageRequest {
   elementProperties: PageElementProperties;
 }
 
+export type LineCategory = 'STRAIGHT';
+
+export interface CreateLineRequest {
+  objectId: string;
+  lineCategory: LineCategory;
+  elementProperties: PageElementProperties;
+}
+
+export interface LineProperties {
+  lineFill?: { solidFill: SolidFill };
+  weight?: Dimension;
+  dashStyle?: 'SOLID' | 'DASH' | 'DOT';
+}
+
+export interface UpdateLinePropertiesRequest {
+  objectId: string;
+  lineProperties: LineProperties;
+  fields: string;
+}
+
 export interface CreateSlideRequest {
   objectId: string;
   insertionIndex?: number;
@@ -168,6 +188,8 @@ export type SlidesRequest =
   | { createSlide: CreateSlideRequest }
   | { createShape: CreateShapeRequest }
   | { createImage: CreateImageRequest }
+  | { createLine: CreateLineRequest }
+  | { updateLineProperties: UpdateLinePropertiesRequest }
   | { insertText: InsertTextRequest }
   | { updateTextStyle: UpdateTextStyleRequest }
   | { updateParagraphStyle: UpdateParagraphStyleRequest }
