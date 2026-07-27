@@ -1,5 +1,5 @@
 import { render } from 'preact';
-import { useEffect, useMemo, useState } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { ExportOptions, IRDocument, IRWarning } from '@figma-to-slides/shared';
 import { sanitizeSessionToken } from './ui/sanitizeSessionToken.js';
 
@@ -39,6 +39,16 @@ function App() {
   const [exportState, setExportState] = useState<'idle' | 'analyzing' | 'exporting' | 'done' | 'error'>('idle');
   const [resultUrl, setResultUrl] = useState<string | undefined>();
   const pendingAssets = useMemo(() => new Map<string, ArrayBuffer>(), []);
+
+  // Le handler `onMessage` ci-dessous n'est branché qu'une fois (deps: []) ;
+  // sans cette ref, `handleExportPayload` y capturerait à jamais la valeur
+  // de `sessionToken` telle qu'elle était au montage (undefined), et
+  // l'en-tête Authorization serait alors omis même après avoir collé le
+  // jeton — d'où un 401 permanent quel que soit le contenu du champ.
+  const sessionTokenRef = useRef<string | undefined>(sessionToken);
+  useEffect(() => {
+    sessionTokenRef.current = sessionToken;
+  }, [sessionToken]);
 
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
@@ -96,7 +106,7 @@ function App() {
       const res = await fetch(`${backend.baseUrl}/export`, {
         method: 'POST',
         body: form,
-        headers: sessionToken ? { Authorization: `Bearer ${sessionToken}` } : undefined,
+        headers: sessionTokenRef.current ? { Authorization: `Bearer ${sessionTokenRef.current}` } : undefined,
         credentials: 'include',
       });
       if (!res.ok) throw new Error(`Export refusé (${res.status})`);
@@ -137,8 +147,14 @@ function App() {
     // accounts.google.com avec une erreur "Framing ... violates CSP".
     // La méthode recommandée par Figma est un vrai lien <a target="_blank">
     // cliqué par l'utilisateur — ça sort du cadre CSP du plugin comme une
-    // navigation externe normale. On récupère juste l'URL puis on affiche
-    // le lien ; c'est le clic humain dessus qui ouvre le navigateur.
+    // navigation externe normale.
+    //
+    // Ce fetch() ne dépend PAS d'un geste utilisateur : demander l'URL au
+    // backend est indépendant du clic qui ouvrira ensuite le navigateur, donc
+    // on le lance dès le montage (voir l'effet plus bas) pour que le lien
+    // soit déjà prêt — l'utilisateur n'a alors besoin que d'UN clic dessus,
+    // au lieu d'un premier clic pour révéler le lien puis un second pour le
+    // suivre.
     fetch(`${backend.baseUrl}/auth/google`, { method: 'POST' })
       .then(async (res) => {
         if (!res.ok) {
@@ -154,6 +170,11 @@ function App() {
         console.error('[figma-to-slides] startLogin failed', err);
       });
   }
+
+  useEffect(() => {
+    if (!sessionToken) startLogin();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function toggleFrame(id: string) {
     setFrames((prev) => ({ ...prev, [id]: { ...prev[id], included: !prev[id].included } }));
@@ -187,14 +208,26 @@ function App() {
 
       {!sessionToken && (
         <div style={{ marginBottom: 12 }}>
-          {!authUrl && <button onClick={startLogin}>Se connecter à Google</button>}
-          {authUrl && (
-            <p>
-              <a href={authUrl} target="_blank" rel="noreferrer">
-                → Continuer vers Google
-              </a>{' '}
-              (ouvre ton navigateur système)
-            </p>
+          {authUrl ? (
+            <a
+              href={authUrl}
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                display: 'inline-block',
+                padding: '6px 12px',
+                border: '1px solid #888',
+                borderRadius: 4,
+                textDecoration: 'none',
+                color: 'inherit',
+              }}
+            >
+              Se connecter à Google
+            </a>
+          ) : loginError ? (
+            <button onClick={startLogin}>Réessayer</button>
+          ) : (
+            <button disabled>Préparation du lien…</button>
           )}
           {loginError && (
             <p style={{ color: '#FF6B6B' }}>
