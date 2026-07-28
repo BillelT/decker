@@ -36,7 +36,7 @@ function App() {
   const [sessionToken, setSessionToken] = useState<string | undefined>();
   const [loginError, setLoginError] = useState<string | undefined>();
   const [authUrl, setAuthUrl] = useState<string | undefined>();
-  const [backend] = useState<BackendConfig>({ baseUrl: typeof __BACKEND_URL__ === 'string' ? __BACKEND_URL__ : 'http://localhost:8787' });
+  const [backend] = useState<BackendConfig>({ baseUrl: typeof __BACKEND_URL__ === 'string' ? __BACKEND_URL__ : 'https://figma-to-slide-backend.vercel.app' });
   const [exportState, setExportState] = useState<'idle' | 'analyzing' | 'exporting' | 'done' | 'error'>('idle');
   const [resultUrl, setResultUrl] = useState<string | undefined>();
   const [exportError, setExportError] = useState<string | undefined>();
