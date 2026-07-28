@@ -11,25 +11,6 @@ function isExportable(node: SceneNode): node is ExportableNode {
   return node.type === 'FRAME' || node.type === 'COMPONENT' || node.type === 'INSTANCE';
 }
 
-/** Spec §7.0.1 — sélection au lancement, sinon toutes les frames de premier niveau. */
-function collectCandidateFrames(): { included: ExportableNode[]; excluded: { name: string; reason: string }[] } {
-  const selection = figma.currentPage.selection.filter((n) => n.parent?.type === 'PAGE');
-  const source = selection.length > 0 ? selection : figma.currentPage.children;
-
-  const included: ExportableNode[] = [];
-  const excluded: { name: string; reason: string }[] = [];
-
-  for (const node of source) {
-    if (isExportable(node)) {
-      included.push(node);
-    } else {
-      excluded.push({ name: node.name, reason: `Type non exportable : ${node.type}` });
-    }
-  }
-
-  return { included, excluded };
-}
-
 function yieldToUi(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
@@ -45,43 +26,64 @@ interface PendingSlide {
   nodesToRaster: Map<string, SceneNode[]>;
 }
 
-async function main(): Promise<void> {
-  figma.showUI(__html__, { width: 480, height: 640 });
+/**
+ * Ajoute au deck les frames actuellement sélectionnées sur le canvas Figma
+ * (déclenché par le bouton « Ajouter la sélection » de l'UI) — remplace
+ * l'ancienne collecte automatique au lancement : l'utilisateur choisit
+ * explicitement quoi exporter et dans quel ordre construire sa liste.
+ * Les frames déjà présentes dans `pending` sont ignorées (pas de doublon
+ * si on re-sélectionne en partie ce qui a déjà été ajouté).
+ */
+async function addSelectedFrames(pending: PendingSlide[], idGen: ReturnType<typeof createIdGenerator>): Promise<void> {
+  const known = new Set(pending.map((p) => p.frame.id));
+  const selected = figma.currentPage.selection.filter((n): n is ExportableNode => isExportable(n) && !known.has(n.id));
 
-  const { included, excluded } = collectCandidateFrames();
-
-  figma.ui.postMessage({ type: 'candidates', frames: included.map((f) => ({ id: f.id, name: f.name, width: f.width, height: f.height })), excluded });
-
-  if (included.length > MAX_FRAMES_WARNING) {
-    figma.ui.postMessage({ type: 'too-many-frames', count: included.length, max: MAX_FRAMES_WARNING });
+  if (selected.length === 0) {
+    figma.ui.postMessage({ type: 'no-frames-selected' });
+    return;
+  }
+  if (selected.length > MAX_FRAMES_WARNING) {
+    figma.ui.postMessage({ type: 'too-many-frames', count: selected.length, max: MAX_FRAMES_WARNING });
   }
 
   // Spec §7.0 RÈGLE performance : séquentiel avec yield entre chaque frame,
   // pour ne jamais figer l'UI Figma plus de 200ms d'affilée (§7.0 CRITÈRE).
-  const pending: PendingSlide[] = [];
-  const idGen = createIdGenerator(figma.root.id.slice(0, 8));
-
-  for (const frame of included) {
+  for (const frame of selected) {
     const previewDataUrl = await generatePreview(frame);
-    figma.ui.postMessage({ type: 'preview', frameId: frame.id, previewDataUrl });
-    await yieldToUi();
-
     const { slide, nodesToRaster } = await serializeFrame(frame, { nextId: idGen });
     pending.push({ frame, slide, nodesToRaster });
 
     const nativeCount = slide.elements.filter((e) => e.kind !== 'image' || !e.isRasterFallback).length;
     const rasterCount = slide.elements.length - nativeCount;
     figma.ui.postMessage({
-      type: 'analysis',
-      frameId: frame.id,
+      type: 'candidate-added',
+      frame: { id: frame.id, name: frame.name, width: frame.width, height: frame.height },
+      previewDataUrl,
       nativeCount,
       rasterCount,
       warnings: slide.warnings,
     });
     await yieldToUi();
   }
+}
+
+async function main(): Promise<void> {
+  figma.showUI(__html__, { width: 480, height: 640 });
+
+  const pending: PendingSlide[] = [];
+  const idGen = createIdGenerator(figma.root.id.slice(0, 8));
 
   figma.ui.onmessage = async (msg: { type: string; [key: string]: unknown }) => {
+    if (msg.type === 'add-selected-frames') {
+      try {
+        await addSelectedFrames(pending, idGen);
+      } catch (err) {
+        console.error(err);
+        figma.ui.postMessage({ type: 'export-error', message: (err as Error).message });
+      }
+      return;
+    }
+
     if (msg.type === 'select-nodes') {
       // Spec §8.3 RÈGLE — cliquer sur une ligne du rapport sélectionne les nœuds dans Figma.
       const ids = msg.nodeIds as string[];

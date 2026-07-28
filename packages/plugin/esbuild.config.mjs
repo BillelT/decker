@@ -27,7 +27,19 @@ const uiResult = await build({
 });
 
 const uiScript = uiResult.outputFiles[0].text;
+
+// Le HTML servi par `figma.showUI(__html__)` est une chaîne autonome — pas
+// de requête réseau possible pour charger une police (§networkAccess du
+// manifest) ni de fichier statique séparé. La police (licence Fontshare,
+// usage self-hosted/embed autorisé — voir public/fonts/LICENSE.txt du repo
+// billeltighidet) est donc inlinée en base64 directement dans le CSS.
+const fontBase64 = (await readFile('src/assets/CabinetGrotesk-Variable.woff2')).toString('base64');
+const fontDataUri = `data:font/woff2;base64,${fontBase64}`;
+const stylesTemplate = await readFile('src/styles.css', 'utf8');
+const styles = stylesTemplate.replace('__FONT_DATA_URI__', () => fontDataUri);
+
 const template = await readFile('src/ui.html', 'utf8');
-await writeFile('dist/ui.html', template.replace('__UI_SCRIPT__', () => uiScript));
+const html = template.replace('__STYLES__', () => styles).replace('__UI_SCRIPT__', () => uiScript);
+await writeFile('dist/ui.html', html);
 
 console.log(`Built dist/code.js and dist/ui.html (backend: ${BACKEND_URL})`);

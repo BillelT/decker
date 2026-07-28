@@ -1,0 +1,294 @@
+/* Design system (voir /root/.claude/uploads/.../designsystem.md) */
+
+@font-face {
+  font-family: 'Cabinet Grotesk';
+  src: url(__FONT_DATA_URI__) format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --color-orange: #f06800;
+  --color-orange-40: rgba(240, 104, 0, 0.4);
+  --color-orange-red: #f04000;
+  --color-bg: #fff9f5;
+  --color-text: #120f0d;
+  --color-scrollbar: #cccccc;
+  --color-border: #e5ddd6;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: 'Cabinet Grotesk', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+#app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+a {
+  color: var(--color-orange);
+}
+
+/* Scrollbar (WebKit) — flèches/piste/poignée en #CCCCCC (spec DS) */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-scrollbar);
+  border-radius: 8px;
+}
+::-webkit-scrollbar-button {
+  background: var(--color-scrollbar);
+  height: 10px;
+  width: 10px;
+}
+* {
+  scrollbar-color: var(--color-scrollbar) transparent;
+  scrollbar-width: thin;
+}
+
+/* ---- Header ---- */
+
+.f2s-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px;
+  flex: none;
+}
+
+.f2s-logo {
+  width: 35px;
+  height: 35px;
+  flex: none;
+  border-radius: 8px;
+  display: block;
+}
+
+.f2s-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: flex-end;
+}
+
+/* ---- Buttons ---- */
+
+.f2s-btn {
+  font-size: 16px;
+  font-weight: 700;
+  border-radius: 12px;
+  padding: 8px 16px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.f2s-btn--tertiary {
+  background: var(--color-text);
+  color: var(--color-bg);
+}
+
+.f2s-btn--secondary {
+  background: transparent;
+  border-color: var(--color-orange);
+  color: var(--color-orange);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+.f2s-btn--primary {
+  background: var(--color-orange);
+  color: var(--color-bg);
+}
+
+.f2s-btn--primary:hover:not(:disabled) {
+  background: var(--color-orange-red);
+}
+
+/* ---- Main ---- */
+
+.f2s-main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 16px 96px;
+}
+
+.f2s-empty {
+  color: var(--color-text);
+  opacity: 0.6;
+  font-size: 14px;
+  padding: 24px 0;
+  text-align: center;
+}
+
+.f2s-frame {
+  margin-bottom: 16px;
+}
+
+.f2s-frame-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.f2s-frame-index {
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.f2s-frame-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.f2s-icon-btn {
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--color-text);
+}
+
+.f2s-icon-btn:hover:not(:disabled) {
+  background: var(--color-orange-40);
+}
+
+.f2s-frame-preview {
+  border-radius: 12px;
+  border: 2px solid transparent;
+  background: #d9d9d9;
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  display: block;
+  overflow: hidden;
+  cursor: pointer;
+  padding: 0;
+}
+
+.f2s-frame-preview.is-active {
+  border-color: var(--color-orange);
+}
+
+.f2s-frame-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.f2s-frame-meta {
+  font-size: 14px;
+  opacity: 0.7;
+  margin-top: 4px;
+}
+
+.f2s-warning {
+  font-size: 14px;
+  cursor: pointer;
+  opacity: 0.85;
+  margin-top: 2px;
+}
+
+/* ---- Footer ---- */
+
+.f2s-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: var(--color-bg);
+  border-top: 1px solid var(--color-border);
+  justify-content: flex-end;
+}
+
+.f2s-progress {
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: auto;
+}
+
+.f2s-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--color-orange-40);
+  border-top-color: var(--color-orange);
+  animation: f2s-spin 0.8s linear infinite;
+  flex: none;
+}
+
+@keyframes f2s-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.f2s-error {
+  color: var(--color-orange-red);
+  font-size: 14px;
+}
+
+.f2s-login {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.f2s-token-input {
+  font-family: inherit;
+  font-size: 14px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  width: 220px;
+}

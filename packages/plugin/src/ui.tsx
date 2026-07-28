@@ -2,7 +2,7 @@ import { render } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { ExportOptions, IRDocument, IRWarning } from '@figma-to-slides/shared';
 import { sanitizeSessionToken } from './ui/sanitizeSessionToken.js';
-import { reorderFrames } from './ui/reorderFrames.js';
+import { reorderFrames, moveToIndex } from './ui/reorderFrames.js';
 
 interface FrameCandidate {
   id: string;
@@ -13,13 +13,13 @@ interface FrameCandidate {
 
 interface FrameState extends FrameCandidate {
   previewDataUrl?: string;
-  included: boolean;
   nativeCount?: number;
   rasterCount?: number;
   warnings?: IRWarning[];
 }
 
 type BackendConfig = { baseUrl: string };
+type ExportState = 'idle' | 'exporting' | 'done' | 'error';
 
 // Injecté au build (voir esbuild.config.mjs) ou saisi manuellement par
 // l'utilisateur au premier lancement — stocké via figma.clientStorage
@@ -30,14 +30,41 @@ function postToPlugin(message: Record<string, unknown>): void {
   parent.postMessage({ pluginMessage: message }, '*');
 }
 
+/** Monogramme "B" — packages/plugin/src/assets/logo.svg (repo billeltighidet). */
+function Logo() {
+  return (
+    <a href="https://billeltighidet.fr" target="_blank" rel="noreferrer" title="billeltighidet.fr">
+      <svg className="f2s-logo" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="80" height="80" rx="40" fill="#F06800" />
+        <path
+          d="M48.6887 47.1716C50.2508 48.7337 50.2508 51.2664 48.6887 52.8285L44.2034 57.3138C41.6836 59.8336 37.375 58.049 37.375 54.4854L37.375 45.5148C37.375 41.9512 41.6836 40.1665 44.2034 42.6864L48.6887 47.1716Z"
+          fill="#F2ECE8"
+        />
+        <path
+          d="M48.6887 27.1715C50.2508 28.7335 50.2508 31.2662 48.6887 32.8283L44.2034 37.3136C41.6836 39.8334 37.375 38.0488 37.375 34.4852L37.375 25.5146C37.375 21.951 41.6836 20.1663 44.2034 22.6862L48.6887 27.1715Z"
+          fill="#F2ECE8"
+        />
+        <rect x="30.6235" y="21.0001" width="3" height="37" rx="1.5" fill="#F2ECE8" />
+      </svg>
+    </a>
+  );
+}
+
 function App() {
   const [frames, setFrames] = useState<Record<string, FrameState>>({});
   const [order, setOrder] = useState<string[]>([]);
+  const [activeId, setActiveId] = useState<string | undefined>();
+  const [dragId, setDragId] = useState<string | undefined>();
+  const [selecting, setSelecting] = useState(false);
+  const [selectionNotice, setSelectionNotice] = useState<string | undefined>();
+
   const [sessionToken, setSessionToken] = useState<string | undefined>();
   const [loginError, setLoginError] = useState<string | undefined>();
   const [authUrl, setAuthUrl] = useState<string | undefined>();
   const [backend] = useState<BackendConfig>({ baseUrl: typeof __BACKEND_URL__ === 'string' ? __BACKEND_URL__ : 'https://figma-to-slide-backend.vercel.app' });
-  const [exportState, setExportState] = useState<'idle' | 'analyzing' | 'exporting' | 'done' | 'error'>('idle');
+
+  const [exportState, setExportState] = useState<ExportState>('idle');
+  const [exportProgress, setExportProgress] = useState(0);
   const [resultUrl, setResultUrl] = useState<string | undefined>();
   const [exportError, setExportError] = useState<string | undefined>();
   const pendingAssets = useMemo(() => new Map<string, ArrayBuffer>(), []);
@@ -58,25 +85,20 @@ function App() {
       if (!msg) return;
 
       switch (msg.type) {
-        case 'candidates': {
-          const next: Record<string, FrameState> = {};
-          const nextOrder: string[] = [];
-          for (const f of msg.frames as FrameCandidate[]) {
-            next[f.id] = { ...f, included: true };
-            nextOrder.push(f.id);
-          }
-          setFrames(next);
-          setOrder(nextOrder);
-          break;
-        }
-        case 'preview':
-          setFrames((prev) => ({ ...prev, [msg.frameId]: { ...prev[msg.frameId], previewDataUrl: msg.previewDataUrl } }));
-          break;
-        case 'analysis':
+        case 'candidate-added': {
+          const f = msg.frame as FrameCandidate;
           setFrames((prev) => ({
             ...prev,
-            [msg.frameId]: { ...prev[msg.frameId], nativeCount: msg.nativeCount, rasterCount: msg.rasterCount, warnings: msg.warnings },
+            [f.id]: { ...f, previewDataUrl: msg.previewDataUrl, nativeCount: msg.nativeCount, rasterCount: msg.rasterCount, warnings: msg.warnings },
           }));
+          setOrder((prev) => (prev.includes(f.id) ? prev : [...prev, f.id]));
+          break;
+        }
+        case 'no-frames-selected':
+          setSelectionNotice('Sélectionne au moins une frame sur le canvas Figma avant de cliquer.');
+          break;
+        case 'too-many-frames':
+          setSelectionNotice(`${msg.count} frames sélectionnées — au-delà de ${msg.max}, l'export peut devenir lent.`);
           break;
         case 'export-payload':
           void handleExportPayload(msg.document as IRDocument);
@@ -144,6 +166,7 @@ function App() {
 
   async function handleExportPayload(doc: IRDocument) {
     setExportState('exporting');
+    setExportProgress(0);
     setExportError(undefined);
     try {
       // Les assets arrivent par messages séparés juste après export-payload ;
@@ -178,8 +201,14 @@ function App() {
     for (let i = 0; i < 120; i++) {
       const res = await fetch(`${backend.baseUrl}/export/${jobId}`, { credentials: 'include' });
       const job = await res.json();
+      const batches = job.batches as { status: string }[] | undefined;
+      if (batches && batches.length > 0) {
+        const applied = batches.filter((b) => b.status === 'applied').length;
+        setExportProgress(Math.round((applied / batches.length) * 100));
+      }
       if (job.status === 'done') {
         setExportState('done');
+        setExportProgress(100);
         setResultUrl(job.presentationUrl);
         return;
       }
@@ -241,16 +270,45 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function toggleFrame(id: string) {
-    setFrames((prev) => ({ ...prev, [id]: { ...prev[id], included: !prev[id].included } }));
+  function handleAddFramesClick() {
+    setSelectionNotice(undefined);
+    if (!selecting) {
+      setSelecting(true);
+      return;
+    }
+    postToPlugin({ type: 'add-selected-frames' });
+    setSelecting(false);
+  }
+
+  function selectFrame(id: string) {
+    setActiveId(id);
+    postToPlugin({ type: 'select-nodes', nodeIds: [id] });
   }
 
   function moveFrame(id: string, direction: -1 | 1) {
     setOrder((prev) => reorderFrames(prev, id, direction));
   }
 
+  function removeFrame(id: string) {
+    setOrder((prev) => prev.filter((x) => x !== id));
+    setFrames((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    setActiveId((prev) => (prev === id ? undefined : prev));
+  }
+
+  function handleDrop(targetId: string) {
+    if (dragId && dragId !== targetId) {
+      setOrder((prev) => moveToIndex(prev, dragId, prev.indexOf(targetId)));
+    }
+    setDragId(undefined);
+  }
+
   function startExport() {
-    setExportState('analyzing');
+    setExportState('exporting');
+    setExportProgress(0);
     const options: ExportOptions = {
       mode: 'new-presentation',
       rasterScale: 2,
@@ -260,134 +318,134 @@ function App() {
     };
     postToPlugin({
       type: 'request-export',
-      includedFrameIds: order.filter((id) => frames[id]?.included),
+      includedFrameIds: order,
       order,
       options,
       presentationTitle: 'Export Figma → Slides',
     });
   }
 
-  const totalNative = order.reduce((sum, id) => sum + (frames[id]?.nativeCount ?? 0), 0);
-  const totalRaster = order.reduce((sum, id) => sum + (frames[id]?.rasterCount ?? 0), 0);
-  const totalObjects = totalNative + totalRaster;
+  const exporting = exportState === 'exporting';
 
   return (
-    <div style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: 12, padding: 12 }}>
-      <h2 style={{ fontSize: 14, margin: '0 0 8px' }}>Figma → Google Slides</h2>
+    <>
+      <header className="f2s-header">
+        <Logo />
+        <div className="f2s-actions">
+          <button type="button" className="f2s-btn f2s-btn--tertiary" onClick={handleAddFramesClick}>
+            {selecting ? 'Ajouter la sélection' : 'Ajouter des frames'}
+          </button>
 
-      {!sessionToken && (
-        <div style={{ marginBottom: 12 }}>
-          {authUrl ? (
-            <a
-              href={authUrl}
-              target="_blank"
-              rel="noreferrer"
-              style={{
-                display: 'inline-block',
-                padding: '6px 12px',
-                border: '1px solid #888',
-                borderRadius: 4,
-                textDecoration: 'none',
-                color: 'inherit',
-              }}
-            >
-              Se connecter à Google
-            </a>
-          ) : loginError ? (
-            <button onClick={startLogin}>Réessayer</button>
-          ) : (
-            <button disabled>Préparation du lien…</button>
+          {!sessionToken && (
+            <div className="f2s-login">
+              {authUrl ? (
+                <a href={authUrl} target="_blank" rel="noreferrer" className="f2s-btn f2s-btn--secondary">
+                  Se connecter à Google
+                </a>
+              ) : loginError ? (
+                <button type="button" className="f2s-btn f2s-btn--secondary" onClick={startLogin}>
+                  Réessayer
+                </button>
+              ) : (
+                <button type="button" className="f2s-btn f2s-btn--secondary" disabled>
+                  Préparation du lien…
+                </button>
+              )}
+              <input
+                className="f2s-token-input"
+                placeholder="Coller le jeton de session"
+                onChange={(e) => setSessionToken(sanitizeSessionToken((e.target as HTMLInputElement).value))}
+              />
+              {loginError && (
+                <p className="f2s-error">
+                  Échec de la connexion : {loginError}. Vérifie que le backend tourne bien sur {backend.baseUrl} et
+                  que <code>PLUGIN_ALLOWED_ORIGINS</code> autorise l'origine de ce plugin.
+                </p>
+              )}
+            </div>
           )}
-          {loginError && (
-            <p style={{ color: '#FF6B6B' }}>
-              ❌ Échec de la connexion : {loginError}. Vérifie que le backend tourne bien sur {backend.baseUrl} et
-              que <code>PLUGIN_ALLOWED_ORIGINS</code> autorise l'origine de ce plugin.
-            </p>
-          )}
-          <p style={{ opacity: 0.7 }}>
-            Après consentement, colle le jeton de session renvoyé par le backend :
+        </div>
+      </header>
+
+      <main className="f2s-main">
+        {order.length === 0 ? (
+          <p className="f2s-empty">
+            {selecting
+              ? 'Sélectionne une ou plusieurs frames sur le canvas Figma, puis clique sur « Ajouter la sélection ».'
+              : 'Clique sur « Ajouter des frames » pour choisir ce qui doit être exporté.'}
           </p>
-          <input
-            placeholder="jeton de session"
-            onChange={(e) => setSessionToken(sanitizeSessionToken((e.target as HTMLInputElement).value))}
-            style={{ width: '100%' }}
-          />
-        </div>
-      )}
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-        {order.map((id, index) => {
-          const f = frames[id];
-          if (!f) return null;
-          return (
-            <div key={id} style={{ border: '1px solid #444', borderRadius: 4, padding: 6 }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <input type="checkbox" checked={f.included} onChange={() => toggleFrame(id)} />
-                <strong style={{ flex: 1 }}>{f.name}</strong>
+        ) : (
+          order.map((id, index) => {
+            const f = frames[id];
+            if (!f) return null;
+            return (
+              <div key={id} className="f2s-frame">
+                <div className="f2s-frame-toolbar">
+                  <span className="f2s-frame-index">{index + 1}</span>
+                  <div className="f2s-frame-controls">
+                    <button type="button" className="f2s-icon-btn" disabled={index === order.length - 1} title="Déplacer après" onClick={() => moveFrame(id, 1)}>
+                      ▼
+                    </button>
+                    <button type="button" className="f2s-icon-btn" disabled={index === 0} title="Déplacer avant" onClick={() => moveFrame(id, -1)}>
+                      ▲
+                    </button>
+                    <button type="button" className="f2s-icon-btn" title="Retirer" onClick={() => removeFrame(id)}>
+                      ✕
+                    </button>
+                  </div>
+                </div>
                 <button
                   type="button"
-                  disabled={index === 0}
-                  title="Déplacer avant"
-                  onClick={() => moveFrame(id, -1)}
-                  style={{ padding: '0 6px' }}
+                  className={`f2s-frame-preview${activeId === id ? ' is-active' : ''}`}
+                  onClick={() => selectFrame(id)}
+                  draggable
+                  onDragStart={() => setDragId(id)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={() => handleDrop(id)}
                 >
-                  ▲
+                  {f.previewDataUrl && <img src={f.previewDataUrl} alt={f.name} />}
                 </button>
-                <button
-                  type="button"
-                  disabled={index === order.length - 1}
-                  title="Déplacer après"
-                  onClick={() => moveFrame(id, 1)}
-                  style={{ padding: '0 6px' }}
-                >
-                  ▼
-                </button>
-              </label>
-              {f.previewDataUrl && <img src={f.previewDataUrl} style={{ width: '100%', display: 'block', marginTop: 4 }} />}
-              <div style={{ fontSize: 10, opacity: 0.8 }}>
-                {f.width}×{f.height}px
-                {f.nativeCount !== undefined && (
-                  <> · {f.nativeCount} natifs / {f.rasterCount} rasterisés</>
-                )}
+                <div className="f2s-frame-meta">
+                  {f.name} · {f.width}×{f.height}px
+                  {f.nativeCount !== undefined && (
+                    <> · {f.nativeCount} natifs / {f.rasterCount} rasterisés</>
+                  )}
+                </div>
+                {(f.warnings ?? []).map((w, i) => (
+                  <div key={i} className="f2s-warning" onClick={() => postToPlugin({ type: 'select-nodes', nodeIds: [w.sourceNodeId] })}>
+                    ⚠ {w.message} — <em>{w.nodeName}</em>
+                  </div>
+                ))}
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })
+        )}
+        {selectionNotice && <p className="f2s-error">{selectionNotice}</p>}
+      </main>
 
-      {/* Spec §8.3 — rapport de fidélité pré-export. */}
-      {totalObjects > 0 && (
-        <div style={{ marginTop: 12, border: '1px solid #444', borderRadius: 4, padding: 8 }}>
-          <div>
-            {order.length} frames · {totalObjects} objets
+      <footer className="f2s-footer">
+        {exporting && (
+          <div className="f2s-progress">
+            <span className="f2s-spinner" />
+            Exportation en cours {exportProgress}%
           </div>
-          <div>✓ {totalNative} objets natifs éditables ({((totalNative / totalObjects) * 100).toFixed(0)}%)</div>
-          <div>▣ {totalRaster} objets convertis en image ({((totalRaster / totalObjects) * 100).toFixed(0)}%)</div>
-          {order.flatMap((id) => frames[id]?.warnings ?? []).map((w, i) => (
-            <div
-              key={i}
-              style={{ cursor: 'pointer', opacity: 0.85 }}
-              onClick={() => postToPlugin({ type: 'select-nodes', nodeIds: [w.sourceNodeId] })}
-            >
-              ⚠ {w.message} — <em>{w.nodeName}</em>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <button style={{ marginTop: 12 }} disabled={exportState === 'exporting' || exportState === 'analyzing'} onClick={startExport}>
-        Exporter vers Google Slides
-      </button>
-
-      {exportState === 'done' && resultUrl && (
-        <p>
-          ✅ Terminé — <a href={resultUrl} target="_blank" rel="noreferrer">ouvrir la présentation</a>
-        </p>
-      )}
-      {exportState === 'error' && (
-        <p style={{ color: '#FF6B6B' }}>❌ L'export a échoué : {exportError ?? 'erreur inconnue.'}</p>
-      )}
-    </div>
+        )}
+        {exportState === 'done' && resultUrl && (
+          <div className="f2s-progress">
+            ✅ Terminé — <a href={resultUrl} target="_blank" rel="noreferrer">ouvrir la présentation</a>
+          </div>
+        )}
+        {exportState === 'error' && <div className="f2s-error">L'export a échoué : {exportError ?? 'erreur inconnue.'}</div>}
+        <button
+          type="button"
+          className="f2s-btn f2s-btn--primary"
+          disabled={exporting || order.length === 0 || !sessionToken}
+          onClick={startExport}
+        >
+          Exporter vers Slides
+        </button>
+      </footer>
+    </>
   );
 }
 
