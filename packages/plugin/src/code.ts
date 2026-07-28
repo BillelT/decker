@@ -110,6 +110,25 @@ async function main(): Promise<void> {
   };
 }
 
+// Une présentation Slides n'a qu'une seule taille de page, fixée à la
+// création (aucune requête batchUpdate ne permet de la changer ensuite) —
+// on la dérive donc du ratio de la première frame plutôt que de forcer le
+// 16:9 par défaut de Slides (720x405pt), qui laissait des bandes vides
+// quand la frame source n'était pas déjà en 16:9. Ancré sur le plus grand
+// des deux côtés pour rester dans un ordre de grandeur de points familier
+// quelle que soit l'orientation de la frame.
+const REFERENCE_SIDE_PT = 720;
+
+function computeSlideSizePt(frameSize: { width: number; height: number } | undefined): { widthPt: number; heightPt: number } {
+  if (!frameSize || frameSize.width <= 0 || frameSize.height <= 0) {
+    return { widthPt: REFERENCE_SIDE_PT, heightPt: REFERENCE_SIDE_PT * (9 / 16) };
+  }
+  const { width, height } = frameSize;
+  return width >= height
+    ? { widthPt: REFERENCE_SIDE_PT, heightPt: REFERENCE_SIDE_PT * (height / width) }
+    : { widthPt: REFERENCE_SIDE_PT * (width / height), heightPt: REFERENCE_SIDE_PT };
+}
+
 async function handleExportRequest(
   msg: { includedFrameIds: string[]; order: string[]; options: ExportOptions; presentationTitle: string },
   pending: PendingSlide[],
@@ -147,7 +166,7 @@ async function handleExportRequest(
   const doc: IRDocument = {
     version: 1,
     presentationTitle: msg.presentationTitle,
-    slideSize: { widthPt: 720, heightPt: 405 },
+    slideSize: computeSlideSizePt(slides[0]?.frameSize),
     slides,
     options: msg.options,
   };

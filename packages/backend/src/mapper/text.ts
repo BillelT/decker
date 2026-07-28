@@ -32,7 +32,14 @@ export function mapText(
   // ligne de façon inattendue, faute de la moindre marge). Basée sur le plus
   // grand run pour couvrir le caractère le plus large du texte.
   const maxFontSizePx = text.runs.reduce((max, run) => Math.max(max, run.fontSizePx), 0);
-  const widthSafetyMarginPt = maxFontSizePx * scale * calibration.textWidthSafetyMarginEm;
+  // Une police substituée (originalFontFamily défini, cf. fonts.ts côté
+  // plugin) a des métriques de caractère différentes de la police d'origine
+  // — la marge calibrée sur les polices d'origine ne suffit pas toujours,
+  // d'où des retours à la ligne inattendus une fois substituée. On double
+  // la marge dans ce cas pour réduire ce risque.
+  const hasSubstitutedFont = text.runs.some((run) => run.originalFontFamily !== undefined);
+  const marginEm = hasSubstitutedFont ? calibration.textWidthSafetyMarginEm * 2 : calibration.textWidthSafetyMarginEm;
+  const widthSafetyMarginPt = maxFontSizePx * scale * marginEm;
 
   const wPt = box.w * scale + widthSafetyMarginPt;
   const hPt = box.h * scale;

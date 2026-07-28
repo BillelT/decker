@@ -758,6 +758,14 @@
       }
     };
   }
+  var REFERENCE_SIDE_PT = 720;
+  function computeSlideSizePt(frameSize) {
+    if (!frameSize || frameSize.width <= 0 || frameSize.height <= 0) {
+      return { widthPt: REFERENCE_SIDE_PT, heightPt: REFERENCE_SIDE_PT * (9 / 16) };
+    }
+    const { width, height } = frameSize;
+    return width >= height ? { widthPt: REFERENCE_SIDE_PT, heightPt: REFERENCE_SIDE_PT * (height / width) } : { widthPt: REFERENCE_SIDE_PT * (width / height), heightPt: REFERENCE_SIDE_PT };
+  }
   async function handleExportRequest(msg, pending) {
     const byId = new Map(pending.map((p) => [p.frame.id, p]));
     const orderedIds = msg.order.filter((id) => msg.includedFrameIds.includes(id));
@@ -782,7 +790,7 @@
     const doc = {
       version: 1,
       presentationTitle: msg.presentationTitle,
-      slideSize: { widthPt: 720, heightPt: 405 },
+      slideSize: computeSlideSizePt(slides[0]?.frameSize),
       slides,
       options: msg.options
     };
