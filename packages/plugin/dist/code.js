@@ -309,7 +309,15 @@
     let start = 0;
     for (let i = 0; i <= text.length; i++) {
       if (i === text.length || text[i] === "\n") {
-        const end = i;
+        const isNewline = i < text.length;
+        let end = i;
+        if (start === end) {
+          if (!isNewline) {
+            start = i + 1;
+            continue;
+          }
+          end = start + 1;
+        }
         const coveringSegment = segments.find((s) => s.start <= start && start < s.end) ?? segments[segments.length - 1];
         const align = typeof node.textAlignHorizontal === "string" ? node.textAlignHorizontal : "LEFT";
         paragraphs.push({

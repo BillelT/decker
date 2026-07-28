@@ -93,7 +93,22 @@ function buildParagraphs(node: TextNode, segments: StyledTextSegment[]): IRParag
   let start = 0;
   for (let i = 0; i <= text.length; i++) {
     if (i === text.length || text[i] === '\n') {
-      const end = i;
+      const isNewline = i < text.length;
+      let end = i;
+      if (start === end) {
+        // Ligne vide (deux "\n" consécutifs, ou texte se terminant par
+        // "\n") : la Slides API rejette tout textRange avec startIndex ===
+        // endIndex (§6, batchUpdate 400 "must be less than endIndex"). Si
+        // le "\n" qui termine ce paragraphe existe, on l'inclut dans le
+        // range (1 caractère, non vide) ; sinon (fin de texte sans "\n"
+        // final) il n'y a littéralement aucun caractère à référencer —
+        // on saute ce paragraphe, il n'y a rien à styler.
+        if (!isNewline) {
+          start = i + 1;
+          continue;
+        }
+        end = start + 1;
+      }
       const coveringSegment = segments.find((s) => s.start <= start && start < s.end) ?? segments[segments.length - 1];
       const align = typeof node.textAlignHorizontal === 'string' ? node.textAlignHorizontal : 'LEFT';
       paragraphs.push({

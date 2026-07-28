@@ -89,6 +89,25 @@ describe('mapText', () => {
     expect(reqs.some((r) => 'insertText' in r)).toBe(false);
   });
 
+  it('skips updateParagraphStyle/createParagraphBullets for a degenerate empty-range paragraph', () => {
+    // Régression : la Slides API rejette tout textRange avec startIndex >=
+    // endIndex (400 "must be less than endIndex"). Ce cas ne devrait plus
+    // être produit par le plugin (voir textExtract.ts), mais on garde ce
+    // garde-fou côté backend pour ne jamais faire échouer tout le
+    // batchUpdate à cause d'un seul paragraphe vide.
+    const text = baseText({
+      paragraphs: [
+        { start: 0, end: 5, align: 'START' },
+        { start: 5, end: 5, align: 'START', bullet: 'UNORDERED' },
+      ],
+    });
+    const reqs = mapText(text, 'page1', 1, 0, 0, UNCALIBRATED_DEFAULTS);
+    const paragraphStyleReqs = reqs.filter((r) => 'updateParagraphStyle' in r) as any[];
+    expect(paragraphStyleReqs).toHaveLength(1);
+    expect(paragraphStyleReqs[0].updateParagraphStyle.textRange).toEqual({ type: 'FIXED_RANGE', startIndex: 0, endIndex: 5 });
+    expect(reqs.some((r) => 'createParagraphBullets' in r)).toBe(false);
+  });
+
   it('always sets autofit NONE (spec §3.5 — géré nous-mêmes)', () => {
     const reqs = mapText(baseText(), 'page1', 1, 0, 0, UNCALIBRATED_DEFAULTS);
     const propsReq = reqs.find((r) => 'updateShapeProperties' in r) as any;
