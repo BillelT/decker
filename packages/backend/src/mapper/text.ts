@@ -33,12 +33,17 @@ export function mapText(
   // grand run pour couvrir le caractère le plus large du texte.
   const maxFontSizePx = text.runs.reduce((max, run) => Math.max(max, run.fontSizePx), 0);
   // Une police substituée (originalFontFamily défini, cf. fonts.ts côté
-  // plugin) a des métriques de caractère différentes de la police d'origine
-  // — la marge calibrée sur les polices d'origine ne suffit pas toujours,
-  // d'où des retours à la ligne inattendus une fois substituée. On triple
-  // la marge dans ce cas pour réduire ce risque.
+  // plugin) a des métriques de caractère différentes de la police d'origine,
+  // et un texte `tightFit` (hug — très fréquent pour un libellé dans un
+  // auto-layout) n'a par construction aucun jeu du tout : chacun de ces deux
+  // facteurs augmente, indépendamment, le risque de retour à la ligne
+  // inattendu — ils s'additionnent donc plutôt que de se remplacer quand
+  // les deux s'appliquent en même temps (le cas le plus à risque).
   const hasSubstitutedFont = text.runs.some((run) => run.originalFontFamily !== undefined);
-  const marginEm = hasSubstitutedFont ? calibration.textWidthSafetyMarginEm * 3 : calibration.textWidthSafetyMarginEm;
+  const marginEm =
+    calibration.textWidthSafetyMarginEm +
+    (hasSubstitutedFont ? calibration.textWidthSafetyMarginSubstitutedFontEm : 0) +
+    (text.tightFit ? calibration.textWidthSafetyMarginTightFitEm : 0);
   const widthSafetyMarginPt = maxFontSizePx * scale * marginEm;
 
   const wPt = box.w * scale + widthSafetyMarginPt;

@@ -26,6 +26,20 @@ export interface CalibrationData {
    * sur une ligne dans Figma.
    */
   textWidthSafetyMarginEm: number;
+  /**
+   * Marge additionnelle (em, s'ajoute à `textWidthSafetyMarginEm`) quand la
+   * police du texte a dû être substituée (spec fonts.ts côté plugin) — les
+   * métriques de caractères d'une police de repli diffèrent forcément de
+   * celles de la police d'origine.
+   */
+  textWidthSafetyMarginSubstitutedFontEm: number;
+  /**
+   * Marge additionnelle (em) quand le texte est en `tightFit` (§ci-dessus,
+   * `textAutoResize: 'WIDTH_AND_HEIGHT'` — très fréquent pour un libellé
+   * dans un auto-layout Figma) : la boîte n'a alors aucun jeu du tout, donc
+   * le moindre écart de rendu fait retourner le texte à la ligne.
+   */
+  textWidthSafetyMarginTightFitEm: number;
   measuredAt: string; // ISO 8601
 }
 
@@ -43,5 +57,7 @@ export const UNCALIBRATED_DEFAULTS: CalibrationData = {
   lineSpacingBaseline: 1.2,
   radiusNativeTolerance: DEFAULT_RADIUS_NATIVE_TOLERANCE,
   textWidthSafetyMarginEm: 0.15,
+  textWidthSafetyMarginSubstitutedFontEm: 0.45,
+  textWidthSafetyMarginTightFitEm: 0.5,
   measuredAt: '1970-01-01T00:00:00.000Z',
 };
