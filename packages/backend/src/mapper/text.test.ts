@@ -75,6 +75,27 @@ describe('mapText', () => {
     expect(styleReq.updateTextStyle.style.weightedFontFamily).toEqual({ fontFamily: 'Inter', weight: 400 });
   });
 
+  it('doubles the width safety margin when a run uses a substituted font', () => {
+    const text = baseText({
+      runs: [
+        {
+          start: 0,
+          end: 11,
+          fontFamily: 'Inter',
+          fontWeight: 400,
+          italic: false,
+          fontSizePx: 16,
+          color: { r: 0, g: 0, b: 0, a: 1 },
+          originalFontFamily: 'Cabinet Grotesk',
+        },
+      ],
+    });
+    const inset = UNCALIBRATED_DEFAULTS.textInset;
+    const safetyMargin = 16 * UNCALIBRATED_DEFAULTS.textWidthSafetyMarginEm * 2;
+    const [createReq] = mapText(text, 'page1', 1, 0, 0, UNCALIBRATED_DEFAULTS) as any;
+    expect(createReq.createShape.elementProperties.size.width.magnitude).toBeCloseTo(200 + inset.left + inset.right + safetyMargin);
+  });
+
   it('emits createParagraphBullets for list paragraphs', () => {
     const text = baseText({
       paragraphs: [{ start: 0, end: 11, align: 'START', bullet: 'UNORDERED' }],

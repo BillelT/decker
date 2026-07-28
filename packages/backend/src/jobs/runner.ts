@@ -24,7 +24,7 @@ export async function runExportJob(
     let defaultSlideObjectId: string | undefined;
 
     if (!presentationId) {
-      const created = await createPresentation(accessToken, doc.presentationTitle);
+      const created = await createPresentation(accessToken, doc.presentationTitle, doc.slideSize);
       presentationId = created.presentationId;
       defaultSlideObjectId = created.firstSlideObjectId;
       await updateJob(job.id, { presentationId, presentationUrl: presentationUrl(presentationId) });

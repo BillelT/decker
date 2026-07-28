@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { SlidesApiError, batchUpdate } from './client.js';
+import { SlidesApiError, batchUpdate, createPresentation } from './client.js';
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -44,5 +44,34 @@ describe('callApi error messages', () => {
     } catch (err) {
       expect((err as Error).message).toBe('Slides API 400 on /presentations/pres1:batchUpdate');
     }
+  });
+});
+
+describe('createPresentation', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('omits pageSize when none is given (Slides defaults to 16:9)', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, { presentationId: 'p1', slides: [{ objectId: 's1' }] }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await createPresentation('token', 'My deck');
+
+    const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
+    expect(body).toEqual({ title: 'My deck' });
+  });
+
+  it('passes pageSize in points so the presentation matches the source frame ratio', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, { presentationId: 'p1', slides: [{ objectId: 's1' }] }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await createPresentation('token', 'My deck', { widthPt: 720, heightPt: 460 });
+
+    const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
+    expect(body).toEqual({
+      title: 'My deck',
+      pageSize: { width: { magnitude: 720, unit: 'PT' }, height: { magnitude: 460, unit: 'PT' } },
+    });
   });
 });

@@ -64,10 +64,25 @@ async function callApi<T>(accessToken: string, path: string, init: RequestInit =
   }, (status) => RETRYABLE_STATUS.has(status));
 }
 
-export async function createPresentation(accessToken: string, title: string): Promise<{ presentationId: string; firstSlideObjectId: string }> {
+export async function createPresentation(
+  accessToken: string,
+  title: string,
+  pageSizePt?: { widthPt: number; heightPt: number },
+): Promise<{ presentationId: string; firstSlideObjectId: string }> {
+  // Le pageSize (comme le ratio d'aspect de la présentation entière) ne se
+  // règle qu'à la création — la Slides API n'a aucune requête batchUpdate
+  // pour le modifier après coup. Sans ça, une frame Figma qui n'est pas en
+  // 16:9 (le défaut Slides, 720x405pt) est réduite à l'échelle et
+  // centrée dans ce format par `computeScale`, laissant des bandes vides.
+  const pageSize = pageSizePt
+    ? {
+        width: { magnitude: pageSizePt.widthPt, unit: 'PT' },
+        height: { magnitude: pageSizePt.heightPt, unit: 'PT' },
+      }
+    : undefined;
   const body = await callApi<{ presentationId: string; slides: { objectId: string }[] }>(accessToken, '/presentations', {
     method: 'POST',
-    body: JSON.stringify({ title }),
+    body: JSON.stringify({ title, ...(pageSize ? { pageSize } : {}) }),
   });
   return { presentationId: body.presentationId, firstSlideObjectId: body.slides[0].objectId };
 }
