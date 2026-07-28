@@ -1,6 +1,6 @@
 import { render } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
-import type { ExportOptions, IRDocument, IRWarning } from '@figma-to-slides/shared';
+import type { ExportOptions, IRDocument } from '@figma-to-slides/shared';
 import { sanitizeSessionToken } from './ui/sanitizeSessionToken.js';
 import { reorderFrames, moveToIndex } from './ui/reorderFrames.js';
 
@@ -15,7 +15,6 @@ interface FrameState extends FrameCandidate {
   previewDataUrl?: string;
   nativeCount?: number;
   rasterCount?: number;
-  warnings?: IRWarning[];
 }
 
 type BackendConfig = { baseUrl: string };
@@ -89,7 +88,7 @@ function App() {
           const f = msg.frame as FrameCandidate;
           setFrames((prev) => ({
             ...prev,
-            [f.id]: { ...f, previewDataUrl: msg.previewDataUrl, nativeCount: msg.nativeCount, rasterCount: msg.rasterCount, warnings: msg.warnings },
+            [f.id]: { ...f, previewDataUrl: msg.previewDataUrl, nativeCount: msg.nativeCount, rasterCount: msg.rasterCount },
           }));
           setOrder((prev) => (prev.includes(f.id) ? prev : [...prev, f.id]));
           break;
@@ -330,14 +329,21 @@ function App() {
   return (
     <>
       <header className="f2s-header">
-        <Logo />
-        <div className="f2s-actions">
+        <div className="f2s-header-row">
+          <Logo />
           <button type="button" className="f2s-btn f2s-btn--tertiary" onClick={handleAddFramesClick}>
             {selecting ? 'Ajouter la sélection' : 'Ajouter des frames'}
           </button>
+        </div>
 
-          {!sessionToken && (
+        {!sessionToken && (
+          <div className="f2s-header-row">
             <div className="f2s-login">
+              <input
+                className="f2s-token-input"
+                placeholder="Coller le jeton de session"
+                onChange={(e) => setSessionToken(sanitizeSessionToken((e.target as HTMLInputElement).value))}
+              />
               {authUrl ? (
                 <a href={authUrl} target="_blank" rel="noreferrer" className="f2s-btn f2s-btn--secondary">
                   Se connecter à Google
@@ -351,20 +357,15 @@ function App() {
                   Préparation du lien…
                 </button>
               )}
-              <input
-                className="f2s-token-input"
-                placeholder="Coller le jeton de session"
-                onChange={(e) => setSessionToken(sanitizeSessionToken((e.target as HTMLInputElement).value))}
-              />
-              {loginError && (
-                <p className="f2s-error">
-                  Échec de la connexion : {loginError}. Vérifie que le backend tourne bien sur {backend.baseUrl} et
-                  que <code>PLUGIN_ALLOWED_ORIGINS</code> autorise l'origine de ce plugin.
-                </p>
-              )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
+        {loginError && (
+          <p className="f2s-error">
+            Échec de la connexion : {loginError}. Vérifie que le backend tourne bien sur {backend.baseUrl} et que{' '}
+            <code>PLUGIN_ALLOWED_ORIGINS</code> autorise l'origine de ce plugin.
+          </p>
+        )}
       </header>
 
       <main className="f2s-main">
@@ -380,8 +381,24 @@ function App() {
             if (!f) return null;
             return (
               <div key={id} className="f2s-frame">
-                <div className="f2s-frame-toolbar">
-                  <span className="f2s-frame-index">{index + 1}</span>
+                <button
+                  type="button"
+                  className={`f2s-frame-preview${activeId === id ? ' is-active' : ''}`}
+                  onClick={() => selectFrame(id)}
+                  draggable
+                  onDragStart={() => setDragId(id)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={() => handleDrop(id)}
+                >
+                  {f.previewDataUrl && <img src={f.previewDataUrl} alt={f.name} />}
+                </button>
+                <div className="f2s-frame-info">
+                  <span className="f2s-frame-text">
+                    {index + 1} · {f.width}×{f.height}px
+                    {f.nativeCount !== undefined && (
+                      <> · {f.nativeCount} natifs / {f.rasterCount} rasterisés</>
+                    )}
+                  </span>
                   <div className="f2s-frame-controls">
                     <button type="button" className="f2s-icon-btn" disabled={index === order.length - 1} title="Déplacer après" onClick={() => moveFrame(id, 1)}>
                       ▼
@@ -394,28 +411,6 @@ function App() {
                     </button>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  className={`f2s-frame-preview${activeId === id ? ' is-active' : ''}`}
-                  onClick={() => selectFrame(id)}
-                  draggable
-                  onDragStart={() => setDragId(id)}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={() => handleDrop(id)}
-                >
-                  {f.previewDataUrl && <img src={f.previewDataUrl} alt={f.name} />}
-                </button>
-                <div className="f2s-frame-meta">
-                  {f.name} · {f.width}×{f.height}px
-                  {f.nativeCount !== undefined && (
-                    <> · {f.nativeCount} natifs / {f.rasterCount} rasterisés</>
-                  )}
-                </div>
-                {(f.warnings ?? []).map((w, i) => (
-                  <div key={i} className="f2s-warning" onClick={() => postToPlugin({ type: 'select-nodes', nodeIds: [w.sourceNodeId] })}>
-                    ⚠ {w.message} — <em>{w.nodeName}</em>
-                  </div>
-                ))}
               </div>
             );
           })

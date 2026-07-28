@@ -87,11 +87,17 @@ a {
 
 .f2s-header {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  flex-direction: column;
   gap: 16px;
   padding: 16px;
   flex: none;
+}
+
+.f2s-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
 }
 
 .f2s-logo {
@@ -100,13 +106,6 @@ a {
   flex: none;
   border-radius: 8px;
   display: block;
-}
-
-.f2s-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  align-items: flex-end;
 }
 
 /* ---- Buttons ---- */
@@ -118,12 +117,18 @@ a {
   padding: 8px 16px;
   border: 1px solid transparent;
   white-space: nowrap;
-  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease, outline-color 0.15s ease;
 }
 
 .f2s-btn--tertiary {
   background: var(--color-text);
   color: var(--color-bg);
+  border-color: var(--color-text);
+}
+
+.f2s-btn--tertiary:hover:not(:disabled) {
+  background: var(--color-bg);
+  color: var(--color-text);
 }
 
 .f2s-btn--secondary {
@@ -133,6 +138,14 @@ a {
   text-decoration: none;
   display: inline-flex;
   align-items: center;
+  outline: 1px solid transparent;
+  outline-offset: -2px;
+}
+
+.f2s-btn--secondary:hover:not(:disabled) {
+  background: var(--color-orange);
+  color: var(--color-bg);
+  outline-color: var(--color-orange);
 }
 
 .f2s-btn--primary {
@@ -164,21 +177,22 @@ a {
   margin-bottom: 16px;
 }
 
-.f2s-frame-toolbar {
+.f2s-frame-info {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
+  gap: 8px;
+  margin-top: 8px;
 }
 
-.f2s-frame-index {
+.f2s-frame-text {
   font-size: 14px;
-  font-weight: 400;
 }
 
 .f2s-frame-controls {
   display: flex;
   gap: 8px;
+  flex: none;
 }
 
 .f2s-icon-btn {
@@ -219,19 +233,6 @@ a {
   height: 100%;
   object-fit: cover;
   display: block;
-}
-
-.f2s-frame-meta {
-  font-size: 14px;
-  opacity: 0.7;
-  margin-top: 4px;
-}
-
-.f2s-warning {
-  font-size: 14px;
-  cursor: pointer;
-  opacity: 0.85;
-  margin-top: 2px;
 }
 
 /* ---- Footer ---- */
@@ -281,20 +282,25 @@ a {
 
 .f2s-login {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: flex-end;
+  align-items: center;
+  gap: 16px;
 }
 
 .f2s-token-input {
   font-family: inherit;
   font-size: 14px;
-  padding: 6px 8px;
+  padding: 8px;
   border-radius: 8px;
-  border: 1px solid var(--color-border);
+  border: 1px solid #cccccc;
   background: var(--color-bg);
   color: var(--color-text);
-  width: 220px;
+  flex: 1;
+  min-width: 0;
+}
+
+.f2s-token-input:focus {
+  outline: none;
+  border-color: var(--color-orange-40);
 }
 </style>
 </head>
@@ -793,7 +799,7 @@ a {
             const f4 = msg.frame;
             setFrames((prev) => ({
               ...prev,
-              [f4.id]: { ...f4, previewDataUrl: msg.previewDataUrl, nativeCount: msg.nativeCount, rasterCount: msg.rasterCount, warnings: msg.warnings }
+              [f4.id]: { ...f4, previewDataUrl: msg.previewDataUrl, nativeCount: msg.nativeCount, rasterCount: msg.rasterCount }
             }));
             setOrder((prev) => prev.includes(f4.id) ? prev : [...prev, f4.id]);
             break;
@@ -977,29 +983,30 @@ a {
     const exporting = exportState === "exporting";
     return /* @__PURE__ */ u3(S, { children: [
       /* @__PURE__ */ u3("header", { className: "f2s-header", children: [
-        /* @__PURE__ */ u3(Logo, {}),
-        /* @__PURE__ */ u3("div", { className: "f2s-actions", children: [
-          /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--tertiary", onClick: handleAddFramesClick, children: selecting ? "Ajouter la s\xE9lection" : "Ajouter des frames" }),
-          !sessionToken && /* @__PURE__ */ u3("div", { className: "f2s-login", children: [
-            authUrl ? /* @__PURE__ */ u3("a", { href: authUrl, target: "_blank", rel: "noreferrer", className: "f2s-btn f2s-btn--secondary", children: "Se connecter \xE0 Google" }) : loginError ? /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--secondary", onClick: startLogin, children: "R\xE9essayer" }) : /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--secondary", disabled: true, children: "Pr\xE9paration du lien\u2026" }),
-            /* @__PURE__ */ u3(
-              "input",
-              {
-                className: "f2s-token-input",
-                placeholder: "Coller le jeton de session",
-                onChange: (e3) => setSessionToken(sanitizeSessionToken(e3.target.value))
-              }
-            ),
-            loginError && /* @__PURE__ */ u3("p", { className: "f2s-error", children: [
-              "\xC9chec de la connexion : ",
-              loginError,
-              ". V\xE9rifie que le backend tourne bien sur ",
-              backend.baseUrl,
-              " et que ",
-              /* @__PURE__ */ u3("code", { children: "PLUGIN_ALLOWED_ORIGINS" }),
-              " autorise l'origine de ce plugin."
-            ] })
-          ] })
+        /* @__PURE__ */ u3("div", { className: "f2s-header-row", children: [
+          /* @__PURE__ */ u3(Logo, {}),
+          /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--tertiary", onClick: handleAddFramesClick, children: selecting ? "Ajouter la s\xE9lection" : "Ajouter des frames" })
+        ] }),
+        !sessionToken && /* @__PURE__ */ u3("div", { className: "f2s-header-row", children: /* @__PURE__ */ u3("div", { className: "f2s-login", children: [
+          /* @__PURE__ */ u3(
+            "input",
+            {
+              className: "f2s-token-input",
+              placeholder: "Coller le jeton de session",
+              onChange: (e3) => setSessionToken(sanitizeSessionToken(e3.target.value))
+            }
+          ),
+          authUrl ? /* @__PURE__ */ u3("a", { href: authUrl, target: "_blank", rel: "noreferrer", className: "f2s-btn f2s-btn--secondary", children: "Se connecter \xE0 Google" }) : loginError ? /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--secondary", onClick: startLogin, children: "R\xE9essayer" }) : /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--secondary", disabled: true, children: "Pr\xE9paration du lien\u2026" })
+        ] }) }),
+        loginError && /* @__PURE__ */ u3("p", { className: "f2s-error", children: [
+          "\xC9chec de la connexion : ",
+          loginError,
+          ". V\xE9rifie que le backend tourne bien sur ",
+          backend.baseUrl,
+          " et que",
+          " ",
+          /* @__PURE__ */ u3("code", { children: "PLUGIN_ALLOWED_ORIGINS" }),
+          " autorise l'origine de ce plugin."
         ] })
       ] }),
       /* @__PURE__ */ u3("main", { className: "f2s-main", children: [
@@ -1007,14 +1014,6 @@ a {
           const f4 = frames[id];
           if (!f4) return null;
           return /* @__PURE__ */ u3("div", { className: "f2s-frame", children: [
-            /* @__PURE__ */ u3("div", { className: "f2s-frame-toolbar", children: [
-              /* @__PURE__ */ u3("span", { className: "f2s-frame-index", children: index + 1 }),
-              /* @__PURE__ */ u3("div", { className: "f2s-frame-controls", children: [
-                /* @__PURE__ */ u3("button", { type: "button", className: "f2s-icon-btn", disabled: index === order.length - 1, title: "D\xE9placer apr\xE8s", onClick: () => moveFrame(id, 1), children: "\u25BC" }),
-                /* @__PURE__ */ u3("button", { type: "button", className: "f2s-icon-btn", disabled: index === 0, title: "D\xE9placer avant", onClick: () => moveFrame(id, -1), children: "\u25B2" }),
-                /* @__PURE__ */ u3("button", { type: "button", className: "f2s-icon-btn", title: "Retirer", onClick: () => removeFrame(id), children: "\u2715" })
-              ] })
-            ] }),
             /* @__PURE__ */ u3(
               "button",
               {
@@ -1028,27 +1027,28 @@ a {
                 children: f4.previewDataUrl && /* @__PURE__ */ u3("img", { src: f4.previewDataUrl, alt: f4.name })
               }
             ),
-            /* @__PURE__ */ u3("div", { className: "f2s-frame-meta", children: [
-              f4.name,
-              " \xB7 ",
-              f4.width,
-              "\xD7",
-              f4.height,
-              "px",
-              f4.nativeCount !== void 0 && /* @__PURE__ */ u3(S, { children: [
+            /* @__PURE__ */ u3("div", { className: "f2s-frame-info", children: [
+              /* @__PURE__ */ u3("span", { className: "f2s-frame-text", children: [
+                index + 1,
                 " \xB7 ",
-                f4.nativeCount,
-                " natifs / ",
-                f4.rasterCount,
-                " rasteris\xE9s"
+                f4.width,
+                "\xD7",
+                f4.height,
+                "px",
+                f4.nativeCount !== void 0 && /* @__PURE__ */ u3(S, { children: [
+                  " \xB7 ",
+                  f4.nativeCount,
+                  " natifs / ",
+                  f4.rasterCount,
+                  " rasteris\xE9s"
+                ] })
+              ] }),
+              /* @__PURE__ */ u3("div", { className: "f2s-frame-controls", children: [
+                /* @__PURE__ */ u3("button", { type: "button", className: "f2s-icon-btn", disabled: index === order.length - 1, title: "D\xE9placer apr\xE8s", onClick: () => moveFrame(id, 1), children: "\u25BC" }),
+                /* @__PURE__ */ u3("button", { type: "button", className: "f2s-icon-btn", disabled: index === 0, title: "D\xE9placer avant", onClick: () => moveFrame(id, -1), children: "\u25B2" }),
+                /* @__PURE__ */ u3("button", { type: "button", className: "f2s-icon-btn", title: "Retirer", onClick: () => removeFrame(id), children: "\u2715" })
               ] })
-            ] }),
-            (f4.warnings ?? []).map((w3, i3) => /* @__PURE__ */ u3("div", { className: "f2s-warning", onClick: () => postToPlugin({ type: "select-nodes", nodeIds: [w3.sourceNodeId] }), children: [
-              "\u26A0 ",
-              w3.message,
-              " \u2014 ",
-              /* @__PURE__ */ u3("em", { children: w3.nodeName })
-            ] }, i3))
+            ] })
           ] }, id);
         }),
         selectionNotice && /* @__PURE__ */ u3("p", { className: "f2s-error", children: selectionNotice })
