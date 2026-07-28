@@ -45,8 +45,15 @@ export function mapText(
     (hasSubstitutedFont ? calibration.textWidthSafetyMarginSubstitutedFontEm : 0) +
     (text.tightFit ? calibration.textWidthSafetyMarginTightFitEm : 0);
   const widthSafetyMarginPt = maxFontSizePx * scale * marginEm;
+  // Toutes les marges ci-dessus sont fixes (fonction de la taille de
+  // police, pas de la longueur du texte) : elles suffisent pour un
+  // tightFit COURT, mais l'écart Figma↔Slides s'accumule caractère par
+  // caractère sur un tightFit LONG (une phrase de plusieurs mots) et finit
+  // par la dépasser. On ajoute donc un terme proportionnel à la largeur de
+  // la boîte, qui EST la largeur du contenu en tightFit.
+  const proportionalTightFitMarginPt = text.tightFit ? box.w * scale * calibration.textWidthSafetyMarginTightFitProportional : 0;
 
-  const wPt = box.w * scale + widthSafetyMarginPt;
+  const wPt = box.w * scale + widthSafetyMarginPt + proportionalTightFitMarginPt;
   const hPt = box.h * scale;
   const xPt = box.x * scale + offsetX;
   const yPt = box.y * scale + offsetY;

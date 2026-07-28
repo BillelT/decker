@@ -97,12 +97,13 @@ describe('mapText', () => {
     expect(createReq.createShape.elementProperties.size.width.magnitude).toBeCloseTo(200 + inset.left + inset.right + 16 * marginEm);
   });
 
-  it('adds the tightFit margin on top of the base margin', () => {
+  it('adds the tightFit margin (fixed + proportional to box width) on top of the base margin', () => {
     const text = baseText({ tightFit: true });
     const inset = UNCALIBRATED_DEFAULTS.textInset;
     const marginEm = UNCALIBRATED_DEFAULTS.textWidthSafetyMarginEm + UNCALIBRATED_DEFAULTS.textWidthSafetyMarginTightFitEm;
+    const proportional = (200 + inset.left + inset.right) * UNCALIBRATED_DEFAULTS.textWidthSafetyMarginTightFitProportional; // box.w includes the text inset, rect.w=200, scale=1
     const [createReq] = mapText(text, 'page1', 1, 0, 0, UNCALIBRATED_DEFAULTS) as any;
-    expect(createReq.createShape.elementProperties.size.width.magnitude).toBeCloseTo(200 + inset.left + inset.right + 16 * marginEm);
+    expect(createReq.createShape.elementProperties.size.width.magnitude).toBeCloseTo(200 + inset.left + inset.right + 16 * marginEm + proportional);
   });
 
   it('stacks the substituted-font and tightFit margins when both apply', () => {
@@ -126,8 +127,9 @@ describe('mapText', () => {
       UNCALIBRATED_DEFAULTS.textWidthSafetyMarginEm +
       UNCALIBRATED_DEFAULTS.textWidthSafetyMarginSubstitutedFontEm +
       UNCALIBRATED_DEFAULTS.textWidthSafetyMarginTightFitEm;
+    const proportional = (200 + inset.left + inset.right) * UNCALIBRATED_DEFAULTS.textWidthSafetyMarginTightFitProportional;
     const [createReq] = mapText(text, 'page1', 1, 0, 0, UNCALIBRATED_DEFAULTS) as any;
-    expect(createReq.createShape.elementProperties.size.width.magnitude).toBeCloseTo(200 + inset.left + inset.right + 16 * marginEm);
+    expect(createReq.createShape.elementProperties.size.width.magnitude).toBeCloseTo(200 + inset.left + inset.right + 16 * marginEm + proportional);
   });
 
   it('emits createParagraphBullets for list paragraphs', () => {
