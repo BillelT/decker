@@ -14,8 +14,12 @@ describe('resolveFontFamily', () => {
     expect(resolveFontFamily('SF Pro Display')).toEqual({ status: 'substituted', family: 'Inter', original: 'SF Pro Display' });
   });
 
-  it('reports missing for an unknown, non-substitutable font', () => {
-    expect(resolveFontFamily('Some Random Custom Font')).toEqual({ status: 'missing', original: 'Some Random Custom Font' });
+  it('falls back to the generic sans-serif substitute for an unknown sans font', () => {
+    expect(resolveFontFamily('Cabinet Grotesk')).toEqual({ status: 'substituted', family: 'Inter', original: 'Cabinet Grotesk' });
+  });
+
+  it('falls back to the generic serif substitute for an unknown serif font', () => {
+    expect(resolveFontFamily('Some Random Serif')).toEqual({ status: 'substituted', family: 'Merriweather', original: 'Some Random Serif' });
   });
 });
 

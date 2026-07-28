@@ -15,6 +15,17 @@ export const exportRouter = Router();
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
 
+function collectReferencedAssetKeys(doc: IRDocument): Set<string> {
+  const keys = new Set<string>();
+  for (const slide of doc.slides) {
+    if (slide.underlay) keys.add(slide.underlay.assetKey);
+    for (const el of slide.elements) {
+      if (el.kind === 'image') keys.add(el.assetKey);
+    }
+  }
+  return keys;
+}
+
 /**
  * Spec §6 CONTRAT — transport multipart/form-data : le champ `document`
  * contient l'IRDocument en JSON, chaque asset est un fichier nommé par son
@@ -61,6 +72,23 @@ exportRouter.post('/export', upload.any(), async (req, res) => {
   for (const file of files) {
     await store.put(file.fieldname, file.buffer, file.mimetype);
     urlByAssetKey.set(file.fieldname, await store.getSignedUrl(file.fieldname));
+  }
+
+  // Sur les gros exports, le plugin pré-uploade les assets par lots via
+  // POST /assets (au lieu de tout joindre à cette requête) pour rester sous
+  // la limite de taille de body des fonctions serverless Vercel (~4.5 Mo).
+  // Ces assets ne sont donc pas dans `files` ci-dessus : on résout leur URL
+  // via le store, qui les a déjà (voir vercelBlobAssetStore.ts — la clé y
+  // survit entre requêtes grâce à Redis, pas seulement en mémoire).
+  for (const key of collectReferencedAssetKeys(doc)) {
+    if (urlByAssetKey.has(key)) continue;
+    try {
+      urlByAssetKey.set(key, await store.getSignedUrl(key));
+    } catch {
+      // Asset jamais uploadé (p. ex. rasterisation échouée côté plugin,
+      // cf. code.ts) — resolveAssetUrl renverra '' pour cette clé, comme
+      // avant ce changement.
+    }
   }
 
   const jobId = randomUUID();
