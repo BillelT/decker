@@ -307,22 +307,28 @@ function lineInfo(node: SceneNode): DecisionInput['line'] {
  * correspondent plus à la boîte locale non tournée une fois `node.rotation`
  * ≠ 0 (ex. un rectangle 920×4 tourné à -90° a un AABB d'environ 4×920).
  * `rotatedTransform` (mapper backend) attend au contraire la boîte LOCALE
- * pré-rotation (coin haut-gauche + largeur/hauteur non tournées, rotation
- * appliquée ensuite autour de son centre) — lui donner l'AABB fait tourner
- * une boîte déjà « re-tournée » par erreur : orientation et position
- * fausses pour tout élément natif tourné (lignes, formes, texte).
- * `node.width`/`node.height` restent, eux, toujours dans le repère local ;
- * la translation de `absoluteTransform` donne la position absolue exacte
- * du coin (0,0) local — c'est ce couple qui est correct ici.
+ * pré-rotation (coin haut-gauche + largeur/hauteur non tournées), qu'il
+ * tourne lui-même ensuite autour de SON CENTRE — exactement le modèle de
+ * Figma pour `x`/`y`/`width`/`height`/`rotation` (la rotation y est
+ * toujours appliquée autour du centre, qui reste donc fixe).
+ *
+ * Le centre étant invariant par rotation, le centre de l'AABB (qui, lui,
+ * *est* fiable) est aussi celui de la boîte non tournée : on reconstruit
+ * donc le coin haut-gauche pré-rotation en repartant de ce centre avec les
+ * dimensions locales (`node.width`/`height`, jamais affectées par la
+ * rotation), plutôt que depuis `absoluteTransform` — dont la translation
+ * donne la position du coin APRÈS rotation, pas avant (piège différent,
+ * casse la position même si l'orientation devient correcte).
  */
 function relativeRect(node: SceneNode, state: WalkState): { x: number; y: number; w: number; h: number } {
   const rotation = 'rotation' in node ? node.rotation : 0;
-  if (rotation !== 0 && 'width' in node && 'height' in node) {
-    const [[, , tx], [, , ty]] = node.absoluteTransform;
-    return { x: tx - state.rootX, y: ty - state.rootY, w: node.width, h: node.height };
-  }
   const box = node.absoluteBoundingBox;
   if (!box) return { x: 0, y: 0, w: 'width' in node ? node.width : 0, h: 'height' in node ? node.height : 0 };
+  if (rotation !== 0 && 'width' in node && 'height' in node) {
+    const cx = box.x + box.width / 2;
+    const cy = box.y + box.height / 2;
+    return { x: cx - node.width / 2 - state.rootX, y: cy - node.height / 2 - state.rootY, w: node.width, h: node.height };
+  }
   return { x: box.x - state.rootX, y: box.y - state.rootY, w: box.width, h: box.height };
 }
 

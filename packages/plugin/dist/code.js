@@ -589,12 +589,13 @@
   }
   function relativeRect(node, state) {
     const rotation = "rotation" in node ? node.rotation : 0;
-    if (rotation !== 0 && "width" in node && "height" in node) {
-      const [[, , tx], [, , ty]] = node.absoluteTransform;
-      return { x: tx - state.rootX, y: ty - state.rootY, w: node.width, h: node.height };
-    }
     const box = node.absoluteBoundingBox;
     if (!box) return { x: 0, y: 0, w: "width" in node ? node.width : 0, h: "height" in node ? node.height : 0 };
+    if (rotation !== 0 && "width" in node && "height" in node) {
+      const cx = box.x + box.width / 2;
+      const cy = box.y + box.height / 2;
+      return { x: cx - node.width / 2 - state.rootX, y: cy - node.height / 2 - state.rootY, w: node.width, h: node.height };
+    }
     return { x: box.x - state.rootX, y: box.y - state.rootY, w: box.width, h: box.height };
   }
   function relativeRenderRect(node, state) {
