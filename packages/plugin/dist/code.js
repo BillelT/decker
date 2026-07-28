@@ -701,20 +701,6 @@
   function isExportable(node) {
     return node.type === "FRAME" || node.type === "COMPONENT" || node.type === "INSTANCE";
   }
-  function collectCandidateFrames() {
-    const selection = figma.currentPage.selection.filter((n) => n.parent?.type === "PAGE");
-    const source = selection.length > 0 ? selection : figma.currentPage.children;
-    const included = [];
-    const excluded = [];
-    for (const node of source) {
-      if (isExportable(node)) {
-        included.push(node);
-      } else {
-        excluded.push({ name: node.name, reason: `Type non exportable : ${node.type}` });
-      }
-    }
-    return { included, excluded };
-  }
   function yieldToUi() {
     return new Promise((resolve) => setTimeout(resolve, 0));
   }
@@ -722,33 +708,47 @@
     const bytes = await node.exportAsync({ format: "PNG", constraint: { type: "WIDTH", value: PREVIEW_WIDTH } });
     return `data:image/png;base64,${figma.base64Encode(bytes)}`;
   }
-  async function main() {
-    figma.showUI(__html__, { width: 480, height: 640 });
-    const { included, excluded } = collectCandidateFrames();
-    figma.ui.postMessage({ type: "candidates", frames: included.map((f) => ({ id: f.id, name: f.name, width: f.width, height: f.height })), excluded });
-    if (included.length > MAX_FRAMES_WARNING) {
-      figma.ui.postMessage({ type: "too-many-frames", count: included.length, max: MAX_FRAMES_WARNING });
+  async function addSelectedFrames(pending, idGen) {
+    const known = new Set(pending.map((p) => p.frame.id));
+    const selected = figma.currentPage.selection.filter((n) => isExportable(n) && !known.has(n.id));
+    if (selected.length === 0) {
+      figma.ui.postMessage({ type: "no-frames-selected" });
+      return;
     }
-    const pending = [];
-    const idGen = createIdGenerator(figma.root.id.slice(0, 8));
-    for (const frame of included) {
+    if (selected.length > MAX_FRAMES_WARNING) {
+      figma.ui.postMessage({ type: "too-many-frames", count: selected.length, max: MAX_FRAMES_WARNING });
+    }
+    for (const frame of selected) {
       const previewDataUrl = await generatePreview(frame);
-      figma.ui.postMessage({ type: "preview", frameId: frame.id, previewDataUrl });
-      await yieldToUi();
       const { slide, nodesToRaster } = await serializeFrame(frame, { nextId: idGen });
       pending.push({ frame, slide, nodesToRaster });
       const nativeCount = slide.elements.filter((e) => e.kind !== "image" || !e.isRasterFallback).length;
       const rasterCount = slide.elements.length - nativeCount;
       figma.ui.postMessage({
-        type: "analysis",
-        frameId: frame.id,
+        type: "candidate-added",
+        frame: { id: frame.id, name: frame.name, width: frame.width, height: frame.height },
+        previewDataUrl,
         nativeCount,
         rasterCount,
         warnings: slide.warnings
       });
       await yieldToUi();
     }
+  }
+  async function main() {
+    figma.showUI(__html__, { width: 480, height: 640 });
+    const pending = [];
+    const idGen = createIdGenerator(figma.root.id.slice(0, 8));
     figma.ui.onmessage = async (msg) => {
+      if (msg.type === "add-selected-frames") {
+        try {
+          await addSelectedFrames(pending, idGen);
+        } catch (err) {
+          console.error(err);
+          figma.ui.postMessage({ type: "export-error", message: err.message });
+        }
+        return;
+      }
       if (msg.type === "select-nodes") {
         const ids = msg.nodeIds;
         const resolved = await Promise.all(ids.map((id) => figma.getNodeByIdAsync(id)));
