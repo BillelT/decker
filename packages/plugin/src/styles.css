@@ -83,11 +83,17 @@ a {
 
 .f2s-header {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  flex-direction: column;
   gap: 16px;
   padding: 16px;
   flex: none;
+}
+
+.f2s-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
 }
 
 .f2s-logo {
@@ -96,13 +102,6 @@ a {
   flex: none;
   border-radius: 8px;
   display: block;
-}
-
-.f2s-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  align-items: flex-end;
 }
 
 /* ---- Buttons ---- */
@@ -114,12 +113,18 @@ a {
   padding: 8px 16px;
   border: 1px solid transparent;
   white-space: nowrap;
-  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease, outline-color 0.15s ease;
 }
 
 .f2s-btn--tertiary {
   background: var(--color-text);
   color: var(--color-bg);
+  border-color: var(--color-text);
+}
+
+.f2s-btn--tertiary:hover:not(:disabled) {
+  background: var(--color-bg);
+  color: var(--color-text);
 }
 
 .f2s-btn--secondary {
@@ -129,6 +134,14 @@ a {
   text-decoration: none;
   display: inline-flex;
   align-items: center;
+  outline: 1px solid transparent;
+  outline-offset: -2px;
+}
+
+.f2s-btn--secondary:hover:not(:disabled) {
+  background: var(--color-orange);
+  color: var(--color-bg);
+  outline-color: var(--color-orange);
 }
 
 .f2s-btn--primary {
@@ -160,21 +173,22 @@ a {
   margin-bottom: 16px;
 }
 
-.f2s-frame-toolbar {
+.f2s-frame-info {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
+  gap: 8px;
+  margin-top: 8px;
 }
 
-.f2s-frame-index {
+.f2s-frame-text {
   font-size: 14px;
-  font-weight: 400;
 }
 
 .f2s-frame-controls {
   display: flex;
   gap: 8px;
+  flex: none;
 }
 
 .f2s-icon-btn {
@@ -215,19 +229,6 @@ a {
   height: 100%;
   object-fit: cover;
   display: block;
-}
-
-.f2s-frame-meta {
-  font-size: 14px;
-  opacity: 0.7;
-  margin-top: 4px;
-}
-
-.f2s-warning {
-  font-size: 14px;
-  cursor: pointer;
-  opacity: 0.85;
-  margin-top: 2px;
 }
 
 /* ---- Footer ---- */
@@ -277,18 +278,23 @@ a {
 
 .f2s-login {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: flex-end;
+  align-items: center;
+  gap: 16px;
 }
 
 .f2s-token-input {
   font-family: inherit;
   font-size: 14px;
-  padding: 6px 8px;
+  padding: 8px;
   border-radius: 8px;
-  border: 1px solid var(--color-border);
+  border: 1px solid #cccccc;
   background: var(--color-bg);
   color: var(--color-text);
-  width: 220px;
+  flex: 1;
+  min-width: 0;
+}
+
+.f2s-token-input:focus {
+  outline: none;
+  border-color: var(--color-orange-40);
 }
