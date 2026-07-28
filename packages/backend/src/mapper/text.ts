@@ -73,6 +73,13 @@ export function mapText(
   }
 
   for (const para of text.paragraphs) {
+    // Garde-fou : la Slides API rejette tout textRange avec
+    // startIndex >= endIndex ("must be less than endIndex", 400). Un
+    // paragraphe vide ne devrait normalement plus être émis par le plugin
+    // (voir textExtract.ts côté plugin), mais on ne veut pas qu'un cas non
+    // prévu ici fasse échouer tout le batchUpdate — donc tout le reste de
+    // l'export — pour un seul paragraphe sans rien à styler.
+    if (para.start >= para.end) continue;
     requests.push(mapParagraphStyle(text.id, para));
     if (para.bullet) {
       requests.push({
