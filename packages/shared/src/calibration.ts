@@ -40,6 +40,19 @@ export interface CalibrationData {
    * le moindre écart de rendu fait retourner le texte à la ligne.
    */
   textWidthSafetyMarginTightFitEm: number;
+  /**
+   * Marge additionnelle proportionnelle à la largeur de la boîte (0..1),
+   * appliquée uniquement en `tightFit`. Les marges ci-dessus sont fixes
+   * (fonction de la taille de police, pas de la longueur du texte) : sur
+   * un texte tightFit COURT (un mot), l'écart de rendu cumulé Figma↔Slides
+   * est negligeable et une marge fixe suffit ; sur un texte tightFit LONG
+   * (plusieurs mots), cet écart s'accumule caractère par caractère et finit
+   * par dépasser la marge fixe (observé : phrases de plusieurs mots encore
+   * en trop après une marge fixe généreuse, alors que les mots isolés
+   * tenaient déjà). D'où ce terme en plus, proportionnel à la largeur déjà
+   * mesurée de la boîte (qui, en tightFit, est justement celle du contenu).
+   */
+  textWidthSafetyMarginTightFitProportional: number;
   measuredAt: string; // ISO 8601
 }
 
@@ -57,7 +70,8 @@ export const UNCALIBRATED_DEFAULTS: CalibrationData = {
   lineSpacingBaseline: 1.2,
   radiusNativeTolerance: DEFAULT_RADIUS_NATIVE_TOLERANCE,
   textWidthSafetyMarginEm: 0.15,
-  textWidthSafetyMarginSubstitutedFontEm: 0.45,
-  textWidthSafetyMarginTightFitEm: 0.5,
+  textWidthSafetyMarginSubstitutedFontEm: 0.9,
+  textWidthSafetyMarginTightFitEm: 1.2,
+  textWidthSafetyMarginTightFitProportional: 0.05,
   measuredAt: '1970-01-01T00:00:00.000Z',
 };
