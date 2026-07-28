@@ -35,10 +35,10 @@ export function mapText(
   // Une police substituée (originalFontFamily défini, cf. fonts.ts côté
   // plugin) a des métriques de caractère différentes de la police d'origine
   // — la marge calibrée sur les polices d'origine ne suffit pas toujours,
-  // d'où des retours à la ligne inattendus une fois substituée. On double
+  // d'où des retours à la ligne inattendus une fois substituée. On triple
   // la marge dans ce cas pour réduire ce risque.
   const hasSubstitutedFont = text.runs.some((run) => run.originalFontFamily !== undefined);
-  const marginEm = hasSubstitutedFont ? calibration.textWidthSafetyMarginEm * 2 : calibration.textWidthSafetyMarginEm;
+  const marginEm = hasSubstitutedFont ? calibration.textWidthSafetyMarginEm * 3 : calibration.textWidthSafetyMarginEm;
   const widthSafetyMarginPt = maxFontSizePx * scale * marginEm;
 
   const wPt = box.w * scale + widthSafetyMarginPt;

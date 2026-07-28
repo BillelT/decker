@@ -75,7 +75,7 @@ describe('mapText', () => {
     expect(styleReq.updateTextStyle.style.weightedFontFamily).toEqual({ fontFamily: 'Inter', weight: 400 });
   });
 
-  it('doubles the width safety margin when a run uses a substituted font', () => {
+  it('triples the width safety margin when a run uses a substituted font', () => {
     const text = baseText({
       runs: [
         {
@@ -91,7 +91,7 @@ describe('mapText', () => {
       ],
     });
     const inset = UNCALIBRATED_DEFAULTS.textInset;
-    const safetyMargin = 16 * UNCALIBRATED_DEFAULTS.textWidthSafetyMarginEm * 2;
+    const safetyMargin = 16 * UNCALIBRATED_DEFAULTS.textWidthSafetyMarginEm * 3;
     const [createReq] = mapText(text, 'page1', 1, 0, 0, UNCALIBRATED_DEFAULTS) as any;
     expect(createReq.createShape.elementProperties.size.width.magnitude).toBeCloseTo(200 + inset.left + inset.right + safetyMargin);
   });

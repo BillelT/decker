@@ -301,7 +301,26 @@ function lineInfo(node: SceneNode): DecisionInput['line'] {
   return { visibleStrokeCount: strokes.length, strokeIsGradient, strokeWeightIsMixed, hasUnsupportedCap };
 }
 
+/**
+ * Piège Figma classique : `absoluteBoundingBox` est la boîte englobante
+ * APRÈS rotation (AABB axis-aligned) — sa largeur/hauteur et sa position ne
+ * correspondent plus à la boîte locale non tournée une fois `node.rotation`
+ * ≠ 0 (ex. un rectangle 920×4 tourné à -90° a un AABB d'environ 4×920).
+ * `rotatedTransform` (mapper backend) attend au contraire la boîte LOCALE
+ * pré-rotation (coin haut-gauche + largeur/hauteur non tournées, rotation
+ * appliquée ensuite autour de son centre) — lui donner l'AABB fait tourner
+ * une boîte déjà « re-tournée » par erreur : orientation et position
+ * fausses pour tout élément natif tourné (lignes, formes, texte).
+ * `node.width`/`node.height` restent, eux, toujours dans le repère local ;
+ * la translation de `absoluteTransform` donne la position absolue exacte
+ * du coin (0,0) local — c'est ce couple qui est correct ici.
+ */
 function relativeRect(node: SceneNode, state: WalkState): { x: number; y: number; w: number; h: number } {
+  const rotation = 'rotation' in node ? node.rotation : 0;
+  if (rotation !== 0 && 'width' in node && 'height' in node) {
+    const [[, , tx], [, , ty]] = node.absoluteTransform;
+    return { x: tx - state.rootX, y: ty - state.rootY, w: node.width, h: node.height };
+  }
   const box = node.absoluteBoundingBox;
   if (!box) return { x: 0, y: 0, w: 'width' in node ? node.width : 0, h: 'height' in node ? node.height : 0 };
   return { x: box.x - state.rootX, y: box.y - state.rootY, w: box.width, h: box.height };
@@ -404,7 +423,12 @@ function buildImagePlaceholder(node: SceneNode, id: string, state: WalkState, is
     id,
     sourceNodeId: node.id,
     rect: rel,
-    rotation: 'rotation' in node ? node.rotation : 0,
+    // `node.exportAsync` (code.ts) rend le nœud tel qu'affiché — la
+    // rotation est donc déjà "cuite" dans les pixels du PNG exporté (dont
+    // les dimensions correspondent à `relativeRenderRect`, l'AABB post-
+    // rotation). Réappliquer `node.rotation` ici tournerait cette image
+    // déjà orientée une seconde fois.
+    rotation: 0,
     opacity: 'opacity' in node ? node.opacity : 1,
     assetKey: id,
     isRasterFallback,
