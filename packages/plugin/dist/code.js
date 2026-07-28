@@ -588,6 +588,11 @@
     return { visibleStrokeCount: strokes.length, strokeIsGradient, strokeWeightIsMixed, hasUnsupportedCap };
   }
   function relativeRect(node, state) {
+    const rotation = "rotation" in node ? node.rotation : 0;
+    if (rotation !== 0 && "width" in node && "height" in node) {
+      const [[, , tx], [, , ty]] = node.absoluteTransform;
+      return { x: tx - state.rootX, y: ty - state.rootY, w: node.width, h: node.height };
+    }
     const box = node.absoluteBoundingBox;
     if (!box) return { x: 0, y: 0, w: "width" in node ? node.width : 0, h: "height" in node ? node.height : 0 };
     return { x: box.x - state.rootX, y: box.y - state.rootY, w: box.width, h: box.height };
@@ -665,7 +670,12 @@
       id,
       sourceNodeId: node.id,
       rect: rel,
-      rotation: "rotation" in node ? node.rotation : 0,
+      // `node.exportAsync` (code.ts) rend le nœud tel qu'affiché — la
+      // rotation est donc déjà "cuite" dans les pixels du PNG exporté (dont
+      // les dimensions correspondent à `relativeRenderRect`, l'AABB post-
+      // rotation). Réappliquer `node.rotation` ici tournerait cette image
+      // déjà orientée une seconde fois.
+      rotation: 0,
       opacity: "opacity" in node ? node.opacity : 1,
       assetKey: id,
       isRasterFallback,
