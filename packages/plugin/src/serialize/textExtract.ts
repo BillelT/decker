@@ -45,15 +45,11 @@ export function extractTextRuns(node: TextNode): TextExtractionResult {
 
   for (const seg of segments) {
     const resolution = resolveFontFamily(seg.fontName.family);
-    if (resolution.status === 'missing') {
-      requiresRaster = true;
-      rasterReason = `Police « ${resolution.original} » indisponible et non substituable.`;
-      fontWarnings.push({ original: resolution.original });
-    } else if (resolution.status === 'substituted') {
+    if (resolution.status === 'substituted') {
       fontWarnings.push({ original: resolution.original, substitute: resolution.family });
     }
 
-    const family = resolution.status === 'missing' ? seg.fontName.family : resolution.family;
+    const family = resolution.family;
     const width = estimateSegmentWidthPx(seg);
     if (seg.letterSpacing.unit === 'PIXELS' && seg.letterSpacing.value !== 0) {
       const impact = letterSpacingImpactRatio(seg.letterSpacing.value, seg.end - seg.start, width);

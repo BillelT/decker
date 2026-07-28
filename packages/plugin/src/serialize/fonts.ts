@@ -63,8 +63,23 @@ export const FONT_SUBSTITUTIONS: Record<string, string> = {
 
 export type FontResolution =
   | { status: 'available'; family: string }
-  | { status: 'substituted'; family: string; original: string }
-  | { status: 'missing'; original: string };
+  | { status: 'substituted'; family: string; original: string };
+
+/**
+ * Aucune liste de polices ne peut être exhaustive : plutôt que de rastériser
+ * un texte dont la police est totalement inconnue (perte de l'édition
+ * native), on classe son nom par mots-clés et on retombe sur une police
+ * générique Google Slides du même genre (empattement ou non).
+ */
+const SERIF_KEYWORDS = /serif|times|georgia|garamond|didot|playfair|merriweather|book\s?antiqua|cambria|baskerville|caslon|bodoni|crimson|minion|constantia|charter|slab|zilla|lora|noto\s?serif|pt\s?serif|source\s?serif/i;
+
+const GENERIC_SERIF_FALLBACK = 'Merriweather';
+const GENERIC_SANS_FALLBACK = 'Inter';
+
+function isLikelySerif(family: string): boolean {
+  if (/sans/i.test(family)) return false;
+  return SERIF_KEYWORDS.test(family);
+}
 
 export function resolveFontFamily(family: string): FontResolution {
   if (GOOGLE_FONTS_SAMPLE.has(family) || SLIDES_SYSTEM_FONTS.has(family)) {
@@ -74,7 +89,8 @@ export function resolveFontFamily(family: string): FontResolution {
   if (substitute) {
     return { status: 'substituted', family: substitute, original: family };
   }
-  return { status: 'missing', original: family };
+  const fallback = isLikelySerif(family) ? GENERIC_SERIF_FALLBACK : GENERIC_SANS_FALLBACK;
+  return { status: 'substituted', family: fallback, original: family };
 }
 
 /** Spec §3.5 — parse le style Figma ("Bold", "Semi Bold", "Regular"…) en poids 100..900. */

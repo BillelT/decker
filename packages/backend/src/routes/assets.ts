@@ -12,8 +12,15 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 
  * Spec §5: POST /assets → reçoit les PNG, renvoie des URLs publiques
  * signées (TTL 15 min). Accepte plusieurs fichiers en une requête pour
  * limiter les allers-retours sur un export multi-frames.
+ *
+ * `upload.any()` plutôt que `upload.array('files')` : le plugin envoie
+ * chaque fichier sous le nom de champ = son `assetKey` (même convention que
+ * POST /export) pour que la clé soit préservée telle quelle côté store et
+ * puisse être re-référencée par un futur POST /export sans avoir à faire
+ * l'aller-retour de mapping ci-dessous. Le champ générique `files` reste
+ * accepté pour compat (clé auto-générée).
  */
-assetsRouter.post('/assets', upload.array('files'), async (req, res) => {
+assetsRouter.post('/assets', upload.any(), async (req, res) => {
   const files = (req.files as Express.Multer.File[] | undefined) ?? [];
   if (files.length === 0) {
     res.status(400).json({ error: 'no_files' });

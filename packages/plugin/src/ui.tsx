@@ -97,18 +97,62 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Les fonctions serverless Vercel plafonnent le corps d'une requête à
+  // ~4.5 Mo — un deck de plusieurs dizaines de slides avec beaucoup
+  // d'éléments rasterisés dépasse vite cette limite si on envoie tous les
+  // assets dans la même requête POST /export (413, et comme Vercel rejette
+  // la requête avant qu'Express n'ajoute les en-têtes CORS, le navigateur
+  // le rapporte à tort comme une erreur CORS). On uploade donc les assets
+  // par lots via POST /assets d'abord, puis on envoie /export sans pièce
+  // jointe (juste le JSON du document, toujours petit).
+  const ASSET_BATCH_BUDGET_BYTES = 3.5 * 1024 * 1024;
+
+  async function uploadAssetBatches(assets: [string, ArrayBuffer][]): Promise<void> {
+    let batch: [string, ArrayBuffer][] = [];
+    let batchBytes = 0;
+
+    const flush = async () => {
+      if (batch.length === 0) return;
+      const form = new FormData();
+      for (const [assetKey, buf] of batch) {
+        form.append(assetKey, new Blob([buf], { type: 'image/png' }), assetKey);
+      }
+      const res = await fetch(`${backend.baseUrl}/assets`, {
+        method: 'POST',
+        body: form,
+        headers: sessionTokenRef.current ? { Authorization: `Bearer ${sessionTokenRef.current}` } : undefined,
+        credentials: 'include',
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => undefined);
+        throw new Error(body?.error ? `${body.error} (${res.status})` : `Upload d'assets refusé (${res.status})`);
+      }
+      batch = [];
+      batchBytes = 0;
+    };
+
+    for (const asset of assets) {
+      const size = asset[1].byteLength;
+      if (batch.length > 0 && batchBytes + size > ASSET_BATCH_BUDGET_BYTES) {
+        await flush();
+      }
+      batch.push(asset);
+      batchBytes += size;
+    }
+    await flush();
+  }
+
   async function handleExportPayload(doc: IRDocument) {
     setExportState('exporting');
     setExportError(undefined);
     try {
-      const form = new FormData();
-      form.append('document', JSON.stringify(doc));
       // Les assets arrivent par messages séparés juste après export-payload ;
       // on laisse un court délai pour qu'ils soient tous bufferisés.
       await new Promise((r) => setTimeout(r, 50));
-      for (const [assetKey, buf] of pendingAssets) {
-        form.append(assetKey, new Blob([buf], { type: 'image/png' }), assetKey);
-      }
+      await uploadAssetBatches([...pendingAssets]);
+
+      const form = new FormData();
+      form.append('document', JSON.stringify(doc));
 
       const res = await fetch(`${backend.baseUrl}/export`, {
         method: 'POST',
