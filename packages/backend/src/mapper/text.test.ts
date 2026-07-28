@@ -13,6 +13,7 @@ function baseText(overrides: Partial<IRText> = {}): IRText {
     opacity: 1,
     content: 'Hello world',
     vAlign: 'TOP',
+    tightFit: false,
     runs: [
       {
         start: 0,
@@ -75,7 +76,7 @@ describe('mapText', () => {
     expect(styleReq.updateTextStyle.style.weightedFontFamily).toEqual({ fontFamily: 'Inter', weight: 400 });
   });
 
-  it('triples the width safety margin when a run uses a substituted font', () => {
+  it('adds the substituted-font margin on top of the base margin', () => {
     const text = baseText({
       runs: [
         {
@@ -91,9 +92,42 @@ describe('mapText', () => {
       ],
     });
     const inset = UNCALIBRATED_DEFAULTS.textInset;
-    const safetyMargin = 16 * UNCALIBRATED_DEFAULTS.textWidthSafetyMarginEm * 3;
+    const marginEm = UNCALIBRATED_DEFAULTS.textWidthSafetyMarginEm + UNCALIBRATED_DEFAULTS.textWidthSafetyMarginSubstitutedFontEm;
     const [createReq] = mapText(text, 'page1', 1, 0, 0, UNCALIBRATED_DEFAULTS) as any;
-    expect(createReq.createShape.elementProperties.size.width.magnitude).toBeCloseTo(200 + inset.left + inset.right + safetyMargin);
+    expect(createReq.createShape.elementProperties.size.width.magnitude).toBeCloseTo(200 + inset.left + inset.right + 16 * marginEm);
+  });
+
+  it('adds the tightFit margin on top of the base margin', () => {
+    const text = baseText({ tightFit: true });
+    const inset = UNCALIBRATED_DEFAULTS.textInset;
+    const marginEm = UNCALIBRATED_DEFAULTS.textWidthSafetyMarginEm + UNCALIBRATED_DEFAULTS.textWidthSafetyMarginTightFitEm;
+    const [createReq] = mapText(text, 'page1', 1, 0, 0, UNCALIBRATED_DEFAULTS) as any;
+    expect(createReq.createShape.elementProperties.size.width.magnitude).toBeCloseTo(200 + inset.left + inset.right + 16 * marginEm);
+  });
+
+  it('stacks the substituted-font and tightFit margins when both apply', () => {
+    const text = baseText({
+      tightFit: true,
+      runs: [
+        {
+          start: 0,
+          end: 11,
+          fontFamily: 'Inter',
+          fontWeight: 400,
+          italic: false,
+          fontSizePx: 16,
+          color: { r: 0, g: 0, b: 0, a: 1 },
+          originalFontFamily: 'Cabinet Grotesk',
+        },
+      ],
+    });
+    const inset = UNCALIBRATED_DEFAULTS.textInset;
+    const marginEm =
+      UNCALIBRATED_DEFAULTS.textWidthSafetyMarginEm +
+      UNCALIBRATED_DEFAULTS.textWidthSafetyMarginSubstitutedFontEm +
+      UNCALIBRATED_DEFAULTS.textWidthSafetyMarginTightFitEm;
+    const [createReq] = mapText(text, 'page1', 1, 0, 0, UNCALIBRATED_DEFAULTS) as any;
+    expect(createReq.createShape.elementProperties.size.width.magnitude).toBeCloseTo(200 + inset.left + inset.right + 16 * marginEm);
   });
 
   it('emits createParagraphBullets for list paragraphs', () => {

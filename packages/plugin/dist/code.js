@@ -452,7 +452,8 @@
           content: extraction.content,
           runs: extraction.runs,
           paragraphs: extraction.paragraphs,
-          vAlign: mapVerticalAlignment(textNode.textAlignVertical ?? "TOP")
+          vAlign: mapVerticalAlignment(textNode.textAlignVertical ?? "TOP"),
+          tightFit: textNode.textAutoResize === "WIDTH_AND_HEIGHT"
         });
         return;
       }

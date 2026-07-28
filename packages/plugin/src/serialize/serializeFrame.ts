@@ -139,6 +139,7 @@ async function walk(node: SceneNode, state: WalkState): Promise<void> {
         runs: extraction.runs,
         paragraphs: extraction.paragraphs,
         vAlign: mapVerticalAlignment((textNode.textAlignVertical as never) ?? 'TOP'),
+        tightFit: textNode.textAutoResize === 'WIDTH_AND_HEIGHT',
       });
       return;
     }

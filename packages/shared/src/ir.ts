@@ -54,6 +54,15 @@ export interface IRText extends IRBase {
   runs: IRTextRun[];
   paragraphs: IRParagraph[];
   vAlign: 'TOP' | 'MIDDLE' | 'BOTTOM';
+  /**
+   * `node.textAutoResize === 'WIDTH_AND_HEIGHT'` côté Figma (« hug » —
+   * fréquent pour un libellé dans un auto-layout) : la largeur colle pile
+   * au contenu, zéro marge de battement. Figma et Slides ne rendent jamais
+   * les glyphes avec une largeur strictement identique (hinting/shaping
+   * différents) — sans marge de sécurité supplémentaire dans ce cas, le
+   * moindre écart fait retourner le texte à la ligne, parfois en plein mot.
+   */
+  tightFit: boolean;
 }
 
 export interface IRTextRun {
