@@ -66,19 +66,31 @@ export type FontResolution =
   | { status: 'substituted'; family: string; original: string };
 
 /**
- * Aucune liste de polices ne peut être exhaustive : plutôt que de rastériser
- * un texte dont la police est totalement inconnue (perte de l'édition
- * native), on classe son nom par mots-clés et on retombe sur une police
- * générique Google Slides du même genre (empattement ou non).
+ * Aucune liste de polices ne peut être exhaustive. Avant de retomber sur un
+ * générique, on cherche d'abord si le nom inconnu est une variante d'une
+ * police qu'on sait déjà disponible (ex. « Open Sans Condensed Bold »
+ * contient « Open Sans ») — les plus longs noms de famille sont testés en
+ * premier pour éviter qu'un nom court (« Nunito ») ne masque un match plus
+ * précis (« Nunito Sans »). Seulement si rien ne correspond, on classe le
+ * nom par mots-clés et on retombe sur la police générique Slides du même
+ * genre (empattement ou non) — jamais de rasterisation pour ce seul motif.
  */
 const SERIF_KEYWORDS = /serif|times|georgia|garamond|didot|playfair|merriweather|book\s?antiqua|cambria|baskerville|caslon|bodoni|crimson|minion|constantia|charter|slab|zilla|lora|noto\s?serif|pt\s?serif|source\s?serif/i;
 
-const GENERIC_SERIF_FALLBACK = 'Merriweather';
+const AVAILABLE_FAMILIES = [...GOOGLE_FONTS_SAMPLE, ...SLIDES_SYSTEM_FONTS].sort((a, b) => b.length - a.length);
+
+/** « La » serif classique de Slides, et l'équivalent sans-serif par défaut. */
+const GENERIC_SERIF_FALLBACK = 'Times New Roman';
 const GENERIC_SANS_FALLBACK = 'Inter';
 
 function isLikelySerif(family: string): boolean {
   if (/sans/i.test(family)) return false;
   return SERIF_KEYWORDS.test(family);
+}
+
+function findNearestAvailableFamily(family: string): string | undefined {
+  const lower = family.toLowerCase();
+  return AVAILABLE_FAMILIES.find((candidate) => lower.includes(candidate.toLowerCase()));
 }
 
 export function resolveFontFamily(family: string): FontResolution {
@@ -88,6 +100,10 @@ export function resolveFontFamily(family: string): FontResolution {
   const substitute = FONT_SUBSTITUTIONS[family];
   if (substitute) {
     return { status: 'substituted', family: substitute, original: family };
+  }
+  const nearest = findNearestAvailableFamily(family);
+  if (nearest) {
+    return { status: 'substituted', family: nearest, original: family };
   }
   const fallback = isLikelySerif(family) ? GENERIC_SERIF_FALLBACK : GENERIC_SANS_FALLBACK;
   return { status: 'substituted', family: fallback, original: family };

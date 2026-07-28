@@ -14,12 +14,32 @@ describe('resolveFontFamily', () => {
     expect(resolveFontFamily('SF Pro Display')).toEqual({ status: 'substituted', family: 'Inter', original: 'SF Pro Display' });
   });
 
-  it('falls back to the generic sans-serif substitute for an unknown sans font', () => {
+  it('detects a variant of an available font by name and substitutes it directly', () => {
+    expect(resolveFontFamily('Open Sans Condensed Bold')).toEqual({
+      status: 'substituted',
+      family: 'Open Sans',
+      original: 'Open Sans Condensed Bold',
+    });
+  });
+
+  it('prefers the longer, more specific family match over a shorter one', () => {
+    expect(resolveFontFamily('Nunito Sans Light')).toEqual({
+      status: 'substituted',
+      family: 'Nunito Sans',
+      original: 'Nunito Sans Light',
+    });
+  });
+
+  it('falls back to the generic sans-serif substitute for a truly unknown sans font', () => {
     expect(resolveFontFamily('Cabinet Grotesk')).toEqual({ status: 'substituted', family: 'Inter', original: 'Cabinet Grotesk' });
   });
 
-  it('falls back to the generic serif substitute for an unknown serif font', () => {
-    expect(resolveFontFamily('Some Random Serif')).toEqual({ status: 'substituted', family: 'Merriweather', original: 'Some Random Serif' });
+  it('falls back to the classic Slides serif for a truly unknown serif font', () => {
+    expect(resolveFontFamily('Some Random Serif')).toEqual({
+      status: 'substituted',
+      family: 'Times New Roman',
+      original: 'Some Random Serif',
+    });
   });
 });
 
