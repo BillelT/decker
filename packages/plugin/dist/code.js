@@ -704,6 +704,21 @@
   function yieldToUi() {
     return new Promise((resolve) => setTimeout(resolve, 0));
   }
+  function collectFontSubstitutions(slide) {
+    const seen = /* @__PURE__ */ new Set();
+    const subs = [];
+    for (const el of slide.elements) {
+      if (el.kind !== "text") continue;
+      for (const run of el.runs) {
+        if (!run.originalFontFamily) continue;
+        const key = `${run.originalFontFamily}\u2192${run.fontFamily}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        subs.push({ original: run.originalFontFamily, resolved: run.fontFamily });
+      }
+    }
+    return subs;
+  }
   async function generatePreview(node) {
     const bytes = await node.exportAsync({ format: "PNG", constraint: { type: "WIDTH", value: PREVIEW_WIDTH } });
     return `data:image/png;base64,${figma.base64Encode(bytes)}`;
@@ -730,13 +745,14 @@
         previewDataUrl,
         nativeCount,
         rasterCount,
-        warnings: slide.warnings
+        warnings: slide.warnings,
+        fontSubstitutions: collectFontSubstitutions(slide)
       });
       await yieldToUi();
     }
   }
   async function main() {
-    figma.showUI(__html__, { width: 480, height: 640 });
+    figma.showUI(__html__, { width: 900, height: 600 });
     const pending = [];
     const idGen = createIdGenerator(figma.root.id.slice(0, 8));
     figma.ui.onmessage = async (msg) => {

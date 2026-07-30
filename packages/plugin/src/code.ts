@@ -15,6 +15,28 @@ function yieldToUi(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
+/**
+ * Linter visuel (brief export ponctuel) : au lieu de faire chercher à
+ * l'utilisateur les substitutions de police dans le texte des warnings,
+ * on les extrait ici sous forme structurée pour l'en-tête "Polices" de
+ * l'UI (une paire par famille remplacée, dédupliquée).
+ */
+function collectFontSubstitutions(slide: PendingSlide['slide']): { original: string; resolved: string }[] {
+  const seen = new Set<string>();
+  const subs: { original: string; resolved: string }[] = [];
+  for (const el of slide.elements) {
+    if (el.kind !== 'text') continue;
+    for (const run of el.runs) {
+      if (!run.originalFontFamily) continue;
+      const key = `${run.originalFontFamily}→${run.fontFamily}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      subs.push({ original: run.originalFontFamily, resolved: run.fontFamily });
+    }
+  }
+  return subs;
+}
+
 async function generatePreview(node: ExportableNode): Promise<string> {
   const bytes = await node.exportAsync({ format: 'PNG', constraint: { type: 'WIDTH', value: PREVIEW_WIDTH } });
   return `data:image/png;base64,${figma.base64Encode(bytes)}`;
@@ -62,13 +84,16 @@ async function addSelectedFrames(pending: PendingSlide[], idGen: ReturnType<type
       nativeCount,
       rasterCount,
       warnings: slide.warnings,
+      fontSubstitutions: collectFontSubstitutions(slide),
     });
     await yieldToUi();
   }
 }
 
 async function main(): Promise<void> {
-  figma.showUI(__html__, { width: 480, height: 640 });
+  // Layout à deux colonnes (rail de miniatures + canvas) : plus large que
+  // l'ancien panneau vertical, pour laisser une vraie zone de prévisualisation.
+  figma.showUI(__html__, { width: 900, height: 600 });
 
   const pending: PendingSlide[] = [];
   const idGen = createIdGenerator(figma.root.id.slice(0, 8));

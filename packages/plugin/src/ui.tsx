@@ -1,6 +1,6 @@
 import { render } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
-import type { ExportOptions, IRDocument } from '@figma-to-slides/shared';
+import type { ExportOptions, IRDocument, IRWarning } from '@figma-to-slides/shared';
 import { sanitizeSessionToken } from './ui/sanitizeSessionToken.js';
 import { reorderFrames, moveToIndex } from './ui/reorderFrames.js';
 
@@ -11,11 +11,25 @@ interface FrameCandidate {
   height: number;
 }
 
+interface FontSubstitution {
+  original: string;
+  resolved: string;
+}
+
 interface FrameState extends FrameCandidate {
   previewDataUrl?: string;
   nativeCount?: number;
   rasterCount?: number;
+  /** Diagnostics du linter visuel (brief export ponctuel) pour cette frame. */
+  warnings?: IRWarning[];
+  fontSubstitutions?: FontSubstitution[];
 }
+
+const SEVERITY_LABEL: Record<IRWarning['severity'], string> = {
+  blocking: 'Bloquant',
+  warning: 'Avertissement',
+  info: 'Info',
+};
 
 type BackendConfig = { baseUrl: string };
 type ExportState = 'idle' | 'exporting' | 'done' | 'error';
@@ -27,6 +41,14 @@ declare const __BACKEND_URL__: string;
 
 function postToPlugin(message: Record<string, unknown>): void {
   parent.postMessage({ pluginMessage: message }, '*');
+}
+
+/** Pastille du linter sur une miniature : la sévérité la plus haute portée par la frame. */
+function worstSeverity(warnings?: IRWarning[]): IRWarning['severity'] | undefined {
+  if (!warnings || warnings.length === 0) return undefined;
+  if (warnings.some((w) => w.severity === 'blocking')) return 'blocking';
+  if (warnings.some((w) => w.severity === 'warning')) return 'warning';
+  return 'info';
 }
 
 /** Monogramme "B" — packages/plugin/src/assets/logo.svg (repo billeltighidet). */
@@ -62,6 +84,31 @@ function App() {
   const [authUrl, setAuthUrl] = useState<string | undefined>();
   const [backend] = useState<BackendConfig>({ baseUrl: typeof __BACKEND_URL__ === 'string' ? __BACKEND_URL__ : 'https://figma-to-slide-backend.vercel.app' });
 
+  // La copie de vérification (brief export ponctuel) reste manuelle dans
+  // Figma pour l'instant : ce qu'on peut déjà offrir ici, c'est le linter
+  // visuel sur les frames ajoutées — actif par défaut sur la première frame
+  // pour qu'il y ait toujours quelque chose à prévisualiser dès l'ajout.
+  useEffect(() => {
+    if (!activeId && order.length > 0) setActiveId(order[0]);
+  }, [order, activeId]);
+
+  const activeFrame = activeId ? frames[activeId] : undefined;
+
+  /** Déduplique les substitutions de police sur tout le deck, dans l'ordre d'apparition des frames. */
+  const deckFontSubstitutions = useMemo(() => {
+    const seen = new Set<string>();
+    const subs: FontSubstitution[] = [];
+    for (const id of order) {
+      for (const s of frames[id]?.fontSubstitutions ?? []) {
+        const key = `${s.original}→${s.resolved}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        subs.push(s);
+      }
+    }
+    return subs;
+  }, [order, frames]);
+
   const [exportState, setExportState] = useState<ExportState>('idle');
   const [exportProgress, setExportProgress] = useState(0);
   const [resultUrl, setResultUrl] = useState<string | undefined>();
@@ -88,7 +135,14 @@ function App() {
           const f = msg.frame as FrameCandidate;
           setFrames((prev) => ({
             ...prev,
-            [f.id]: { ...f, previewDataUrl: msg.previewDataUrl, nativeCount: msg.nativeCount, rasterCount: msg.rasterCount },
+            [f.id]: {
+              ...f,
+              previewDataUrl: msg.previewDataUrl,
+              nativeCount: msg.nativeCount,
+              rasterCount: msg.rasterCount,
+              warnings: msg.warnings as IRWarning[] | undefined,
+              fontSubstitutions: msg.fontSubstitutions as FontSubstitution[] | undefined,
+            },
           }));
           setOrder((prev) => (prev.includes(f.id) ? prev : [...prev, f.id]));
           break;
@@ -284,6 +338,11 @@ function App() {
     postToPlugin({ type: 'select-nodes', nodeIds: [id] });
   }
 
+  /** Clic sur une ligne du linter : sélectionne le calque concerné dans Figma (spec §8.3). */
+  function selectWarningNode(sourceNodeId: string) {
+    postToPlugin({ type: 'select-nodes', nodeIds: [sourceNodeId] });
+  }
+
   function moveFrame(id: string, direction: -1 | 1) {
     setOrder((prev) => reorderFrames(prev, id, direction));
   }
@@ -325,19 +384,139 @@ function App() {
   }
 
   const exporting = exportState === 'exporting';
+  const showStatusBar = exporting || exportState === 'done' || exportState === 'error' || selectionNotice || loginError || !sessionToken;
 
   return (
     <>
-      <header className="f2s-header">
-        <div className="f2s-header-row">
-          <Logo />
+      <header className="f2s-topbar">
+        <Logo />
+        <div className="f2s-topbar-actions">
+          <button
+            type="button"
+            className="f2s-btn f2s-btn--secondary"
+            disabled
+            title="Création de modèles réutilisables — brief séparé, à venir."
+          >
+            Créer un modèle
+          </button>
           <button type="button" className="f2s-btn f2s-btn--tertiary" onClick={handleAddFramesClick}>
-            {selecting ? 'Ajouter la sélection' : 'Ajouter des frames'}
+            {selecting ? 'Ajouter la sélection' : 'Sélectionner des frames à ajouter'}
+          </button>
+          <button
+            type="button"
+            className="f2s-btn f2s-btn--primary"
+            disabled={exporting || order.length === 0 || !sessionToken}
+            onClick={startExport}
+          >
+            Exporter
           </button>
         </div>
+      </header>
 
-        {!sessionToken && (
-          <div className="f2s-header-row">
+      <div className="f2s-toolbar">
+        <div className="f2s-toolbar-group">
+          <span className="f2s-toolbar-label">Dimensions :</span>
+          <span className="f2s-dim-box">{activeFrame ? Math.round(activeFrame.width) : '—'}</span>
+          <span className="f2s-dim-sep">×</span>
+          <span className="f2s-dim-box">{activeFrame ? Math.round(activeFrame.height) : '—'}</span>
+        </div>
+        <div className="f2s-toolbar-group">
+          <span className="f2s-toolbar-label">Polices :</span>
+          {deckFontSubstitutions.length === 0 ? (
+            <span className="f2s-toolbar-muted">Aucune substitution</span>
+          ) : (
+            deckFontSubstitutions.map((s) => (
+              <span className="f2s-font-pill" key={`${s.original}→${s.resolved}`} title={`« ${s.original} » n'est pas disponible côté Slides — remplacée par « ${s.resolved} ».`}>
+                {s.original} → {s.resolved}
+              </span>
+            ))
+          )}
+        </div>
+      </div>
+
+      <div className="f2s-body">
+        <aside className="f2s-sidebar">
+          {order.length === 0 ? (
+            <p className="f2s-empty">
+              {selecting
+                ? 'Sélectionne une ou plusieurs frames sur le canvas Figma, puis clique sur « Ajouter la sélection ».'
+                : 'Clique sur « Sélectionner des frames à ajouter » pour choisir ce qui doit être exporté.'}
+            </p>
+          ) : (
+            order.map((id, index) => {
+              const f = frames[id];
+              if (!f) return null;
+              const severity = worstSeverity(f.warnings);
+              return (
+                <div key={id} className="f2s-sidebar-item">
+                  <button
+                    type="button"
+                    className={`f2s-frame-preview${activeId === id ? ' is-active' : ''}`}
+                    onClick={() => selectFrame(id)}
+                    draggable
+                    onDragStart={() => setDragId(id)}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={() => handleDrop(id)}
+                  >
+                    {f.previewDataUrl && <img src={f.previewDataUrl} alt={f.name} />}
+                    {severity && <span className={`f2s-lint-dot f2s-lint-dot--${severity}`} title={`${f.warnings?.length} diagnostic(s) — ${SEVERITY_LABEL[severity]}`} />}
+                  </button>
+                  <div className="f2s-frame-info">
+                    <span className="f2s-frame-text">
+                      {index + 1} · {f.width}×{f.height}px
+                    </span>
+                    <div className="f2s-frame-controls">
+                      <button type="button" className="f2s-icon-btn" disabled={index === order.length - 1} title="Déplacer après" onClick={() => moveFrame(id, 1)}>
+                        ▼
+                      </button>
+                      <button type="button" className="f2s-icon-btn" disabled={index === 0} title="Déplacer avant" onClick={() => moveFrame(id, -1)}>
+                        ▲
+                      </button>
+                      <button type="button" className="f2s-icon-btn" title="Retirer" onClick={() => removeFrame(id)}>
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </aside>
+
+        <main className="f2s-canvas">
+          {activeFrame ? (
+            <>
+              <div className="f2s-canvas-preview">
+                {activeFrame.previewDataUrl && <img src={activeFrame.previewDataUrl} alt={activeFrame.name} />}
+              </div>
+              {activeFrame.nativeCount !== undefined && (
+                <p className="f2s-canvas-caption">
+                  {activeFrame.nativeCount} élément(s) natif(s) · {activeFrame.rasterCount} rasterisé(s)
+                </p>
+              )}
+              {activeFrame.warnings && activeFrame.warnings.length > 0 && (
+                <ul className="f2s-linter">
+                  {activeFrame.warnings.map((w, i) => (
+                    <li key={i}>
+                      <button type="button" className="f2s-linter-item" data-severity={w.severity} onClick={() => selectWarningNode(w.sourceNodeId)}>
+                        <span className={`f2s-lint-dot f2s-lint-dot--${w.severity}`} />
+                        <span className="f2s-linter-message">{w.message}</span>
+                        <span className="f2s-linter-node">{w.nodeName}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
+          ) : (
+            <p className="f2s-canvas-empty">Sélectionne une frame à gauche pour la prévisualiser.</p>
+          )}
+        </main>
+      </div>
+
+      {showStatusBar && (
+        <footer className="f2s-statusbar">
+          {!sessionToken && (
             <div className="f2s-login">
               <input
                 className="f2s-token-input"
@@ -358,88 +537,28 @@ function App() {
                 </button>
               )}
             </div>
-          </div>
-        )}
-        {loginError && (
-          <p className="f2s-error">
-            Échec de la connexion : {loginError}. Vérifie que le backend tourne bien sur {backend.baseUrl} et que{' '}
-            <code>PLUGIN_ALLOWED_ORIGINS</code> autorise l'origine de ce plugin.
-          </p>
-        )}
-      </header>
-
-      <main className="f2s-main">
-        {order.length === 0 ? (
-          <p className="f2s-empty">
-            {selecting
-              ? 'Sélectionne une ou plusieurs frames sur le canvas Figma, puis clique sur « Ajouter la sélection ».'
-              : 'Clique sur « Ajouter des frames » pour choisir ce qui doit être exporté.'}
-          </p>
-        ) : (
-          order.map((id, index) => {
-            const f = frames[id];
-            if (!f) return null;
-            return (
-              <div key={id} className="f2s-frame">
-                <button
-                  type="button"
-                  className={`f2s-frame-preview${activeId === id ? ' is-active' : ''}`}
-                  onClick={() => selectFrame(id)}
-                  draggable
-                  onDragStart={() => setDragId(id)}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={() => handleDrop(id)}
-                >
-                  {f.previewDataUrl && <img src={f.previewDataUrl} alt={f.name} />}
-                </button>
-                <div className="f2s-frame-info">
-                  <span className="f2s-frame-text">
-                    {index + 1} · {f.width}×{f.height}px
-                    {f.nativeCount !== undefined && (
-                      <> · {f.nativeCount} natifs / {f.rasterCount} rasterisés</>
-                    )}
-                  </span>
-                  <div className="f2s-frame-controls">
-                    <button type="button" className="f2s-icon-btn" disabled={index === order.length - 1} title="Déplacer après" onClick={() => moveFrame(id, 1)}>
-                      ▼
-                    </button>
-                    <button type="button" className="f2s-icon-btn" disabled={index === 0} title="Déplacer avant" onClick={() => moveFrame(id, -1)}>
-                      ▲
-                    </button>
-                    <button type="button" className="f2s-icon-btn" title="Retirer" onClick={() => removeFrame(id)}>
-                      ✕
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })
-        )}
-        {selectionNotice && <p className="f2s-error">{selectionNotice}</p>}
-      </main>
-
-      <footer className="f2s-footer">
-        {exporting && (
-          <div className="f2s-progress">
-            <span className="f2s-spinner" />
-            Exportation en cours {exportProgress}%
-          </div>
-        )}
-        {exportState === 'done' && resultUrl && (
-          <div className="f2s-progress">
-            ✅ Terminé — <a href={resultUrl} target="_blank" rel="noreferrer">ouvrir la présentation</a>
-          </div>
-        )}
-        {exportState === 'error' && <div className="f2s-error">L'export a échoué : {exportError ?? 'erreur inconnue.'}</div>}
-        <button
-          type="button"
-          className="f2s-btn f2s-btn--primary"
-          disabled={exporting || order.length === 0 || !sessionToken}
-          onClick={startExport}
-        >
-          Exporter vers Slides
-        </button>
-      </footer>
+          )}
+          {loginError && (
+            <p className="f2s-error">
+              Échec de la connexion : {loginError}. Vérifie que le backend tourne bien sur {backend.baseUrl} et que{' '}
+              <code>PLUGIN_ALLOWED_ORIGINS</code> autorise l'origine de ce plugin.
+            </p>
+          )}
+          {selectionNotice && <p className="f2s-error">{selectionNotice}</p>}
+          {exporting && (
+            <div className="f2s-progress">
+              <span className="f2s-spinner" />
+              Exportation en cours {exportProgress}%
+            </div>
+          )}
+          {exportState === 'done' && resultUrl && (
+            <div className="f2s-progress">
+              ✅ Terminé — <a href={resultUrl} target="_blank" rel="noreferrer">ouvrir la présentation</a>
+            </div>
+          )}
+          {exportState === 'error' && <div className="f2s-error">L'export a échoué : {exportError ?? 'erreur inconnue.'}</div>}
+        </footer>
+      )}
     </>
   );
 }
