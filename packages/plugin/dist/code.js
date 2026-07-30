@@ -766,6 +766,12 @@
     figma.showUI(__html__, { width: 900, height: 600 });
     const pending = [];
     const idGen = createIdGenerator(figma.root.id.slice(0, 8));
+    figma.on("selectionchange", () => {
+      figma.ui.postMessage({
+        type: "canvas-selection-changed",
+        hasSelection: figma.currentPage.selection.some(isExportable)
+      });
+    });
     figma.ui.onmessage = async (msg) => {
       if (msg.type === "add-selected-frames") {
         try {

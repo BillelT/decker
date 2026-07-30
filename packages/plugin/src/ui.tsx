@@ -2,7 +2,7 @@ import { render } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { ExportOptions, IRDocument } from '@figma-to-slides/shared';
 import { sanitizeSessionToken } from './ui/sanitizeSessionToken.js';
-import { reorderFrames, moveToIndex } from './ui/reorderFrames.js';
+import { moveToIndex } from './ui/reorderFrames.js';
 import { AVAILABLE_SLIDES_FONTS } from './serialize/fonts.js';
 
 type AuthPollResult = { status: 'pending' } | { status: 'ready'; sessionToken: string } | { status: 'error'; message: string };
@@ -96,9 +96,18 @@ function App() {
   // en cours de route (qui, eux, ne changent jamais la position de layout).
   const slotTopsRef = useRef<Map<string, number>>(new Map());
   const slotHeightRef = useRef(0);
+  // Seuil de bascule d'index (voir targetIndexFromPointer) : basé sur la
+  // hauteur du slot ENTIER (aperçu + .f2s-frame-info + gap), le point de
+  // bascule tombait bien après le milieu visuel de la vignette — il fallait
+  // glisser bien plus loin que prévu avant qu'un réordonnancement ne se
+  // déclenche. On retire la hauteur de .f2s-frame-info (mesurée une fois,
+  // comme slotHeightRef) pour retrouver un seuil aligné sur l'aperçu.
+  const dragThresholdHeightRef = useRef(0);
   const sidebarItemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const frameInfoRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const [selecting, setSelecting] = useState(false);
   const [selectionNotice, setSelectionNotice] = useState<string | undefined>();
+  const [hasCanvasSelection, setHasCanvasSelection] = useState(false);
 
   const [sessionToken, setSessionToken] = useState<string | undefined>();
   const [loginError, setLoginError] = useState<string | undefined>();
@@ -168,6 +177,9 @@ function App() {
           setOrder((prev) => (prev.includes(f.id) ? prev : [...prev, f.id]));
           break;
         }
+        case 'canvas-selection-changed':
+          setHasCanvasSelection(Boolean(msg.hasSelection));
+          break;
         case 'no-frames-selected':
           setSelectionNotice('Select at least one frame on the Figma canvas before clicking.');
           break;
@@ -395,10 +407,6 @@ function App() {
     postToPlugin({ type: 'select-nodes', nodeIds: [id] });
   }
 
-  function moveFrame(id: string, direction: -1 | 1) {
-    setOrder((prev) => reorderFrames(prev, id, direction));
-  }
-
   function removeFrame(id: string) {
     setOrder((prev) => prev.filter((x) => x !== id));
     setFrames((prev) => {
@@ -421,10 +429,11 @@ function App() {
   function targetIndexFromPointer(pointerY: number, draggedId: string): number {
     const slotHeight = slotHeightRef.current;
     if (slotHeight <= 0) return dragStartIndexRef.current;
+    const thresholdHeight = dragThresholdHeightRef.current || slotHeight;
     let index = 0;
     for (const [id, top] of slotTopsRef.current) {
       if (id === draggedId) continue;
-      if (pointerY > top + slotHeight / 2) index++;
+      if (pointerY > top + thresholdHeight / 2) index++;
     }
     return index;
   }
@@ -452,6 +461,8 @@ function App() {
       firstTop !== undefined && secondTop !== undefined
         ? secondTop - firstTop
         : (sidebarItemRefs.current.get(id)?.getBoundingClientRect().height ?? 0);
+    const frameInfoHeight = frameInfoRefs.current.get(id)?.getBoundingClientRect().height ?? 0;
+    dragThresholdHeightRef.current = Math.max(slotHeightRef.current - frameInfoHeight, 0);
   }
 
   useEffect(() => {
@@ -595,7 +606,7 @@ function App() {
 
       <div className="f2s-body">
         <aside className="f2s-sidebar">
-          {selecting && order.length > 0 && (
+          {selecting && order.length > 0 && !hasCanvasSelection && (
             <p className="f2s-toolbar-muted">Select one or more frames on the Figma canvas, then click "Add selection".</p>
           )}
           {order.length === 0 ? (
@@ -646,15 +657,15 @@ function App() {
                   >
                     {f.previewDataUrl && <img src={f.previewDataUrl} alt={f.name} draggable={false} />}
                   </button>
-                  <div className="f2s-frame-info">
+                  <div
+                    className="f2s-frame-info"
+                    ref={(el) => {
+                      if (el) frameInfoRefs.current.set(id, el);
+                      else frameInfoRefs.current.delete(id);
+                    }}
+                  >
                     <span className="f2s-frame-text">{index + 1}</span>
                     <div className="f2s-frame-controls">
-                      <button type="button" className="f2s-icon-btn" disabled={index === order.length - 1} title="Move down" onClick={() => moveFrame(id, 1)}>
-                        ▼
-                      </button>
-                      <button type="button" className="f2s-icon-btn" disabled={index === 0} title="Move up" onClick={() => moveFrame(id, -1)}>
-                        ▲
-                      </button>
                       <button type="button" className="f2s-icon-btn" title="Remove" onClick={() => removeFrame(id)}>
                         ✕
                       </button>
