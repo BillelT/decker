@@ -92,18 +92,30 @@ a {
 /* ---- Top bar ---- */
 
 .f2s-topbar {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   gap: 16px;
   padding: 16px 16px 0;
   flex: none;
+}
+
+.f2s-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  justify-self: start;
+}
+
+.f2s-topbar-center {
+  justify-self: center;
 }
 
 .f2s-topbar-actions {
   display: flex;
   align-items: center;
   gap: 8px;
+  justify-self: end;
 }
 
 .f2s-logo {
@@ -114,7 +126,7 @@ a {
   display: block;
 }
 
-/* ---- Toolbar (dimensions + polices) ---- */
+/* ---- Toolbar (polices) ---- */
 
 .f2s-toolbar {
   display: flex;
@@ -127,14 +139,6 @@ a {
 .f2s-toolbar-row {
   display: flex;
   flex-wrap: wrap;
-}
-
-.f2s-toolbar-row--center {
-  justify-content: center;
-}
-
-.f2s-toolbar-row--start {
-  justify-content: flex-start;
 }
 
 .f2s-toolbar-group {
@@ -1274,61 +1278,50 @@ a {
       });
     }
     const exporting = exportState === "exporting";
-    const showStatusBar = exporting || exportState === "done" || exportState === "error" || selectionNotice || loginError || !sessionToken;
     return /* @__PURE__ */ u3(S, { children: [
       /* @__PURE__ */ u3("header", { className: "f2s-topbar", children: [
-        /* @__PURE__ */ u3(Logo, {}),
-        /* @__PURE__ */ u3("div", { className: "f2s-topbar-actions", children: [
-          /* @__PURE__ */ u3(
-            "button",
-            {
-              type: "button",
-              className: "f2s-btn f2s-btn--secondary",
-              disabled: true,
-              title: "Reusable template creation \u2014 separate brief, coming soon.",
-              children: "Create a template"
-            }
-          ),
-          /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--tertiary", onClick: handleAddFramesClick, children: selecting ? "Add selection" : "Select frames to add" }),
-          /* @__PURE__ */ u3(
-            "button",
-            {
-              type: "button",
-              className: "f2s-btn f2s-btn--primary",
-              disabled: exporting || order.length === 0 || !sessionToken,
-              onClick: startExport,
-              children: "Export"
-            }
-          )
-        ] })
-      ] }),
-      /* @__PURE__ */ u3("div", { className: "f2s-toolbar", children: [
-        /* @__PURE__ */ u3("div", { className: "f2s-toolbar-row f2s-toolbar-row--center", children: /* @__PURE__ */ u3("div", { className: "f2s-toolbar-group", children: [
+        /* @__PURE__ */ u3("div", { className: "f2s-topbar-left", children: [
+          /* @__PURE__ */ u3(Logo, {}),
+          /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--secondary", title: "Reusable template creation \u2014 separate brief, coming soon.", children: "Create a template" })
+        ] }),
+        /* @__PURE__ */ u3("div", { className: "f2s-toolbar-group f2s-topbar-center", children: [
           /* @__PURE__ */ u3("span", { className: "f2s-toolbar-label", children: "Dimensions:" }),
           /* @__PURE__ */ u3("span", { className: "f2s-dim-box", children: activeFrame ? Math.round(activeFrame.width) : "\u2014" }),
           /* @__PURE__ */ u3("span", { className: "f2s-dim-sep", children: "\xD7" }),
           /* @__PURE__ */ u3("span", { className: "f2s-dim-box", children: activeFrame ? Math.round(activeFrame.height) : "\u2014" })
-        ] }) }),
-        /* @__PURE__ */ u3("div", { className: "f2s-toolbar-row f2s-toolbar-row--start", children: /* @__PURE__ */ u3("div", { className: "f2s-toolbar-group", children: [
-          /* @__PURE__ */ u3("span", { className: "f2s-toolbar-label", children: "Fonts:" }),
-          deckFontSubstitutions.length === 0 ? /* @__PURE__ */ u3("span", { className: "f2s-toolbar-muted", children: "No substitution" }) : deckFontSubstitutions.map((s3) => /* @__PURE__ */ u3("label", { className: "f2s-font-select", title: `"${s3.original}" isn't available in Slides \u2014 pick the replacement to use.`, children: [
-            /* @__PURE__ */ u3("span", { className: "f2s-font-original", children: s3.original }),
-            /* @__PURE__ */ u3("span", { className: "f2s-font-arrow", children: "\u2192" }),
-            /* @__PURE__ */ u3(
-              "select",
-              {
-                className: "f2s-font-dropdown",
-                value: fontOverrides[s3.original] ?? s3.resolved,
-                onChange: (e3) => {
-                  const value = e3.target.value;
-                  setFontOverrides((prev) => ({ ...prev, [s3.original]: value }));
-                },
-                children: AVAILABLE_SLIDES_FONTS.map((font) => /* @__PURE__ */ u3("option", { value: font, children: font }, font))
-              }
-            )
-          ] }, s3.original))
-        ] }) })
+        ] }),
+        /* @__PURE__ */ u3("div", { className: "f2s-topbar-actions", children: [
+          /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--tertiary", onClick: handleAddFramesClick, children: selecting ? "Add selection" : "Select frames to add" }),
+          sessionToken ? /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--primary", disabled: exporting || order.length === 0, onClick: startExport, children: "Export" }) : authUrl ? (
+            // Un vrai <a target="_blank"> cliqué par l'utilisateur : voir le
+            // commentaire de startLogin plus haut sur la CSP du plugin Figma.
+            /* @__PURE__ */ u3("a", { href: authUrl, target: "_blank", rel: "noreferrer", className: "f2s-btn f2s-btn--primary", children: "Export" })
+          ) : loginError ? /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--primary", onClick: startLogin, children: "Export" }) : (
+            // TODO(TODO.md) : état de chargement pendant qu'on attend le lien
+            // Google — pour l'instant juste désactivé, sans feedback visuel.
+            /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--primary", disabled: true, children: "Export" })
+          )
+        ] })
       ] }),
+      /* @__PURE__ */ u3("div", { className: "f2s-toolbar", children: /* @__PURE__ */ u3("div", { className: "f2s-toolbar-row", children: /* @__PURE__ */ u3("div", { className: "f2s-toolbar-group", children: [
+        /* @__PURE__ */ u3("span", { className: "f2s-toolbar-label", children: "Fonts:" }),
+        deckFontSubstitutions.length === 0 ? /* @__PURE__ */ u3("span", { className: "f2s-toolbar-muted", children: "No substitution" }) : deckFontSubstitutions.map((s3) => /* @__PURE__ */ u3("label", { className: "f2s-font-select", title: `"${s3.original}" isn't available in Slides \u2014 pick the replacement to use.`, children: [
+          /* @__PURE__ */ u3("span", { className: "f2s-font-original", children: s3.original }),
+          /* @__PURE__ */ u3("span", { className: "f2s-font-arrow", children: "\u2192" }),
+          /* @__PURE__ */ u3(
+            "select",
+            {
+              className: "f2s-font-dropdown",
+              value: fontOverrides[s3.original] ?? s3.resolved,
+              onChange: (e3) => {
+                const value = e3.target.value;
+                setFontOverrides((prev) => ({ ...prev, [s3.original]: value }));
+              },
+              children: AVAILABLE_SLIDES_FONTS.map((font) => /* @__PURE__ */ u3("option", { value: font, children: font }, font))
+            }
+          )
+        ] }, s3.original))
+      ] }) }) }),
       /* @__PURE__ */ u3("div", { className: "f2s-body", children: [
         /* @__PURE__ */ u3("aside", { className: "f2s-sidebar", children: order.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-empty", children: selecting ? 'Select one or more frames on the Figma canvas, then click "Add selection".' : 'Click "Select frames to add" to choose what should be exported.' }) : order.map((id, index) => {
           const f4 = frames[id];
@@ -1377,37 +1370,6 @@ a {
           );
         }) }),
         /* @__PURE__ */ u3("main", { className: "f2s-canvas", children: activeFrame ? /* @__PURE__ */ u3("div", { className: "f2s-canvas-preview", children: activeFrame.previewDataUrl && /* @__PURE__ */ u3("img", { src: activeFrame.previewDataUrl, alt: activeFrame.name }) }) : /* @__PURE__ */ u3("p", { className: "f2s-canvas-empty", children: "Select a frame on the left to preview it." }) })
-      ] }),
-      showStatusBar && /* @__PURE__ */ u3("footer", { className: "f2s-statusbar", children: [
-        !sessionToken && /* @__PURE__ */ u3("div", { className: "f2s-login", children: authUrl ? /* @__PURE__ */ u3(S, { children: [
-          /* @__PURE__ */ u3("a", { href: authUrl, target: "_blank", rel: "noreferrer", className: "f2s-btn f2s-btn--secondary", children: "Connect to Google" }),
-          /* @__PURE__ */ u3("span", { className: "f2s-toolbar-muted", children: "Waiting for you to finish signing in\u2026" })
-        ] }) : loginError ? /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--secondary", onClick: startLogin, children: "Retry" }) : /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--secondary", disabled: true, children: "Preparing link\u2026" }) }),
-        loginError && /* @__PURE__ */ u3("p", { className: "f2s-error", children: [
-          "Connection failed: ",
-          loginError,
-          ". Make sure the backend is running on ",
-          backend.baseUrl,
-          " and that",
-          " ",
-          /* @__PURE__ */ u3("code", { children: "PLUGIN_ALLOWED_ORIGINS" }),
-          " allows this plugin's origin."
-        ] }),
-        selectionNotice && /* @__PURE__ */ u3("p", { className: "f2s-error", children: selectionNotice }),
-        exporting && /* @__PURE__ */ u3("div", { className: "f2s-progress", children: [
-          /* @__PURE__ */ u3("span", { className: "f2s-spinner" }),
-          "Exporting\u2026 ",
-          exportProgress,
-          "%"
-        ] }),
-        exportState === "done" && resultUrl && /* @__PURE__ */ u3("div", { className: "f2s-progress", children: [
-          "\u2705 Done \u2014 ",
-          /* @__PURE__ */ u3("a", { href: resultUrl, target: "_blank", rel: "noreferrer", children: "open presentation" })
-        ] }),
-        exportState === "error" && /* @__PURE__ */ u3("div", { className: "f2s-error", children: [
-          "Export failed: ",
-          exportError ?? "unknown error."
-        ] })
       ] })
     ] });
   }
