@@ -37,7 +37,7 @@ function postToPlugin(message: Record<string, unknown>): void {
 }
 
 /** En dessous de ce mouvement, un pointerdown reste un simple clic de sélection. */
-const DRAG_THRESHOLD_PX = 2;
+const DRAG_THRESHOLD_PX = 3;
 
 /** Monogramme "B" — packages/plugin/src/assets/logo.svg (repo billeltighidet). */
 function Logo() {
