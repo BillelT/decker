@@ -553,6 +553,11 @@ function App() {
               Export
             </button>
           )}
+          {exportState === 'done' && resultUrl && (
+            <a href={resultUrl} target="_blank" rel="noreferrer" className="f2s-btn f2s-btn--secondary">
+              Open presentation
+            </a>
+          )}
         </div>
       </header>
 

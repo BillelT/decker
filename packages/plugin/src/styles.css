@@ -200,15 +200,23 @@ a {
   border-color: var(--color-orange-40);
 }
 
+/* Le menu déroulant natif hérite du scrollbar de la page (Chromium) — trop
+   épais (10px, pensé pour les panneaux) pour une petite liste d'options. */
+.f2s-font-dropdown::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
 /* ---- Buttons ---- */
 
 .f2s-btn {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   border-radius: 8px;
   padding: 8px 16px;
   border: 1px solid transparent;
   white-space: nowrap;
+  text-decoration: none;
   transition: background-color 0.15s ease, color 0.15s ease, outline-color 0.15s ease;
 }
 
@@ -227,7 +235,6 @@ a {
   background: transparent;
   border-color: var(--color-orange);
   color: var(--color-orange);
-  text-decoration: none;
   display: inline-flex;
   align-items: center;
   outline: 1px solid transparent;
@@ -390,6 +397,7 @@ a {
   max-width: 640px;
   max-height: 100%;
   flex: none;
+  border: 1px solid var(--color-border);
 }
 
 .f2s-canvas-preview img {
