@@ -3,7 +3,9 @@ import { createIdGenerator } from './serialize/ids.js';
 import { serializeFrame } from './serialize/serializeFrame.js';
 
 const MAX_FRAMES_WARNING = 20;
-const PREVIEW_WIDTH = 320;
+// 320px produisait un aperçu visiblement pixellisé une fois agrandi dans le
+// grand canvas de l'UI (jusqu'à 640px CSS, donc ~1280px physiques en HiDPI).
+const PREVIEW_WIDTH = 960;
 
 type ExportableNode = FrameNode | ComponentNode | InstanceNode;
 
@@ -35,6 +37,18 @@ function collectFontSubstitutions(slide: PendingSlide['slide']): { original: str
     }
   }
   return subs;
+}
+
+/** Applique le choix manuel de police fait dans le select "Fonts" de l'UI, par famille d'origine. */
+function applyFontOverrides(slide: PendingSlide['slide'], overrides: Record<string, string>): void {
+  if (Object.keys(overrides).length === 0) return;
+  for (const el of slide.elements) {
+    if (el.kind !== 'text') continue;
+    for (const run of el.runs) {
+      const override = run.originalFontFamily && overrides[run.originalFontFamily];
+      if (override) run.fontFamily = override;
+    }
+  }
 }
 
 async function generatePreview(node: ExportableNode): Promise<string> {
@@ -126,7 +140,13 @@ async function main(): Promise<void> {
       // sur "analyse en cours", sans le moindre message d'erreur.
       try {
         await handleExportRequest(
-          msg as unknown as { includedFrameIds: string[]; order: string[]; options: ExportOptions; presentationTitle: string },
+          msg as unknown as {
+            includedFrameIds: string[];
+            order: string[];
+            options: ExportOptions;
+            presentationTitle: string;
+            fontOverrides?: Record<string, string>;
+          },
           pending,
         );
       } catch (err) {
@@ -157,7 +177,13 @@ function computeSlideSizePt(frameSize: { width: number; height: number } | undef
 }
 
 async function handleExportRequest(
-  msg: { includedFrameIds: string[]; order: string[]; options: ExportOptions; presentationTitle: string },
+  msg: {
+    includedFrameIds: string[];
+    order: string[];
+    options: ExportOptions;
+    presentationTitle: string;
+    fontOverrides?: Record<string, string>;
+  },
   pending: PendingSlide[],
 ): Promise<void> {
   const byId = new Map(pending.map((p) => [p.frame.id, p]));
@@ -169,6 +195,8 @@ async function handleExportRequest(
   for (let i = 0; i < orderedIds.length; i++) {
     const p = byId.get(orderedIds[i]);
     if (!p) continue;
+
+    applyFontOverrides(p.slide, msg.fontOverrides ?? {});
 
     for (const [assetKey, nodes] of p.nodesToRaster) {
       const node = nodes[0];

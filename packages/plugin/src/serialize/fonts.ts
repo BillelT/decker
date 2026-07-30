@@ -50,6 +50,9 @@ export const SLIDES_SYSTEM_FONTS = new Set([
   'Comic Sans MS',
 ]);
 
+/** Liste triée pour l'UI (sélecteur de police de remplacement) — sans rapport avec l'ordre de matching de `AVAILABLE_FAMILIES` ci-dessous. */
+export const AVAILABLE_SLIDES_FONTS: string[] = [...GOOGLE_FONTS_SAMPLE, ...SLIDES_SYSTEM_FONTS].sort((a, b) => a.localeCompare(b));
+
 /** Table de substitution explicite (spec §3.5, exemples donnés). */
 export const FONT_SUBSTITUTIONS: Record<string, string> = {
   'SF Pro Text': 'Inter',

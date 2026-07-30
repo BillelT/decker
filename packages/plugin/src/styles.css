@@ -113,7 +113,7 @@ a {
 .f2s-toolbar {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 16px;
   padding: 12px 16px;
   flex: none;
 }
@@ -163,13 +163,35 @@ a {
   opacity: 0.5;
 }
 
-.f2s-font-pill {
+.f2s-font-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.f2s-font-original {
+  opacity: 0.8;
+}
+
+.f2s-font-arrow {
+  opacity: 0.5;
+}
+
+.f2s-font-dropdown {
+  font-family: inherit;
   font-size: 12px;
   border: 1px solid var(--color-border);
-  background: var(--color-surface-muted);
-  border-radius: 999px;
-  padding: 3px 10px;
-  white-space: nowrap;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-radius: 4px;
+  padding: 3px 8px;
+}
+
+.f2s-font-dropdown:focus {
+  outline: none;
+  border-color: var(--color-orange-40);
 }
 
 /* ---- Buttons ---- */
@@ -287,7 +309,6 @@ a {
 }
 
 .f2s-frame-preview {
-  position: relative;
   border-radius: 8px;
   border: 2px solid transparent;
   background: var(--color-surface-muted);
@@ -308,35 +329,6 @@ a {
   height: 100%;
   object-fit: cover;
   display: block;
-}
-
-/* ---- Linter visuel (pastille sur miniature + liste sous le canvas) ---- */
-
-.f2s-lint-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  box-shadow: 0 0 0 2px var(--color-surface);
-  flex: none;
-  display: inline-block;
-}
-
-.f2s-frame-preview .f2s-lint-dot {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-}
-
-.f2s-lint-dot--info {
-  background: rgba(18, 15, 13, 0.4);
-}
-
-.f2s-lint-dot--warning {
-  background: var(--color-orange);
-}
-
-.f2s-lint-dot--blocking {
-  background: var(--color-orange-red);
 }
 
 /* ---- Canvas principal ---- */
@@ -364,9 +356,7 @@ a {
   max-width: 640px;
   aspect-ratio: 16 / 9;
   background: var(--color-surface);
-  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 4px 24px rgba(18, 15, 13, 0.12);
   flex: none;
 }
 
@@ -375,12 +365,6 @@ a {
   height: 100%;
   object-fit: contain;
   display: block;
-}
-
-.f2s-canvas-caption {
-  font-size: 12px;
-  opacity: 0.6;
-  margin: 0;
 }
 
 .f2s-linter {
@@ -414,12 +398,6 @@ a {
 
 .f2s-linter-message {
   flex: 1;
-}
-
-.f2s-linter-node {
-  opacity: 0.5;
-  font-size: 11px;
-  white-space: nowrap;
 }
 
 /* ---- Barre de statut (login / progression / erreurs) ---- */
