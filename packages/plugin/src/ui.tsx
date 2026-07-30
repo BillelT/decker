@@ -4,6 +4,8 @@ import type { ExportOptions, IRDocument, IRWarning } from '@figma-to-slides/shar
 import { sanitizeSessionToken } from './ui/sanitizeSessionToken.js';
 import { reorderFrames, moveToIndex } from './ui/reorderFrames.js';
 
+type AuthPollResult = { status: 'pending' } | { status: 'ready'; sessionToken: string } | { status: 'error'; message: string };
+
 interface FrameCandidate {
   id: string;
   name: string;
@@ -26,8 +28,8 @@ interface FrameState extends FrameCandidate {
 }
 
 const SEVERITY_LABEL: Record<IRWarning['severity'], string> = {
-  blocking: 'Bloquant',
-  warning: 'Avertissement',
+  blocking: 'Blocking',
+  warning: 'Warning',
   info: 'Info',
 };
 
@@ -148,10 +150,10 @@ function App() {
           break;
         }
         case 'no-frames-selected':
-          setSelectionNotice('Sélectionne au moins une frame sur le canvas Figma avant de cliquer.');
+          setSelectionNotice('Select at least one frame on the Figma canvas before clicking.');
           break;
         case 'too-many-frames':
-          setSelectionNotice(`${msg.count} frames sélectionnées — au-delà de ${msg.max}, l'export peut devenir lent.`);
+          setSelectionNotice(`${msg.count} frames selected — beyond ${msg.max}, export may become slow.`);
           break;
         case 'export-payload':
           void handleExportPayload(msg.document as IRDocument);
@@ -200,7 +202,7 @@ function App() {
       });
       if (!res.ok) {
         const body = await res.json().catch(() => undefined);
-        throw new Error(body?.error ? `${body.error} (${res.status})` : `Upload d'assets refusé (${res.status})`);
+        throw new Error(body?.error ? `${body.error} (${res.status})` : `Asset upload rejected (${res.status})`);
       }
       batch = [];
       batchBytes = 0;
@@ -238,7 +240,7 @@ function App() {
       });
       if (!res.ok) {
         const body = await res.json().catch(() => undefined);
-        throw new Error(body?.error ? `${body.error} (${res.status})` : `Export refusé (${res.status})`);
+        throw new Error(body?.error ? `${body.error} (${res.status})` : `Export rejected (${res.status})`);
       }
       const { jobId } = await res.json();
       await pollJob(jobId);
@@ -275,13 +277,46 @@ function App() {
           ?.map((b) => b.error)
           .filter((e): e is string => Boolean(e));
         setExportError(
-          batchErrors && batchErrors.length > 0 ? batchErrors.join(' · ') : (job.error ?? 'Échec inconnu côté serveur.'),
+          batchErrors && batchErrors.length > 0 ? batchErrors.join(' · ') : (job.error ?? 'Unknown server-side failure.'),
         );
         return;
       }
       await new Promise((r) => setTimeout(r, 1500));
     }
     setExportState('error');
+  }
+
+  /**
+   * Sonde `/auth/session/:pollId` jusqu'à ce que le callback OAuth (ouvert
+   * dans l'onglet externe par le lien "Connect to Google") ait produit un
+   * jeton de session — remplace l'ancien copier-coller manuel : l'utilisateur
+   * n'a plus qu'à se connecter dans l'onglet Google puis revenir sur Figma,
+   * le plugin détecte la connexion tout seul.
+   */
+  async function pollAuthSession(pollId: string) {
+    for (let i = 0; i < 400; i++) {
+      if (sessionTokenRef.current) return;
+      try {
+        const res = await fetch(`${backend.baseUrl}/auth/session/${pollId}`, { credentials: 'include' });
+        const result = (await res.json()) as AuthPollResult;
+        if (result.status === 'ready') {
+          setSessionToken(sanitizeSessionToken(result.sessionToken));
+          setAuthUrl(undefined);
+          return;
+        }
+        if (result.status === 'error') {
+          setLoginError(result.message);
+          setAuthUrl(undefined);
+          return;
+        }
+      } catch {
+        // Coupure réseau transitoire : on retente au prochain tour plutôt
+        // que d'abandonner tout de suite.
+      }
+      await new Promise((r) => setTimeout(r, 1500));
+    }
+    setLoginError('Sign-in timed out — try again.');
+    setAuthUrl(undefined);
   }
 
   function startLogin() {
@@ -306,11 +341,14 @@ function App() {
       .then(async (res) => {
         if (!res.ok) {
           const body = await res.json().catch(() => undefined);
-          throw new Error(body?.message ?? `Le backend a répondu ${res.status}`);
+          throw new Error(body?.message ?? `Backend responded ${res.status}`);
         }
         return res.json();
       })
-      .then(({ authUrl }) => setAuthUrl(authUrl))
+      .then(({ authUrl, pollId }) => {
+        setAuthUrl(authUrl);
+        void pollAuthSession(pollId);
+      })
       .catch((err) => {
         setLoginError(err instanceof Error ? err.message : String(err));
         // eslint-disable-next-line no-console
@@ -395,12 +433,12 @@ function App() {
             type="button"
             className="f2s-btn f2s-btn--secondary"
             disabled
-            title="Création de modèles réutilisables — brief séparé, à venir."
+            title="Reusable template creation — separate brief, coming soon."
           >
-            Créer un modèle
+            Create a template
           </button>
           <button type="button" className="f2s-btn f2s-btn--tertiary" onClick={handleAddFramesClick}>
-            {selecting ? 'Ajouter la sélection' : 'Sélectionner des frames à ajouter'}
+            {selecting ? 'Add selection' : 'Select frames to add'}
           </button>
           <button
             type="button"
@@ -408,29 +446,33 @@ function App() {
             disabled={exporting || order.length === 0 || !sessionToken}
             onClick={startExport}
           >
-            Exporter
+            Export
           </button>
         </div>
       </header>
 
       <div className="f2s-toolbar">
-        <div className="f2s-toolbar-group">
-          <span className="f2s-toolbar-label">Dimensions :</span>
-          <span className="f2s-dim-box">{activeFrame ? Math.round(activeFrame.width) : '—'}</span>
-          <span className="f2s-dim-sep">×</span>
-          <span className="f2s-dim-box">{activeFrame ? Math.round(activeFrame.height) : '—'}</span>
+        <div className="f2s-toolbar-row f2s-toolbar-row--center">
+          <div className="f2s-toolbar-group">
+            <span className="f2s-toolbar-label">Dimensions:</span>
+            <span className="f2s-dim-box">{activeFrame ? Math.round(activeFrame.width) : '—'}</span>
+            <span className="f2s-dim-sep">×</span>
+            <span className="f2s-dim-box">{activeFrame ? Math.round(activeFrame.height) : '—'}</span>
+          </div>
         </div>
-        <div className="f2s-toolbar-group">
-          <span className="f2s-toolbar-label">Polices :</span>
-          {deckFontSubstitutions.length === 0 ? (
-            <span className="f2s-toolbar-muted">Aucune substitution</span>
-          ) : (
-            deckFontSubstitutions.map((s) => (
-              <span className="f2s-font-pill" key={`${s.original}→${s.resolved}`} title={`« ${s.original} » n'est pas disponible côté Slides — remplacée par « ${s.resolved} ».`}>
-                {s.original} → {s.resolved}
-              </span>
-            ))
-          )}
+        <div className="f2s-toolbar-row f2s-toolbar-row--start">
+          <div className="f2s-toolbar-group">
+            <span className="f2s-toolbar-label">Fonts:</span>
+            {deckFontSubstitutions.length === 0 ? (
+              <span className="f2s-toolbar-muted">No substitution</span>
+            ) : (
+              deckFontSubstitutions.map((s) => (
+                <span className="f2s-font-pill" key={`${s.original}→${s.resolved}`} title={`"${s.original}" isn't available in Slides — replaced with "${s.resolved}".`}>
+                  {s.original} → {s.resolved}
+                </span>
+              ))
+            )}
+          </div>
         </div>
       </div>
 
@@ -439,8 +481,8 @@ function App() {
           {order.length === 0 ? (
             <p className="f2s-empty">
               {selecting
-                ? 'Sélectionne une ou plusieurs frames sur le canvas Figma, puis clique sur « Ajouter la sélection ».'
-                : 'Clique sur « Sélectionner des frames à ajouter » pour choisir ce qui doit être exporté.'}
+                ? 'Select one or more frames on the Figma canvas, then click "Add selection".'
+                : 'Click "Select frames to add" to choose what should be exported.'}
             </p>
           ) : (
             order.map((id, index) => {
@@ -459,20 +501,20 @@ function App() {
                     onDrop={() => handleDrop(id)}
                   >
                     {f.previewDataUrl && <img src={f.previewDataUrl} alt={f.name} />}
-                    {severity && <span className={`f2s-lint-dot f2s-lint-dot--${severity}`} title={`${f.warnings?.length} diagnostic(s) — ${SEVERITY_LABEL[severity]}`} />}
+                    {severity && <span className={`f2s-lint-dot f2s-lint-dot--${severity}`} title={`${f.warnings?.length} issue(s) — ${SEVERITY_LABEL[severity]}`} />}
                   </button>
                   <div className="f2s-frame-info">
                     <span className="f2s-frame-text">
                       {index + 1} · {f.width}×{f.height}px
                     </span>
                     <div className="f2s-frame-controls">
-                      <button type="button" className="f2s-icon-btn" disabled={index === order.length - 1} title="Déplacer après" onClick={() => moveFrame(id, 1)}>
+                      <button type="button" className="f2s-icon-btn" disabled={index === order.length - 1} title="Move down" onClick={() => moveFrame(id, 1)}>
                         ▼
                       </button>
-                      <button type="button" className="f2s-icon-btn" disabled={index === 0} title="Déplacer avant" onClick={() => moveFrame(id, -1)}>
+                      <button type="button" className="f2s-icon-btn" disabled={index === 0} title="Move up" onClick={() => moveFrame(id, -1)}>
                         ▲
                       </button>
-                      <button type="button" className="f2s-icon-btn" title="Retirer" onClick={() => removeFrame(id)}>
+                      <button type="button" className="f2s-icon-btn" title="Remove" onClick={() => removeFrame(id)}>
                         ✕
                       </button>
                     </div>
@@ -491,7 +533,7 @@ function App() {
               </div>
               {activeFrame.nativeCount !== undefined && (
                 <p className="f2s-canvas-caption">
-                  {activeFrame.nativeCount} élément(s) natif(s) · {activeFrame.rasterCount} rasterisé(s)
+                  {activeFrame.nativeCount} native element(s) · {activeFrame.rasterCount} rasterized
                 </p>
               )}
               {activeFrame.warnings && activeFrame.warnings.length > 0 && (
@@ -509,7 +551,7 @@ function App() {
               )}
             </>
           ) : (
-            <p className="f2s-canvas-empty">Sélectionne une frame à gauche pour la prévisualiser.</p>
+            <p className="f2s-canvas-empty">Select a frame on the left to preview it.</p>
           )}
         </main>
       </div>
@@ -518,45 +560,43 @@ function App() {
         <footer className="f2s-statusbar">
           {!sessionToken && (
             <div className="f2s-login">
-              <input
-                className="f2s-token-input"
-                placeholder="Coller le jeton de session"
-                onChange={(e) => setSessionToken(sanitizeSessionToken((e.target as HTMLInputElement).value))}
-              />
               {authUrl ? (
-                <a href={authUrl} target="_blank" rel="noreferrer" className="f2s-btn f2s-btn--secondary">
-                  Se connecter à Google
-                </a>
+                <>
+                  <a href={authUrl} target="_blank" rel="noreferrer" className="f2s-btn f2s-btn--secondary">
+                    Connect to Google
+                  </a>
+                  <span className="f2s-toolbar-muted">Waiting for you to finish signing in…</span>
+                </>
               ) : loginError ? (
                 <button type="button" className="f2s-btn f2s-btn--secondary" onClick={startLogin}>
-                  Réessayer
+                  Retry
                 </button>
               ) : (
                 <button type="button" className="f2s-btn f2s-btn--secondary" disabled>
-                  Préparation du lien…
+                  Preparing link…
                 </button>
               )}
             </div>
           )}
           {loginError && (
             <p className="f2s-error">
-              Échec de la connexion : {loginError}. Vérifie que le backend tourne bien sur {backend.baseUrl} et que{' '}
-              <code>PLUGIN_ALLOWED_ORIGINS</code> autorise l'origine de ce plugin.
+              Connection failed: {loginError}. Make sure the backend is running on {backend.baseUrl} and that{' '}
+              <code>PLUGIN_ALLOWED_ORIGINS</code> allows this plugin's origin.
             </p>
           )}
           {selectionNotice && <p className="f2s-error">{selectionNotice}</p>}
           {exporting && (
             <div className="f2s-progress">
               <span className="f2s-spinner" />
-              Exportation en cours {exportProgress}%
+              Exporting… {exportProgress}%
             </div>
           )}
           {exportState === 'done' && resultUrl && (
             <div className="f2s-progress">
-              ✅ Terminé — <a href={resultUrl} target="_blank" rel="noreferrer">ouvrir la présentation</a>
+              ✅ Done — <a href={resultUrl} target="_blank" rel="noreferrer">open presentation</a>
             </div>
           )}
-          {exportState === 'error' && <div className="f2s-error">L'export a échoué : {exportError ?? 'erreur inconnue.'}</div>}
+          {exportState === 'error' && <div className="f2s-error">Export failed: {exportError ?? 'unknown error.'}</div>}
         </footer>
       )}
     </>
