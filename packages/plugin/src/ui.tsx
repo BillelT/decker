@@ -510,45 +510,54 @@ function App() {
   }
 
   const exporting = exportState === 'exporting';
-  const showStatusBar = exporting || exportState === 'done' || exportState === 'error' || selectionNotice || loginError || !sessionToken;
 
   return (
     <>
       <header className="f2s-topbar">
-        <Logo />
-        <div className="f2s-topbar-actions">
-          <button
-            type="button"
-            className="f2s-btn f2s-btn--secondary"
-            disabled
-            title="Reusable template creation — separate brief, coming soon."
-          >
+        <div className="f2s-topbar-left">
+          <Logo />
+          <button type="button" className="f2s-btn f2s-btn--secondary" title="Reusable template creation — separate brief, coming soon.">
             Create a template
           </button>
+        </div>
+
+        <div className="f2s-toolbar-group f2s-topbar-center">
+          <span className="f2s-toolbar-label">Dimensions:</span>
+          <span className="f2s-dim-box">{activeFrame ? Math.round(activeFrame.width) : '—'}</span>
+          <span className="f2s-dim-sep">×</span>
+          <span className="f2s-dim-box">{activeFrame ? Math.round(activeFrame.height) : '—'}</span>
+        </div>
+
+        <div className="f2s-topbar-actions">
           <button type="button" className="f2s-btn f2s-btn--tertiary" onClick={handleAddFramesClick}>
             {selecting ? 'Add selection' : 'Select frames to add'}
           </button>
-          <button
-            type="button"
-            className="f2s-btn f2s-btn--primary"
-            disabled={exporting || order.length === 0 || !sessionToken}
-            onClick={startExport}
-          >
-            Export
-          </button>
+          {sessionToken ? (
+            <button type="button" className="f2s-btn f2s-btn--primary" disabled={exporting || order.length === 0} onClick={startExport}>
+              Export
+            </button>
+          ) : authUrl ? (
+            // Un vrai <a target="_blank"> cliqué par l'utilisateur : voir le
+            // commentaire de startLogin plus haut sur la CSP du plugin Figma.
+            <a href={authUrl} target="_blank" rel="noreferrer" className="f2s-btn f2s-btn--primary">
+              Export
+            </a>
+          ) : loginError ? (
+            <button type="button" className="f2s-btn f2s-btn--primary" onClick={startLogin}>
+              Export
+            </button>
+          ) : (
+            // TODO(TODO.md) : état de chargement pendant qu'on attend le lien
+            // Google — pour l'instant juste désactivé, sans feedback visuel.
+            <button type="button" className="f2s-btn f2s-btn--primary" disabled>
+              Export
+            </button>
+          )}
         </div>
       </header>
 
       <div className="f2s-toolbar">
-        <div className="f2s-toolbar-row f2s-toolbar-row--center">
-          <div className="f2s-toolbar-group">
-            <span className="f2s-toolbar-label">Dimensions:</span>
-            <span className="f2s-dim-box">{activeFrame ? Math.round(activeFrame.width) : '—'}</span>
-            <span className="f2s-dim-sep">×</span>
-            <span className="f2s-dim-box">{activeFrame ? Math.round(activeFrame.height) : '—'}</span>
-          </div>
-        </div>
-        <div className="f2s-toolbar-row f2s-toolbar-row--start">
+        <div className="f2s-toolbar-row">
           <div className="f2s-toolbar-group">
             <span className="f2s-toolbar-label">Fonts:</span>
             {deckFontSubstitutions.length === 0 ? (
@@ -660,7 +669,13 @@ function App() {
         </main>
       </div>
 
-      {showStatusBar && (
+      {/*
+        Désactivé pour l'instant (cf TODO.md) : le bouton Export du header
+        gère désormais la connexion Google lui-même, et ce pied de page sera
+        repensé plus tard (indicateur de progression/erreur + rappel "Buy
+        Me a Coffee") plutôt que remis tel quel.
+
+      showStatusBar && (
         <footer className="f2s-statusbar">
           {!sessionToken && (
             <div className="f2s-login">
@@ -702,7 +717,8 @@ function App() {
           )}
           {exportState === 'error' && <div className="f2s-error">Export failed: {exportError ?? 'unknown error.'}</div>}
         </footer>
-      )}
+      )
+      */}
     </>
   );
 }
