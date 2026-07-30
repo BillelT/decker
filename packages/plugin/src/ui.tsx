@@ -39,6 +39,13 @@ function postToPlugin(message: Record<string, unknown>): void {
 /** En dessous de ce mouvement, un pointerdown reste un simple clic de sélection. */
 const DRAG_THRESHOLD_PX = 3;
 
+/**
+ * Fraction (0–1) d'un slot qu'il reste à parcourir, avant un recouvrement
+ * complet avec la vignette voisine, pour que le réordonnancement se
+ * déclenche déjà — plutôt que d'attendre d'être quasiment empilé dessus.
+ */
+const DRAG_SWAP_MARGIN = 0.32;
+
 /** Monogramme "B" — packages/plugin/src/assets/logo.svg (repo billeltighidet). */
 function Logo() {
   return (
@@ -90,21 +97,13 @@ function App() {
   const [dragTargetIndex, setDragTargetIndex] = useState(0);
   const dragStartYRef = useRef(0);
   const dragStartIndexRef = useRef(0);
-  // Sommet (Y) de chaque vignette au tout début du drag, avant le moindre
-  // décalage visuel — sert de repère stable pour savoir sur quel "slot"
-  // d'origine pointe le curseur, indépendamment des transforms appliqués
-  // en cours de route (qui, eux, ne changent jamais la position de layout).
-  const slotTopsRef = useRef<Map<string, number>>(new Map());
+  // Hauteur d'un "pas" (slot + gap) entre deux vignettes consécutives,
+  // mesurée une seule fois au `pointerdown` — sert de base au calcul du pas
+  // franchi par targetIndexFromOffset, indépendamment des transforms qu'on
+  // applique nous-mêmes en cours de route (qui, eux, ne changent jamais la
+  // position de layout, donc fausseraient une mesure live).
   const slotHeightRef = useRef(0);
-  // Seuil de bascule d'index (voir targetIndexFromPointer) : basé sur la
-  // hauteur du slot ENTIER (aperçu + .f2s-frame-info + gap), le point de
-  // bascule tombait bien après le milieu visuel de la vignette — il fallait
-  // glisser bien plus loin que prévu avant qu'un réordonnancement ne se
-  // déclenche. On retire la hauteur de .f2s-frame-info (mesurée une fois,
-  // comme slotHeightRef) pour retrouver un seuil aligné sur l'aperçu.
-  const dragThresholdHeightRef = useRef(0);
   const sidebarItemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
-  const frameInfoRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const [selecting, setSelecting] = useState(false);
   const [selectionNotice, setSelectionNotice] = useState<string | undefined>();
   const [hasCanvasSelection, setHasCanvasSelection] = useState(false);
@@ -418,24 +417,22 @@ function App() {
   }
 
   /**
-   * Index (dans l'`order` FIGÉ du début de drag) où la vignette atterrirait :
-   * le nombre de slots d'origine dont le milieu est déjà au-dessus du
-   * pointeur. Basé sur `slotTopsRef`/`slotHeightRef` (capturés une seule
-   * fois au `pointerdown`) plutôt que sur des mesures live, pour ne pas
-   * boucler sur les décalages visuels qu'on applique nous-mêmes en cours de
-   * route (un `transform` ne change jamais la position de layout, mais
-   * changerait le résultat d'un `getBoundingClientRect()` en direct).
+   * Index (dans l'`order` FIGÉ du début de drag) où la vignette atterrirait,
+   * calculé à partir du déplacement du POINTEUR lui-même (`offsetY`, déjà
+   * relatif au point de saisie) plutôt que d'une position absolue comparée
+   * aux tops d'origine des autres vignettes — cette dernière approche
+   * introduisait un biais selon l'endroit où l'utilisateur avait attrapé la
+   * vignette, et exigeait de fait un recouvrement quasi complet avec la
+   * voisine avant de déclencher le pas suivant. Ici, un pas se déclenche dès
+   * que `offsetY` dépasse `slotHeight * (1 - DRAG_SWAP_MARGIN)` : le
+   * réordonnancement anticipe donc la pile complète de la marge voulue.
    */
-  function targetIndexFromPointer(pointerY: number, draggedId: string): number {
+  function targetIndexFromOffset(offsetY: number): number {
     const slotHeight = slotHeightRef.current;
+    const lastIndex = order.length - 1;
     if (slotHeight <= 0) return dragStartIndexRef.current;
-    const thresholdHeight = dragThresholdHeightRef.current || slotHeight;
-    let index = 0;
-    for (const [id, top] of slotTopsRef.current) {
-      if (id === draggedId) continue;
-      if (pointerY > top + thresholdHeight / 2) index++;
-    }
-    return index;
+    const steps = Math.sign(offsetY) * Math.floor(Math.abs(offsetY) / slotHeight + DRAG_SWAP_MARGIN);
+    return Math.max(0, Math.min(lastIndex, dragStartIndexRef.current + steps));
   }
 
   function handleDragPointerDown(e: { clientY: number }, id: string) {
@@ -449,20 +446,12 @@ function App() {
     dragStartIndexRef.current = startIndex;
     setDragTargetIndex(startIndex);
 
-    const tops = new Map<string, number>();
-    for (const itemId of currentOrder) {
-      const el = sidebarItemRefs.current.get(itemId);
-      if (el) tops.set(itemId, el.getBoundingClientRect().top);
-    }
-    slotTopsRef.current = tops;
-    const firstTop = tops.get(currentOrder[0]);
-    const secondTop = currentOrder.length > 1 ? tops.get(currentOrder[1]) : undefined;
+    const firstTop = sidebarItemRefs.current.get(currentOrder[0])?.getBoundingClientRect().top;
+    const secondTop = currentOrder.length > 1 ? sidebarItemRefs.current.get(currentOrder[1])?.getBoundingClientRect().top : undefined;
     slotHeightRef.current =
       firstTop !== undefined && secondTop !== undefined
         ? secondTop - firstTop
         : (sidebarItemRefs.current.get(id)?.getBoundingClientRect().height ?? 0);
-    const frameInfoHeight = frameInfoRefs.current.get(id)?.getBoundingClientRect().height ?? 0;
-    dragThresholdHeightRef.current = Math.max(slotHeightRef.current - frameInfoHeight, 0);
   }
 
   useEffect(() => {
@@ -477,10 +466,10 @@ function App() {
       // Le décalage des autres vignettes ne doit apparaître qu'une fois
       // l'intention de glisser confirmée (au-delà du seuil) — jamais sur un
       // simple clic de sélection.
-      if (active) setDragTargetIndex(targetIndexFromPointer(e.clientY, draggedId));
+      if (active) setDragTargetIndex(targetIndexFromOffset(offset));
     }
     function onPointerUp(e: PointerEvent) {
-      const finalIndex = targetIndexFromPointer(e.clientY, draggedId);
+      const finalIndex = targetIndexFromOffset(e.clientY - dragStartYRef.current);
       // Un seul `setOrder`, au relâchement : au moment où il s'applique, les
       // autres vignettes sont déjà visuellement à leur place finale (décalées
       // via transform ci-dessous) — l'array qui les rattrape à cet instant
@@ -657,13 +646,7 @@ function App() {
                   >
                     {f.previewDataUrl && <img src={f.previewDataUrl} alt={f.name} draggable={false} />}
                   </button>
-                  <div
-                    className="f2s-frame-info"
-                    ref={(el) => {
-                      if (el) frameInfoRefs.current.set(id, el);
-                      else frameInfoRefs.current.delete(id);
-                    }}
-                  >
+                  <div className="f2s-frame-info">
                     <span className="f2s-frame-text">{index + 1}</span>
                     <div className="f2s-frame-controls">
                       <button type="button" className="f2s-icon-btn" title="Remove" onClick={() => removeFrame(id)}>
