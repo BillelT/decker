@@ -954,7 +954,7 @@ a {
     const [sessionToken, setSessionToken] = d2();
     const [loginError, setLoginError] = d2();
     const [authUrl, setAuthUrl] = d2();
-    const [backend] = d2({ baseUrl: true ? "http://localhost:8787" : "https://figma-to-slide-backend.vercel.app" });
+    const [backend] = d2({ baseUrl: true ? "https://figma-to-slide-backend.vercel.app" : "https://figma-to-slide-backend.vercel.app" });
     h2(() => {
       if (!activeId && order.length > 0) setActiveId(order[0]);
     }, [order, activeId]);
