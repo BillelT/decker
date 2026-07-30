@@ -116,12 +116,23 @@ a {
 
 .f2s-toolbar {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 24px;
+  flex-direction: column;
+  gap: 8px;
   padding: 12px 16px;
   flex: none;
+}
+
+.f2s-toolbar-row {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.f2s-toolbar-row--center {
+  justify-content: center;
+}
+
+.f2s-toolbar-row--start {
+  justify-content: flex-start;
 }
 
 .f2s-toolbar-group {
@@ -170,7 +181,7 @@ a {
 .f2s-btn {
   font-size: 12px;
   font-weight: 700;
-  border-radius: 12px;
+  border-radius: 8px;
   padding: 8px 16px;
   border: 1px solid transparent;
   white-space: nowrap;
@@ -221,6 +232,7 @@ a {
   min-height: 0;
   display: flex;
   align-items: stretch;
+  border-top: 1px solid var(--color-border);
 }
 
 .f2s-sidebar {
@@ -264,7 +276,7 @@ a {
 .f2s-icon-btn {
   border: none;
   background: transparent;
-  border-radius: 8px;
+  border-radius: 4px;
   width: 22px;
   height: 22px;
   display: inline-flex;
@@ -280,7 +292,7 @@ a {
 
 .f2s-frame-preview {
   position: relative;
-  border-radius: 12px;
+  border-radius: 8px;
   border: 2px solid transparent;
   background: var(--color-surface-muted);
   aspect-ratio: 16 / 9;
@@ -342,11 +354,10 @@ a {
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  background: var(--color-surface-muted);
 }
 
 .f2s-canvas-empty {
-  margin-top: 64px;
+  margin: auto 0;
   opacity: 0.6;
   font-size: 12px;
   text-align: center;
@@ -395,7 +406,7 @@ a {
   text-align: left;
   border: 1px solid var(--color-border);
   background: var(--color-surface);
-  border-radius: 8px;
+  border-radius: 4px;
   padding: 6px 10px;
   font-size: 12px;
   color: var(--color-text);
@@ -461,23 +472,6 @@ a {
   display: flex;
   align-items: center;
   gap: 16px;
-}
-
-.f2s-token-input {
-  font-family: inherit;
-  font-size: 12px;
-  padding: 8px;
-  border-radius: 8px;
-  border: 1px solid #cccccc;
-  background: var(--color-bg);
-  color: var(--color-text);
-  flex: 1;
-  min-width: 0;
-}
-
-.f2s-token-input:focus {
-  outline: none;
-  border-color: var(--color-orange-40);
 }
 </style>
 </head>
@@ -925,8 +919,8 @@ a {
 
   // src/ui.tsx
   var SEVERITY_LABEL = {
-    blocking: "Bloquant",
-    warning: "Avertissement",
+    blocking: "Blocking",
+    warning: "Warning",
     info: "Info"
   };
   function postToPlugin(message) {
@@ -1017,10 +1011,10 @@ a {
             break;
           }
           case "no-frames-selected":
-            setSelectionNotice("S\xE9lectionne au moins une frame sur le canvas Figma avant de cliquer.");
+            setSelectionNotice("Select at least one frame on the Figma canvas before clicking.");
             break;
           case "too-many-frames":
-            setSelectionNotice(`${msg.count} frames s\xE9lectionn\xE9es \u2014 au-del\xE0 de ${msg.max}, l'export peut devenir lent.`);
+            setSelectionNotice(`${msg.count} frames selected \u2014 beyond ${msg.max}, export may become slow.`);
             break;
           case "export-payload":
             void handleExportPayload(msg.document);
@@ -1057,7 +1051,7 @@ a {
         });
         if (!res.ok) {
           const body = await res.json().catch(() => void 0);
-          throw new Error(body?.error ? `${body.error} (${res.status})` : `Upload d'assets refus\xE9 (${res.status})`);
+          throw new Error(body?.error ? `${body.error} (${res.status})` : `Asset upload rejected (${res.status})`);
         }
         batch = [];
         batchBytes = 0;
@@ -1089,7 +1083,7 @@ a {
         });
         if (!res.ok) {
           const body = await res.json().catch(() => void 0);
-          throw new Error(body?.error ? `${body.error} (${res.status})` : `Export refus\xE9 (${res.status})`);
+          throw new Error(body?.error ? `${body.error} (${res.status})` : `Export rejected (${res.status})`);
         }
         const { jobId } = await res.json();
         await pollJob(jobId);
@@ -1118,7 +1112,7 @@ a {
           setExportState("error");
           const batchErrors = job.batches?.map((b2) => b2.error).filter((e3) => Boolean(e3));
           setExportError(
-            batchErrors && batchErrors.length > 0 ? batchErrors.join(" \xB7 ") : job.error ?? "\xC9chec inconnu c\xF4t\xE9 serveur."
+            batchErrors && batchErrors.length > 0 ? batchErrors.join(" \xB7 ") : job.error ?? "Unknown server-side failure."
           );
           return;
         }
@@ -1126,16 +1120,42 @@ a {
       }
       setExportState("error");
     }
+    async function pollAuthSession(pollId) {
+      for (let i3 = 0; i3 < 400; i3++) {
+        if (sessionTokenRef.current) return;
+        try {
+          const res = await fetch(`${backend.baseUrl}/auth/session/${pollId}`, { credentials: "include" });
+          const result = await res.json();
+          if (result.status === "ready") {
+            setSessionToken(sanitizeSessionToken(result.sessionToken));
+            setAuthUrl(void 0);
+            return;
+          }
+          if (result.status === "error") {
+            setLoginError(result.message);
+            setAuthUrl(void 0);
+            return;
+          }
+        } catch {
+        }
+        await new Promise((r3) => setTimeout(r3, 1500));
+      }
+      setLoginError("Sign-in timed out \u2014 try again.");
+      setAuthUrl(void 0);
+    }
     function startLogin() {
       setLoginError(void 0);
       setAuthUrl(void 0);
       fetch(`${backend.baseUrl}/auth/google`, { method: "POST" }).then(async (res) => {
         if (!res.ok) {
           const body = await res.json().catch(() => void 0);
-          throw new Error(body?.message ?? `Le backend a r\xE9pondu ${res.status}`);
+          throw new Error(body?.message ?? `Backend responded ${res.status}`);
         }
         return res.json();
-      }).then(({ authUrl: authUrl2 }) => setAuthUrl(authUrl2)).catch((err) => {
+      }).then(({ authUrl: authUrl2, pollId }) => {
+        setAuthUrl(authUrl2);
+        void pollAuthSession(pollId);
+      }).catch((err) => {
         setLoginError(err instanceof Error ? err.message : String(err));
         console.error("[figma-to-slides] startLogin failed", err);
       });
@@ -1207,11 +1227,11 @@ a {
               type: "button",
               className: "f2s-btn f2s-btn--secondary",
               disabled: true,
-              title: "Cr\xE9ation de mod\xE8les r\xE9utilisables \u2014 brief s\xE9par\xE9, \xE0 venir.",
-              children: "Cr\xE9er un mod\xE8le"
+              title: "Reusable template creation \u2014 separate brief, coming soon.",
+              children: "Create a template"
             }
           ),
-          /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--tertiary", onClick: handleAddFramesClick, children: selecting ? "Ajouter la s\xE9lection" : "S\xE9lectionner des frames \xE0 ajouter" }),
+          /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--tertiary", onClick: handleAddFramesClick, children: selecting ? "Add selection" : "Select frames to add" }),
           /* @__PURE__ */ u3(
             "button",
             {
@@ -1219,29 +1239,29 @@ a {
               className: "f2s-btn f2s-btn--primary",
               disabled: exporting || order.length === 0 || !sessionToken,
               onClick: startExport,
-              children: "Exporter"
+              children: "Export"
             }
           )
         ] })
       ] }),
       /* @__PURE__ */ u3("div", { className: "f2s-toolbar", children: [
-        /* @__PURE__ */ u3("div", { className: "f2s-toolbar-group", children: [
-          /* @__PURE__ */ u3("span", { className: "f2s-toolbar-label", children: "Dimensions :" }),
+        /* @__PURE__ */ u3("div", { className: "f2s-toolbar-row f2s-toolbar-row--center", children: /* @__PURE__ */ u3("div", { className: "f2s-toolbar-group", children: [
+          /* @__PURE__ */ u3("span", { className: "f2s-toolbar-label", children: "Dimensions:" }),
           /* @__PURE__ */ u3("span", { className: "f2s-dim-box", children: activeFrame ? Math.round(activeFrame.width) : "\u2014" }),
           /* @__PURE__ */ u3("span", { className: "f2s-dim-sep", children: "\xD7" }),
           /* @__PURE__ */ u3("span", { className: "f2s-dim-box", children: activeFrame ? Math.round(activeFrame.height) : "\u2014" })
-        ] }),
-        /* @__PURE__ */ u3("div", { className: "f2s-toolbar-group", children: [
-          /* @__PURE__ */ u3("span", { className: "f2s-toolbar-label", children: "Polices :" }),
-          deckFontSubstitutions.length === 0 ? /* @__PURE__ */ u3("span", { className: "f2s-toolbar-muted", children: "Aucune substitution" }) : deckFontSubstitutions.map((s3) => /* @__PURE__ */ u3("span", { className: "f2s-font-pill", title: `\xAB ${s3.original} \xBB n'est pas disponible c\xF4t\xE9 Slides \u2014 remplac\xE9e par \xAB ${s3.resolved} \xBB.`, children: [
+        ] }) }),
+        /* @__PURE__ */ u3("div", { className: "f2s-toolbar-row f2s-toolbar-row--start", children: /* @__PURE__ */ u3("div", { className: "f2s-toolbar-group", children: [
+          /* @__PURE__ */ u3("span", { className: "f2s-toolbar-label", children: "Fonts:" }),
+          deckFontSubstitutions.length === 0 ? /* @__PURE__ */ u3("span", { className: "f2s-toolbar-muted", children: "No substitution" }) : deckFontSubstitutions.map((s3) => /* @__PURE__ */ u3("span", { className: "f2s-font-pill", title: `"${s3.original}" isn't available in Slides \u2014 replaced with "${s3.resolved}".`, children: [
             s3.original,
             " \u2192 ",
             s3.resolved
           ] }, `${s3.original}\u2192${s3.resolved}`))
-        ] })
+        ] }) })
       ] }),
       /* @__PURE__ */ u3("div", { className: "f2s-body", children: [
-        /* @__PURE__ */ u3("aside", { className: "f2s-sidebar", children: order.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-empty", children: selecting ? "S\xE9lectionne une ou plusieurs frames sur le canvas Figma, puis clique sur \xAB Ajouter la s\xE9lection \xBB." : "Clique sur \xAB S\xE9lectionner des frames \xE0 ajouter \xBB pour choisir ce qui doit \xEAtre export\xE9." }) : order.map((id, index) => {
+        /* @__PURE__ */ u3("aside", { className: "f2s-sidebar", children: order.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-empty", children: selecting ? 'Select one or more frames on the Figma canvas, then click "Add selection".' : 'Click "Select frames to add" to choose what should be exported.' }) : order.map((id, index) => {
           const f4 = frames[id];
           if (!f4) return null;
           const severity = worstSeverity(f4.warnings);
@@ -1258,7 +1278,7 @@ a {
                 onDrop: () => handleDrop(id),
                 children: [
                   f4.previewDataUrl && /* @__PURE__ */ u3("img", { src: f4.previewDataUrl, alt: f4.name }),
-                  severity && /* @__PURE__ */ u3("span", { className: `f2s-lint-dot f2s-lint-dot--${severity}`, title: `${f4.warnings?.length} diagnostic(s) \u2014 ${SEVERITY_LABEL[severity]}` })
+                  severity && /* @__PURE__ */ u3("span", { className: `f2s-lint-dot f2s-lint-dot--${severity}`, title: `${f4.warnings?.length} issue(s) \u2014 ${SEVERITY_LABEL[severity]}` })
                 ]
               }
             ),
@@ -1272,9 +1292,9 @@ a {
                 "px"
               ] }),
               /* @__PURE__ */ u3("div", { className: "f2s-frame-controls", children: [
-                /* @__PURE__ */ u3("button", { type: "button", className: "f2s-icon-btn", disabled: index === order.length - 1, title: "D\xE9placer apr\xE8s", onClick: () => moveFrame(id, 1), children: "\u25BC" }),
-                /* @__PURE__ */ u3("button", { type: "button", className: "f2s-icon-btn", disabled: index === 0, title: "D\xE9placer avant", onClick: () => moveFrame(id, -1), children: "\u25B2" }),
-                /* @__PURE__ */ u3("button", { type: "button", className: "f2s-icon-btn", title: "Retirer", onClick: () => removeFrame(id), children: "\u2715" })
+                /* @__PURE__ */ u3("button", { type: "button", className: "f2s-icon-btn", disabled: index === order.length - 1, title: "Move down", onClick: () => moveFrame(id, 1), children: "\u25BC" }),
+                /* @__PURE__ */ u3("button", { type: "button", className: "f2s-icon-btn", disabled: index === 0, title: "Move up", onClick: () => moveFrame(id, -1), children: "\u25B2" }),
+                /* @__PURE__ */ u3("button", { type: "button", className: "f2s-icon-btn", title: "Remove", onClick: () => removeFrame(id), children: "\u2715" })
               ] })
             ] })
           ] }, id);
@@ -1283,53 +1303,46 @@ a {
           /* @__PURE__ */ u3("div", { className: "f2s-canvas-preview", children: activeFrame.previewDataUrl && /* @__PURE__ */ u3("img", { src: activeFrame.previewDataUrl, alt: activeFrame.name }) }),
           activeFrame.nativeCount !== void 0 && /* @__PURE__ */ u3("p", { className: "f2s-canvas-caption", children: [
             activeFrame.nativeCount,
-            " \xE9l\xE9ment(s) natif(s) \xB7 ",
+            " native element(s) \xB7 ",
             activeFrame.rasterCount,
-            " rasteris\xE9(s)"
+            " rasterized"
           ] }),
           activeFrame.warnings && activeFrame.warnings.length > 0 && /* @__PURE__ */ u3("ul", { className: "f2s-linter", children: activeFrame.warnings.map((w3, i3) => /* @__PURE__ */ u3("li", { children: /* @__PURE__ */ u3("button", { type: "button", className: "f2s-linter-item", "data-severity": w3.severity, onClick: () => selectWarningNode(w3.sourceNodeId), children: [
             /* @__PURE__ */ u3("span", { className: `f2s-lint-dot f2s-lint-dot--${w3.severity}` }),
             /* @__PURE__ */ u3("span", { className: "f2s-linter-message", children: w3.message }),
             /* @__PURE__ */ u3("span", { className: "f2s-linter-node", children: w3.nodeName })
           ] }) }, i3)) })
-        ] }) : /* @__PURE__ */ u3("p", { className: "f2s-canvas-empty", children: "S\xE9lectionne une frame \xE0 gauche pour la pr\xE9visualiser." }) })
+        ] }) : /* @__PURE__ */ u3("p", { className: "f2s-canvas-empty", children: "Select a frame on the left to preview it." }) })
       ] }),
       showStatusBar && /* @__PURE__ */ u3("footer", { className: "f2s-statusbar", children: [
-        !sessionToken && /* @__PURE__ */ u3("div", { className: "f2s-login", children: [
-          /* @__PURE__ */ u3(
-            "input",
-            {
-              className: "f2s-token-input",
-              placeholder: "Coller le jeton de session",
-              onChange: (e3) => setSessionToken(sanitizeSessionToken(e3.target.value))
-            }
-          ),
-          authUrl ? /* @__PURE__ */ u3("a", { href: authUrl, target: "_blank", rel: "noreferrer", className: "f2s-btn f2s-btn--secondary", children: "Se connecter \xE0 Google" }) : loginError ? /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--secondary", onClick: startLogin, children: "R\xE9essayer" }) : /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--secondary", disabled: true, children: "Pr\xE9paration du lien\u2026" })
-        ] }),
+        !sessionToken && /* @__PURE__ */ u3("div", { className: "f2s-login", children: authUrl ? /* @__PURE__ */ u3(S, { children: [
+          /* @__PURE__ */ u3("a", { href: authUrl, target: "_blank", rel: "noreferrer", className: "f2s-btn f2s-btn--secondary", children: "Connect to Google" }),
+          /* @__PURE__ */ u3("span", { className: "f2s-toolbar-muted", children: "Waiting for you to finish signing in\u2026" })
+        ] }) : loginError ? /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--secondary", onClick: startLogin, children: "Retry" }) : /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--secondary", disabled: true, children: "Preparing link\u2026" }) }),
         loginError && /* @__PURE__ */ u3("p", { className: "f2s-error", children: [
-          "\xC9chec de la connexion : ",
+          "Connection failed: ",
           loginError,
-          ". V\xE9rifie que le backend tourne bien sur ",
+          ". Make sure the backend is running on ",
           backend.baseUrl,
-          " et que",
+          " and that",
           " ",
           /* @__PURE__ */ u3("code", { children: "PLUGIN_ALLOWED_ORIGINS" }),
-          " autorise l'origine de ce plugin."
+          " allows this plugin's origin."
         ] }),
         selectionNotice && /* @__PURE__ */ u3("p", { className: "f2s-error", children: selectionNotice }),
         exporting && /* @__PURE__ */ u3("div", { className: "f2s-progress", children: [
           /* @__PURE__ */ u3("span", { className: "f2s-spinner" }),
-          "Exportation en cours ",
+          "Exporting\u2026 ",
           exportProgress,
           "%"
         ] }),
         exportState === "done" && resultUrl && /* @__PURE__ */ u3("div", { className: "f2s-progress", children: [
-          "\u2705 Termin\xE9 \u2014 ",
-          /* @__PURE__ */ u3("a", { href: resultUrl, target: "_blank", rel: "noreferrer", children: "ouvrir la pr\xE9sentation" })
+          "\u2705 Done \u2014 ",
+          /* @__PURE__ */ u3("a", { href: resultUrl, target: "_blank", rel: "noreferrer", children: "open presentation" })
         ] }),
         exportState === "error" && /* @__PURE__ */ u3("div", { className: "f2s-error", children: [
-          "L'export a \xE9chou\xE9 : ",
-          exportError ?? "erreur inconnue."
+          "Export failed: ",
+          exportError ?? "unknown error."
         ] })
       ] })
     ] });

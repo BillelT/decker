@@ -22,3 +22,26 @@ export async function popCodeVerifier(state: string): Promise<string | undefined
   if (codeVerifier) await getRedis().del(key(state));
   return codeVerifier ?? undefined;
 }
+
+/**
+ * Résultat du callback OAuth, gardé sous le même `state` que le
+ * code_verifier ci-dessus, pour que l'iframe du plugin (qui a démarré le
+ * flow et connaît donc ce `state`) puisse le récupérer par polling une fois
+ * l'utilisateur revenu de la fenêtre Google — sans copier-coller de jeton à
+ * la main.
+ */
+export type AuthPollResult = { status: 'ready'; sessionToken: string } | { status: 'error'; message: string };
+
+const RESULT_TTL_SEC = 10 * 60;
+const resultKey = (state: string) => `f2s:pkce:result:${state}`;
+
+export async function stashAuthResult(state: string, result: AuthPollResult): Promise<void> {
+  await getRedis().set(resultKey(state), result, { ex: RESULT_TTL_SEC });
+}
+
+/** Single-use comme `popCodeVerifier` : une fois lu, le résultat est effacé. */
+export async function popAuthResult(state: string): Promise<AuthPollResult | undefined> {
+  const result = await getRedis().get<AuthPollResult>(resultKey(state));
+  if (result) await getRedis().del(resultKey(state));
+  return result ?? undefined;
+}
