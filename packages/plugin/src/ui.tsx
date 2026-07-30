@@ -62,7 +62,15 @@ function App() {
   const [frames, setFrames] = useState<Record<string, FrameState>>({});
   const [order, setOrder] = useState<string[]>([]);
   const [activeId, setActiveId] = useState<string | undefined>();
+  // Drag au pointeur plutôt qu'au HTML5 natif : ce dernier affiche un
+  // "ghost" translucide géré par le navigateur (avec son ombre par défaut,
+  // pas stylable) qui ne suit pas le curseur en continu — on préfère
+  // déplacer la vignette nous-mêmes via un `transform` recalculé à chaque
+  // `pointermove`, sans ombre.
   const [dragId, setDragId] = useState<string | undefined>();
+  const [dragOffsetY, setDragOffsetY] = useState(0);
+  const dragStartYRef = useRef(0);
+  const sidebarItemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const [selecting, setSelecting] = useState(false);
   const [selectionNotice, setSelectionNotice] = useState<string | undefined>();
 
@@ -381,12 +389,53 @@ function App() {
     setActiveId((prev) => (prev === id ? undefined : prev));
   }
 
-  function handleDrop(targetId: string) {
-    if (dragId && dragId !== targetId) {
-      setOrder((prev) => moveToIndex(prev, dragId, prev.indexOf(targetId)));
+  /**
+   * Index où `draggedId` doit atterrir : le nombre d'autres vignettes dont
+   * le centre vertical est déjà au-dessus du pointeur. En excluant la
+   * vignette déplacée du calcul, cet index reste valable quelle que soit sa
+   * position de départ dans `order` (voir `moveToIndex`, qui retire puis
+   * réinsère au même index dans le reste de la liste).
+   */
+  function targetIndexFromPointer(pointerY: number, draggedId: string): number {
+    let index = 0;
+    for (const id of order) {
+      if (id === draggedId) continue;
+      const el = sidebarItemRefs.current.get(id);
+      if (!el) continue;
+      const rect = el.getBoundingClientRect();
+      if (pointerY > rect.top + rect.height / 2) index++;
     }
-    setDragId(undefined);
+    return index;
   }
+
+  function handleDragPointerDown(e: { clientY: number }, id: string) {
+    dragStartYRef.current = e.clientY;
+    setDragOffsetY(0);
+    setDragId(id);
+  }
+
+  useEffect(() => {
+    if (!dragId) return;
+    const draggedId = dragId;
+
+    function onPointerMove(e: PointerEvent) {
+      setDragOffsetY(e.clientY - dragStartYRef.current);
+    }
+    function onPointerUp(e: PointerEvent) {
+      const targetIndex = targetIndexFromPointer(e.clientY, draggedId);
+      setOrder((prev) => moveToIndex(prev, draggedId, targetIndex));
+      setDragId(undefined);
+      setDragOffsetY(0);
+    }
+
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dragId]);
 
   function startExport() {
     setExportState('exporting');
@@ -490,16 +539,22 @@ function App() {
             order.map((id, index) => {
               const f = frames[id];
               if (!f) return null;
+              const isDragging = dragId === id;
               return (
-                <div key={id} className="f2s-sidebar-item">
+                <div
+                  key={id}
+                  ref={(el) => {
+                    if (el) sidebarItemRefs.current.set(id, el);
+                    else sidebarItemRefs.current.delete(id);
+                  }}
+                  className={`f2s-sidebar-item${isDragging ? ' is-dragging' : ''}`}
+                  style={isDragging ? { transform: `translateY(${dragOffsetY}px)` } : undefined}
+                >
                   <button
                     type="button"
                     className={`f2s-frame-preview${activeId === id ? ' is-active' : ''}`}
                     onClick={() => selectFrame(id)}
-                    draggable
-                    onDragStart={() => setDragId(id)}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={() => handleDrop(id)}
+                    onPointerDown={(e) => handleDragPointerDown(e, id)}
                   >
                     {f.previewDataUrl && <img src={f.previewDataUrl} alt={f.name} />}
                   </button>
