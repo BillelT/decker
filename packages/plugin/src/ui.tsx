@@ -595,6 +595,9 @@ function App() {
 
       <div className="f2s-body">
         <aside className="f2s-sidebar">
+          {selecting && order.length > 0 && (
+            <p className="f2s-toolbar-muted">Select one or more frames on the Figma canvas, then click "Add selection".</p>
+          )}
           {order.length === 0 ? (
             <p className="f2s-empty">
               {selecting
