@@ -112,6 +112,16 @@ async function main(): Promise<void> {
   const pending: PendingSlide[] = [];
   const idGen = createIdGenerator(figma.root.id.slice(0, 8));
 
+  // Permet à l'UI de masquer son hint « sélectionne des frames sur le
+  // canvas » dès qu'une sélection exportable existe déjà, plutôt que de le
+  // garder affiché même une fois l'action faite.
+  figma.on('selectionchange', () => {
+    figma.ui.postMessage({
+      type: 'canvas-selection-changed',
+      hasSelection: figma.currentPage.selection.some(isExportable),
+    });
+  });
+
   figma.ui.onmessage = async (msg: { type: string; [key: string]: unknown }) => {
     if (msg.type === 'add-selected-frames') {
       try {

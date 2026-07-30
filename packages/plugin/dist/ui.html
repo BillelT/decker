@@ -387,11 +387,11 @@ a {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 12px;
 }
 
 .f2s-canvas-empty {
-  margin: auto 0;
   color: var(--color-black-70);
   font-size: 12px;
   text-align: center;
@@ -875,14 +875,6 @@ a {
   }
 
   // src/ui/reorderFrames.ts
-  function reorderFrames(order, id, direction) {
-    const idx = order.indexOf(id);
-    const swapWith = idx + direction;
-    if (idx === -1 || swapWith < 0 || swapWith >= order.length) return order;
-    const next = [...order];
-    [next[idx], next[swapWith]] = [next[swapWith], next[idx]];
-    return next;
-  }
   function moveToIndex(order, id, targetIndex) {
     const idx = order.indexOf(id);
     if (idx === -1 || targetIndex < 0 || targetIndex >= order.length || idx === targetIndex) return order;
@@ -983,9 +975,12 @@ a {
     const dragStartIndexRef = A2(0);
     const slotTopsRef = A2(/* @__PURE__ */ new Map());
     const slotHeightRef = A2(0);
+    const dragThresholdHeightRef = A2(0);
     const sidebarItemRefs = A2(/* @__PURE__ */ new Map());
+    const frameInfoRefs = A2(/* @__PURE__ */ new Map());
     const [selecting, setSelecting] = d2(false);
     const [selectionNotice, setSelectionNotice] = d2();
+    const [hasCanvasSelection, setHasCanvasSelection] = d2(false);
     const [sessionToken, setSessionToken] = d2();
     const [loginError, setLoginError] = d2();
     const [authUrl, setAuthUrl] = d2();
@@ -1035,6 +1030,9 @@ a {
             setOrder((prev) => prev.includes(f4.id) ? prev : [...prev, f4.id]);
             break;
           }
+          case "canvas-selection-changed":
+            setHasCanvasSelection(Boolean(msg.hasSelection));
+            break;
           case "no-frames-selected":
             setSelectionNotice("Select at least one frame on the Figma canvas before clicking.");
             break;
@@ -1201,9 +1199,6 @@ a {
       setActiveId(id);
       postToPlugin({ type: "select-nodes", nodeIds: [id] });
     }
-    function moveFrame(id, direction) {
-      setOrder((prev) => reorderFrames(prev, id, direction));
-    }
     function removeFrame(id) {
       setOrder((prev) => prev.filter((x2) => x2 !== id));
       setFrames((prev) => {
@@ -1216,10 +1211,11 @@ a {
     function targetIndexFromPointer(pointerY, draggedId) {
       const slotHeight = slotHeightRef.current;
       if (slotHeight <= 0) return dragStartIndexRef.current;
+      const thresholdHeight = dragThresholdHeightRef.current || slotHeight;
       let index = 0;
       for (const [id, top] of slotTopsRef.current) {
         if (id === draggedId) continue;
-        if (pointerY > top + slotHeight / 2) index++;
+        if (pointerY > top + thresholdHeight / 2) index++;
       }
       return index;
     }
@@ -1241,6 +1237,8 @@ a {
       const firstTop = tops.get(currentOrder[0]);
       const secondTop = currentOrder.length > 1 ? tops.get(currentOrder[1]) : void 0;
       slotHeightRef.current = firstTop !== void 0 && secondTop !== void 0 ? secondTop - firstTop : sidebarItemRefs.current.get(id)?.getBoundingClientRect().height ?? 0;
+      const frameInfoHeight = frameInfoRefs.current.get(id)?.getBoundingClientRect().height ?? 0;
+      dragThresholdHeightRef.current = Math.max(slotHeightRef.current - frameInfoHeight, 0);
     }
     h2(() => {
       if (!dragId) return;
@@ -1333,7 +1331,7 @@ a {
       ] }) }) }),
       /* @__PURE__ */ u3("div", { className: "f2s-body", children: [
         /* @__PURE__ */ u3("aside", { className: "f2s-sidebar", children: [
-          selecting && order.length > 0 && /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: 'Select one or more frames on the Figma canvas, then click "Add selection".' }),
+          selecting && order.length > 0 && !hasCanvasSelection && /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: 'Select one or more frames on the Figma canvas, then click "Add selection".' }),
           order.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-empty", children: selecting ? 'Select one or more frames on the Figma canvas, then click "Add selection".' : 'Click "Select frames to add" to choose what should be exported.' }) : order.map((id, index) => {
             const f4 = frames[id];
             if (!f4) return null;
@@ -1367,14 +1365,20 @@ a {
                       children: f4.previewDataUrl && /* @__PURE__ */ u3("img", { src: f4.previewDataUrl, alt: f4.name, draggable: false })
                     }
                   ),
-                  /* @__PURE__ */ u3("div", { className: "f2s-frame-info", children: [
-                    /* @__PURE__ */ u3("span", { className: "f2s-frame-text", children: index + 1 }),
-                    /* @__PURE__ */ u3("div", { className: "f2s-frame-controls", children: [
-                      /* @__PURE__ */ u3("button", { type: "button", className: "f2s-icon-btn", disabled: index === order.length - 1, title: "Move down", onClick: () => moveFrame(id, 1), children: "\u25BC" }),
-                      /* @__PURE__ */ u3("button", { type: "button", className: "f2s-icon-btn", disabled: index === 0, title: "Move up", onClick: () => moveFrame(id, -1), children: "\u25B2" }),
-                      /* @__PURE__ */ u3("button", { type: "button", className: "f2s-icon-btn", title: "Remove", onClick: () => removeFrame(id), children: "\u2715" })
-                    ] })
-                  ] })
+                  /* @__PURE__ */ u3(
+                    "div",
+                    {
+                      className: "f2s-frame-info",
+                      ref: (el) => {
+                        if (el) frameInfoRefs.current.set(id, el);
+                        else frameInfoRefs.current.delete(id);
+                      },
+                      children: [
+                        /* @__PURE__ */ u3("span", { className: "f2s-frame-text", children: index + 1 }),
+                        /* @__PURE__ */ u3("div", { className: "f2s-frame-controls", children: /* @__PURE__ */ u3("button", { type: "button", className: "f2s-icon-btn", title: "Remove", onClick: () => removeFrame(id), children: "\u2715" }) })
+                      ]
+                    }
+                  )
                 ]
               },
               id
