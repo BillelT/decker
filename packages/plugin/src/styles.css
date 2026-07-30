@@ -317,13 +317,19 @@ a {
   width: 100%;
   display: block;
   overflow: hidden;
-  cursor: grab;
+  cursor: pointer;
   padding: 0;
   touch-action: none;
 }
 
+/* Retour hover = sélection (pas le drag, qui reste discret tant qu'aucun
+   mouvement n'est détecté — voir .is-dragging plus bas). */
+.f2s-frame-preview:hover:not(.is-active) {
+  border-color: var(--color-scrollbar);
+}
+
 .f2s-frame-preview.is-active {
-  border-color: var(--color-orange);
+  border-color: var(--color-orange-red);
 }
 
 .f2s-frame-preview img {
