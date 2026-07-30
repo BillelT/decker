@@ -943,6 +943,7 @@ a {
     parent.postMessage({ pluginMessage: message }, "*");
   }
   var DRAG_THRESHOLD_PX = 3;
+  var DRAG_SWAP_MARGIN = 0.32;
   function Logo() {
     return /* @__PURE__ */ u3("a", { href: "https://billeltighidet.fr", target: "_blank", rel: "noreferrer", title: "billeltighidet.fr", children: /* @__PURE__ */ u3("svg", { className: "f2s-logo", viewBox: "0 0 80 80", fill: "none", xmlns: "http://www.w3.org/2000/svg", children: [
       /* @__PURE__ */ u3("rect", { width: "80", height: "80", rx: "40", fill: "#F06800" }),
@@ -973,11 +974,8 @@ a {
     const [dragTargetIndex, setDragTargetIndex] = d2(0);
     const dragStartYRef = A2(0);
     const dragStartIndexRef = A2(0);
-    const slotTopsRef = A2(/* @__PURE__ */ new Map());
     const slotHeightRef = A2(0);
-    const dragThresholdHeightRef = A2(0);
     const sidebarItemRefs = A2(/* @__PURE__ */ new Map());
-    const frameInfoRefs = A2(/* @__PURE__ */ new Map());
     const [selecting, setSelecting] = d2(false);
     const [selectionNotice, setSelectionNotice] = d2();
     const [hasCanvasSelection, setHasCanvasSelection] = d2(false);
@@ -1208,16 +1206,12 @@ a {
       });
       setActiveId((prev) => prev === id ? void 0 : prev);
     }
-    function targetIndexFromPointer(pointerY, draggedId) {
+    function targetIndexFromOffset(offsetY) {
       const slotHeight = slotHeightRef.current;
+      const lastIndex = order.length - 1;
       if (slotHeight <= 0) return dragStartIndexRef.current;
-      const thresholdHeight = dragThresholdHeightRef.current || slotHeight;
-      let index = 0;
-      for (const [id, top] of slotTopsRef.current) {
-        if (id === draggedId) continue;
-        if (pointerY > top + thresholdHeight / 2) index++;
-      }
-      return index;
+      const steps = Math.sign(offsetY) * Math.floor(Math.abs(offsetY) / slotHeight + DRAG_SWAP_MARGIN);
+      return Math.max(0, Math.min(lastIndex, dragStartIndexRef.current + steps));
     }
     function handleDragPointerDown(e3, id) {
       dragStartYRef.current = e3.clientY;
@@ -1228,17 +1222,9 @@ a {
       const startIndex = currentOrder.indexOf(id);
       dragStartIndexRef.current = startIndex;
       setDragTargetIndex(startIndex);
-      const tops = /* @__PURE__ */ new Map();
-      for (const itemId of currentOrder) {
-        const el = sidebarItemRefs.current.get(itemId);
-        if (el) tops.set(itemId, el.getBoundingClientRect().top);
-      }
-      slotTopsRef.current = tops;
-      const firstTop = tops.get(currentOrder[0]);
-      const secondTop = currentOrder.length > 1 ? tops.get(currentOrder[1]) : void 0;
+      const firstTop = sidebarItemRefs.current.get(currentOrder[0])?.getBoundingClientRect().top;
+      const secondTop = currentOrder.length > 1 ? sidebarItemRefs.current.get(currentOrder[1])?.getBoundingClientRect().top : void 0;
       slotHeightRef.current = firstTop !== void 0 && secondTop !== void 0 ? secondTop - firstTop : sidebarItemRefs.current.get(id)?.getBoundingClientRect().height ?? 0;
-      const frameInfoHeight = frameInfoRefs.current.get(id)?.getBoundingClientRect().height ?? 0;
-      dragThresholdHeightRef.current = Math.max(slotHeightRef.current - frameInfoHeight, 0);
     }
     h2(() => {
       if (!dragId) return;
@@ -1248,10 +1234,10 @@ a {
         setDragOffsetY(offset);
         const active = Math.abs(offset) > DRAG_THRESHOLD_PX;
         setDragActive((prev) => prev || active);
-        if (active) setDragTargetIndex(targetIndexFromPointer(e3.clientY, draggedId));
+        if (active) setDragTargetIndex(targetIndexFromOffset(offset));
       }
       function onPointerUp(e3) {
-        const finalIndex = targetIndexFromPointer(e3.clientY, draggedId);
+        const finalIndex = targetIndexFromOffset(e3.clientY - dragStartYRef.current);
         setOrder((prev) => moveToIndex(prev, draggedId, finalIndex));
         setDragId(void 0);
         setDragOffsetY(0);
@@ -1365,20 +1351,10 @@ a {
                       children: f4.previewDataUrl && /* @__PURE__ */ u3("img", { src: f4.previewDataUrl, alt: f4.name, draggable: false })
                     }
                   ),
-                  /* @__PURE__ */ u3(
-                    "div",
-                    {
-                      className: "f2s-frame-info",
-                      ref: (el) => {
-                        if (el) frameInfoRefs.current.set(id, el);
-                        else frameInfoRefs.current.delete(id);
-                      },
-                      children: [
-                        /* @__PURE__ */ u3("span", { className: "f2s-frame-text", children: index + 1 }),
-                        /* @__PURE__ */ u3("div", { className: "f2s-frame-controls", children: /* @__PURE__ */ u3("button", { type: "button", className: "f2s-icon-btn", title: "Remove", onClick: () => removeFrame(id), children: "\u2715" }) })
-                      ]
-                    }
-                  )
+                  /* @__PURE__ */ u3("div", { className: "f2s-frame-info", children: [
+                    /* @__PURE__ */ u3("span", { className: "f2s-frame-text", children: index + 1 }),
+                    /* @__PURE__ */ u3("div", { className: "f2s-frame-controls", children: /* @__PURE__ */ u3("button", { type: "button", className: "f2s-icon-btn", title: "Remove", onClick: () => removeFrame(id), children: "\u2715" }) })
+                  ] })
                 ]
               },
               id
