@@ -36,6 +36,9 @@ function postToPlugin(message: Record<string, unknown>): void {
   parent.postMessage({ pluginMessage: message }, '*');
 }
 
+/** En dessous de ce mouvement, un pointerdown reste un simple clic de sélection. */
+const DRAG_THRESHOLD_PX = 4;
+
 /** Monogramme "B" — packages/plugin/src/assets/logo.svg (repo billeltighidet). */
 function Logo() {
   return (
@@ -67,6 +70,12 @@ function App() {
   // `pointermove`, sans ombre.
   const [dragId, setDragId] = useState<string | undefined>();
   const [dragOffsetY, setDragOffsetY] = useState(0);
+  // Le retour visuel "grab" ne doit apparaître qu'une fois un vrai
+  // déplacement détecté (pas au simple hover ni au clic de sélection) : on
+  // n'active `dragActive` qu'après un mouvement de quelques pixels, pour
+  // laisser la place à la sélection tant que l'intention de glisser n'est
+  // pas claire.
+  const [dragActive, setDragActive] = useState(false);
   const dragStartYRef = useRef(0);
   const sidebarItemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const [selecting, setSelecting] = useState(false);
@@ -403,6 +412,7 @@ function App() {
   function handleDragPointerDown(e: { clientY: number }, id: string) {
     dragStartYRef.current = e.clientY;
     setDragOffsetY(0);
+    setDragActive(false);
     setDragId(id);
   }
 
@@ -411,13 +421,16 @@ function App() {
     const draggedId = dragId;
 
     function onPointerMove(e: PointerEvent) {
-      setDragOffsetY(e.clientY - dragStartYRef.current);
+      const offset = e.clientY - dragStartYRef.current;
+      setDragOffsetY(offset);
+      setDragActive((prev) => prev || Math.abs(offset) > DRAG_THRESHOLD_PX);
     }
     function onPointerUp(e: PointerEvent) {
       const targetIndex = targetIndexFromPointer(e.clientY, draggedId);
       setOrder((prev) => moveToIndex(prev, draggedId, targetIndex));
       setDragId(undefined);
       setDragOffsetY(0);
+      setDragActive(false);
     }
 
     window.addEventListener('pointermove', onPointerMove);
@@ -531,7 +544,7 @@ function App() {
             order.map((id, index) => {
               const f = frames[id];
               if (!f) return null;
-              const isDragging = dragId === id;
+              const isDragging = dragId === id && dragActive;
               return (
                 <div
                   key={id}

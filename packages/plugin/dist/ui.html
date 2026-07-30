@@ -321,13 +321,19 @@ a {
   width: 100%;
   display: block;
   overflow: hidden;
-  cursor: grab;
+  cursor: pointer;
   padding: 0;
   touch-action: none;
 }
 
+/* Retour hover = sélection (pas le drag, qui reste discret tant qu'aucun
+   mouvement n'est détecté — voir .is-dragging plus bas). */
+.f2s-frame-preview:hover:not(.is-active) {
+  border-color: var(--color-scrollbar);
+}
+
 .f2s-frame-preview.is-active {
-  border-color: var(--color-orange);
+  border-color: var(--color-orange-red);
 }
 
 .f2s-frame-preview img {
@@ -921,6 +927,7 @@ a {
   function postToPlugin(message) {
     parent.postMessage({ pluginMessage: message }, "*");
   }
+  var DRAG_THRESHOLD_PX = 4;
   function Logo() {
     return /* @__PURE__ */ u3("a", { href: "https://billeltighidet.fr", target: "_blank", rel: "noreferrer", title: "billeltighidet.fr", children: /* @__PURE__ */ u3("svg", { className: "f2s-logo", viewBox: "0 0 80 80", fill: "none", xmlns: "http://www.w3.org/2000/svg", children: [
       /* @__PURE__ */ u3("rect", { width: "80", height: "80", rx: "40", fill: "#F06800" }),
@@ -947,6 +954,7 @@ a {
     const [activeId, setActiveId] = d2();
     const [dragId, setDragId] = d2();
     const [dragOffsetY, setDragOffsetY] = d2(0);
+    const [dragActive, setDragActive] = d2(false);
     const dragStartYRef = A2(0);
     const sidebarItemRefs = A2(/* @__PURE__ */ new Map());
     const [selecting, setSelecting] = d2(false);
@@ -1192,19 +1200,23 @@ a {
     function handleDragPointerDown(e3, id) {
       dragStartYRef.current = e3.clientY;
       setDragOffsetY(0);
+      setDragActive(false);
       setDragId(id);
     }
     h2(() => {
       if (!dragId) return;
       const draggedId = dragId;
       function onPointerMove(e3) {
-        setDragOffsetY(e3.clientY - dragStartYRef.current);
+        const offset = e3.clientY - dragStartYRef.current;
+        setDragOffsetY(offset);
+        setDragActive((prev) => prev || Math.abs(offset) > DRAG_THRESHOLD_PX);
       }
       function onPointerUp(e3) {
         const targetIndex = targetIndexFromPointer(e3.clientY, draggedId);
         setOrder((prev) => moveToIndex(prev, draggedId, targetIndex));
         setDragId(void 0);
         setDragOffsetY(0);
+        setDragActive(false);
       }
       window.addEventListener("pointermove", onPointerMove);
       window.addEventListener("pointerup", onPointerUp);
@@ -1292,7 +1304,7 @@ a {
         /* @__PURE__ */ u3("aside", { className: "f2s-sidebar", children: order.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-empty", children: selecting ? 'Select one or more frames on the Figma canvas, then click "Add selection".' : 'Click "Select frames to add" to choose what should be exported.' }) : order.map((id, index) => {
           const f4 = frames[id];
           if (!f4) return null;
-          const isDragging = dragId === id;
+          const isDragging = dragId === id && dragActive;
           return /* @__PURE__ */ u3(
             "div",
             {
