@@ -16,6 +16,10 @@
   --color-text: #120f0d;
   --color-scrollbar: #cccccc;
   --color-border: #e5ddd6;
+  /* Surfaces additionnelles pour le layout à deux colonnes — même famille
+     que le monogramme (#F2ECE8) plutôt que des gris neutres génériques. */
+  --color-surface: #ffffff;
+  --color-surface-muted: #f2ece8;
 }
 
 * {
@@ -79,21 +83,21 @@ a {
   scrollbar-width: thin;
 }
 
-/* ---- Header ---- */
+/* ---- Top bar ---- */
 
-.f2s-header {
+.f2s-topbar {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
   gap: 16px;
-  padding: 16px;
+  padding: 16px 16px 0;
   flex: none;
 }
 
-.f2s-header-row {
+.f2s-topbar-actions {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 16px;
+  gap: 8px;
 }
 
 .f2s-logo {
@@ -102,6 +106,59 @@ a {
   flex: none;
   border-radius: 8px;
   display: block;
+}
+
+/* ---- Toolbar (dimensions + polices) ---- */
+
+.f2s-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 24px;
+  padding: 12px 16px;
+  flex: none;
+}
+
+.f2s-toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.f2s-toolbar-label {
+  font-size: 13px;
+  font-weight: 700;
+  opacity: 0.7;
+}
+
+.f2s-toolbar-muted {
+  font-size: 13px;
+  opacity: 0.5;
+}
+
+.f2s-dim-box {
+  font-size: 13px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: 6px;
+  padding: 2px 10px;
+  min-width: 24px;
+  text-align: center;
+}
+
+.f2s-dim-sep {
+  opacity: 0.5;
+}
+
+.f2s-font-pill {
+  font-size: 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+  border-radius: 999px;
+  padding: 3px 10px;
+  white-space: nowrap;
 }
 
 /* ---- Buttons ---- */
@@ -153,12 +210,24 @@ a {
   background: var(--color-orange-red);
 }
 
-/* ---- Main ---- */
+/* ---- Body : rail de miniatures + canvas ---- */
 
-.f2s-main {
+.f2s-body {
   flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: stretch;
+}
+
+.f2s-sidebar {
+  flex: none;
+  width: 190px;
   overflow-y: auto;
-  padding: 0 16px 96px;
+  padding: 8px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border-right: 1px solid var(--color-border);
 }
 
 .f2s-empty {
@@ -167,10 +236,6 @@ a {
   font-size: 14px;
   padding: 24px 0;
   text-align: center;
-}
-
-.f2s-frame {
-  margin-bottom: 16px;
 }
 
 .f2s-frame-info {
@@ -182,12 +247,13 @@ a {
 }
 
 .f2s-frame-text {
-  font-size: 14px;
+  font-size: 12px;
+  opacity: 0.8;
 }
 
 .f2s-frame-controls {
   display: flex;
-  gap: 8px;
+  gap: 4px;
   flex: none;
 }
 
@@ -195,12 +261,12 @@ a {
   border: none;
   background: transparent;
   border-radius: 8px;
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 11px;
   color: var(--color-text);
 }
 
@@ -209,9 +275,10 @@ a {
 }
 
 .f2s-frame-preview {
+  position: relative;
   border-radius: 12px;
   border: 2px solid transparent;
-  background: #d9d9d9;
+  background: var(--color-surface-muted);
   aspect-ratio: 16 / 9;
   width: 100%;
   display: block;
@@ -231,20 +298,130 @@ a {
   display: block;
 }
 
-/* ---- Footer ---- */
+/* ---- Linter visuel (pastille sur miniature + liste sous le canvas) ---- */
 
-.f2s-footer {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
+.f2s-lint-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--color-surface);
+  flex: none;
+  display: inline-block;
+}
+
+.f2s-frame-preview .f2s-lint-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+
+.f2s-lint-dot--info {
+  background: rgba(18, 15, 13, 0.4);
+}
+
+.f2s-lint-dot--warning {
+  background: var(--color-orange);
+}
+
+.f2s-lint-dot--blocking {
+  background: var(--color-orange-red);
+}
+
+/* ---- Canvas principal ---- */
+
+.f2s-canvas {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  background: var(--color-surface-muted);
+}
+
+.f2s-canvas-empty {
+  margin-top: 64px;
+  opacity: 0.6;
+  font-size: 14px;
+  text-align: center;
+}
+
+.f2s-canvas-preview {
+  width: 100%;
+  max-width: 640px;
+  aspect-ratio: 16 / 9;
+  background: var(--color-surface);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(18, 15, 13, 0.12);
+  flex: none;
+}
+
+.f2s-canvas-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.f2s-canvas-caption {
+  font-size: 12px;
+  opacity: 0.6;
+  margin: 0;
+}
+
+.f2s-linter {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  max-width: 640px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.f2s-linter-item {
+  width: 100%;
   display: flex;
   align-items: center;
+  gap: 8px;
+  text-align: left;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--color-text);
+}
+
+.f2s-linter-item:hover {
+  background: var(--color-surface-muted);
+}
+
+.f2s-linter-message {
+  flex: 1;
+}
+
+.f2s-linter-node {
+  opacity: 0.5;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+/* ---- Barre de statut (login / progression / erreurs) ---- */
+
+.f2s-statusbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 16px;
-  padding: 16px;
+  padding: 12px 16px;
   background: var(--color-bg);
   border-top: 1px solid var(--color-border);
-  justify-content: flex-end;
 }
 
 .f2s-progress {
@@ -252,7 +429,6 @@ a {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-right: auto;
 }
 
 .f2s-spinner {
@@ -274,6 +450,7 @@ a {
 .f2s-error {
   color: var(--color-orange-red);
   font-size: 14px;
+  margin: 0;
 }
 
 .f2s-login {
