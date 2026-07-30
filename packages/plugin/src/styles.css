@@ -99,7 +99,7 @@ a {
 .f2s-topbar-left {
   display: flex;
   align-items: center;
-  gap: 32px;
+  gap: 16px;
   justify-self: start;
 }
 
@@ -110,7 +110,7 @@ a {
 .f2s-topbar-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 16px;
   justify-self: end;
 }
 
