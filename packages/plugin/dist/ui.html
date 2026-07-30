@@ -105,8 +105,8 @@ a {
 }
 
 .f2s-logo {
-  width: 35px;
-  height: 35px;
+  width: 32px;
+  height: 32px;
   flex: none;
   border-radius: 8px;
   display: block;
@@ -320,8 +320,9 @@ a {
   width: 100%;
   display: block;
   overflow: hidden;
-  cursor: pointer;
+  cursor: grab;
   padding: 0;
+  touch-action: none;
 }
 
 .f2s-frame-preview.is-active {
@@ -333,6 +334,18 @@ a {
   height: 100%;
   object-fit: cover;
   display: block;
+  pointer-events: none;
+}
+
+/* Drag au pointeur (voir ui.tsx) : la vignette suit le curseur via
+   `transform`, sans ombre ni ghost natif. */
+.f2s-sidebar-item.is-dragging {
+  position: relative;
+  z-index: 10;
+}
+
+.f2s-sidebar-item.is-dragging .f2s-frame-preview {
+  cursor: grabbing;
 }
 
 /* ---- Canvas principal ---- */
@@ -967,6 +980,9 @@ a {
     const [order, setOrder] = d2([]);
     const [activeId, setActiveId] = d2();
     const [dragId, setDragId] = d2();
+    const [dragOffsetY, setDragOffsetY] = d2(0);
+    const dragStartYRef = A2(0);
+    const sidebarItemRefs = A2(/* @__PURE__ */ new Map());
     const [selecting, setSelecting] = d2(false);
     const [selectionNotice, setSelectionNotice] = d2();
     const [sessionToken, setSessionToken] = d2();
@@ -1200,12 +1216,41 @@ a {
       });
       setActiveId((prev) => prev === id ? void 0 : prev);
     }
-    function handleDrop(targetId) {
-      if (dragId && dragId !== targetId) {
-        setOrder((prev) => moveToIndex(prev, dragId, prev.indexOf(targetId)));
+    function targetIndexFromPointer(pointerY, draggedId) {
+      let index = 0;
+      for (const id of order) {
+        if (id === draggedId) continue;
+        const el = sidebarItemRefs.current.get(id);
+        if (!el) continue;
+        const rect = el.getBoundingClientRect();
+        if (pointerY > rect.top + rect.height / 2) index++;
       }
-      setDragId(void 0);
+      return index;
     }
+    function handleDragPointerDown(e3, id) {
+      dragStartYRef.current = e3.clientY;
+      setDragOffsetY(0);
+      setDragId(id);
+    }
+    h2(() => {
+      if (!dragId) return;
+      const draggedId = dragId;
+      function onPointerMove(e3) {
+        setDragOffsetY(e3.clientY - dragStartYRef.current);
+      }
+      function onPointerUp(e3) {
+        const targetIndex = targetIndexFromPointer(e3.clientY, draggedId);
+        setOrder((prev) => moveToIndex(prev, draggedId, targetIndex));
+        setDragId(void 0);
+        setDragOffsetY(0);
+      }
+      window.addEventListener("pointermove", onPointerMove);
+      window.addEventListener("pointerup", onPointerUp);
+      return () => {
+        window.removeEventListener("pointermove", onPointerMove);
+        window.removeEventListener("pointerup", onPointerUp);
+      };
+    }, [dragId]);
     function startExport() {
       setExportState("exporting");
       setExportProgress(0);
@@ -1285,29 +1330,39 @@ a {
         /* @__PURE__ */ u3("aside", { className: "f2s-sidebar", children: order.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-empty", children: selecting ? 'Select one or more frames on the Figma canvas, then click "Add selection".' : 'Click "Select frames to add" to choose what should be exported.' }) : order.map((id, index) => {
           const f4 = frames[id];
           if (!f4) return null;
-          return /* @__PURE__ */ u3("div", { className: "f2s-sidebar-item", children: [
-            /* @__PURE__ */ u3(
-              "button",
-              {
-                type: "button",
-                className: `f2s-frame-preview${activeId === id ? " is-active" : ""}`,
-                onClick: () => selectFrame(id),
-                draggable: true,
-                onDragStart: () => setDragId(id),
-                onDragOver: (e3) => e3.preventDefault(),
-                onDrop: () => handleDrop(id),
-                children: f4.previewDataUrl && /* @__PURE__ */ u3("img", { src: f4.previewDataUrl, alt: f4.name })
-              }
-            ),
-            /* @__PURE__ */ u3("div", { className: "f2s-frame-info", children: [
-              /* @__PURE__ */ u3("span", { className: "f2s-frame-text", children: index + 1 }),
-              /* @__PURE__ */ u3("div", { className: "f2s-frame-controls", children: [
-                /* @__PURE__ */ u3("button", { type: "button", className: "f2s-icon-btn", disabled: index === order.length - 1, title: "Move down", onClick: () => moveFrame(id, 1), children: "\u25BC" }),
-                /* @__PURE__ */ u3("button", { type: "button", className: "f2s-icon-btn", disabled: index === 0, title: "Move up", onClick: () => moveFrame(id, -1), children: "\u25B2" }),
-                /* @__PURE__ */ u3("button", { type: "button", className: "f2s-icon-btn", title: "Remove", onClick: () => removeFrame(id), children: "\u2715" })
-              ] })
-            ] })
-          ] }, id);
+          const isDragging = dragId === id;
+          return /* @__PURE__ */ u3(
+            "div",
+            {
+              ref: (el) => {
+                if (el) sidebarItemRefs.current.set(id, el);
+                else sidebarItemRefs.current.delete(id);
+              },
+              className: `f2s-sidebar-item${isDragging ? " is-dragging" : ""}`,
+              style: isDragging ? { transform: `translateY(${dragOffsetY}px)` } : void 0,
+              children: [
+                /* @__PURE__ */ u3(
+                  "button",
+                  {
+                    type: "button",
+                    className: `f2s-frame-preview${activeId === id ? " is-active" : ""}`,
+                    onClick: () => selectFrame(id),
+                    onPointerDown: (e3) => handleDragPointerDown(e3, id),
+                    children: f4.previewDataUrl && /* @__PURE__ */ u3("img", { src: f4.previewDataUrl, alt: f4.name })
+                  }
+                ),
+                /* @__PURE__ */ u3("div", { className: "f2s-frame-info", children: [
+                  /* @__PURE__ */ u3("span", { className: "f2s-frame-text", children: index + 1 }),
+                  /* @__PURE__ */ u3("div", { className: "f2s-frame-controls", children: [
+                    /* @__PURE__ */ u3("button", { type: "button", className: "f2s-icon-btn", disabled: index === order.length - 1, title: "Move down", onClick: () => moveFrame(id, 1), children: "\u25BC" }),
+                    /* @__PURE__ */ u3("button", { type: "button", className: "f2s-icon-btn", disabled: index === 0, title: "Move up", onClick: () => moveFrame(id, -1), children: "\u25B2" }),
+                    /* @__PURE__ */ u3("button", { type: "button", className: "f2s-icon-btn", title: "Remove", onClick: () => removeFrame(id), children: "\u2715" })
+                  ] })
+                ] })
+              ]
+            },
+            id
+          );
         }) }),
         /* @__PURE__ */ u3("main", { className: "f2s-canvas", children: activeFrame ? /* @__PURE__ */ u3(S, { children: [
           /* @__PURE__ */ u3("div", { className: "f2s-canvas-preview", children: activeFrame.previewDataUrl && /* @__PURE__ */ u3("img", { src: activeFrame.previewDataUrl, alt: activeFrame.name }) }),

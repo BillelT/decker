@@ -101,8 +101,8 @@ a {
 }
 
 .f2s-logo {
-  width: 35px;
-  height: 35px;
+  width: 32px;
+  height: 32px;
   flex: none;
   border-radius: 8px;
   display: block;
@@ -316,8 +316,9 @@ a {
   width: 100%;
   display: block;
   overflow: hidden;
-  cursor: pointer;
+  cursor: grab;
   padding: 0;
+  touch-action: none;
 }
 
 .f2s-frame-preview.is-active {
@@ -329,6 +330,18 @@ a {
   height: 100%;
   object-fit: cover;
   display: block;
+  pointer-events: none;
+}
+
+/* Drag au pointeur (voir ui.tsx) : la vignette suit le curseur via
+   `transform`, sans ombre ni ghost natif. */
+.f2s-sidebar-item.is-dragging {
+  position: relative;
+  z-index: 10;
+}
+
+.f2s-sidebar-item.is-dragging .f2s-frame-preview {
+  cursor: grabbing;
 }
 
 /* ---- Canvas principal ---- */
