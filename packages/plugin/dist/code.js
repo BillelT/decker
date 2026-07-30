@@ -148,6 +148,7 @@
     "Impact",
     "Comic Sans MS"
   ]);
+  var AVAILABLE_SLIDES_FONTS = [...GOOGLE_FONTS_SAMPLE, ...SLIDES_SYSTEM_FONTS].sort((a, b) => a.localeCompare(b));
   var FONT_SUBSTITUTIONS = {
     "SF Pro Text": "Inter",
     "SF Pro Display": "Inter",
@@ -697,7 +698,7 @@
 
   // src/code.ts
   var MAX_FRAMES_WARNING = 20;
-  var PREVIEW_WIDTH = 320;
+  var PREVIEW_WIDTH = 960;
   function isExportable(node) {
     return node.type === "FRAME" || node.type === "COMPONENT" || node.type === "INSTANCE";
   }
@@ -718,6 +719,16 @@
       }
     }
     return subs;
+  }
+  function applyFontOverrides(slide, overrides) {
+    if (Object.keys(overrides).length === 0) return;
+    for (const el of slide.elements) {
+      if (el.kind !== "text") continue;
+      for (const run of el.runs) {
+        const override = run.originalFontFamily && overrides[run.originalFontFamily];
+        if (override) run.fontFamily = override;
+      }
+    }
   }
   async function generatePreview(node) {
     const bytes = await node.exportAsync({ format: "PNG", constraint: { type: "WIDTH", value: PREVIEW_WIDTH } });
@@ -802,6 +813,7 @@
     for (let i = 0; i < orderedIds.length; i++) {
       const p = byId.get(orderedIds[i]);
       if (!p) continue;
+      applyFontOverrides(p.slide, msg.fontOverrides ?? {});
       for (const [assetKey, nodes] of p.nodesToRaster) {
         const node = nodes[0];
         const scaleConstraint = { type: "SCALE", value: msg.options.rasterScale };

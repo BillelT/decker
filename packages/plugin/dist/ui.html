@@ -117,7 +117,7 @@ a {
 .f2s-toolbar {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 16px;
   padding: 12px 16px;
   flex: none;
 }
@@ -167,13 +167,35 @@ a {
   opacity: 0.5;
 }
 
-.f2s-font-pill {
+.f2s-font-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.f2s-font-original {
+  opacity: 0.8;
+}
+
+.f2s-font-arrow {
+  opacity: 0.5;
+}
+
+.f2s-font-dropdown {
+  font-family: inherit;
   font-size: 12px;
   border: 1px solid var(--color-border);
-  background: var(--color-surface-muted);
-  border-radius: 999px;
-  padding: 3px 10px;
-  white-space: nowrap;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-radius: 4px;
+  padding: 3px 8px;
+}
+
+.f2s-font-dropdown:focus {
+  outline: none;
+  border-color: var(--color-orange-40);
 }
 
 /* ---- Buttons ---- */
@@ -291,7 +313,6 @@ a {
 }
 
 .f2s-frame-preview {
-  position: relative;
   border-radius: 8px;
   border: 2px solid transparent;
   background: var(--color-surface-muted);
@@ -312,35 +333,6 @@ a {
   height: 100%;
   object-fit: cover;
   display: block;
-}
-
-/* ---- Linter visuel (pastille sur miniature + liste sous le canvas) ---- */
-
-.f2s-lint-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  box-shadow: 0 0 0 2px var(--color-surface);
-  flex: none;
-  display: inline-block;
-}
-
-.f2s-frame-preview .f2s-lint-dot {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-}
-
-.f2s-lint-dot--info {
-  background: rgba(18, 15, 13, 0.4);
-}
-
-.f2s-lint-dot--warning {
-  background: var(--color-orange);
-}
-
-.f2s-lint-dot--blocking {
-  background: var(--color-orange-red);
 }
 
 /* ---- Canvas principal ---- */
@@ -368,9 +360,7 @@ a {
   max-width: 640px;
   aspect-ratio: 16 / 9;
   background: var(--color-surface);
-  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 4px 24px rgba(18, 15, 13, 0.12);
   flex: none;
 }
 
@@ -379,12 +369,6 @@ a {
   height: 100%;
   object-fit: contain;
   display: block;
-}
-
-.f2s-canvas-caption {
-  font-size: 12px;
-  opacity: 0.6;
-  margin: 0;
 }
 
 .f2s-linter {
@@ -418,12 +402,6 @@ a {
 
 .f2s-linter-message {
   flex: 1;
-}
-
-.f2s-linter-node {
-  opacity: 0.5;
-  font-size: 11px;
-  white-space: nowrap;
 }
 
 /* ---- Barre de statut (login / progression / erreurs) ---- */
@@ -906,6 +884,49 @@ a {
     return next;
   }
 
+  // src/serialize/fonts.ts
+  var GOOGLE_FONTS_SAMPLE = /* @__PURE__ */ new Set([
+    "Roboto",
+    "Open Sans",
+    "Inter",
+    "Lato",
+    "Montserrat",
+    "Poppins",
+    "Nunito",
+    "Nunito Sans",
+    "Source Sans Pro",
+    "Raleway",
+    "Ubuntu",
+    "Merriweather",
+    "Playfair Display",
+    "PT Sans",
+    "Noto Sans",
+    "Work Sans",
+    "Rubik",
+    "Mulish",
+    "Karla",
+    "Fira Sans",
+    "DM Sans",
+    "Manrope",
+    "Barlow",
+    "IBM Plex Sans",
+    "Space Grotesk",
+    "Oswald",
+    "Josefin Sans"
+  ]);
+  var SLIDES_SYSTEM_FONTS = /* @__PURE__ */ new Set([
+    "Arial",
+    "Times New Roman",
+    "Verdana",
+    "Georgia",
+    "Courier New",
+    "Trebuchet MS",
+    "Impact",
+    "Comic Sans MS"
+  ]);
+  var AVAILABLE_SLIDES_FONTS = [...GOOGLE_FONTS_SAMPLE, ...SLIDES_SYSTEM_FONTS].sort((a3, b2) => a3.localeCompare(b2));
+  var AVAILABLE_FAMILIES = [...GOOGLE_FONTS_SAMPLE, ...SLIDES_SYSTEM_FONTS].sort((a3, b2) => b2.length - a3.length);
+
   // ../../node_modules/preact/jsx-runtime/dist/jsxRuntime.module.js
   var f3 = 0;
   function u3(e3, t3, n2, o3, i3, u4) {
@@ -918,19 +939,8 @@ a {
   }
 
   // src/ui.tsx
-  var SEVERITY_LABEL = {
-    blocking: "Blocking",
-    warning: "Warning",
-    info: "Info"
-  };
   function postToPlugin(message) {
     parent.postMessage({ pluginMessage: message }, "*");
-  }
-  function worstSeverity(warnings) {
-    if (!warnings || warnings.length === 0) return void 0;
-    if (warnings.some((w3) => w3.severity === "blocking")) return "blocking";
-    if (warnings.some((w3) => w3.severity === "warning")) return "warning";
-    return "info";
   }
   function Logo() {
     return /* @__PURE__ */ u3("a", { href: "https://billeltighidet.fr", target: "_blank", rel: "noreferrer", title: "billeltighidet.fr", children: /* @__PURE__ */ u3("svg", { className: "f2s-logo", viewBox: "0 0 80 80", fill: "none", xmlns: "http://www.w3.org/2000/svg", children: [
@@ -980,6 +990,7 @@ a {
       }
       return subs;
     }, [order, frames]);
+    const [fontOverrides, setFontOverrides] = d2({});
     const [exportState, setExportState] = d2("idle");
     const [exportProgress, setExportProgress] = d2(0);
     const [resultUrl, setResultUrl] = d2();
@@ -1001,8 +1012,6 @@ a {
               [f4.id]: {
                 ...f4,
                 previewDataUrl: msg.previewDataUrl,
-                nativeCount: msg.nativeCount,
-                rasterCount: msg.rasterCount,
                 warnings: msg.warnings,
                 fontSubstitutions: msg.fontSubstitutions
               }
@@ -1212,7 +1221,8 @@ a {
         includedFrameIds: order,
         order,
         options,
-        presentationTitle: "Export Figma \u2192 Slides"
+        presentationTitle: "Export Figma \u2192 Slides",
+        fontOverrides
       });
     }
     const exporting = exportState === "exporting";
@@ -1253,18 +1263,28 @@ a {
         ] }) }),
         /* @__PURE__ */ u3("div", { className: "f2s-toolbar-row f2s-toolbar-row--start", children: /* @__PURE__ */ u3("div", { className: "f2s-toolbar-group", children: [
           /* @__PURE__ */ u3("span", { className: "f2s-toolbar-label", children: "Fonts:" }),
-          deckFontSubstitutions.length === 0 ? /* @__PURE__ */ u3("span", { className: "f2s-toolbar-muted", children: "No substitution" }) : deckFontSubstitutions.map((s3) => /* @__PURE__ */ u3("span", { className: "f2s-font-pill", title: `"${s3.original}" isn't available in Slides \u2014 replaced with "${s3.resolved}".`, children: [
-            s3.original,
-            " \u2192 ",
-            s3.resolved
-          ] }, `${s3.original}\u2192${s3.resolved}`))
+          deckFontSubstitutions.length === 0 ? /* @__PURE__ */ u3("span", { className: "f2s-toolbar-muted", children: "No substitution" }) : deckFontSubstitutions.map((s3) => /* @__PURE__ */ u3("label", { className: "f2s-font-select", title: `"${s3.original}" isn't available in Slides \u2014 pick the replacement to use.`, children: [
+            /* @__PURE__ */ u3("span", { className: "f2s-font-original", children: s3.original }),
+            /* @__PURE__ */ u3("span", { className: "f2s-font-arrow", children: "\u2192" }),
+            /* @__PURE__ */ u3(
+              "select",
+              {
+                className: "f2s-font-dropdown",
+                value: fontOverrides[s3.original] ?? s3.resolved,
+                onChange: (e3) => {
+                  const value = e3.target.value;
+                  setFontOverrides((prev) => ({ ...prev, [s3.original]: value }));
+                },
+                children: AVAILABLE_SLIDES_FONTS.map((font) => /* @__PURE__ */ u3("option", { value: font, children: font }, font))
+              }
+            )
+          ] }, s3.original))
         ] }) })
       ] }),
       /* @__PURE__ */ u3("div", { className: "f2s-body", children: [
         /* @__PURE__ */ u3("aside", { className: "f2s-sidebar", children: order.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-empty", children: selecting ? 'Select one or more frames on the Figma canvas, then click "Add selection".' : 'Click "Select frames to add" to choose what should be exported.' }) : order.map((id, index) => {
           const f4 = frames[id];
           if (!f4) return null;
-          const severity = worstSeverity(f4.warnings);
           return /* @__PURE__ */ u3("div", { className: "f2s-sidebar-item", children: [
             /* @__PURE__ */ u3(
               "button",
@@ -1276,21 +1296,11 @@ a {
                 onDragStart: () => setDragId(id),
                 onDragOver: (e3) => e3.preventDefault(),
                 onDrop: () => handleDrop(id),
-                children: [
-                  f4.previewDataUrl && /* @__PURE__ */ u3("img", { src: f4.previewDataUrl, alt: f4.name }),
-                  severity && /* @__PURE__ */ u3("span", { className: `f2s-lint-dot f2s-lint-dot--${severity}`, title: `${f4.warnings?.length} issue(s) \u2014 ${SEVERITY_LABEL[severity]}` })
-                ]
+                children: f4.previewDataUrl && /* @__PURE__ */ u3("img", { src: f4.previewDataUrl, alt: f4.name })
               }
             ),
             /* @__PURE__ */ u3("div", { className: "f2s-frame-info", children: [
-              /* @__PURE__ */ u3("span", { className: "f2s-frame-text", children: [
-                index + 1,
-                " \xB7 ",
-                f4.width,
-                "\xD7",
-                f4.height,
-                "px"
-              ] }),
+              /* @__PURE__ */ u3("span", { className: "f2s-frame-text", children: index + 1 }),
               /* @__PURE__ */ u3("div", { className: "f2s-frame-controls", children: [
                 /* @__PURE__ */ u3("button", { type: "button", className: "f2s-icon-btn", disabled: index === order.length - 1, title: "Move down", onClick: () => moveFrame(id, 1), children: "\u25BC" }),
                 /* @__PURE__ */ u3("button", { type: "button", className: "f2s-icon-btn", disabled: index === 0, title: "Move up", onClick: () => moveFrame(id, -1), children: "\u25B2" }),
@@ -1301,17 +1311,7 @@ a {
         }) }),
         /* @__PURE__ */ u3("main", { className: "f2s-canvas", children: activeFrame ? /* @__PURE__ */ u3(S, { children: [
           /* @__PURE__ */ u3("div", { className: "f2s-canvas-preview", children: activeFrame.previewDataUrl && /* @__PURE__ */ u3("img", { src: activeFrame.previewDataUrl, alt: activeFrame.name }) }),
-          activeFrame.nativeCount !== void 0 && /* @__PURE__ */ u3("p", { className: "f2s-canvas-caption", children: [
-            activeFrame.nativeCount,
-            " native element(s) \xB7 ",
-            activeFrame.rasterCount,
-            " rasterized"
-          ] }),
-          activeFrame.warnings && activeFrame.warnings.length > 0 && /* @__PURE__ */ u3("ul", { className: "f2s-linter", children: activeFrame.warnings.map((w3, i3) => /* @__PURE__ */ u3("li", { children: /* @__PURE__ */ u3("button", { type: "button", className: "f2s-linter-item", "data-severity": w3.severity, onClick: () => selectWarningNode(w3.sourceNodeId), children: [
-            /* @__PURE__ */ u3("span", { className: `f2s-lint-dot f2s-lint-dot--${w3.severity}` }),
-            /* @__PURE__ */ u3("span", { className: "f2s-linter-message", children: w3.message }),
-            /* @__PURE__ */ u3("span", { className: "f2s-linter-node", children: w3.nodeName })
-          ] }) }, i3)) })
+          activeFrame.warnings && activeFrame.warnings.length > 0 && /* @__PURE__ */ u3("ul", { className: "f2s-linter", children: activeFrame.warnings.map((w3, i3) => /* @__PURE__ */ u3("li", { children: /* @__PURE__ */ u3("button", { type: "button", className: "f2s-linter-item", onClick: () => selectWarningNode(w3.sourceNodeId), children: /* @__PURE__ */ u3("span", { className: "f2s-linter-message", children: w3.message }) }) }, i3)) })
         ] }) : /* @__PURE__ */ u3("p", { className: "f2s-canvas-empty", children: "Select a frame on the left to preview it." }) })
       ] }),
       showStatusBar && /* @__PURE__ */ u3("footer", { className: "f2s-statusbar", children: [

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { ExportOptions, IRDocument, IRWarning } from '@figma-to-slides/shared';
 import { sanitizeSessionToken } from './ui/sanitizeSessionToken.js';
 import { reorderFrames, moveToIndex } from './ui/reorderFrames.js';
+import { AVAILABLE_SLIDES_FONTS } from './serialize/fonts.js';
 
 type AuthPollResult = { status: 'pending' } | { status: 'ready'; sessionToken: string } | { status: 'error'; message: string };
 
@@ -20,18 +21,10 @@ interface FontSubstitution {
 
 interface FrameState extends FrameCandidate {
   previewDataUrl?: string;
-  nativeCount?: number;
-  rasterCount?: number;
   /** Diagnostics du linter visuel (brief export ponctuel) pour cette frame. */
   warnings?: IRWarning[];
   fontSubstitutions?: FontSubstitution[];
 }
-
-const SEVERITY_LABEL: Record<IRWarning['severity'], string> = {
-  blocking: 'Blocking',
-  warning: 'Warning',
-  info: 'Info',
-};
 
 type BackendConfig = { baseUrl: string };
 type ExportState = 'idle' | 'exporting' | 'done' | 'error';
@@ -43,14 +36,6 @@ declare const __BACKEND_URL__: string;
 
 function postToPlugin(message: Record<string, unknown>): void {
   parent.postMessage({ pluginMessage: message }, '*');
-}
-
-/** Pastille du linter sur une miniature : la sévérité la plus haute portée par la frame. */
-function worstSeverity(warnings?: IRWarning[]): IRWarning['severity'] | undefined {
-  if (!warnings || warnings.length === 0) return undefined;
-  if (warnings.some((w) => w.severity === 'blocking')) return 'blocking';
-  if (warnings.some((w) => w.severity === 'warning')) return 'warning';
-  return 'info';
 }
 
 /** Monogramme "B" — packages/plugin/src/assets/logo.svg (repo billeltighidet). */
@@ -111,6 +96,9 @@ function App() {
     return subs;
   }, [order, frames]);
 
+  /** Choix manuel de l'utilisateur (police originale → police Slides), envoyé à l'export pour remplacer la résolution par défaut. */
+  const [fontOverrides, setFontOverrides] = useState<Record<string, string>>({});
+
   const [exportState, setExportState] = useState<ExportState>('idle');
   const [exportProgress, setExportProgress] = useState(0);
   const [resultUrl, setResultUrl] = useState<string | undefined>();
@@ -140,8 +128,6 @@ function App() {
             [f.id]: {
               ...f,
               previewDataUrl: msg.previewDataUrl,
-              nativeCount: msg.nativeCount,
-              rasterCount: msg.rasterCount,
               warnings: msg.warnings as IRWarning[] | undefined,
               fontSubstitutions: msg.fontSubstitutions as FontSubstitution[] | undefined,
             },
@@ -418,6 +404,7 @@ function App() {
       order,
       options,
       presentationTitle: 'Export Figma → Slides',
+      fontOverrides,
     });
   }
 
@@ -467,9 +454,24 @@ function App() {
               <span className="f2s-toolbar-muted">No substitution</span>
             ) : (
               deckFontSubstitutions.map((s) => (
-                <span className="f2s-font-pill" key={`${s.original}→${s.resolved}`} title={`"${s.original}" isn't available in Slides — replaced with "${s.resolved}".`}>
-                  {s.original} → {s.resolved}
-                </span>
+                <label className="f2s-font-select" key={s.original} title={`"${s.original}" isn't available in Slides — pick the replacement to use.`}>
+                  <span className="f2s-font-original">{s.original}</span>
+                  <span className="f2s-font-arrow">→</span>
+                  <select
+                    className="f2s-font-dropdown"
+                    value={fontOverrides[s.original] ?? s.resolved}
+                    onChange={(e) => {
+                      const value = (e.target as HTMLSelectElement).value;
+                      setFontOverrides((prev) => ({ ...prev, [s.original]: value }));
+                    }}
+                  >
+                    {AVAILABLE_SLIDES_FONTS.map((font) => (
+                      <option key={font} value={font}>
+                        {font}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               ))
             )}
           </div>
@@ -488,7 +490,6 @@ function App() {
             order.map((id, index) => {
               const f = frames[id];
               if (!f) return null;
-              const severity = worstSeverity(f.warnings);
               return (
                 <div key={id} className="f2s-sidebar-item">
                   <button
@@ -501,12 +502,9 @@ function App() {
                     onDrop={() => handleDrop(id)}
                   >
                     {f.previewDataUrl && <img src={f.previewDataUrl} alt={f.name} />}
-                    {severity && <span className={`f2s-lint-dot f2s-lint-dot--${severity}`} title={`${f.warnings?.length} issue(s) — ${SEVERITY_LABEL[severity]}`} />}
                   </button>
                   <div className="f2s-frame-info">
-                    <span className="f2s-frame-text">
-                      {index + 1} · {f.width}×{f.height}px
-                    </span>
+                    <span className="f2s-frame-text">{index + 1}</span>
                     <div className="f2s-frame-controls">
                       <button type="button" className="f2s-icon-btn" disabled={index === order.length - 1} title="Move down" onClick={() => moveFrame(id, 1)}>
                         ▼
@@ -531,19 +529,12 @@ function App() {
               <div className="f2s-canvas-preview">
                 {activeFrame.previewDataUrl && <img src={activeFrame.previewDataUrl} alt={activeFrame.name} />}
               </div>
-              {activeFrame.nativeCount !== undefined && (
-                <p className="f2s-canvas-caption">
-                  {activeFrame.nativeCount} native element(s) · {activeFrame.rasterCount} rasterized
-                </p>
-              )}
               {activeFrame.warnings && activeFrame.warnings.length > 0 && (
                 <ul className="f2s-linter">
                   {activeFrame.warnings.map((w, i) => (
                     <li key={i}>
-                      <button type="button" className="f2s-linter-item" data-severity={w.severity} onClick={() => selectWarningNode(w.sourceNodeId)}>
-                        <span className={`f2s-lint-dot f2s-lint-dot--${w.severity}`} />
+                      <button type="button" className="f2s-linter-item" onClick={() => selectWarningNode(w.sourceNodeId)}>
                         <span className="f2s-linter-message">{w.message}</span>
-                        <span className="f2s-linter-node">{w.nodeName}</span>
                       </button>
                     </li>
                   ))}
