@@ -362,11 +362,6 @@ function App() {
     postToPlugin({ type: 'select-nodes', nodeIds: [id] });
   }
 
-  /** Clic sur une ligne du linter : sélectionne le calque concerné dans Figma (spec §8.3). */
-  function selectWarningNode(sourceNodeId: string) {
-    postToPlugin({ type: 'select-nodes', nodeIds: [sourceNodeId] });
-  }
-
   function moveFrame(id: string, direction: -1 | 1) {
     setOrder((prev) => reorderFrames(prev, id, direction));
   }
@@ -539,22 +534,9 @@ function App() {
 
         <main className="f2s-canvas">
           {activeFrame ? (
-            <>
-              <div className="f2s-canvas-preview">
-                {activeFrame.previewDataUrl && <img src={activeFrame.previewDataUrl} alt={activeFrame.name} />}
-              </div>
-              {activeFrame.warnings && activeFrame.warnings.length > 0 && (
-                <ul className="f2s-linter">
-                  {activeFrame.warnings.map((w, i) => (
-                    <li key={i}>
-                      <button type="button" className="f2s-linter-item" onClick={() => selectWarningNode(w.sourceNodeId)}>
-                        <span className="f2s-linter-message">{w.message}</span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </>
+            <div className="f2s-canvas-preview">
+              {activeFrame.previewDataUrl && <img src={activeFrame.previewDataUrl} alt={activeFrame.name} />}
+            </div>
           ) : (
             <p className="f2s-canvas-empty">Select a frame on the left to preview it.</p>
           )}
