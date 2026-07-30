@@ -320,12 +320,21 @@ a {
   width: 100%;
   display: block;
   overflow: hidden;
-  cursor: pointer;
+  cursor: grab;
   padding: 0;
+  touch-action: none;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
 
 .f2s-frame-preview.is-active {
   border-color: var(--color-orange);
+}
+
+.f2s-frame-preview.is-dragging {
+  cursor: grabbing;
+  transform: scale(1.03);
+  box-shadow: 0 6px 16px rgba(18, 15, 13, 0.25);
+  z-index: 1;
 }
 
 .f2s-frame-preview img {
@@ -1200,10 +1209,18 @@ a {
       });
       setActiveId((prev) => prev === id ? void 0 : prev);
     }
-    function handleDrop(targetId) {
-      if (dragId && dragId !== targetId) {
+    function handleDragPointerDown(e3, id) {
+      e3.currentTarget.setPointerCapture(e3.pointerId);
+      setDragId(id);
+    }
+    function handleDragPointerMove(e3) {
+      if (!dragId) return;
+      const targetId = document.elementFromPoint(e3.clientX, e3.clientY)?.closest("[data-frame-id]")?.dataset.frameId;
+      if (targetId && targetId !== dragId) {
         setOrder((prev) => moveToIndex(prev, dragId, prev.indexOf(targetId)));
       }
+    }
+    function handleDragPointerEnd() {
       setDragId(void 0);
     }
     function startExport() {
@@ -1285,18 +1302,18 @@ a {
         /* @__PURE__ */ u3("aside", { className: "f2s-sidebar", children: order.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-empty", children: selecting ? 'Select one or more frames on the Figma canvas, then click "Add selection".' : 'Click "Select frames to add" to choose what should be exported.' }) : order.map((id, index) => {
           const f4 = frames[id];
           if (!f4) return null;
-          return /* @__PURE__ */ u3("div", { className: "f2s-sidebar-item", children: [
+          return /* @__PURE__ */ u3("div", { className: "f2s-sidebar-item", "data-frame-id": id, children: [
             /* @__PURE__ */ u3(
               "button",
               {
                 type: "button",
-                className: `f2s-frame-preview${activeId === id ? " is-active" : ""}`,
+                className: `f2s-frame-preview${activeId === id ? " is-active" : ""}${dragId === id ? " is-dragging" : ""}`,
                 onClick: () => selectFrame(id),
-                draggable: true,
-                onDragStart: () => setDragId(id),
-                onDragOver: (e3) => e3.preventDefault(),
-                onDrop: () => handleDrop(id),
-                children: f4.previewDataUrl && /* @__PURE__ */ u3("img", { src: f4.previewDataUrl, alt: f4.name })
+                onPointerDown: (e3) => handleDragPointerDown(e3, id),
+                onPointerMove: handleDragPointerMove,
+                onPointerUp: handleDragPointerEnd,
+                onPointerCancel: handleDragPointerEnd,
+                children: f4.previewDataUrl && /* @__PURE__ */ u3("img", { src: f4.previewDataUrl, alt: f4.name, draggable: false })
               }
             ),
             /* @__PURE__ */ u3("div", { className: "f2s-frame-info", children: [

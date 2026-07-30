@@ -316,12 +316,21 @@ a {
   width: 100%;
   display: block;
   overflow: hidden;
-  cursor: pointer;
+  cursor: grab;
   padding: 0;
+  touch-action: none;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
 
 .f2s-frame-preview.is-active {
   border-color: var(--color-orange);
+}
+
+.f2s-frame-preview.is-dragging {
+  cursor: grabbing;
+  transform: scale(1.03);
+  box-shadow: 0 6px 16px rgba(18, 15, 13, 0.25);
+  z-index: 1;
 }
 
 .f2s-frame-preview img {
