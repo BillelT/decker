@@ -381,10 +381,24 @@ function App() {
     setActiveId((prev) => (prev === id ? undefined : prev));
   }
 
-  function handleDrop(targetId: string) {
-    if (dragId && dragId !== targetId) {
+  // Réordonnancement par drag au pointeur (plutôt que le drag & drop HTML5,
+  // dont le curseur "fantôme" imposé par l'OS/le navigateur ne peut pas être
+  // stylé — on garde ainsi un curseur grab/grabbing fluide de bout en bout).
+  function handleDragPointerDown(e: PointerEvent, id: string) {
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    setDragId(id);
+  }
+
+  function handleDragPointerMove(e: PointerEvent) {
+    if (!dragId) return;
+    const targetId = (document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null)
+      ?.closest<HTMLElement>('[data-frame-id]')?.dataset.frameId;
+    if (targetId && targetId !== dragId) {
       setOrder((prev) => moveToIndex(prev, dragId, prev.indexOf(targetId)));
     }
+  }
+
+  function handleDragPointerEnd() {
     setDragId(undefined);
   }
 
@@ -491,17 +505,17 @@ function App() {
               const f = frames[id];
               if (!f) return null;
               return (
-                <div key={id} className="f2s-sidebar-item">
+                <div key={id} className="f2s-sidebar-item" data-frame-id={id}>
                   <button
                     type="button"
-                    className={`f2s-frame-preview${activeId === id ? ' is-active' : ''}`}
+                    className={`f2s-frame-preview${activeId === id ? ' is-active' : ''}${dragId === id ? ' is-dragging' : ''}`}
                     onClick={() => selectFrame(id)}
-                    draggable
-                    onDragStart={() => setDragId(id)}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={() => handleDrop(id)}
+                    onPointerDown={(e) => handleDragPointerDown(e, id)}
+                    onPointerMove={handleDragPointerMove}
+                    onPointerUp={handleDragPointerEnd}
+                    onPointerCancel={handleDragPointerEnd}
                   >
-                    {f.previewDataUrl && <img src={f.previewDataUrl} alt={f.name} />}
+                    {f.previewDataUrl && <img src={f.previewDataUrl} alt={f.name} draggable={false} />}
                   </button>
                   <div className="f2s-frame-info">
                     <span className="f2s-frame-text">{index + 1}</span>
