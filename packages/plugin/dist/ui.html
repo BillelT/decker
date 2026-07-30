@@ -270,6 +270,14 @@ a {
   border-right: 1px solid var(--color-border);
 }
 
+.f2s-sidebar-item {
+  /* Décalage "fantôme" pendant un drag (voir ui.tsx) : anime le retour à un
+     cran entier plutôt qu'un saut instantané. La vignette activement
+     déplacée désactive cette transition (elle doit suivre le curseur au
+     pixel près, sans lag). */
+  transition: transform 180ms ease;
+}
+
 .f2s-empty {
   color: var(--color-black-70);
   font-size: 12px;
@@ -345,10 +353,13 @@ a {
 }
 
 /* Drag au pointeur (voir ui.tsx) : la vignette suit le curseur via
-   `transform`, sans ombre ni ghost natif. */
+   `transform`, sans ombre ni ghost natif — suivi immédiat, donc pas de
+   transition sur cette vignette précise (seules les autres, décalées pour
+   ouvrir la place, en gardent une). */
 .f2s-sidebar-item.is-dragging {
   position: relative;
   z-index: 10;
+  transition: none;
 }
 
 .f2s-sidebar-item.is-dragging .f2s-frame-preview {
@@ -955,7 +966,11 @@ a {
     const [dragId, setDragId] = d2();
     const [dragOffsetY, setDragOffsetY] = d2(0);
     const [dragActive, setDragActive] = d2(false);
+    const [dragTargetIndex, setDragTargetIndex] = d2(0);
     const dragStartYRef = A2(0);
+    const dragStartIndexRef = A2(0);
+    const slotTopsRef = A2(/* @__PURE__ */ new Map());
+    const slotHeightRef = A2(0);
     const sidebarItemRefs = A2(/* @__PURE__ */ new Map());
     const [selecting, setSelecting] = d2(false);
     const [selectionNotice, setSelectionNotice] = d2();
@@ -1187,13 +1202,12 @@ a {
       setActiveId((prev) => prev === id ? void 0 : prev);
     }
     function targetIndexFromPointer(pointerY, draggedId) {
+      const slotHeight = slotHeightRef.current;
+      if (slotHeight <= 0) return dragStartIndexRef.current;
       let index = 0;
-      for (const id of order) {
+      for (const [id, top] of slotTopsRef.current) {
         if (id === draggedId) continue;
-        const el = sidebarItemRefs.current.get(id);
-        if (!el) continue;
-        const rect = el.getBoundingClientRect();
-        if (pointerY > rect.top + rect.height / 2) index++;
+        if (pointerY > top + slotHeight / 2) index++;
       }
       return index;
     }
@@ -1202,6 +1216,19 @@ a {
       setDragOffsetY(0);
       setDragActive(false);
       setDragId(id);
+      const currentOrder = order;
+      const startIndex = currentOrder.indexOf(id);
+      dragStartIndexRef.current = startIndex;
+      setDragTargetIndex(startIndex);
+      const tops = /* @__PURE__ */ new Map();
+      for (const itemId of currentOrder) {
+        const el = sidebarItemRefs.current.get(itemId);
+        if (el) tops.set(itemId, el.getBoundingClientRect().top);
+      }
+      slotTopsRef.current = tops;
+      const firstTop = tops.get(currentOrder[0]);
+      const secondTop = currentOrder.length > 1 ? tops.get(currentOrder[1]) : void 0;
+      slotHeightRef.current = firstTop !== void 0 && secondTop !== void 0 ? secondTop - firstTop : sidebarItemRefs.current.get(id)?.getBoundingClientRect().height ?? 0;
     }
     h2(() => {
       if (!dragId) return;
@@ -1209,11 +1236,13 @@ a {
       function onPointerMove(e3) {
         const offset = e3.clientY - dragStartYRef.current;
         setDragOffsetY(offset);
-        setDragActive((prev) => prev || Math.abs(offset) > DRAG_THRESHOLD_PX);
+        const active = Math.abs(offset) > DRAG_THRESHOLD_PX;
+        setDragActive((prev) => prev || active);
+        if (active) setDragTargetIndex(targetIndexFromPointer(e3.clientY, draggedId));
       }
       function onPointerUp(e3) {
-        const targetIndex = targetIndexFromPointer(e3.clientY, draggedId);
-        setOrder((prev) => moveToIndex(prev, draggedId, targetIndex));
+        const finalIndex = targetIndexFromPointer(e3.clientY, draggedId);
+        setOrder((prev) => moveToIndex(prev, draggedId, finalIndex));
         setDragId(void 0);
         setDragOffsetY(0);
         setDragActive(false);
@@ -1305,6 +1334,15 @@ a {
           const f4 = frames[id];
           if (!f4) return null;
           const isDragging = dragId === id && dragActive;
+          let ghostShift = 0;
+          if (dragId && dragActive && !isDragging) {
+            const start = dragStartIndexRef.current;
+            if (start < dragTargetIndex && index > start && index <= dragTargetIndex) {
+              ghostShift = -slotHeightRef.current;
+            } else if (start > dragTargetIndex && index >= dragTargetIndex && index < start) {
+              ghostShift = slotHeightRef.current;
+            }
+          }
           return /* @__PURE__ */ u3(
             "div",
             {
@@ -1313,7 +1351,7 @@ a {
                 else sidebarItemRefs.current.delete(id);
               },
               className: `f2s-sidebar-item${isDragging ? " is-dragging" : ""}`,
-              style: isDragging ? { transform: `translateY(${dragOffsetY}px)` } : void 0,
+              style: isDragging ? { transform: `translateY(${dragOffsetY}px)` } : ghostShift !== 0 ? { transform: `translateY(${ghostShift}px)` } : void 0,
               children: [
                 /* @__PURE__ */ u3(
                   "button",

@@ -68,6 +68,14 @@ function App() {
   // pas stylable) qui ne suit pas le curseur en continu — on préfère
   // déplacer la vignette nous-mêmes via un `transform` recalculé à chaque
   // `pointermove`, sans ombre.
+  //
+  // `order` lui-même ne change PAS pendant le drag (un seul `setOrder` à la
+  // fin, au relâchement) : les autres vignettes se décalent d'un cran
+  // ENTIER via un simple transform CSS animé (jamais de valeur
+  // intermédiaire), calculé à partir de leur index d'origine — ça évite
+  // qu'un réordonnancement live du tableau ne fasse aussi bouger le SLOT de
+  // la vignette déplacée (ce qui s'additionnerait à son propre suivi du
+  // curseur et le ferait dériver).
   const [dragId, setDragId] = useState<string | undefined>();
   const [dragOffsetY, setDragOffsetY] = useState(0);
   // Le retour visuel "grab" ne doit apparaître qu'une fois un vrai
@@ -76,7 +84,18 @@ function App() {
   // laisser la place à la sélection tant que l'intention de glisser n'est
   // pas claire.
   const [dragActive, setDragActive] = useState(false);
+  // Index (dans `order`, figé pendant tout le drag) où la vignette
+  // atterrirait si on relâchait maintenant — c'est ce qui pilote le décalage
+  // visuel des autres vignettes.
+  const [dragTargetIndex, setDragTargetIndex] = useState(0);
   const dragStartYRef = useRef(0);
+  const dragStartIndexRef = useRef(0);
+  // Sommet (Y) de chaque vignette au tout début du drag, avant le moindre
+  // décalage visuel — sert de repère stable pour savoir sur quel "slot"
+  // d'origine pointe le curseur, indépendamment des transforms appliqués
+  // en cours de route (qui, eux, ne changent jamais la position de layout).
+  const slotTopsRef = useRef<Map<string, number>>(new Map());
+  const slotHeightRef = useRef(0);
   const sidebarItemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const [selecting, setSelecting] = useState(false);
   const [selectionNotice, setSelectionNotice] = useState<string | undefined>();
@@ -391,20 +410,21 @@ function App() {
   }
 
   /**
-   * Index où `draggedId` doit atterrir : le nombre d'autres vignettes dont
-   * le centre vertical est déjà au-dessus du pointeur. En excluant la
-   * vignette déplacée du calcul, cet index reste valable quelle que soit sa
-   * position de départ dans `order` (voir `moveToIndex`, qui retire puis
-   * réinsère au même index dans le reste de la liste).
+   * Index (dans l'`order` FIGÉ du début de drag) où la vignette atterrirait :
+   * le nombre de slots d'origine dont le milieu est déjà au-dessus du
+   * pointeur. Basé sur `slotTopsRef`/`slotHeightRef` (capturés une seule
+   * fois au `pointerdown`) plutôt que sur des mesures live, pour ne pas
+   * boucler sur les décalages visuels qu'on applique nous-mêmes en cours de
+   * route (un `transform` ne change jamais la position de layout, mais
+   * changerait le résultat d'un `getBoundingClientRect()` en direct).
    */
   function targetIndexFromPointer(pointerY: number, draggedId: string): number {
+    const slotHeight = slotHeightRef.current;
+    if (slotHeight <= 0) return dragStartIndexRef.current;
     let index = 0;
-    for (const id of order) {
+    for (const [id, top] of slotTopsRef.current) {
       if (id === draggedId) continue;
-      const el = sidebarItemRefs.current.get(id);
-      if (!el) continue;
-      const rect = el.getBoundingClientRect();
-      if (pointerY > rect.top + rect.height / 2) index++;
+      if (pointerY > top + slotHeight / 2) index++;
     }
     return index;
   }
@@ -414,6 +434,24 @@ function App() {
     setDragOffsetY(0);
     setDragActive(false);
     setDragId(id);
+
+    const currentOrder = order;
+    const startIndex = currentOrder.indexOf(id);
+    dragStartIndexRef.current = startIndex;
+    setDragTargetIndex(startIndex);
+
+    const tops = new Map<string, number>();
+    for (const itemId of currentOrder) {
+      const el = sidebarItemRefs.current.get(itemId);
+      if (el) tops.set(itemId, el.getBoundingClientRect().top);
+    }
+    slotTopsRef.current = tops;
+    const firstTop = tops.get(currentOrder[0]);
+    const secondTop = currentOrder.length > 1 ? tops.get(currentOrder[1]) : undefined;
+    slotHeightRef.current =
+      firstTop !== undefined && secondTop !== undefined
+        ? secondTop - firstTop
+        : (sidebarItemRefs.current.get(id)?.getBoundingClientRect().height ?? 0);
   }
 
   useEffect(() => {
@@ -423,11 +461,20 @@ function App() {
     function onPointerMove(e: PointerEvent) {
       const offset = e.clientY - dragStartYRef.current;
       setDragOffsetY(offset);
-      setDragActive((prev) => prev || Math.abs(offset) > DRAG_THRESHOLD_PX);
+      const active = Math.abs(offset) > DRAG_THRESHOLD_PX;
+      setDragActive((prev) => prev || active);
+      // Le décalage des autres vignettes ne doit apparaître qu'une fois
+      // l'intention de glisser confirmée (au-delà du seuil) — jamais sur un
+      // simple clic de sélection.
+      if (active) setDragTargetIndex(targetIndexFromPointer(e.clientY, draggedId));
     }
     function onPointerUp(e: PointerEvent) {
-      const targetIndex = targetIndexFromPointer(e.clientY, draggedId);
-      setOrder((prev) => moveToIndex(prev, draggedId, targetIndex));
+      const finalIndex = targetIndexFromPointer(e.clientY, draggedId);
+      // Un seul `setOrder`, au relâchement : au moment où il s'applique, les
+      // autres vignettes sont déjà visuellement à leur place finale (décalées
+      // via transform ci-dessous) — l'array qui les rattrape à cet instant
+      // précis ne produit donc aucun saut visible.
+      setOrder((prev) => moveToIndex(prev, draggedId, finalIndex));
       setDragId(undefined);
       setDragOffsetY(0);
       setDragActive(false);
@@ -545,6 +592,19 @@ function App() {
               const f = frames[id];
               if (!f) return null;
               const isDragging = dragId === id && dragActive;
+              // Décalage "fantôme" des autres vignettes pour ouvrir/refermer
+              // la place, d'un cran entier (jamais une fraction) selon que
+              // l'index d'origine de CETTE vignette se trouve entre le point
+              // de départ et la cible actuelle du drag.
+              let ghostShift = 0;
+              if (dragId && dragActive && !isDragging) {
+                const start = dragStartIndexRef.current;
+                if (start < dragTargetIndex && index > start && index <= dragTargetIndex) {
+                  ghostShift = -slotHeightRef.current;
+                } else if (start > dragTargetIndex && index >= dragTargetIndex && index < start) {
+                  ghostShift = slotHeightRef.current;
+                }
+              }
               return (
                 <div
                   key={id}
@@ -553,7 +613,13 @@ function App() {
                     else sidebarItemRefs.current.delete(id);
                   }}
                   className={`f2s-sidebar-item${isDragging ? ' is-dragging' : ''}`}
-                  style={isDragging ? { transform: `translateY(${dragOffsetY}px)` } : undefined}
+                  style={
+                    isDragging
+                      ? { transform: `translateY(${dragOffsetY}px)` }
+                      : ghostShift !== 0
+                        ? { transform: `translateY(${ghostShift}px)` }
+                        : undefined
+                  }
                 >
                   <button
                     type="button"

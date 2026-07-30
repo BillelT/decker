@@ -266,6 +266,14 @@ a {
   border-right: 1px solid var(--color-border);
 }
 
+.f2s-sidebar-item {
+  /* Décalage "fantôme" pendant un drag (voir ui.tsx) : anime le retour à un
+     cran entier plutôt qu'un saut instantané. La vignette activement
+     déplacée désactive cette transition (elle doit suivre le curseur au
+     pixel près, sans lag). */
+  transition: transform 180ms ease;
+}
+
 .f2s-empty {
   color: var(--color-black-70);
   font-size: 12px;
@@ -341,10 +349,13 @@ a {
 }
 
 /* Drag au pointeur (voir ui.tsx) : la vignette suit le curseur via
-   `transform`, sans ombre ni ghost natif. */
+   `transform`, sans ombre ni ghost natif — suivi immédiat, donc pas de
+   transition sur cette vignette précise (seules les autres, décalées pour
+   ouvrir la place, en gardent une). */
 .f2s-sidebar-item.is-dragging {
   position: relative;
   z-index: 10;
+  transition: none;
 }
 
 .f2s-sidebar-item.is-dragging .f2s-frame-preview {
