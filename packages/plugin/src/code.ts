@@ -90,6 +90,21 @@ interface PendingSlide {
   nodesToRaster: Map<string, SceneNode[]>;
 }
 
+/** Construit et poste le message décrivant l'état sérialisé courant d'une frame — partagé entre un premier ajout et un rafraîchissement en place. */
+function postCandidateMessage(type: 'candidate-added' | 'candidate-updated', frame: ExportableNode, previewDataUrl: string, slide: PendingSlide['slide']): void {
+  const nativeCount = slide.elements.filter((e) => e.kind !== 'image' || !e.isRasterFallback).length;
+  const rasterCount = slide.elements.length - nativeCount;
+  figma.ui.postMessage({
+    type,
+    frame: { id: frame.id, name: frame.name, width: frame.width, height: frame.height },
+    previewDataUrl,
+    nativeCount,
+    rasterCount,
+    warnings: slide.warnings,
+    fontSubstitutions: collectFontSubstitutions(slide),
+  });
+}
+
 /**
  * Ajoute au deck une liste de frames déjà résolues (pas de doublon avec ce
  * qui est déjà dans `pending`) — logique commune à l'ajout manuel (sélection
@@ -111,20 +126,33 @@ async function addFrames(nodes: ExportableNode[], pending: PendingSlide[], idGen
     const previewDataUrl = await generatePreview(frame);
     const { slide, nodesToRaster } = await serializeFrame(frame, { nextId: idGen });
     pending.push({ frame, slide, nodesToRaster });
-
-    const nativeCount = slide.elements.filter((e) => e.kind !== 'image' || !e.isRasterFallback).length;
-    const rasterCount = slide.elements.length - nativeCount;
-    figma.ui.postMessage({
-      type: 'candidate-added',
-      frame: { id: frame.id, name: frame.name, width: frame.width, height: frame.height },
-      previewDataUrl,
-      nativeCount,
-      rasterCount,
-      warnings: slide.warnings,
-      fontSubstitutions: collectFontSubstitutions(slide),
-    });
+    postCandidateMessage('candidate-added', frame, previewDataUrl, slide);
     await yieldToUi();
   }
+}
+
+/**
+ * Ré-analyse une frame déjà connue de `pending` (re-sérialisation + relint)
+ * et remplace son entrée EN PLACE plutôt que d'en pousser une nouvelle —
+ * utilisé à la fois par "Prepare for Slides" re-cliqué sur une copie déjà
+ * taguée, et par le suivi live des frames `[Slides Ready]` (voir
+ * `watchTaggedFramesForLiveRefresh` plus bas). Ne fait rien si la frame n'est pas (ou
+ * plus) suivie — évite de repêcher silencieusement une frame retirée du
+ * panneau côté UI (`removeFrame`, purement local à l'UI).
+ */
+async function refreshPendingEntry(frame: ExportableNode, pending: PendingSlide[], idGen: ReturnType<typeof createIdGenerator>): Promise<boolean> {
+  const idx = pending.findIndex((p) => p.frame.id === frame.id);
+  if (idx === -1) return false;
+
+  const previewDataUrl = await generatePreview(frame);
+  const { slide, nodesToRaster } = await serializeFrame(frame, { nextId: idGen });
+  pending[idx] = { frame, slide, nodesToRaster };
+
+  const warnings = await lintFrame(frame);
+  await addLintAnnotations(frame, warnings);
+
+  postCandidateMessage('candidate-updated', frame, previewDataUrl, slide);
+  return true;
 }
 
 /**
@@ -244,28 +272,59 @@ async function prepareFrameForSlides(source: ExportableNode, fontOverrides: Reco
 
 /**
  * Handler du bouton "Prepare for Slides" — prépare une copie de vérification
- * par frame sélectionnée, recentre le canvas Figma dessus (c'est la
- * "preview" : l'utilisateur voit tout de suite la version reformatée posée
- * à côté de l'originale, prête pour le "refine pixel perfect"), puis
- * l'ajoute aussi au panneau du plugin comme le ferait "Add selection".
+ * pour CHAQUE frame du deck actuel (le panneau du plugin, `deckFrameIds`),
+ * union avec la sélection canvas courante s'il y en a une en plus : cliquer
+ * le bouton n'exige donc plus de re-sélectionner sur le canvas exactement
+ * les frames déjà listées dans le panneau (source d'oublis/frustration —
+ * seul un sous-ensemble se faisait préparer sinon). Recentre le canvas Figma
+ * sur les copies (c'est la "preview" : l'utilisateur voit tout de suite la
+ * version reformatée posée à côté de l'originale, prête pour le "refine
+ * pixel perfect"), puis les ajoute au panneau comme le ferait "Add
+ * selection" — sauf pour une copie déjà taguée `[Slides Ready]`, où c'est
+ * son entrée EXISTANTE qui est rafraîchie en place (voir
+ * `refreshPendingEntry`), pas une nouvelle qui s'ajoute en double.
  */
 async function handlePrepareForSlides(
   pending: PendingSlide[],
   idGen: ReturnType<typeof createIdGenerator>,
   fontOverrides: Record<string, string>,
+  deckFrameIds: string[],
 ): Promise<void> {
-  const selected = figma.currentPage.selection.filter(isExportable);
-  if (selected.length === 0) {
-    figma.notify('Select at least one frame on the canvas first.', { error: true });
+  const deckNodes = (await Promise.all(deckFrameIds.map((id) => figma.getNodeByIdAsync(id))))
+    .filter((n): n is ExportableNode => n !== null && isExportable(n as SceneNode));
+  const canvasSelected = figma.currentPage.selection.filter(isExportable);
+
+  const targets = new Map<string, ExportableNode>();
+  for (const n of [...deckNodes, ...canvasSelected]) targets.set(n.id, n);
+
+  if (targets.size === 0) {
+    figma.notify('Select at least one frame on the canvas, or add frames to the deck first.', { error: true });
     return;
   }
 
   const copies: ExportableNode[] = [];
+  const newlyCreated: ExportableNode[] = [];
   let totalWarnings = 0;
-  for (const frame of selected) {
+
+  for (const frame of targets.values()) {
+    const wasAlreadyTagged = isSlidesReady(frame);
     const { copy, warnings } = await prepareFrameForSlides(frame, fontOverrides);
     copies.push(copy);
     totalWarnings += warnings.length;
+
+    if (wasAlreadyTagged) {
+      await refreshPendingEntry(copy, pending, idGen);
+    } else {
+      newlyCreated.push(copy);
+      // La frame BRUTE d'origine était déjà dans le panneau (ex. ajoutée via
+      // "Select frames to add" avant d'être préparée) : remplacée par sa
+      // copie prête pour Slides plutôt que doublée dans la liste.
+      const rawIdx = pending.findIndex((p) => p.frame.id === frame.id);
+      if (rawIdx !== -1) {
+        pending.splice(rawIdx, 1);
+        figma.ui.postMessage({ type: 'candidate-removed', id: frame.id });
+      }
+    }
     await yieldToUi();
   }
 
@@ -279,7 +338,7 @@ async function handlePrepareForSlides(
       : `Prepared ${copies.length} ${label} for Slides — ${totalWarnings} issue(s) flagged on canvas (red markers).`,
   );
 
-  await addFrames(copies, pending, idGen);
+  await addFrames(newlyCreated, pending, idGen);
 }
 
 /**
@@ -324,6 +383,85 @@ async function addTemplateLayouts(pending: PendingSlide[], idGen: ReturnType<typ
   }
 }
 
+// Propriétés qu'une frame `[Slides Ready]` peut voir changer SANS que ce
+// soit un vrai édit utilisateur : uniquement le plugin data qu'on écrit
+// nous-mêmes (tag `slidesExportReady`, id du groupe de lint) pendant une
+// préparation ou un rafraîchissement — les ignorer évite qu'un
+// `refreshPendingEntry` déclenche, via son propre `setPluginData`, un nouvel
+// événement `nodechange` qui reprogrammerait indéfiniment un rafraîchissement
+// (boucle infinie).
+const LIVE_REFRESH_IGNORABLE_PROPERTIES = new Set<NodeChangeProperty>(['pluginData']);
+
+function isOnlyIgnorableNodeChange(change: NodeChange): boolean {
+  return change.type === 'PROPERTY_CHANGE' && change.properties.every((p) => LIVE_REFRESH_IGNORABLE_PROPERTIES.has(p));
+}
+
+/** Remonte l'arbre depuis le nœud modifié jusqu'à la première frame suivie ET taguée `[Slides Ready]` rencontrée, s'il y en a une. */
+function nearestTrackedTaggedAncestor(node: BaseNode, trackedIds: Set<string>): ExportableNode | undefined {
+  let current: BaseNode | null = node;
+  while (current) {
+    if (isExportable(current as SceneNode) && trackedIds.has(current.id) && isSlidesReady(current as SceneNode)) {
+      return current as ExportableNode;
+    }
+    current = 'parent' in current ? current.parent : null;
+  }
+  return undefined;
+}
+
+const LIVE_REFRESH_DEBOUNCE_MS = 700;
+
+/**
+ * Brief demandé : les frames `[Slides Ready]` retravaillées sur le canvas
+ * après "Prepare for Slides" doivent se refléter dans le panneau/l'export
+ * SANS re-sélection manuelle. On écoute les changements du document (scopé à
+ * la page courante via `PageNode.on('nodechange', …)` — pas besoin de
+ * `loadAllPagesAsync`, contrairement à l'event global `documentchange`, cf.
+ * doc Figma), on ne retient que les frames déjà suivies ET taguées, puis on
+ * ne relance QUE la re-sérialisation + le relint (jamais `reformatForSlides`
+ * : ce serait re-muter en continu des retouches volontaires de
+ * l'utilisateur pendant qu'il travaille dessus).
+ */
+function watchTaggedFramesForLiveRefresh(pending: PendingSlide[], idGen: ReturnType<typeof createIdGenerator>): void {
+  const dirtyIds = new Set<string>();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+
+  const flush = async () => {
+    timer = undefined;
+    const ids = [...dirtyIds];
+    dirtyIds.clear();
+    for (const id of ids) {
+      try {
+        const node = await figma.getNodeByIdAsync(id);
+        if (!node || !isExportable(node as SceneNode)) continue;
+        await refreshPendingEntry(node as ExportableNode, pending, idGen);
+      } catch (err) {
+        console.error(`[figma-to-slides] live refresh failed for ${id}`, err);
+      }
+      await yieldToUi();
+    }
+  };
+
+  figma.currentPage.on('nodechange', (event) => {
+    if (pending.length === 0) return;
+    const trackedIds = new Set(pending.map((p) => p.frame.id));
+    let dirty = false;
+    for (const change of event.nodeChanges) {
+      if (change.type === 'DELETE') continue;
+      if (isOnlyIgnorableNodeChange(change)) continue;
+      const node = change.node;
+      if (!node || (node as RemovedNode).removed) continue;
+      const match = nearestTrackedTaggedAncestor(node as BaseNode, trackedIds);
+      if (match) {
+        dirtyIds.add(match.id);
+        dirty = true;
+      }
+    }
+    if (!dirty) return;
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => void flush(), LIVE_REFRESH_DEBOUNCE_MS);
+  });
+}
+
 async function main(): Promise<void> {
   // Layout à deux colonnes (rail de miniatures + canvas) : plus large que
   // l'ancien panneau vertical, pour laisser une vraie zone de prévisualisation.
@@ -345,6 +483,8 @@ async function main(): Promise<void> {
       hasSelection: figma.currentPage.selection.some(isExportable),
     });
   });
+
+  watchTaggedFramesForLiveRefresh(pending, idGen);
 
   figma.ui.onmessage = async (msg: { type: string; [key: string]: unknown }) => {
     if (msg.type === 'ui-ready') {
@@ -382,7 +522,7 @@ async function main(): Promise<void> {
 
     if (msg.type === 'prepare-for-slides') {
       try {
-        await handlePrepareForSlides(pending, idGen, (msg.fontOverrides as Record<string, string> | undefined) ?? {});
+        await handlePrepareForSlides(pending, idGen, (msg.fontOverrides as Record<string, string> | undefined) ?? {}, (msg.deckFrameIds as string[] | undefined) ?? []);
       } catch (err) {
         console.error(err);
         figma.notify(`Prepare for Slides failed: ${(err as Error).message}`, { error: true });

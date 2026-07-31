@@ -267,6 +267,43 @@ function App() {
           setOrder((prev) => (prev.includes(f.id) ? prev : [...prev, f.id]));
           break;
         }
+        // Rafraîchissement en place d'une frame `[Slides Ready]` déjà connue
+        // (re-clic sur "Prepare for Slides", ou suivi live des retouches
+        // faites sur le canvas — voir `watchTaggedFramesForLiveRefresh` côté
+        // code.ts) : met à jour l'aperçu SANS toucher `order`, la vignette
+        // reste à la même place dans le rail.
+        case 'candidate-updated': {
+          const f = msg.frame as FrameCandidate;
+          setFrames((prev) =>
+            prev[f.id]
+              ? {
+                  ...prev,
+                  [f.id]: {
+                    ...prev[f.id],
+                    ...f,
+                    previewDataUrl: msg.previewDataUrl,
+                    fontSubstitutions: msg.fontSubstitutions as FontSubstitution[] | undefined,
+                  },
+                }
+              : prev,
+          );
+          break;
+        }
+        // Une frame brute du panneau vient d'être remplacée par sa copie
+        // `[Slides Ready]` (préparation groupée) — retirée de la liste, la
+        // copie arrive séparément via `candidate-added`.
+        case 'candidate-removed': {
+          const id = msg.id as string;
+          setOrder((prev) => prev.filter((x) => x !== id));
+          setFrames((prev) => {
+            if (!(id in prev)) return prev;
+            const next = { ...prev };
+            delete next[id];
+            return next;
+          });
+          setActiveId((prev) => (prev === id ? undefined : prev));
+          break;
+        }
         case 'template-candidate-added': {
           const f = msg.frame as FrameCandidate;
           setTemplateLayouts((prev) => ({
@@ -520,7 +557,12 @@ function App() {
     // Le choix de police fait dans le select "Fonts:" (par famille d'origine)
     // s'applique désormais directement sur la copie posée sur le canvas —
     // pas seulement à l'export — pour que la copie soit une vraie preview.
-    postToPlugin({ type: 'prepare-for-slides', fontOverrides });
+    //
+    // `order` (tout le deck déjà dans le panneau) part avec le message : le
+    // bouton prépare ainsi TOUTES les frames déjà ajoutées, pas seulement
+    // celles qui se trouvent par ailleurs sélectionnées sur le canvas Figma
+    // au moment du clic (code.ts fait l'union des deux).
+    postToPlugin({ type: 'prepare-for-slides', deckFrameIds: order, fontOverrides });
   }
 
   function handleAddFramesClick() {
@@ -738,8 +780,8 @@ function App() {
             <button
               type="button"
               className="f2s-btn f2s-btn--secondary"
-              disabled={!hasCanvasSelection}
-              title="Duplicate the selected frame(s) on the Figma canvas, reformatted for Slides, so you can refine them pixel-perfect natively."
+              disabled={!hasCanvasSelection && order.length === 0}
+              title="Duplicate and reformat every frame already in the deck (plus any extra selection on the Figma canvas) for Slides, so you can refine them pixel-perfect natively."
               onClick={handlePrepareForSlides}
             >
               Prepare for Slides
