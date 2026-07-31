@@ -183,6 +183,20 @@ export interface DeleteObjectRequest {
   objectId: string;
 }
 
+/**
+ * Création de template (spec brief-creation-template-google-slides.md) :
+ * l'API Slides n'expose aucune création de Placeholder/Master/Layout
+ * personnalisé en écriture (seuls les layouts prédéfinis à la création de
+ * la présentation existent). Le rôle de placeholder assigné dans Figma est
+ * donc porté en alt text — le seul champ générique disponible sur
+ * n'importe quel type de page element — plutôt que perdu à l'export.
+ */
+export interface UpdatePageElementAltTextRequest {
+  objectId: string;
+  title?: string;
+  description?: string;
+}
+
 /** Une entrée du tableau `requests` d'un `presentations.batchUpdate`. */
 export type SlidesRequest =
   | { createSlide: CreateSlideRequest }
@@ -196,6 +210,7 @@ export type SlidesRequest =
   | { createParagraphBullets: CreateParagraphBulletsRequest }
   | { updateShapeProperties: UpdateShapePropertiesRequest }
   | { updatePageElementsZOrder: UpdatePageElementsZOrderRequest }
+  | { updatePageElementAltText: UpdatePageElementAltTextRequest }
   | { deleteObject: DeleteObjectRequest };
 
 /** Un lot indivisible : toutes les requêtes d'une slide (spec §5.4). */

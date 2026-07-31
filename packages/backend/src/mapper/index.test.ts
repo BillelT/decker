@@ -98,6 +98,46 @@ describe('mapDocumentToBatches', () => {
     expect(imageReq.createImage.url).toBe('https://cdn/my-asset.png');
   });
 
+  it('emits an updatePageElementAltText request after an element carrying placeholder metadata', () => {
+    const doc = baseDoc([
+      baseSlide({
+        elements: [
+          {
+            kind: 'shape',
+            id: 'el1',
+            sourceNodeId: 'n1',
+            rect: { x: 0, y: 0, w: 10, h: 10 },
+            rotation: 0,
+            opacity: 1,
+            shapeType: 'RECTANGLE',
+            placeholder: { role: 'IMAGE', label: 'Hero photo' },
+          },
+        ],
+      }),
+    ]);
+    const [batch] = mapDocumentToBatches(doc, () => '', UNCALIBRATED_DEFAULTS);
+    const shapeIdx = batch.requests.findIndex((r) => 'createShape' in r && (r as any).createShape.objectId === 'el1');
+    const altTextIdx = batch.requests.findIndex((r) => 'updatePageElementAltText' in r);
+    expect(altTextIdx).toBeGreaterThan(shapeIdx);
+    expect((batch.requests[altTextIdx] as any).updatePageElementAltText).toEqual({
+      objectId: 'el1',
+      title: 'Template placeholder — Hero photo',
+      description: 'f2s-placeholder:IMAGE',
+    });
+  });
+
+  it('does not emit an alt text request for elements without placeholder metadata', () => {
+    const doc = baseDoc([
+      baseSlide({
+        elements: [
+          { kind: 'shape', id: 'el1', sourceNodeId: 'n1', rect: { x: 0, y: 0, w: 10, h: 10 }, rotation: 0, opacity: 1, shapeType: 'RECTANGLE' },
+        ],
+      }),
+    ]);
+    const [batch] = mapDocumentToBatches(doc, () => '', UNCALIBRATED_DEFAULTS);
+    expect(batch.requests.some((r) => 'updatePageElementAltText' in r)).toBe(false);
+  });
+
   it('dispatches line elements to createLine rather than createShape/createImage', () => {
     const doc = baseDoc([
       baseSlide({

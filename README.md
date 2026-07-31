@@ -8,6 +8,16 @@ la spécification complète (architecture, contrats, critères d'acceptation)
 et [`LIMITATIONS.md`](./LIMITATIONS.md) pour ce que l'API Slides ne peut
 pas reproduire.
 
+Le plugin propose aussi un mode **"Create a template"** (bouton dans
+l'en-tête) pour construire un jeu de layouts Slides réutilisables plutôt
+qu'un deck ponctuel — voir
+[`brief-creation-template-google-slides.md`](./brief-creation-template-google-slides.md)
+pour le brief et les décisions de conception, et la section dédiée de
+[`LIMITATIONS.md`](./LIMITATIONS.md#création-de-template-mode-dédié) pour
+ce que ce mode impose (zéro rasterisation tolérée) et comment les
+placeholders sont marqués (convention de nom de calque `[[role]]` +
+alt text côté Slides).
+
 ## Structure du monorepo
 
 ```

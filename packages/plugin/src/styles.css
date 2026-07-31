@@ -408,6 +408,133 @@ a {
   height: auto;
 }
 
+/* ---- Création de template : rapport de contenu communicable ----
+   (brief-creation-template-google-slides.md — couleurs, typos, layouts,
+   placeholders). Même rail de vignettes + zone principale que le deck,
+   mais la zone principale devient un rapport à deux colonnes plutôt qu'un
+   simple aperçu centré : le contenu peut dépasser la hauteur visible, donc
+   alignement en haut plutôt que centré verticalement. */
+
+.f2s-canvas--template {
+  justify-content: flex-start;
+  align-items: stretch;
+}
+
+.f2s-tmpl-report {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+  width: 100%;
+}
+
+.f2s-tmpl-preview {
+  max-width: 360px;
+}
+
+.f2s-tmpl-panel {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.f2s-tmpl-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.f2s-tmpl-heading {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-black-70);
+}
+
+.f2s-tmpl-section--blocking .f2s-tmpl-heading {
+  color: var(--color-orange-red);
+}
+
+.f2s-tmpl-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.f2s-tmpl-warning,
+.f2s-tmpl-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+
+.f2s-tmpl-warning {
+  border-color: var(--color-orange-40);
+  color: var(--color-orange-red);
+}
+
+.f2s-tmpl-warning:hover,
+.f2s-tmpl-chip:hover {
+  border-color: var(--color-orange);
+}
+
+.f2s-tmpl-role {
+  flex: none;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-bg);
+  background: var(--color-black-70);
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
+.f2s-tmpl-role--title,
+.f2s-tmpl-role--subtitle {
+  background: var(--color-orange);
+}
+
+.f2s-tmpl-role--image,
+.f2s-tmpl-role--logo {
+  background: var(--color-orange-red);
+}
+
+.f2s-tmpl-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.f2s-tmpl-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  flex: none;
+}
+
+.f2s-tmpl-font-family {
+  font-weight: 700;
+}
+
+.f2s-frame-preview--blocking {
+  border-color: var(--color-orange-red);
+}
+
 /* ---- Barre de statut (login / progression / erreurs) ---- */
 
 .f2s-statusbar {
