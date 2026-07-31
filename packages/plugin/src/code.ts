@@ -2,8 +2,17 @@ import type { ExportOptions, IRDocument, IRSlide } from '@figma-to-slides/shared
 import { createIdGenerator } from './serialize/ids.js';
 import { serializeFrame } from './serialize/serializeFrame.js';
 import { lintFrame, type LintWarning } from './serialize/lintFrame.js';
+import { enforceTemplateStrictness, hasBlockingWarnings } from './serialize/templateValidation.js';
+import { summarizeColors, summarizeFonts, summarizePlaceholders } from './serialize/templateSummary.js';
 
 const MAX_FRAMES_WARNING = 20;
+/**
+ * Un template reste un petit jeu de layouts réutilisables (cf. "Simple
+ * Light" et les ~8 layouts prédéfinis d'une présentation Slides neuve) —
+ * pas un deck complet : le plafond est volontairement plus bas que
+ * `MAX_FRAMES_WARNING`.
+ */
+const TEMPLATE_MAX_LAYOUTS = 10;
 // 320px produisait un aperçu visiblement pixellisé une fois agrandi dans le
 // grand canvas de l'UI (jusqu'à 640px CSS, donc ~1280px physiques en HiDPI).
 const PREVIEW_WIDTH = 960;
@@ -267,12 +276,58 @@ async function handlePrepareForSlides(pending: PendingSlide[], idGen: ReturnType
   await addFrames(copies, pending, idGen);
 }
 
+/**
+ * Ajoute au template les frames actuellement sélectionnées (brief-creation-
+ * template-google-slides.md) — un layout par frame, comme
+ * `addSelectedFrames` pour un deck, mais avec deux différences :
+ * 1. les avertissements de rasterisation sont reclassés en bloquants
+ *    (`enforceTemplateStrictness`) : un template doit rester 100% natif ;
+ * 2. l'UI reçoit en plus les placeholders/couleurs/typos détectés, pour le
+ *    rapport de contenu communicable (couleurs, typos, layouts).
+ */
+async function addTemplateLayouts(pending: PendingSlide[], idGen: ReturnType<typeof createIdGenerator>): Promise<void> {
+  const known = new Set(pending.map((p) => p.frame.id));
+  const selected = figma.currentPage.selection.filter((n): n is ExportableNode => isExportable(n) && !known.has(n.id));
+
+  if (selected.length === 0) {
+    figma.ui.postMessage({ type: 'no-frames-selected' });
+    return;
+  }
+  if (pending.length + selected.length > TEMPLATE_MAX_LAYOUTS) {
+    figma.ui.postMessage({ type: 'too-many-frames', count: pending.length + selected.length, max: TEMPLATE_MAX_LAYOUTS });
+  }
+
+  for (const frame of selected) {
+    const previewDataUrl = await generatePreview(frame);
+    const { slide, nodesToRaster } = await serializeFrame(frame, { nextId: idGen });
+    slide.warnings = enforceTemplateStrictness(slide.warnings);
+    pending.push({ frame, slide, nodesToRaster });
+
+    figma.ui.postMessage({
+      type: 'template-candidate-added',
+      frame: { id: frame.id, name: frame.name, width: frame.width, height: frame.height },
+      previewDataUrl,
+      warnings: slide.warnings,
+      blocking: hasBlockingWarnings(slide.warnings),
+      placeholders: summarizePlaceholders(slide.elements),
+      colors: summarizeColors(slide.elements),
+      fonts: summarizeFonts(slide.elements),
+      fontSubstitutions: collectFontSubstitutions(slide),
+    });
+    await yieldToUi();
+  }
+}
+
 async function main(): Promise<void> {
   // Layout à deux colonnes (rail de miniatures + canvas) : plus large que
   // l'ancien panneau vertical, pour laisser une vraie zone de prévisualisation.
   figma.showUI(__html__, { width: 900, height: 600 });
 
   const pending: PendingSlide[] = [];
+  // Store distinct du deck : basculer entre "Export" et "Create a template"
+  // dans l'UI ne doit ni mélanger les deux listes, ni perdre l'une pendant
+  // qu'on construit l'autre.
+  const templatePending: PendingSlide[] = [];
   const idGen = createIdGenerator(figma.root.id.slice(0, 8));
 
   // Permet à l'UI de masquer son hint « sélectionne des frames sur le
@@ -329,6 +384,16 @@ async function main(): Promise<void> {
       return;
     }
 
+    if (msg.type === 'add-template-layout') {
+      try {
+        await addTemplateLayouts(templatePending, idGen);
+      } catch (err) {
+        console.error(err);
+        figma.ui.postMessage({ type: 'export-error', message: (err as Error).message });
+      }
+      return;
+    }
+
     if (msg.type === 'select-nodes') {
       // Spec §8.3 RÈGLE — cliquer sur une ligne du rapport sélectionne les nœuds dans Figma.
       const ids = msg.nodeIds as string[];
@@ -359,6 +424,24 @@ async function main(): Promise<void> {
         console.error(err);
         figma.ui.postMessage({ type: 'export-error', message: (err as Error).message });
       }
+      return;
+    }
+
+    if (msg.type === 'request-template') {
+      try {
+        await handleTemplateCreateRequest(
+          msg as unknown as {
+            includedFrameIds: string[];
+            order: string[];
+            presentationTitle: string;
+            fontOverrides?: Record<string, string>;
+          },
+          templatePending,
+        );
+      } catch (err) {
+        console.error(err);
+        figma.ui.postMessage({ type: 'export-error', message: (err as Error).message });
+      }
     }
   };
 }
@@ -382,18 +465,20 @@ function computeSlideSizePt(frameSize: { width: number; height: number } | undef
     : { widthPt: REFERENCE_SIDE_PT * (width / height), heightPt: REFERENCE_SIDE_PT };
 }
 
-async function handleExportRequest(
-  msg: {
-    includedFrameIds: string[];
-    order: string[];
-    options: ExportOptions;
-    presentationTitle: string;
-    fontOverrides?: Record<string, string>;
-  },
+/**
+ * Commun aux deux flux (deck export §7.0, template creation ci-dessus) :
+ * applique les overrides de police, rasterise les nœuds qui le nécessitent
+ * (formes marquées `nodesToRaster`, qu'il s'agisse d'un vrai raster fallback
+ * ou d'une image Figma extraite telle quelle), et construit les `IRSlide`
+ * finaux dans l'ordre demandé.
+ */
+async function collectSlidesAndAssets(
   pending: PendingSlide[],
-): Promise<void> {
+  orderedIds: string[],
+  fontOverrides: Record<string, string>,
+  rasterScale: 2 | 3 | 4,
+): Promise<{ slides: IRSlide[]; assets: { assetKey: string; bytes: Uint8Array; mimeType: string }[] }> {
   const byId = new Map(pending.map((p) => [p.frame.id, p]));
-  const orderedIds = msg.order.filter((id) => msg.includedFrameIds.includes(id));
 
   const slides: IRSlide[] = [];
   const assets: { assetKey: string; bytes: Uint8Array; mimeType: string }[] = [];
@@ -402,11 +487,11 @@ async function handleExportRequest(
     const p = byId.get(orderedIds[i]);
     if (!p) continue;
 
-    applyFontOverrides(p.slide, msg.fontOverrides ?? {});
+    applyFontOverrides(p.slide, fontOverrides);
 
     for (const [assetKey, nodes] of p.nodesToRaster) {
       const node = nodes[0];
-      const scaleConstraint = { type: 'SCALE' as const, value: msg.options.rasterScale };
+      const scaleConstraint = { type: 'SCALE' as const, value: rasterScale };
       try {
         const bytes = await node.exportAsync({ format: 'PNG', constraint: scaleConstraint });
         assets.push({ assetKey, bytes, mimeType: 'image/png' });
@@ -424,14 +509,10 @@ async function handleExportRequest(
     slides.push({ ...p.slide, order: i, previewDataUrl: '' });
   }
 
-  const doc: IRDocument = {
-    version: 1,
-    presentationTitle: msg.presentationTitle,
-    slideSize: computeSlideSizePt(slides[0]?.frameSize),
-    slides,
-    options: msg.options,
-  };
+  return { slides, assets };
+}
 
+function postExportPayload(doc: IRDocument, assets: { assetKey: string; bytes: Uint8Array; mimeType: string }[]): void {
   figma.ui.postMessage({
     type: 'export-payload',
     document: doc,
@@ -441,6 +522,78 @@ async function handleExportRequest(
   for (const asset of assets) {
     figma.ui.postMessage({ type: 'export-asset', assetKey: asset.assetKey, bytes: asset.bytes.buffer });
   }
+}
+
+async function handleExportRequest(
+  msg: {
+    includedFrameIds: string[];
+    order: string[];
+    options: ExportOptions;
+    presentationTitle: string;
+    fontOverrides?: Record<string, string>;
+  },
+  pending: PendingSlide[],
+): Promise<void> {
+  const orderedIds = msg.order.filter((id) => msg.includedFrameIds.includes(id));
+  const { slides, assets } = await collectSlidesAndAssets(pending, orderedIds, msg.fontOverrides ?? {}, msg.options.rasterScale);
+
+  const doc: IRDocument = {
+    version: 1,
+    presentationTitle: msg.presentationTitle,
+    slideSize: computeSlideSizePt(slides[0]?.frameSize),
+    slides,
+    options: msg.options,
+  };
+
+  postExportPayload(doc, assets);
+}
+
+/**
+ * Crée le template final : réutilise TEL QUEL le pipeline d'export d'un
+ * deck (mêmes endpoints backend `/assets` + `/export`, cf. ui.tsx) — un
+ * template n'est, côté API Slides, qu'une présentation dont chaque slide
+ * est un layout réutilisable plutôt qu'un contenu final. La différence
+ * tient entièrement en amont : contraintes actives pendant la création
+ * (`enforceTemplateStrictness`) et tags de placeholder (`placeholder.ts`,
+ * matérialisés en alt text côté mapper backend).
+ *
+ * Garde-fou serveur : refuse la création si une layout a encore un
+ * avertissement bloquant, même si l'UI est censée déjà désactiver le
+ * bouton — un aller-retour manuel entre plusieurs sélections ne doit
+ * jamais pouvoir contourner la contrainte.
+ */
+async function handleTemplateCreateRequest(
+  msg: {
+    includedFrameIds: string[];
+    order: string[];
+    presentationTitle: string;
+    fontOverrides?: Record<string, string>;
+  },
+  pending: PendingSlide[],
+): Promise<void> {
+  const byId = new Map(pending.map((p) => [p.frame.id, p]));
+  const orderedIds = msg.order.filter((id) => msg.includedFrameIds.includes(id));
+
+  const blocked = orderedIds.map((id) => byId.get(id)).find((p): p is PendingSlide => Boolean(p) && hasBlockingWarnings(p!.slide.warnings));
+  if (blocked) {
+    figma.ui.postMessage({
+      type: 'export-error',
+      message: `"${blocked.frame.name}" contient encore des éléments qui seraient convertis en image — corrige-les dans Figma avant de créer le template.`,
+    });
+    return;
+  }
+
+  const { slides, assets } = await collectSlidesAndAssets(pending, orderedIds, msg.fontOverrides ?? {}, 2);
+
+  const doc: IRDocument = {
+    version: 1,
+    presentationTitle: msg.presentationTitle,
+    slideSize: computeSlideSizePt(slides[0]?.frameSize),
+    slides,
+    options: { mode: 'new-presentation', rasterScale: 2, includeUnderlay: false, underlayOpacity: 0.3, strictMode: true },
+  };
+
+  postExportPayload(doc, assets);
 }
 
 main().catch((err) => {

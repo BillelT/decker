@@ -4,6 +4,7 @@ import { decideRadius, type RadiusDecision } from './radius.js';
 import { extractTextRuns } from './textExtract.js';
 import { mapVerticalAlignment } from './textMapping.js';
 import { shouldRasterForStroke } from './stroke.js';
+import { parsePlaceholderTag } from './placeholder.js';
 import type { createIdGenerator } from './ids.js';
 
 export interface SerializeContext {
@@ -140,6 +141,7 @@ async function walk(node: SceneNode, state: WalkState): Promise<void> {
         paragraphs: extraction.paragraphs,
         vAlign: mapVerticalAlignment((textNode.textAlignVertical as never) ?? 'TOP'),
         tightFit: textNode.textAutoResize === 'WIDTH_AND_HEIGHT',
+        placeholder: parsePlaceholderTag(node.name),
       });
       return;
     }
@@ -377,6 +379,7 @@ function buildNativeShape(node: SceneNode, action: 'native-shape-preset' | 'nati
     shapeType,
     fill,
     stroke,
+    placeholder: parsePlaceholderTag(node.name),
   };
 }
 
@@ -400,6 +403,7 @@ function buildNativeLine(node: SceneNode, state: WalkState): IRLine {
       weightPt: strokeWeight,
       dash: dashStyleOf(node),
     },
+    placeholder: parsePlaceholderTag(node.name),
   };
 }
 
@@ -440,6 +444,11 @@ function buildImagePlaceholder(node: SceneNode, id: string, state: WalkState, is
     assetKey: id,
     isRasterFallback,
     rasterizedNodeIds: isRasterFallback ? [node.id] : undefined,
+    // Un raster fallback n'est jamais éditable : le tag est quand même
+    // conservé (utile pour le rapport de template et signale au créateur
+    // *quel* placeholder prévu a fini rasterisé), mais `templateValidation`
+    // bloque de toute façon l'export tant qu'il subsiste.
+    placeholder: parsePlaceholderTag(node.name),
   };
 }
 

@@ -24,3 +24,54 @@ Aucun outil identifié sur le marché (gratuit ou payant) ne résout bien la cr�
 
 ## Hors périmètre de ce brief
 L'export de deck ponctuel et son étape de vérification dans Figma font l'objet d'un brief séparé.
+
+## Décisions prises (première itération)
+
+Réponses aux "Points à définir" ci-dessus, pour la version initialement
+implémentée (contenu communicable : couleurs, typos, layouts, placeholders).
+
+- **Pas de vrai Master/Layout Slides créé par l'API.** L'API Slides
+  n'expose aucune création de Placeholder/Master/Layout personnalisé en
+  écriture (`presentations.create` fige un thème et ses ~8 layouts
+  prédéfinis ; `CreateSlideRequest` ne peut que RÉFÉRENCER un layout déjà
+  présent). Un "template" produit ici est donc une présentation Slides
+  normale, dont chaque slide est un **layout réutilisable** (à dupliquer
+  par l'utilisateur final), pas un vrai objet `Layout`/`Master` de l'API.
+  C'est exactement la limite que la concurrence rencontre (cf. Contexte) —
+  ce projet la documente plutôt que de prétendre la contourner.
+- **Contrainte active = zéro rasterisation.** Le même arbre de décision
+  natif/raster que l'export de deck ponctuel est réutilisé, mais tout
+  élément qui y serait rasterisé devient une erreur **bloquante** en mode
+  template (`packages/plugin/src/serialize/templateValidation.ts`) : un
+  template rasterisé fige cet élément pour tous ses futurs utilisateurs,
+  qui n'ont pas la main sur le fichier Figma source. L'export du template
+  est refusé (UI + garde-fou côté sandbox) tant qu'un layout a un
+  avertissement bloquant.
+- **Marquage des placeholders : convention de nom de calque.** Un
+  créateur de template préfixe le nom d'un calque Figma par `[[role]]` ou
+  `[[role:Libellé]]` (`title`, `subtitle`, `body`, `image`, `logo`, ou
+  `custom:...`) — voir `packages/plugin/src/serialize/placeholder.ts`.
+  Choisi plutôt qu'un contrôle dédié dans l'UI du plugin : ça reste
+  visible/modifiable directement dans le panneau de calques Figma, sans
+  aller-retour avec l'UI, et sans permission d'écriture supplémentaire.
+  Cette convention peut être remplacée plus tard par un contrôle actif
+  dans l'éditeur (property Figma dédiée) sans changer le contrat IR.
+- **Le rôle est porté côté Slides en alt text.** Faute de vrai champ
+  `Placeholder` disponible en écriture, le rôle/libellé est matérialisé
+  via `UpdatePageElementAltTextRequest` (titre + description structurée
+  `f2s-placeholder:<ROLE>`) sur l'élément Slides correspondant — visible
+  dans le panneau "Texte alternatif" de Slides, et ré-exploitable par un
+  outil compagnon futur qui lirait ce tag.
+- **Export final : même pipeline que le deck.** Aucun nouvel endpoint
+  backend : un template produit un `IRDocument` classique (chaque layout
+  = une `IRSlide`), envoyé via les mêmes `POST /assets` puis `POST
+  /export` que l'export de deck ponctuel.
+
+### Ce qui reste ouvert
+
+- Réordonnancement par glisser-déposer des layouts de template (le deck
+  export l'a déjà) — non fait dans cette première itération.
+- Contrôle actif dans l'éditeur Figma (property/plugin data plutôt que
+  convention de nom) pour assigner un rôle de placeholder.
+- Un outil compagnon "dupliquer un layout de template et remplir ses
+  placeholders" qui lirait le tag `f2s-placeholder:<ROLE>` en alt text.
