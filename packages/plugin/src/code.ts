@@ -1,16 +1,34 @@
 import type { ExportOptions, IRDocument, IRSlide } from '@figma-to-slides/shared';
 import { createIdGenerator } from './serialize/ids.js';
 import { serializeFrame } from './serialize/serializeFrame.js';
+import { lintFrame, type LintWarning } from './serialize/lintFrame.js';
 
 const MAX_FRAMES_WARNING = 20;
 // 320px produisait un aperçu visiblement pixellisé une fois agrandi dans le
 // grand canvas de l'UI (jusqu'à 640px CSS, donc ~1280px physiques en HiDPI).
 const PREVIEW_WIDTH = 960;
 
+// Brief "copie de vérification" — donnée stockée directement dans le
+// fichier Figma (survit à la fermeture du plugin/fichier, contrairement à
+// localStorage/sessionStorage dans l'iframe) pour retrouver les frames
+// prêtes à l'export sans dépendre de la sélection courante.
+const SLIDES_READY_KEY = 'slidesExportReady';
+const LINT_GROUP_ID_KEY = 'slidesLintGroupId';
+const SLIDES_READY_PREFIX = '[Slides Ready] ';
+const COPY_GAP_PX = 200;
+
 type ExportableNode = FrameNode | ComponentNode | InstanceNode;
 
 function isExportable(node: SceneNode): node is ExportableNode {
   return node.type === 'FRAME' || node.type === 'COMPONENT' || node.type === 'INSTANCE';
+}
+
+function isSlidesReady(node: SceneNode): boolean {
+  return node.getPluginData(SLIDES_READY_KEY) === 'true';
+}
+
+function stripReadyPrefix(name: string): string {
+  return name.startsWith(SLIDES_READY_PREFIX) ? name.slice(SLIDES_READY_PREFIX.length) : name;
 }
 
 function yieldToUi(): Promise<void> {
@@ -63,28 +81,23 @@ interface PendingSlide {
 }
 
 /**
- * Ajoute au deck les frames actuellement sélectionnées sur le canvas Figma
- * (déclenché par le bouton « Ajouter la sélection » de l'UI) — remplace
- * l'ancienne collecte automatique au lancement : l'utilisateur choisit
- * explicitement quoi exporter et dans quel ordre construire sa liste.
- * Les frames déjà présentes dans `pending` sont ignorées (pas de doublon
- * si on re-sélectionne en partie ce qui a déjà été ajouté).
+ * Ajoute au deck une liste de frames déjà résolues (pas de doublon avec ce
+ * qui est déjà dans `pending`) — logique commune à l'ajout manuel (sélection
+ * sur le canvas) et à la découverte automatique des frames taguées
+ * `slidesExportReady` au lancement du plugin (brief §"Nouveau flux proposé"
+ * point 5 : aucune re-sélection manuelle requise).
  */
-async function addSelectedFrames(pending: PendingSlide[], idGen: ReturnType<typeof createIdGenerator>): Promise<void> {
+async function addFrames(nodes: ExportableNode[], pending: PendingSlide[], idGen: ReturnType<typeof createIdGenerator>): Promise<void> {
   const known = new Set(pending.map((p) => p.frame.id));
-  const selected = figma.currentPage.selection.filter((n): n is ExportableNode => isExportable(n) && !known.has(n.id));
-
-  if (selected.length === 0) {
-    figma.ui.postMessage({ type: 'no-frames-selected' });
-    return;
-  }
-  if (selected.length > MAX_FRAMES_WARNING) {
-    figma.ui.postMessage({ type: 'too-many-frames', count: selected.length, max: MAX_FRAMES_WARNING });
+  const toAdd = nodes.filter((n) => !known.has(n.id));
+  if (toAdd.length === 0) return;
+  if (toAdd.length > MAX_FRAMES_WARNING) {
+    figma.ui.postMessage({ type: 'too-many-frames', count: toAdd.length, max: MAX_FRAMES_WARNING });
   }
 
   // Spec §7.0 RÈGLE performance : séquentiel avec yield entre chaque frame,
   // pour ne jamais figer l'UI Figma plus de 200ms d'affilée (§7.0 CRITÈRE).
-  for (const frame of selected) {
+  for (const frame of toAdd) {
     const previewDataUrl = await generatePreview(frame);
     const { slide, nodesToRaster } = await serializeFrame(frame, { nextId: idGen });
     pending.push({ frame, slide, nodesToRaster });
@@ -102,6 +115,156 @@ async function addSelectedFrames(pending: PendingSlide[], idGen: ReturnType<type
     });
     await yieldToUi();
   }
+}
+
+/**
+ * Ajoute au deck les frames actuellement sélectionnées sur le canvas Figma
+ * (déclenché par le bouton « Select frames to add » de l'UI) — l'utilisateur
+ * choisit explicitement quoi exporter et dans quel ordre construire sa liste.
+ */
+async function addSelectedFrames(pending: PendingSlide[], idGen: ReturnType<typeof createIdGenerator>): Promise<void> {
+  const selected = figma.currentPage.selection.filter(isExportable);
+  if (selected.length === 0) {
+    figma.ui.postMessage({ type: 'no-frames-selected' });
+    return;
+  }
+  await addFrames(selected, pending, idGen);
+}
+
+/**
+ * Brief "Nouveau flux proposé" point 5 — retrouve automatiquement, sans
+ * dépendre de la sélection courante, les frames taguées `slidesExportReady`
+ * lors d'une session précédente (copie de vérification retravaillée sur le
+ * canvas puis plugin fermé/rouvert).
+ */
+async function loadTaggedFrames(pending: PendingSlide[], idGen: ReturnType<typeof createIdGenerator>): Promise<void> {
+  const tagged = figma.currentPage.findAll((n) => isExportable(n) && isSlidesReady(n)) as ExportableNode[];
+  if (tagged.length === 0) return;
+  await addFrames(tagged, pending, idGen);
+}
+
+/**
+ * Aplatit récursivement l'auto-layout de la copie — Slides n'a pas
+ * d'équivalent et l'export bake déjà les positions au moment du batchUpdate
+ * (LIMITATIONS.md) ; désactiver l'auto-layout ICI, sur la copie de
+ * vérification, fige les positions actuelles sans bouger un seul pixel
+ * (Figma préserve les positions courantes des enfants en désactivant le
+ * mode) — évite qu'un redimensionnement accidentel de la copie pendant le
+ * "refine pixel perfect" ne réagence tout le contenu.
+ */
+function flattenAutoLayout(node: SceneNode): void {
+  if ('layoutMode' in node && node.layoutMode !== 'NONE') {
+    node.layoutMode = 'NONE';
+  }
+  if ('children' in node) {
+    for (const child of node.children) flattenAutoLayout(child);
+  }
+}
+
+/** Retire l'annotation de lint précédente de cette copie, le cas échéant (évite l'accumulation à chaque re-préparation). */
+async function removeLintAnnotations(copy: ExportableNode): Promise<void> {
+  const groupId = copy.getPluginData(LINT_GROUP_ID_KEY);
+  if (!groupId) return;
+  const group = await figma.getNodeByIdAsync(groupId);
+  if (group && !group.removed) group.remove();
+  copy.setPluginData(LINT_GROUP_ID_KEY, '');
+}
+
+/**
+ * Brief "Approche retenue" — linter visuel : place un repère rouge au
+ * coin haut-droit de chaque calque qui serait rasterisé à l'export, en
+ * SIBLING de la copie (jamais un enfant) pour ne jamais polluer le contenu
+ * réellement exporté. Positionné en coordonnées absolues (repère direct
+ * enfant de la page), donc correct même si la copie est imbriquée.
+ */
+async function addLintAnnotations(copy: ExportableNode, warnings: LintWarning[]): Promise<void> {
+  await removeLintAnnotations(copy);
+  if (warnings.length === 0) return;
+
+  const badges: EllipseNode[] = [];
+  for (const w of warnings) {
+    const node = await figma.getNodeByIdAsync(w.nodeId);
+    if (!node || !('absoluteBoundingBox' in node) || !node.absoluteBoundingBox) continue;
+    const box = node.absoluteBoundingBox;
+    const badge = figma.createEllipse();
+    badge.resize(10, 10);
+    badge.x = box.x + box.width - 5;
+    badge.y = box.y - 5;
+    badge.fills = [{ type: 'SOLID', color: { r: 0.94, g: 0.23, b: 0.18 } }];
+    badge.strokes = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+    badge.strokeWeight = 1;
+    badge.name = `⚠ ${w.nodeName} — ${w.message}`;
+    badges.push(badge);
+  }
+  if (badges.length === 0) return;
+
+  const group = badges.length > 1 ? figma.group(badges, figma.currentPage) : badges[0];
+  group.name = `Slides lint — ${stripReadyPrefix(copy.name)}`;
+  group.locked = true;
+  if ('expanded' in group) group.expanded = false;
+  copy.setPluginData(LINT_GROUP_ID_KEY, group.id);
+}
+
+/**
+ * Brief "Nouveau flux proposé" points 2-3 — génère (ou retravaille, si la
+ * sélection est déjà une copie taguée) la copie de vérification : dupliquée
+ * à côté de l'originale, taguée `slidesExportReady`, préfixée dans son nom,
+ * auto-layout aplati, puis relintée pour poser les annotations à jour.
+ */
+async function prepareFrameForSlides(source: ExportableNode): Promise<{ copy: ExportableNode; warnings: LintWarning[] }> {
+  let copy: ExportableNode;
+  if (isSlidesReady(source)) {
+    copy = source;
+  } else {
+    const clone = source.clone();
+    if (!isExportable(clone)) throw new Error(`Unexpected clone type for "${source.name}"`);
+    copy = clone;
+    copy.x = source.x + source.width + COPY_GAP_PX;
+    copy.y = source.y;
+    copy.name = SLIDES_READY_PREFIX + stripReadyPrefix(source.name);
+    copy.setPluginData(SLIDES_READY_KEY, 'true');
+  }
+
+  flattenAutoLayout(copy);
+  const warnings = await lintFrame(copy);
+  await addLintAnnotations(copy, warnings);
+  return { copy, warnings };
+}
+
+/**
+ * Handler du bouton "Prepare for Slides" — prépare une copie de vérification
+ * par frame sélectionnée, recentre le canvas Figma dessus (c'est la
+ * "preview" : l'utilisateur voit tout de suite la version reformatée posée
+ * à côté de l'originale, prête pour le "refine pixel perfect"), puis
+ * l'ajoute aussi au panneau du plugin comme le ferait "Add selection".
+ */
+async function handlePrepareForSlides(pending: PendingSlide[], idGen: ReturnType<typeof createIdGenerator>): Promise<void> {
+  const selected = figma.currentPage.selection.filter(isExportable);
+  if (selected.length === 0) {
+    figma.notify('Select at least one frame on the canvas first.', { error: true });
+    return;
+  }
+
+  const copies: ExportableNode[] = [];
+  let totalWarnings = 0;
+  for (const frame of selected) {
+    const { copy, warnings } = await prepareFrameForSlides(frame);
+    copies.push(copy);
+    totalWarnings += warnings.length;
+    await yieldToUi();
+  }
+
+  figma.currentPage.selection = copies;
+  figma.viewport.scrollAndZoomIntoView(copies);
+
+  const label = copies.length === 1 ? 'frame' : 'frames';
+  figma.notify(
+    totalWarnings === 0
+      ? `Prepared ${copies.length} ${label} for Slides — no issues found.`
+      : `Prepared ${copies.length} ${label} for Slides — ${totalWarnings} issue(s) flagged on canvas (red markers).`,
+  );
+
+  await addFrames(copies, pending, idGen);
 }
 
 async function main(): Promise<void> {
@@ -123,12 +286,45 @@ async function main(): Promise<void> {
   });
 
   figma.ui.onmessage = async (msg: { type: string; [key: string]: unknown }) => {
+    if (msg.type === 'ui-ready') {
+      // Brief "Nouveau flux proposé" point 5 — un `figma.ui.postMessage`
+      // envoyé avant que l'iframe UI n'ait fini de charger son JS est
+      // perdu (pas de mise en tampon côté `postMessage`) : on attend que
+      // l'UI signale son montage avant de lui pousser les frames taguées
+      // trouvées via `findAll`.
+      //
+      // On envoie aussi l'état de sélection courant : le bouton "Prepare
+      // for Slides" en dépend dès le premier rendu, et l'événement
+      // `selectionchange` ne se redéclenche pas si la sélection existait
+      // déjà avant l'ouverture du plugin.
+      figma.ui.postMessage({
+        type: 'canvas-selection-changed',
+        hasSelection: figma.currentPage.selection.some(isExportable),
+      });
+      try {
+        await loadTaggedFrames(pending, idGen);
+      } catch (err) {
+        console.error(err);
+      }
+      return;
+    }
+
     if (msg.type === 'add-selected-frames') {
       try {
         await addSelectedFrames(pending, idGen);
       } catch (err) {
         console.error(err);
         figma.ui.postMessage({ type: 'export-error', message: (err as Error).message });
+      }
+      return;
+    }
+
+    if (msg.type === 'prepare-for-slides') {
+      try {
+        await handlePrepareForSlides(pending, idGen);
+      } catch (err) {
+        console.error(err);
+        figma.notify(`Prepare for Slides failed: ${(err as Error).message}`, { error: true });
       }
       return;
     }
