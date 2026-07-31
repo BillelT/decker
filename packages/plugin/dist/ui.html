@@ -1129,7 +1129,7 @@ a {
     const [sessionToken, setSessionToken] = d2();
     const [loginError, setLoginError] = d2();
     const [authUrl, setAuthUrl] = d2();
-    const [backend] = d2({ baseUrl: true ? "http://localhost:8787" : "https://figma-to-slide-backend.vercel.app" });
+    const [backend] = d2({ baseUrl: true ? "https://figma-to-slide-backend.vercel.app" : "https://figma-to-slide-backend.vercel.app" });
     h2(() => {
       if (!activeId && order.length > 0) setActiveId(order[0]);
     }, [order, activeId]);
@@ -1533,6 +1533,7 @@ a {
           /* @__PURE__ */ u3("span", { className: "f2s-dim-box", children: mode === "deck" ? activeFrame ? Math.round(activeFrame.height) : "\u2014" : activeTemplateLayout ? Math.round(activeTemplateLayout.height) : "\u2014" })
         ] }),
         mode === "deck" ? /* @__PURE__ */ u3("div", { className: "f2s-topbar-actions", children: [
+          /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--tertiary", onClick: handleAddFramesClick, children: selecting ? "Add selection" : "Select frames to add" }),
           /* @__PURE__ */ u3(
             "button",
             {
@@ -1544,7 +1545,6 @@ a {
               children: "Prepare for Slides"
             }
           ),
-          /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--tertiary", onClick: handleAddFramesClick, children: selecting ? "Add selection" : "Select frames to add" }),
           sessionToken ? /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--primary", disabled: exporting || order.length === 0, onClick: startExport, children: "Export" }) : authUrl ? (
             // Un vrai <a target="_blank"> cliqué par l'utilisateur : voir le
             // commentaire de startLogin plus haut sur la CSP du plugin Figma.
