@@ -5,6 +5,7 @@ import { mapShape } from './shapes.js';
 import { mapText } from './text.js';
 import { mapImage } from './images.js';
 import { mapLine } from './lines.js';
+import { mapPlaceholderAltText } from './placeholder.js';
 import type { RequestBatch, SlidesRequest } from './slidesRequests.js';
 
 export * from './slidesRequests.js';
@@ -66,6 +67,11 @@ function mapSlide(
       case 'line':
         requests.push(...mapLine(el, pageObjectId, scale, offsetXPt, offsetYPt));
         break;
+    }
+    // Toujours après la création/le style de l'élément lui-même : l'alt
+    // text s'applique à un objectId qui doit déjà exister dans ce batch.
+    if (el.placeholder) {
+      requests.push({ updatePageElementAltText: mapPlaceholderAltText(el.id, el.placeholder) });
     }
   }
 

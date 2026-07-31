@@ -27,6 +27,49 @@ interface FrameState extends FrameCandidate {
 type BackendConfig = { baseUrl: string };
 type ExportState = 'idle' | 'exporting' | 'done' | 'error';
 
+/**
+ * Rapport de contenu communicable (brief-creation-template-google-slides.md
+ * — "focus d'abord sur le fonctionnement... couleurs, typos, layouts
+ * notamment avec les placeholders"), calculé côté sandbox
+ * (serialize/templateValidation.ts, serialize/templateSummary.ts) et
+ * transporté tel quel jusqu'à l'UI.
+ */
+type WarningSeverity = 'info' | 'warning' | 'blocking';
+interface TemplateWarning {
+  code: string;
+  severity: WarningSeverity;
+  sourceNodeId: string;
+  nodeName: string;
+  message: string;
+}
+interface TemplatePlaceholder {
+  id: string;
+  sourceNodeId: string;
+  role: string;
+  label: string;
+}
+interface TemplateColorSwatch {
+  hex: string;
+  alpha: number;
+  usageCount: number;
+}
+interface TemplateFontUsage {
+  family: string;
+  weights: number[];
+}
+
+interface TemplateLayoutState extends FrameCandidate {
+  previewDataUrl?: string;
+  warnings: TemplateWarning[];
+  blocking: boolean;
+  placeholders: TemplatePlaceholder[];
+  colors: TemplateColorSwatch[];
+  fonts: TemplateFontUsage[];
+  fontSubstitutions?: FontSubstitution[];
+}
+
+type AppMode = 'deck' | 'template';
+
 // Injecté au build (voir esbuild.config.mjs) ou saisi manuellement par
 // l'utilisateur au premier lancement — stocké via figma.clientStorage
 // (spec §7.2, réutilisé ici pour la config backend).
@@ -67,9 +110,24 @@ function Logo() {
 }
 
 function App() {
+  const [mode, setMode] = useState<AppMode>('deck');
+  // Le handler `onMessage` (branché une seule fois, deps: []) doit toujours
+  // lire le mode COURANT pour router `no-frames-selected`/`too-many-frames`
+  // vers le bon panneau — même piège que `sessionTokenRef` plus bas.
+  const modeRef = useRef<AppMode>(mode);
+  useEffect(() => {
+    modeRef.current = mode;
+  }, [mode]);
+
   const [frames, setFrames] = useState<Record<string, FrameState>>({});
   const [order, setOrder] = useState<string[]>([]);
   const [activeId, setActiveId] = useState<string | undefined>();
+
+  const [templateLayouts, setTemplateLayouts] = useState<Record<string, TemplateLayoutState>>({});
+  const [templateOrder, setTemplateOrder] = useState<string[]>([]);
+  const [activeTemplateId, setActiveTemplateId] = useState<string | undefined>();
+  const [templateSelecting, setTemplateSelecting] = useState(false);
+  const [templateSelectionNotice, setTemplateSelectionNotice] = useState<string | undefined>();
   // Drag au pointeur plutôt qu'au HTML5 natif : ce dernier affiche un
   // "ghost" translucide géré par le navigateur (avec son ombre par défaut,
   // pas stylable) qui ne suit pas le curseur en continu — on préfère
@@ -121,7 +179,12 @@ function App() {
     if (!activeId && order.length > 0) setActiveId(order[0]);
   }, [order, activeId]);
 
+  useEffect(() => {
+    if (!activeTemplateId && templateOrder.length > 0) setActiveTemplateId(templateOrder[0]);
+  }, [templateOrder, activeTemplateId]);
+
   const activeFrame = activeId ? frames[activeId] : undefined;
+  const activeTemplateLayout = activeTemplateId ? templateLayouts[activeTemplateId] : undefined;
 
   /** Déduplique les substitutions de police sur tout le deck, dans l'ordre d'apparition des frames. */
   const deckFontSubstitutions = useMemo(() => {
@@ -137,6 +200,24 @@ function App() {
     }
     return subs;
   }, [order, frames]);
+
+  /** Même déduplication que `deckFontSubstitutions`, pour les layouts de template. */
+  const templateFontSubstitutions = useMemo(() => {
+    const seen = new Set<string>();
+    const subs: FontSubstitution[] = [];
+    for (const id of templateOrder) {
+      for (const s of templateLayouts[id]?.fontSubstitutions ?? []) {
+        const key = `${s.original}→${s.resolved}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        subs.push(s);
+      }
+    }
+    return subs;
+  }, [templateOrder, templateLayouts]);
+
+  /** Un template ne peut être créé que si plus aucun layout n'a d'élément qui serait rasterisé. */
+  const templateHasBlockingLayout = templateOrder.some((id) => templateLayouts[id]?.blocking);
 
   /** Choix manuel de l'utilisateur (police originale → police Slides), envoyé à l'export pour remplacer la résolution par défaut. */
   const [fontOverrides, setFontOverrides] = useState<Record<string, string>>({});
@@ -176,14 +257,40 @@ function App() {
           setOrder((prev) => (prev.includes(f.id) ? prev : [...prev, f.id]));
           break;
         }
+        case 'template-candidate-added': {
+          const f = msg.frame as FrameCandidate;
+          setTemplateLayouts((prev) => ({
+            ...prev,
+            [f.id]: {
+              ...f,
+              previewDataUrl: msg.previewDataUrl,
+              warnings: (msg.warnings as TemplateWarning[]) ?? [],
+              blocking: Boolean(msg.blocking),
+              placeholders: (msg.placeholders as TemplatePlaceholder[]) ?? [],
+              colors: (msg.colors as TemplateColorSwatch[]) ?? [],
+              fonts: (msg.fonts as TemplateFontUsage[]) ?? [],
+              fontSubstitutions: msg.fontSubstitutions as FontSubstitution[] | undefined,
+            },
+          }));
+          setTemplateOrder((prev) => (prev.includes(f.id) ? prev : [...prev, f.id]));
+          break;
+        }
         case 'canvas-selection-changed':
           setHasCanvasSelection(Boolean(msg.hasSelection));
           break;
         case 'no-frames-selected':
-          setSelectionNotice('Select at least one frame on the Figma canvas before clicking.');
+          if (modeRef.current === 'template') {
+            setTemplateSelectionNotice('Select at least one frame on the Figma canvas before clicking.');
+          } else {
+            setSelectionNotice('Select at least one frame on the Figma canvas before clicking.');
+          }
           break;
         case 'too-many-frames':
-          setSelectionNotice(`${msg.count} frames selected — beyond ${msg.max}, export may become slow.`);
+          if (modeRef.current === 'template') {
+            setTemplateSelectionNotice(`${msg.count} layouts selected — beyond ${msg.max}, keep a template focused.`);
+          } else {
+            setSelectionNotice(`${msg.count} frames selected — beyond ${msg.max}, export may become slow.`);
+          }
           break;
         case 'export-payload':
           void handleExportPayload(msg.document as IRDocument);
@@ -428,6 +535,36 @@ function App() {
     setActiveId((prev) => (prev === id ? undefined : prev));
   }
 
+  function handleAddTemplateLayoutClick() {
+    setTemplateSelectionNotice(undefined);
+    if (!templateSelecting) {
+      setTemplateSelecting(true);
+      return;
+    }
+    postToPlugin({ type: 'add-template-layout' });
+    setTemplateSelecting(false);
+  }
+
+  function selectTemplateLayout(id: string) {
+    setActiveTemplateId(id);
+    postToPlugin({ type: 'select-nodes', nodeIds: [id] });
+  }
+
+  /** Sélectionne dans Figma le(s) nœud(s) source visés par un avertissement ou un placeholder — même geste que le rapport de fidélité du deck (spec §8.3). */
+  function selectSourceNodes(sourceNodeIds: string[]) {
+    postToPlugin({ type: 'select-nodes', nodeIds: sourceNodeIds });
+  }
+
+  function removeTemplateLayout(id: string) {
+    setTemplateOrder((prev) => prev.filter((x) => x !== id));
+    setTemplateLayouts((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    setActiveTemplateId((prev) => (prev === id ? undefined : prev));
+  }
+
   /**
    * Index (dans l'`order` FIGÉ du début de drag) où la vignette atterrirait,
    * calculé à partir du déplacement du POINTEUR lui-même (`offsetY`, déjà
@@ -521,6 +658,24 @@ function App() {
     });
   }
 
+  /**
+   * Réutilise le MÊME état d'export (`exportState`/`resultUrl`/…) que le
+   * deck : côté backend, un template n'est jamais qu'une présentation dont
+   * chaque slide est un layout réutilisable — même pipeline `/assets` +
+   * `/export` (voir handleExportPayload plus haut, mode-agnostique).
+   */
+  function startTemplateCreate() {
+    setExportState('exporting');
+    setExportProgress(0);
+    postToPlugin({
+      type: 'request-template',
+      includedFrameIds: templateOrder,
+      order: templateOrder,
+      presentationTitle: 'Figma template',
+      fontOverrides,
+    });
+  }
+
   const exporting = exportState === 'exporting';
 
   return (
@@ -528,68 +683,113 @@ function App() {
       <header className="f2s-topbar">
         <div className="f2s-topbar-left">
           <Logo />
-          <button type="button" className="f2s-btn f2s-btn--secondary" title="Reusable template creation — separate brief, coming soon.">
-            Create a template
+          <button
+            type="button"
+            className="f2s-btn f2s-btn--secondary"
+            onClick={() => setMode((m) => (m === 'deck' ? 'template' : 'deck'))}
+            title={mode === 'deck' ? 'Build a reusable Slides template with tagged placeholders.' : 'Back to exporting a one-off deck.'}
+          >
+            {mode === 'deck' ? 'Create a template' : 'Back to deck export'}
           </button>
         </div>
 
         <div className="f2s-toolbar-group f2s-topbar-center">
           <span className="f2s-toolbar-label">Dimensions:</span>
-          <span className="f2s-dim-box">{activeFrame ? Math.round(activeFrame.width) : '—'}</span>
+          <span className="f2s-dim-box">
+            {mode === 'deck' ? (activeFrame ? Math.round(activeFrame.width) : '—') : activeTemplateLayout ? Math.round(activeTemplateLayout.width) : '—'}
+          </span>
           <span className="f2s-dim-sep">×</span>
-          <span className="f2s-dim-box">{activeFrame ? Math.round(activeFrame.height) : '—'}</span>
+          <span className="f2s-dim-box">
+            {mode === 'deck' ? (activeFrame ? Math.round(activeFrame.height) : '—') : activeTemplateLayout ? Math.round(activeTemplateLayout.height) : '—'}
+          </span>
         </div>
 
-        <div className="f2s-topbar-actions">
-          <button
-            type="button"
-            className="f2s-btn f2s-btn--secondary"
-            disabled={!hasCanvasSelection}
-            title="Duplicate the selected frame(s) on the Figma canvas, reformatted for Slides, so you can refine them pixel-perfect natively."
-            onClick={handlePrepareForSlides}
-          >
-            Prepare for Slides
-          </button>
-          <button type="button" className="f2s-btn f2s-btn--tertiary" onClick={handleAddFramesClick}>
-            {selecting ? 'Add selection' : 'Select frames to add'}
-          </button>
-          {sessionToken ? (
-            <button type="button" className="f2s-btn f2s-btn--primary" disabled={exporting || order.length === 0} onClick={startExport}>
-              Export
+        {mode === 'deck' ? (
+          <div className="f2s-topbar-actions">
+            <button
+              type="button"
+              className="f2s-btn f2s-btn--secondary"
+              disabled={!hasCanvasSelection}
+              title="Duplicate the selected frame(s) on the Figma canvas, reformatted for Slides, so you can refine them pixel-perfect natively."
+              onClick={handlePrepareForSlides}
+            >
+              Prepare for Slides
             </button>
-          ) : authUrl ? (
-            // Un vrai <a target="_blank"> cliqué par l'utilisateur : voir le
-            // commentaire de startLogin plus haut sur la CSP du plugin Figma.
-            <a href={authUrl} target="_blank" rel="noreferrer" className="f2s-btn f2s-btn--primary">
-              Export
-            </a>
-          ) : loginError ? (
-            <button type="button" className="f2s-btn f2s-btn--primary" onClick={startLogin}>
-              Export
+            <button type="button" className="f2s-btn f2s-btn--tertiary" onClick={handleAddFramesClick}>
+              {selecting ? 'Add selection' : 'Select frames to add'}
             </button>
-          ) : (
-            // TODO(TODO.md) : état de chargement pendant qu'on attend le lien
-            // Google — pour l'instant juste désactivé, sans feedback visuel.
-            <button type="button" className="f2s-btn f2s-btn--primary" disabled>
-              Export
+            {sessionToken ? (
+              <button type="button" className="f2s-btn f2s-btn--primary" disabled={exporting || order.length === 0} onClick={startExport}>
+                Export
+              </button>
+            ) : authUrl ? (
+              // Un vrai <a target="_blank"> cliqué par l'utilisateur : voir le
+              // commentaire de startLogin plus haut sur la CSP du plugin Figma.
+              <a href={authUrl} target="_blank" rel="noreferrer" className="f2s-btn f2s-btn--primary">
+                Export
+              </a>
+            ) : loginError ? (
+              <button type="button" className="f2s-btn f2s-btn--primary" onClick={startLogin}>
+                Export
+              </button>
+            ) : (
+              // TODO(TODO.md) : état de chargement pendant qu'on attend le lien
+              // Google — pour l'instant juste désactivé, sans feedback visuel.
+              <button type="button" className="f2s-btn f2s-btn--primary" disabled>
+                Export
+              </button>
+            )}
+            {exportState === 'done' && resultUrl && (
+              <a href={resultUrl} target="_blank" rel="noreferrer" className="f2s-btn f2s-btn--secondary">
+                Open presentation
+              </a>
+            )}
+          </div>
+        ) : (
+          <div className="f2s-topbar-actions">
+            <button type="button" className="f2s-btn f2s-btn--tertiary" onClick={handleAddTemplateLayoutClick}>
+              {templateSelecting ? 'Add selection' : 'Select layout to add'}
             </button>
-          )}
-          {exportState === 'done' && resultUrl && (
-            <a href={resultUrl} target="_blank" rel="noreferrer" className="f2s-btn f2s-btn--secondary">
-              Open presentation
-            </a>
-          )}
-        </div>
+            {sessionToken ? (
+              <button
+                type="button"
+                className="f2s-btn f2s-btn--primary"
+                disabled={exporting || templateOrder.length === 0 || templateHasBlockingLayout}
+                title={templateHasBlockingLayout ? 'Fix the blocking issues listed below before creating the template.' : undefined}
+                onClick={startTemplateCreate}
+              >
+                Create template
+              </button>
+            ) : authUrl ? (
+              <a href={authUrl} target="_blank" rel="noreferrer" className="f2s-btn f2s-btn--primary">
+                Create template
+              </a>
+            ) : loginError ? (
+              <button type="button" className="f2s-btn f2s-btn--primary" onClick={startLogin}>
+                Create template
+              </button>
+            ) : (
+              <button type="button" className="f2s-btn f2s-btn--primary" disabled>
+                Create template
+              </button>
+            )}
+            {exportState === 'done' && resultUrl && (
+              <a href={resultUrl} target="_blank" rel="noreferrer" className="f2s-btn f2s-btn--secondary">
+                Open presentation
+              </a>
+            )}
+          </div>
+        )}
       </header>
 
       <div className="f2s-toolbar">
         <div className="f2s-toolbar-row">
           <div className="f2s-toolbar-group">
             <span className="f2s-toolbar-label">Fonts:</span>
-            {deckFontSubstitutions.length === 0 ? (
+            {(mode === 'deck' ? deckFontSubstitutions : templateFontSubstitutions).length === 0 ? (
               <span className="f2s-toolbar-muted">No substitution</span>
             ) : (
-              deckFontSubstitutions.map((s) => (
+              (mode === 'deck' ? deckFontSubstitutions : templateFontSubstitutions).map((s) => (
                 <label className="f2s-font-select" key={s.original} title={`"${s.original}" isn't available in Slides — pick the replacement to use.`}>
                   <span className="f2s-font-original">{s.original}</span>
                   <span className="f2s-font-arrow">→</span>
@@ -614,6 +814,7 @@ function App() {
         </div>
       </div>
 
+      {mode === 'deck' ? (
       <div className="f2s-body">
         <aside className="f2s-sidebar">
           {selecting && order.length > 0 && !hasCanvasSelection && (
@@ -691,6 +892,136 @@ function App() {
           )}
         </main>
       </div>
+      ) : (
+      <div className="f2s-body">
+        <aside className="f2s-sidebar">
+          {templateSelectionNotice && <p className="f2s-error">{templateSelectionNotice}</p>}
+          {templateSelecting && templateOrder.length > 0 && !hasCanvasSelection && (
+            <p className="f2s-toolbar-muted">Select one or more frames on the Figma canvas, then click "Add selection".</p>
+          )}
+          {templateOrder.length === 0 ? (
+            <p className="f2s-empty">
+              {templateSelecting
+                ? 'Select one or more frames on the Figma canvas, then click "Add selection".'
+                : 'Click "Select layout to add" to choose the layouts that make up this template — e.g. a title slide, a content slide.'}
+            </p>
+          ) : (
+            templateOrder.map((id, index) => {
+              const layout = templateLayouts[id];
+              if (!layout) return null;
+              return (
+                <div key={id} className="f2s-sidebar-item">
+                  <button
+                    type="button"
+                    className={`f2s-frame-preview${activeTemplateId === id ? ' is-active' : ''}${layout.blocking ? ' f2s-frame-preview--blocking' : ''}`}
+                    onClick={() => selectTemplateLayout(id)}
+                    title={layout.blocking ? 'Contains an element that would be rasterized — open it to see the details.' : undefined}
+                  >
+                    {layout.previewDataUrl && <img src={layout.previewDataUrl} alt={layout.name} draggable={false} />}
+                  </button>
+                  <div className="f2s-frame-info">
+                    <span className="f2s-frame-text">
+                      {index + 1}. {layout.name}
+                    </span>
+                    <div className="f2s-frame-controls">
+                      <button type="button" className="f2s-icon-btn" title="Remove" onClick={() => removeTemplateLayout(id)}>
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </aside>
+
+        <main className="f2s-canvas f2s-canvas--template">
+          {activeTemplateLayout ? (
+            <div className="f2s-tmpl-report">
+              <div className="f2s-canvas-preview f2s-tmpl-preview">
+                {activeTemplateLayout.previewDataUrl && <img src={activeTemplateLayout.previewDataUrl} alt={activeTemplateLayout.name} />}
+              </div>
+
+              <div className="f2s-tmpl-panel">
+                {activeTemplateLayout.warnings.filter((w) => w.severity === 'blocking').length > 0 && (
+                  <section className="f2s-tmpl-section f2s-tmpl-section--blocking">
+                    <h3 className="f2s-tmpl-heading">Fix before creating the template</h3>
+                    <ul className="f2s-tmpl-list">
+                      {activeTemplateLayout.warnings
+                        .filter((w) => w.severity === 'blocking')
+                        .map((w, i) => (
+                          <li key={i}>
+                            <button type="button" className="f2s-tmpl-warning" onClick={() => selectSourceNodes([w.sourceNodeId])}>
+                              <strong>{w.nodeName}</strong> — {w.message}
+                            </button>
+                          </li>
+                        ))}
+                    </ul>
+                  </section>
+                )}
+
+                <section className="f2s-tmpl-section">
+                  <h3 className="f2s-tmpl-heading">Placeholders</h3>
+                  {activeTemplateLayout.placeholders.length === 0 ? (
+                    <p className="f2s-toolbar-muted">
+                      No tagged placeholder yet — prefix a layer name in Figma with <code>[[title]]</code>, <code>[[body]]</code>,{' '}
+                      <code>[[image]]</code>, <code>[[subtitle]]</code> or <code>[[logo]]</code> to mark it.
+                    </p>
+                  ) : (
+                    <ul className="f2s-tmpl-list">
+                      {activeTemplateLayout.placeholders.map((p) => (
+                        <li key={p.id}>
+                          <button type="button" className="f2s-tmpl-chip" onClick={() => selectSourceNodes([p.sourceNodeId])}>
+                            <span className={`f2s-tmpl-role f2s-tmpl-role--${p.role.toLowerCase()}`}>{p.role}</span>
+                            {p.label}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
+
+                <section className="f2s-tmpl-section">
+                  <h3 className="f2s-tmpl-heading">Colors</h3>
+                  {activeTemplateLayout.colors.length === 0 ? (
+                    <p className="f2s-toolbar-muted">No solid color detected.</p>
+                  ) : (
+                    <div className="f2s-tmpl-swatches">
+                      {activeTemplateLayout.colors.map((c, i) => (
+                        <span
+                          key={i}
+                          className="f2s-tmpl-swatch"
+                          style={{ backgroundColor: c.hex, opacity: c.alpha }}
+                          title={`${c.hex} · used ${c.usageCount}×`}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </section>
+
+                <section className="f2s-tmpl-section">
+                  <h3 className="f2s-tmpl-heading">Typography</h3>
+                  {activeTemplateLayout.fonts.length === 0 ? (
+                    <p className="f2s-toolbar-muted">No text detected.</p>
+                  ) : (
+                    <ul className="f2s-tmpl-list">
+                      {activeTemplateLayout.fonts.map((f) => (
+                        <li key={f.family}>
+                          <span className="f2s-tmpl-font-family">{f.family}</span>{' '}
+                          <span className="f2s-toolbar-muted">({f.weights.join(', ')})</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
+              </div>
+            </div>
+          ) : (
+            <p className="f2s-canvas-empty">Select a layout on the left to see its report.</p>
+          )}
+        </main>
+      </div>
+      )}
 
       {/*
         Désactivé pour l'instant (cf TODO.md) : le bouton Export du header

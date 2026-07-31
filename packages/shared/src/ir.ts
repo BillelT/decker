@@ -45,6 +45,30 @@ interface IRBase {
   rotation: number;
   /** 0..1, produit node.opacity × fill.opacity. */
   opacity: number;
+  /**
+   * Création de template (brief-creation-template-google-slides.md) : rôle
+   * assigné à l'élément par son créateur dans Figma (convention de nom de
+   * calque, cf. packages/plugin/src/serialize/placeholder.ts). L'API Slides
+   * n'exposant aucune création de placeholder/master/layout personnalisé en
+   * écriture, ce champ ne devient PAS un vrai `Placeholder` Slides — il est
+   * matérialisé côté backend en alt text (titre/description) sur l'élément,
+   * seul mécanisme générique disponible pour porter cette métadonnée dans le
+   * fichier Slides résultant (voir LIMITATIONS.md).
+   */
+  placeholder?: IRPlaceholder;
+}
+
+/**
+ * Rôles reconnus par la convention de tag de calque `[[role]]` /
+ * `[[role:label]]`. `CUSTOM` couvre tout besoin non prévu par cette liste,
+ * avec un libellé obligatoire fourni par le créateur du template.
+ */
+export type PlaceholderRole = 'TITLE' | 'SUBTITLE' | 'BODY' | 'IMAGE' | 'LOGO' | 'CUSTOM';
+
+export interface IRPlaceholder {
+  role: PlaceholderRole;
+  /** Libellé lisible affiché dans l'UI et porté en alt text Slides. */
+  label: string;
 }
 
 export interface IRText extends IRBase {
