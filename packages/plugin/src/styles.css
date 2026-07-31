@@ -369,6 +369,15 @@ a {
   transition: none;
 }
 
+/* Relâchement du drag : `order` se réorganise et les transforms de
+   drag/ghost repassent à zéro dans le même rendu (voir ui.tsx) — sans
+   ceci, la transition animerait ce retour à zéro par-dessus une position
+   de flux déjà réorganisée, ce qui fait déraper la vignette d'un cran
+   avant qu'elle ne revienne à sa place. */
+.f2s-sidebar-item.is-releasing {
+  transition: none;
+}
+
 .f2s-sidebar-item.is-dragging .f2s-frame-preview {
   cursor: grabbing;
 }

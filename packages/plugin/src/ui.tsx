@@ -153,6 +153,16 @@ function App() {
   // atterrirait si on relâchait maintenant — c'est ce qui pilote le décalage
   // visuel des autres vignettes.
   const [dragTargetIndex, setDragTargetIndex] = useState(0);
+  // Au relâchement, `order` se réorganise ET les transforms de drag/ghost
+  // repassent à zéro dans le MÊME rendu : la nouvelle position de flux de
+  // chaque vignette compense déjà exactement le transform qu'on retire, donc
+  // le résultat visuel ne doit pas bouger. Mais comme `transform` reste une
+  // propriété transitionnée (transition CSS 180ms), le navigateur anime ce
+  // retour à zéro par-dessus une position de flux qui, elle, a déjà sauté
+  // instantanément — d'où un survol d'un cran suivi d'un retour. On coupe
+  // donc la transition pour cet unique rendu de relâchement, le temps que le
+  // saut de position et la remise à zéro du transform s'appliquent ensemble.
+  const [suppressShiftTransition, setSuppressShiftTransition] = useState(false);
   const dragStartYRef = useRef(0);
   const dragStartIndexRef = useRef(0);
   // Hauteur d'un "pas" (slot + gap) entre deux vignettes consécutives,
@@ -625,7 +635,9 @@ function App() {
       // Un seul `setOrder`, au relâchement : au moment où il s'applique, les
       // autres vignettes sont déjà visuellement à leur place finale (décalées
       // via transform ci-dessous) — l'array qui les rattrape à cet instant
-      // précis ne produit donc aucun saut visible.
+      // précis ne produit donc aucun saut visible... à condition que ce
+      // rattrapage soit instantané (voir `suppressShiftTransition` ci-dessus).
+      setSuppressShiftTransition(true);
       setOrder((prev) => moveToIndex(prev, draggedId, finalIndex));
       setDragId(undefined);
       setDragOffsetY(0);
@@ -640,6 +652,17 @@ function App() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dragId]);
+
+  // Réactive la transition juste après que le rendu "instantané" du
+  // relâchement a été peint, pour que le prochain drag retrouve son
+  // animation normale.
+  useEffect(() => {
+    if (!suppressShiftTransition) return;
+    const frame = requestAnimationFrame(() => {
+      requestAnimationFrame(() => setSuppressShiftTransition(false));
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [suppressShiftTransition]);
 
   function startExport() {
     setExportState('exporting');
@@ -854,7 +877,7 @@ function App() {
                     if (el) sidebarItemRefs.current.set(id, el);
                     else sidebarItemRefs.current.delete(id);
                   }}
-                  className={`f2s-sidebar-item${isDragging ? ' is-dragging' : ''}`}
+                  className={`f2s-sidebar-item${isDragging ? ' is-dragging' : ''}${suppressShiftTransition ? ' is-releasing' : ''}`}
                   style={
                     isDragging
                       ? { transform: `translateY(${dragOffsetY}px)` }
