@@ -373,6 +373,15 @@ a {
   transition: none;
 }
 
+/* Relâchement du drag : `order` se réorganise et les transforms de
+   drag/ghost repassent à zéro dans le même rendu (voir ui.tsx) — sans
+   ceci, la transition animerait ce retour à zéro par-dessus une position
+   de flux déjà réorganisée, ce qui fait déraper la vignette d'un cran
+   avant qu'elle ne revienne à sa place. */
+.f2s-sidebar-item.is-releasing {
+  transition: none;
+}
+
 .f2s-sidebar-item.is-dragging .f2s-frame-preview {
   cursor: grabbing;
 }
@@ -1109,6 +1118,7 @@ a {
     const [dragOffsetY, setDragOffsetY] = d2(0);
     const [dragActive, setDragActive] = d2(false);
     const [dragTargetIndex, setDragTargetIndex] = d2(0);
+    const [suppressShiftTransition, setSuppressShiftTransition] = d2(false);
     const dragStartYRef = A2(0);
     const dragStartIndexRef = A2(0);
     const slotHeightRef = A2(0);
@@ -1450,6 +1460,7 @@ a {
       }
       function onPointerUp(e3) {
         const finalIndex = targetIndexFromOffset(e3.clientY - dragStartYRef.current);
+        setSuppressShiftTransition(true);
         setOrder((prev) => moveToIndex(prev, draggedId, finalIndex));
         setDragId(void 0);
         setDragOffsetY(0);
@@ -1462,6 +1473,13 @@ a {
         window.removeEventListener("pointerup", onPointerUp);
       };
     }, [dragId]);
+    h2(() => {
+      if (!suppressShiftTransition) return;
+      const frame = requestAnimationFrame(() => {
+        requestAnimationFrame(() => setSuppressShiftTransition(false));
+      });
+      return () => cancelAnimationFrame(frame);
+    }, [suppressShiftTransition]);
     function startExport() {
       setExportState("exporting");
       setExportProgress(0);
@@ -1595,7 +1613,7 @@ a {
                   if (el) sidebarItemRefs.current.set(id, el);
                   else sidebarItemRefs.current.delete(id);
                 },
-                className: `f2s-sidebar-item${isDragging ? " is-dragging" : ""}`,
+                className: `f2s-sidebar-item${isDragging ? " is-dragging" : ""}${suppressShiftTransition ? " is-releasing" : ""}`,
                 style: isDragging ? { transform: `translateY(${dragOffsetY}px)` } : ghostShift !== 0 ? { transform: `translateY(${ghostShift}px)` } : void 0,
                 children: [
                   /* @__PURE__ */ u3(
