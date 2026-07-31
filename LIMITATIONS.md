@@ -29,6 +29,32 @@ de l'approximer silencieusement, et te le signale.
 | Auto-layout (agencement automatique) | Converti en positions fixes au moment de l'export — un redimensionnement ultérieur dans Slides ne réajustera pas automatiquement les éléments comme le ferait Figma. |
 | Groupes / composants Figma | Aplatis : chaque élément devient indépendant dans Slides, il n'y a pas de "groupe" Slides qu'on peut déplacer d'un bloc. |
 
+## Création de template (mode dédié)
+
+Le mode "Create a template" du plugin construit une présentation dont
+chaque slide est un layout réutilisable, plutôt qu'un deck ponctuel. Deux
+différences par rapport à l'export de deck :
+
+- **Aucune rasterisation tolérée.** Tout ce qui déclencherait une
+  conversion en image dans le tableau ci-dessus (dégradé, ombre, mode de
+  fusion, masque, vecteur custom, police introuvable…) bloque la création
+  du template tant que ce n'est pas corrigé dans Figma — un template
+  rasterisé fige l'élément pour tous ses futurs utilisateurs, qui n'ont ni
+  le fichier Figma source ni la main sur le rendu.
+- **Pas de vrai Master/Layout Google Slides.** L'API Slides ne permet
+  aucune création de Placeholder/Master/Layout personnalisé en écriture :
+  seuls les ~8 layouts prédéfinis créés avec une présentation neuve
+  existent, et `CreateSlideRequest` ne peut que référencer l'un d'eux. Un
+  "template" produit par ce plugin est donc une présentation Slides
+  normale à dupliquer, pas un objet `Layout` natif de l'API — la même
+  limite documentée dans le brief comme la raison pour laquelle aucun
+  concurrent ne couvre bien ce cas.
+- **Placeholders marqués via alt text.** Un calque Figma dont le nom est
+  préfixé par `[[title]]`, `[[subtitle]]`, `[[body]]`, `[[image]]`,
+  `[[logo]]` ou `[[custom:Libellé]]` devient, côté Slides, un élément dont
+  l'alt text (titre + description `f2s-placeholder:<RÔLE>`) porte cette
+  métadonnée — visible dans le panneau "Texte alternatif" de Slides.
+
 ## Ce que ça veut dire concrètement
 
 - **Un badge "N objets natifs · M rasterisés"** apparaît pour chaque frame

@@ -356,6 +356,49 @@
     return deviation > STROKE_OFFCENTER_TOLERANCE_PT;
   }
 
+  // src/serialize/placeholder.ts
+  var TAG_PATTERN = /^\s*\[\[\s*([a-zA-Z]+)\s*(?::\s*([^\]]+))?\]\]/;
+  var ROLE_ALIASES = {
+    title: "TITLE",
+    titre: "TITLE",
+    heading: "TITLE",
+    subtitle: "SUBTITLE",
+    soustitre: "SUBTITLE",
+    body: "BODY",
+    texte: "BODY",
+    corps: "BODY",
+    text: "BODY",
+    image: "IMAGE",
+    photo: "IMAGE",
+    picture: "IMAGE",
+    logo: "LOGO",
+    custom: "CUSTOM"
+  };
+  function defaultLabel(role) {
+    switch (role) {
+      case "TITLE":
+        return "Title";
+      case "SUBTITLE":
+        return "Subtitle";
+      case "BODY":
+        return "Body text";
+      case "IMAGE":
+        return "Image";
+      case "LOGO":
+        return "Logo";
+      case "CUSTOM":
+        return "Custom placeholder";
+    }
+  }
+  function parsePlaceholderTag(layerName) {
+    const match = TAG_PATTERN.exec(layerName);
+    if (!match) return void 0;
+    const role = ROLE_ALIASES[match[1].toLowerCase()];
+    if (!role) return void 0;
+    const label = match[2]?.trim();
+    return { role, label: label && label.length > 0 ? label : defaultLabel(role) };
+  }
+
   // src/serialize/serializeFrame.ts
   function evaluateStroke(node) {
     if (!("strokes" in node)) return false;
@@ -454,7 +497,8 @@
           runs: extraction.runs,
           paragraphs: extraction.paragraphs,
           vAlign: mapVerticalAlignment(textNode.textAlignVertical ?? "TOP"),
-          tightFit: textNode.textAutoResize === "WIDTH_AND_HEIGHT"
+          tightFit: textNode.textAutoResize === "WIDTH_AND_HEIGHT",
+          placeholder: parsePlaceholderTag(node.name)
         });
         return;
       }
@@ -625,7 +669,8 @@
       opacity: "opacity" in node ? node.opacity : 1,
       shapeType,
       fill,
-      stroke
+      stroke,
+      placeholder: parsePlaceholderTag(node.name)
     };
   }
   function buildNativeLine(node, state) {
@@ -644,7 +689,8 @@
         color: strokeSolid ? { r: strokeSolid.color.r, g: strokeSolid.color.g, b: strokeSolid.color.b, a: strokeSolid.opacity ?? 1 } : { r: 0, g: 0, b: 0, a: 1 },
         weightPt: strokeWeight,
         dash: dashStyleOf(node)
-      }
+      },
+      placeholder: parsePlaceholderTag(node.name)
     };
   }
   function dashStyleOf(node) {
@@ -682,7 +728,12 @@
       opacity: "opacity" in node ? node.opacity : 1,
       assetKey: id,
       isRasterFallback,
-      rasterizedNodeIds: isRasterFallback ? [node.id] : void 0
+      rasterizedNodeIds: isRasterFallback ? [node.id] : void 0,
+      // Un raster fallback n'est jamais éditable : le tag est quand même
+      // conservé (utile pour le rapport de template et signale au créateur
+      // *quel* placeholder prévu a fini rasterisé), mais `templateValidation`
+      // bloque de toute façon l'export tant qu'il subsiste.
+      placeholder: parsePlaceholderTag(node.name)
     };
   }
   function pushRasterPlaceholder(node, id, state) {
@@ -893,8 +944,85 @@
     }
   }
 
+  // src/serialize/templateValidation.ts
+  var RASTER_WARNING_CODES = /* @__PURE__ */ new Set([
+    "FONT_MISSING",
+    "GRADIENT_RASTERIZED",
+    "EFFECT_RASTERIZED",
+    "BLEND_MODE_RASTERIZED",
+    "MASK_RASTERIZED",
+    "VECTOR_RASTERIZED",
+    "LINE_RASTERIZED",
+    "LETTER_SPACING_LOST",
+    "CORNER_RADIUS_RASTERIZED",
+    "MULTIPLE_FILLS_RASTERIZED"
+  ]);
+  function enforceTemplateStrictness(warnings) {
+    return warnings.map((w) => RASTER_WARNING_CODES.has(w.code) ? { ...w, severity: "blocking" } : w);
+  }
+  function hasBlockingWarnings(warnings) {
+    return warnings.some((w) => w.severity === "blocking");
+  }
+
+  // src/serialize/templateSummary.ts
+  function toHex(color) {
+    const channel = (v) => Math.round(Math.min(1, Math.max(0, v)) * 255).toString(16).padStart(2, "0").toUpperCase();
+    return `#${channel(color.r)}${channel(color.g)}${channel(color.b)}`;
+  }
+  function summarizeColors(elements) {
+    const byKey = /* @__PURE__ */ new Map();
+    const record = (color) => {
+      const hex = toHex(color);
+      const key = `${hex}:${color.a.toFixed(2)}`;
+      const existing = byKey.get(key);
+      if (existing) {
+        existing.usageCount++;
+      } else {
+        byKey.set(key, { hex, alpha: color.a, usageCount: 1 });
+      }
+    };
+    for (const el of elements) {
+      switch (el.kind) {
+        case "shape":
+          if (el.fill) record(el.fill.color);
+          if (el.stroke) record(el.stroke.color);
+          break;
+        case "line":
+          record(el.stroke.color);
+          break;
+        case "text":
+          for (const run of el.runs) record(run.color);
+          break;
+        case "image":
+          break;
+      }
+    }
+    return [...byKey.values()];
+  }
+  function summarizeFonts(elements) {
+    const byFamily = /* @__PURE__ */ new Map();
+    for (const el of elements) {
+      if (el.kind !== "text") continue;
+      for (const run of el.runs) {
+        const weights = byFamily.get(run.fontFamily) ?? /* @__PURE__ */ new Set();
+        weights.add(run.fontWeight);
+        byFamily.set(run.fontFamily, weights);
+      }
+    }
+    return [...byFamily.entries()].map(([family, weights]) => ({ family, weights: [...weights].sort((a, b) => a - b) }));
+  }
+  function summarizePlaceholders(elements) {
+    const result = [];
+    for (const el of elements) {
+      if (!el.placeholder) continue;
+      result.push({ id: el.id, sourceNodeId: el.sourceNodeId, role: el.placeholder.role, label: el.placeholder.label });
+    }
+    return result;
+  }
+
   // src/code.ts
   var MAX_FRAMES_WARNING = 20;
+  var TEMPLATE_MAX_LAYOUTS = 10;
   var PREVIEW_WIDTH = 960;
   var SLIDES_READY_KEY = "slidesExportReady";
   var LINT_GROUP_ID_KEY = "slidesLintGroupId";
@@ -1060,9 +1188,39 @@
     );
     await addFrames(copies, pending, idGen);
   }
+  async function addTemplateLayouts(pending, idGen) {
+    const known = new Set(pending.map((p) => p.frame.id));
+    const selected = figma.currentPage.selection.filter((n) => isExportable(n) && !known.has(n.id));
+    if (selected.length === 0) {
+      figma.ui.postMessage({ type: "no-frames-selected" });
+      return;
+    }
+    if (pending.length + selected.length > TEMPLATE_MAX_LAYOUTS) {
+      figma.ui.postMessage({ type: "too-many-frames", count: pending.length + selected.length, max: TEMPLATE_MAX_LAYOUTS });
+    }
+    for (const frame of selected) {
+      const previewDataUrl = await generatePreview(frame);
+      const { slide, nodesToRaster } = await serializeFrame(frame, { nextId: idGen });
+      slide.warnings = enforceTemplateStrictness(slide.warnings);
+      pending.push({ frame, slide, nodesToRaster });
+      figma.ui.postMessage({
+        type: "template-candidate-added",
+        frame: { id: frame.id, name: frame.name, width: frame.width, height: frame.height },
+        previewDataUrl,
+        warnings: slide.warnings,
+        blocking: hasBlockingWarnings(slide.warnings),
+        placeholders: summarizePlaceholders(slide.elements),
+        colors: summarizeColors(slide.elements),
+        fonts: summarizeFonts(slide.elements),
+        fontSubstitutions: collectFontSubstitutions(slide)
+      });
+      await yieldToUi();
+    }
+  }
   async function main() {
     figma.showUI(__html__, { width: 900, height: 600 });
     const pending = [];
+    const templatePending = [];
     const idGen = createIdGenerator(figma.root.id.slice(0, 8));
     figma.on("selectionchange", () => {
       figma.ui.postMessage({
@@ -1101,6 +1259,15 @@
         }
         return;
       }
+      if (msg.type === "add-template-layout") {
+        try {
+          await addTemplateLayouts(templatePending, idGen);
+        } catch (err) {
+          console.error(err);
+          figma.ui.postMessage({ type: "export-error", message: err.message });
+        }
+        return;
+      }
       if (msg.type === "select-nodes") {
         const ids = msg.nodeIds;
         const resolved = await Promise.all(ids.map((id) => figma.getNodeByIdAsync(id)));
@@ -1119,6 +1286,18 @@
           console.error(err);
           figma.ui.postMessage({ type: "export-error", message: err.message });
         }
+        return;
+      }
+      if (msg.type === "request-template") {
+        try {
+          await handleTemplateCreateRequest(
+            msg,
+            templatePending
+          );
+        } catch (err) {
+          console.error(err);
+          figma.ui.postMessage({ type: "export-error", message: err.message });
+        }
       }
     };
   }
@@ -1130,18 +1309,17 @@
     const { width, height } = frameSize;
     return width >= height ? { widthPt: REFERENCE_SIDE_PT, heightPt: REFERENCE_SIDE_PT * (height / width) } : { widthPt: REFERENCE_SIDE_PT * (width / height), heightPt: REFERENCE_SIDE_PT };
   }
-  async function handleExportRequest(msg, pending) {
+  async function collectSlidesAndAssets(pending, orderedIds, fontOverrides, rasterScale) {
     const byId = new Map(pending.map((p) => [p.frame.id, p]));
-    const orderedIds = msg.order.filter((id) => msg.includedFrameIds.includes(id));
     const slides = [];
     const assets = [];
     for (let i = 0; i < orderedIds.length; i++) {
       const p = byId.get(orderedIds[i]);
       if (!p) continue;
-      applyFontOverrides(p.slide, msg.fontOverrides ?? {});
+      applyFontOverrides(p.slide, fontOverrides);
       for (const [assetKey, nodes] of p.nodesToRaster) {
         const node = nodes[0];
-        const scaleConstraint = { type: "SCALE", value: msg.options.rasterScale };
+        const scaleConstraint = { type: "SCALE", value: rasterScale };
         try {
           const bytes = await node.exportAsync({ format: "PNG", constraint: scaleConstraint });
           assets.push({ assetKey, bytes, mimeType: "image/png" });
@@ -1152,13 +1330,9 @@
       }
       slides.push({ ...p.slide, order: i, previewDataUrl: "" });
     }
-    const doc = {
-      version: 1,
-      presentationTitle: msg.presentationTitle,
-      slideSize: computeSlideSizePt(slides[0]?.frameSize),
-      slides,
-      options: msg.options
-    };
+    return { slides, assets };
+  }
+  function postExportPayload(doc, assets) {
     figma.ui.postMessage({
       type: "export-payload",
       document: doc,
@@ -1167,6 +1341,39 @@
     for (const asset of assets) {
       figma.ui.postMessage({ type: "export-asset", assetKey: asset.assetKey, bytes: asset.bytes.buffer });
     }
+  }
+  async function handleExportRequest(msg, pending) {
+    const orderedIds = msg.order.filter((id) => msg.includedFrameIds.includes(id));
+    const { slides, assets } = await collectSlidesAndAssets(pending, orderedIds, msg.fontOverrides ?? {}, msg.options.rasterScale);
+    const doc = {
+      version: 1,
+      presentationTitle: msg.presentationTitle,
+      slideSize: computeSlideSizePt(slides[0]?.frameSize),
+      slides,
+      options: msg.options
+    };
+    postExportPayload(doc, assets);
+  }
+  async function handleTemplateCreateRequest(msg, pending) {
+    const byId = new Map(pending.map((p) => [p.frame.id, p]));
+    const orderedIds = msg.order.filter((id) => msg.includedFrameIds.includes(id));
+    const blocked = orderedIds.map((id) => byId.get(id)).find((p) => Boolean(p) && hasBlockingWarnings(p.slide.warnings));
+    if (blocked) {
+      figma.ui.postMessage({
+        type: "export-error",
+        message: `"${blocked.frame.name}" contient encore des \xE9l\xE9ments qui seraient convertis en image \u2014 corrige-les dans Figma avant de cr\xE9er le template.`
+      });
+      return;
+    }
+    const { slides, assets } = await collectSlidesAndAssets(pending, orderedIds, msg.fontOverrides ?? {}, 2);
+    const doc = {
+      version: 1,
+      presentationTitle: msg.presentationTitle,
+      slideSize: computeSlideSizePt(slides[0]?.frameSize),
+      slides,
+      options: { mode: "new-presentation", rasterScale: 2, includeUnderlay: false, underlayOpacity: 0.3, strictMode: true }
+    };
+    postExportPayload(doc, assets);
   }
   main().catch((err) => {
     console.error(err);
