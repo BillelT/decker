@@ -734,6 +734,165 @@
     }
   }
 
+  // src/serialize/reformatForSlides.ts
+  var NATIVE_SHAPE_TYPES = /* @__PURE__ */ new Set(["RECTANGLE", "ELLIPSE", "POLYGON", "STAR"]);
+  async function reformatForSlides(root, fontOverrides) {
+    flattenFills(root);
+    for (const child of root.children) {
+      await walk3(child, fontOverrides);
+    }
+  }
+  async function walk3(node, fontOverrides) {
+    if ("visible" in node && !node.visible) return;
+    stripUnsupportedEffects(node);
+    if (node.type === "TEXT") {
+      await reformatText(node, fontOverrides);
+      return;
+    }
+    if (NATIVE_SHAPE_TYPES.has(node.type)) {
+      flattenFills(node);
+      flattenStroke(node);
+      if (node.type === "RECTANGLE") normalizeCornerRadius(node);
+    } else if (node.type === "LINE") {
+      flattenStroke(node);
+      normalizeLineCap(node);
+    }
+    if ("children" in node) {
+      for (const child of node.children) await walk3(child, fontOverrides);
+    }
+  }
+  function flattenFills(node) {
+    if (!("fills" in node) || node.fills === figma.mixed) return;
+    const fills = node.fills;
+    const visible = fills.filter((f) => f.visible !== false);
+    if (visible.length === 0) return;
+    if (visible.length === 1 && (visible[0].type === "SOLID" || visible[0].type === "IMAGE")) return;
+    const solid = representativeSolidColor(visible);
+    if (solid) node.fills = [solid];
+  }
+  function flattenStroke(node) {
+    if (!("strokes" in node)) return;
+    const strokes = node.strokes.filter((s) => s.visible !== false);
+    if (strokes.length > 0) {
+      const alreadySingleSolid = strokes.length === 1 && strokes[0].type === "SOLID";
+      if (!alreadySingleSolid) {
+        const solid = representativeSolidColor(strokes);
+        if (solid) node.strokes = [solid];
+      }
+      if ("strokeAlign" in node) node.strokeAlign = "CENTER";
+      normalizeStrokeWeight(node);
+    }
+  }
+  function representativeSolidColor(paints) {
+    for (let i = paints.length - 1; i >= 0; i--) {
+      const p = paints[i];
+      if (p.type === "SOLID") return { type: "SOLID", color: p.color, opacity: p.opacity ?? 1 };
+    }
+    for (let i = paints.length - 1; i >= 0; i--) {
+      const p = paints[i];
+      if (p.type.startsWith("GRADIENT")) {
+        const stop = p.gradientStops[0];
+        if (stop) {
+          return { type: "SOLID", color: { r: stop.color.r, g: stop.color.g, b: stop.color.b }, opacity: stop.color.a * (p.opacity ?? 1) };
+        }
+      }
+    }
+    return void 0;
+  }
+  function normalizeStrokeWeight(node) {
+    if (!("strokeWeight" in node) || node.strokeWeight !== figma.mixed) return;
+    const sideKeys = ["strokeTopWeight", "strokeRightWeight", "strokeBottomWeight", "strokeLeftWeight"];
+    const values = sideKeys.filter((k) => k in node).map((k) => node[k]);
+    if (values.length === 0) return;
+    node.strokeWeight = values.reduce((a, b) => a + b, 0) / values.length;
+  }
+  function stripUnsupportedEffects(node) {
+    if (!("effects" in node) || node.effects.length === 0) return;
+    const kept = node.effects.filter((e) => !(e.visible && (e.type === "DROP_SHADOW" || e.type === "INNER_SHADOW" || e.type === "LAYER_BLUR" || e.type === "BACKGROUND_BLUR")));
+    if (kept.length !== node.effects.length) node.effects = kept;
+  }
+  function normalizeLineCap(node) {
+    const cap = node.strokeCap;
+    if (cap === figma.mixed || !SUPPORTED_LINE_CAPS.has(cap)) {
+      node.strokeCap = "NONE";
+    }
+  }
+  function normalizeCornerRadius(node) {
+    const radii = {
+      topLeft: node.topLeftRadius,
+      topRight: node.topRightRadius,
+      bottomLeft: node.bottomLeftRadius,
+      bottomRight: node.bottomRightRadius
+    };
+    const decision = decideRadius(radii, node.width, node.height);
+    if (decision.kind !== "raster") return;
+    const minDim = Math.min(node.width, node.height);
+    const isUniform = radii.topLeft === radii.topRight && radii.topRight === radii.bottomLeft && radii.bottomLeft === radii.bottomRight;
+    let target = isUniform ? radii.topLeft : (radii.topLeft + radii.topRight + radii.bottomLeft + radii.bottomRight) / 4;
+    const ratio = minDim > 0 ? target / minDim : 0;
+    if (ratio < RADIUS_NATIVE_TOLERANCE.min) {
+      target = 0;
+    } else if (ratio > RADIUS_NATIVE_TOLERANCE.max && target < minDim / 2) {
+      target = RADIUS_NATIVE_TOLERANCE.max * minDim;
+    }
+    node.topLeftRadius = target;
+    node.topRightRadius = target;
+    node.bottomLeftRadius = target;
+    node.bottomRightRadius = target;
+  }
+  async function reformatText(node, fontOverrides) {
+    const len = node.characters.length;
+    if (len === 0) return;
+    const fontSegments = node.getStyledTextSegments(["fontName"]);
+    const distinctOriginalFonts = new Map(
+      fontSegments.map((s) => [`${s.fontName.family} ${s.fontName.style}`, s.fontName])
+    );
+    for (const fontName of distinctOriginalFonts.values()) {
+      await tryLoadFont(fontName.family, fontName.style);
+    }
+    for (const seg of fontSegments) {
+      const original = seg.fontName.family;
+      const target = fontOverrides[original] ?? resolveFontFamily(original).family;
+      if (target === original) continue;
+      const style = targetStyleFor(seg.fontName.style);
+      const loaded = await tryLoadFont(target, style);
+      if (loaded) node.setRangeFontName(seg.start, seg.end, loaded);
+    }
+    node.setRangeLetterSpacing(0, len, { value: 0, unit: "PIXELS" });
+    if (node.lineHeight === figma.mixed) {
+      for (const seg of node.getStyledTextSegments(["lineHeight"])) {
+        if (seg.lineHeight.unit === "AUTO") node.setRangeLineHeight(seg.start, seg.end, { unit: "PERCENT", value: 100 });
+      }
+    } else if (node.lineHeight.unit === "AUTO") {
+      node.setRangeLineHeight(0, len, { unit: "PERCENT", value: 100 });
+    }
+    if (node.leadingTrim !== "NONE") {
+      node.leadingTrim = "NONE";
+    }
+  }
+  function targetStyleFor(originalStyle) {
+    const bold = /bold/i.test(originalStyle);
+    const italic = /italic/i.test(originalStyle);
+    if (bold && italic) return "Bold Italic";
+    if (bold) return "Bold";
+    if (italic) return "Italic";
+    return "Regular";
+  }
+  async function tryLoadFont(family, style) {
+    try {
+      await figma.loadFontAsync({ family, style });
+      return { family, style };
+    } catch {
+      if (style === "Regular") return void 0;
+      try {
+        await figma.loadFontAsync({ family, style: "Regular" });
+        return { family, style: "Regular" };
+      } catch {
+        return void 0;
+      }
+    }
+  }
+
   // src/code.ts
   var MAX_FRAMES_WARNING = 20;
   var PREVIEW_WIDTH = 960;
@@ -860,7 +1019,7 @@
     if ("expanded" in group) group.expanded = false;
     copy.setPluginData(LINT_GROUP_ID_KEY, group.id);
   }
-  async function prepareFrameForSlides(source) {
+  async function prepareFrameForSlides(source, fontOverrides) {
     let copy;
     if (isSlidesReady(source)) {
       copy = source;
@@ -874,11 +1033,12 @@
       copy.setPluginData(SLIDES_READY_KEY, "true");
     }
     flattenAutoLayout(copy);
+    await reformatForSlides(copy, fontOverrides);
     const warnings = await lintFrame(copy);
     await addLintAnnotations(copy, warnings);
     return { copy, warnings };
   }
-  async function handlePrepareForSlides(pending, idGen) {
+  async function handlePrepareForSlides(pending, idGen, fontOverrides) {
     const selected = figma.currentPage.selection.filter(isExportable);
     if (selected.length === 0) {
       figma.notify("Select at least one frame on the canvas first.", { error: true });
@@ -887,7 +1047,7 @@
     const copies = [];
     let totalWarnings = 0;
     for (const frame of selected) {
-      const { copy, warnings } = await prepareFrameForSlides(frame);
+      const { copy, warnings } = await prepareFrameForSlides(frame, fontOverrides);
       copies.push(copy);
       totalWarnings += warnings.length;
       await yieldToUi();
@@ -934,7 +1094,7 @@
       }
       if (msg.type === "prepare-for-slides") {
         try {
-          await handlePrepareForSlides(pending, idGen);
+          await handlePrepareForSlides(pending, idGen, msg.fontOverrides ?? {});
         } catch (err) {
           console.error(err);
           figma.notify(`Prepare for Slides failed: ${err.message}`, { error: true });

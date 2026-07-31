@@ -1188,7 +1188,7 @@ a {
       postToPlugin({ type: "ui-ready" });
     }, []);
     function handlePrepareForSlides() {
-      postToPlugin({ type: "prepare-for-slides" });
+      postToPlugin({ type: "prepare-for-slides", fontOverrides });
     }
     function handleAddFramesClick() {
       setSelectionNotice(void 0);
