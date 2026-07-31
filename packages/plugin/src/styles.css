@@ -1,0 +1,457 @@
+/* Design system (voir /root/.claude/uploads/.../designsystem.md) */
+
+@font-face {
+  font-family: 'Cabinet Grotesk';
+  src: url(__FONT_DATA_URI__) format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --color-orange: #f06800;
+  --color-orange-40: rgba(240, 104, 0, 0.4);
+  --color-orange-red: #f04000;
+  --color-bg: #fff9f5;
+  --color-text: #120f0d;
+  --color-black-70: rgba(18, 15, 13, 0.7);
+  --color-scrollbar: #cccccc;
+  --color-gray-light: #eeeeee;
+  --color-border: var(--color-gray-light);
+  /* Surfaces additionnelles pour le layout à deux colonnes — même famille
+     que le monogramme (#F2ECE8) plutôt que des gris neutres génériques. */
+  --color-surface: #ffffff;
+  --color-surface-muted: #f2ece8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: 'Cabinet Grotesk', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+#app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+a {
+  color: var(--color-orange);
+}
+
+/* Scrollbar (WebKit) — flèches/piste/poignée en #CCCCCC (spec DS) */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-scrollbar);
+  border-radius: 8px;
+}
+::-webkit-scrollbar-button {
+  background: var(--color-scrollbar);
+  height: 10px;
+  width: 10px;
+}
+* {
+  scrollbar-color: var(--color-scrollbar) transparent;
+  scrollbar-width: thin;
+}
+
+/* ---- Top bar ---- */
+
+.f2s-topbar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 16px 0;
+  flex: none;
+}
+
+.f2s-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  justify-self: start;
+}
+
+.f2s-topbar-center {
+  justify-self: center;
+}
+
+.f2s-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  justify-self: end;
+}
+
+.f2s-logo {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 8px;
+  display: block;
+}
+
+/* ---- Toolbar (polices) ---- */
+
+.f2s-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 12px 16px;
+  flex: none;
+}
+
+.f2s-toolbar-row {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.f2s-toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.f2s-toolbar-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-black-70);
+}
+
+.f2s-toolbar-muted {
+  font-size: 12px;
+  color: var(--color-black-70);
+}
+
+.f2s-dim-box {
+  font-size: 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: 6px;
+  padding: 2px 10px;
+  min-width: 24px;
+  text-align: center;
+}
+
+.f2s-dim-sep {
+  color: var(--color-black-70);
+}
+
+.f2s-font-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.f2s-font-original {
+  color: var(--color-black-70);
+}
+
+.f2s-font-arrow {
+  color: var(--color-black-70);
+}
+
+.f2s-font-dropdown {
+  font-family: inherit;
+  font-size: 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-radius: 4px;
+  padding: 3px 8px;
+}
+
+.f2s-font-dropdown:focus {
+  outline: none;
+  border-color: var(--color-orange-40);
+}
+
+/* Le menu déroulant natif hérite du scrollbar de la page (Chromium) — trop
+   épais (10px, pensé pour les panneaux) pour une petite liste d'options. */
+.f2s-font-dropdown::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+/* ---- Buttons ---- */
+
+.f2s-btn {
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 8px;
+  padding: 8px 16px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: background-color 0.15s ease, color 0.15s ease, outline-color 0.15s ease;
+}
+
+.f2s-btn--tertiary {
+  background: var(--color-text);
+  color: var(--color-bg);
+  border-color: var(--color-text);
+}
+
+.f2s-btn--tertiary:hover:not(:disabled) {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.f2s-btn--secondary {
+  background: transparent;
+  border-color: var(--color-orange);
+  color: var(--color-orange);
+  display: inline-flex;
+  align-items: center;
+  outline: 1px solid transparent;
+  outline-offset: -2px;
+}
+
+.f2s-btn--secondary:hover:not(:disabled) {
+  background: var(--color-orange);
+  color: var(--color-bg);
+  outline-color: var(--color-orange);
+}
+
+.f2s-btn--primary {
+  background: var(--color-orange);
+  color: var(--color-bg);
+}
+
+.f2s-btn--primary:hover:not(:disabled) {
+  background: var(--color-orange-red);
+}
+
+/* ---- Body : rail de miniatures + canvas ---- */
+
+.f2s-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: stretch;
+  border-top: 1px solid var(--color-border);
+}
+
+.f2s-sidebar {
+  flex: none;
+  width: 190px;
+  overflow-y: auto;
+  padding: 8px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border-right: 1px solid var(--color-border);
+}
+
+.f2s-sidebar-item {
+  /* Décalage "fantôme" pendant un drag (voir ui.tsx) : anime le retour à un
+     cran entier plutôt qu'un saut instantané. La vignette activement
+     déplacée désactive cette transition (elle doit suivre le curseur au
+     pixel près, sans lag). */
+  transition: transform 180ms ease;
+}
+
+.f2s-empty {
+  color: var(--color-black-70);
+  font-size: 12px;
+  padding: 24px 0;
+  text-align: center;
+}
+
+.f2s-frame-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.f2s-frame-text {
+  font-size: 12px;
+  color: var(--color-black-70);
+}
+
+.f2s-frame-controls {
+  display: flex;
+  gap: 4px;
+  flex: none;
+}
+
+.f2s-icon-btn {
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--color-text);
+}
+
+.f2s-icon-btn:hover:not(:disabled) {
+  background: var(--color-orange-40);
+}
+
+.f2s-frame-preview {
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background: var(--color-surface-muted);
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  display: block;
+  overflow: hidden;
+  cursor: pointer;
+  padding: 0;
+  touch-action: none;
+}
+
+/* Retour hover = sélection (pas le drag, qui reste discret tant qu'aucun
+   mouvement n'est détecté — voir .is-dragging plus bas). */
+.f2s-frame-preview:hover:not(.is-active) {
+  border-color: var(--color-scrollbar);
+}
+
+.f2s-frame-preview.is-active {
+  border-color: var(--color-orange-red);
+}
+
+.f2s-frame-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+}
+
+/* Drag au pointeur (voir ui.tsx) : la vignette suit le curseur via
+   `transform`, sans ombre ni ghost natif — suivi immédiat, donc pas de
+   transition sur cette vignette précise (seules les autres, décalées pour
+   ouvrir la place, en gardent une). */
+.f2s-sidebar-item.is-dragging {
+  position: relative;
+  z-index: 10;
+  transition: none;
+}
+
+.f2s-sidebar-item.is-dragging .f2s-frame-preview {
+  cursor: grabbing;
+}
+
+/* ---- Canvas principal ---- */
+
+.f2s-canvas {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.f2s-canvas-empty {
+  color: var(--color-black-70);
+  font-size: 12px;
+  text-align: center;
+}
+
+.f2s-canvas-preview {
+  max-width: 640px;
+  max-height: 100%;
+  flex: none;
+  border: 1px solid var(--color-scrollbar);
+}
+
+.f2s-canvas-preview img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+}
+
+/* ---- Barre de statut (login / progression / erreurs) ---- */
+
+.f2s-statusbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 12px 16px;
+  background: var(--color-bg);
+  border-top: 1px solid var(--color-border);
+}
+
+.f2s-progress {
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.f2s-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--color-orange-40);
+  border-top-color: var(--color-orange);
+  animation: f2s-spin 0.8s linear infinite;
+  flex: none;
+}
+
+@keyframes f2s-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.f2s-error {
+  color: var(--color-orange-red);
+  font-size: 12px;
+  margin: 0;
+}
+
+.f2s-login {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
