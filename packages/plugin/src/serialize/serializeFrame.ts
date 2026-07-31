@@ -290,7 +290,7 @@ function shapeInfo(node: SceneNode, kind: NodeKind): DecisionInput['shape'] {
 // losange, cercle plein…) nécessiterait de mapper vers startArrow/endArrow,
 // non fait ici — la ligne est rasterisée pour rester fidèle plutôt que de
 // perdre silencieusement la décoration.
-const SUPPORTED_LINE_CAPS = new Set(['NONE', 'ROUND', 'SQUARE']);
+export const SUPPORTED_LINE_CAPS = new Set(['NONE', 'ROUND', 'SQUARE']);
 
 function lineInfo(node: SceneNode): DecisionInput['line'] {
   const strokes = 'strokes' in node ? node.strokes.filter((s) => s.visible !== false) : [];

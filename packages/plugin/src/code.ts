@@ -2,6 +2,7 @@ import type { ExportOptions, IRDocument, IRSlide } from '@figma-to-slides/shared
 import { createIdGenerator } from './serialize/ids.js';
 import { serializeFrame } from './serialize/serializeFrame.js';
 import { lintFrame, type LintWarning } from './serialize/lintFrame.js';
+import { reformatForSlides } from './serialize/reformatForSlides.js';
 
 const MAX_FRAMES_WARNING = 20;
 // 320px produisait un aperçu visiblement pixellisé une fois agrandi dans le
@@ -211,7 +212,7 @@ async function addLintAnnotations(copy: ExportableNode, warnings: LintWarning[])
  * à côté de l'originale, taguée `slidesExportReady`, préfixée dans son nom,
  * auto-layout aplati, puis relintée pour poser les annotations à jour.
  */
-async function prepareFrameForSlides(source: ExportableNode): Promise<{ copy: ExportableNode; warnings: LintWarning[] }> {
+async function prepareFrameForSlides(source: ExportableNode, fontOverrides: Record<string, string>): Promise<{ copy: ExportableNode; warnings: LintWarning[] }> {
   let copy: ExportableNode;
   if (isSlidesReady(source)) {
     copy = source;
@@ -226,6 +227,7 @@ async function prepareFrameForSlides(source: ExportableNode): Promise<{ copy: Ex
   }
 
   flattenAutoLayout(copy);
+  await reformatForSlides(copy, fontOverrides);
   const warnings = await lintFrame(copy);
   await addLintAnnotations(copy, warnings);
   return { copy, warnings };
@@ -238,7 +240,11 @@ async function prepareFrameForSlides(source: ExportableNode): Promise<{ copy: Ex
  * à côté de l'originale, prête pour le "refine pixel perfect"), puis
  * l'ajoute aussi au panneau du plugin comme le ferait "Add selection".
  */
-async function handlePrepareForSlides(pending: PendingSlide[], idGen: ReturnType<typeof createIdGenerator>): Promise<void> {
+async function handlePrepareForSlides(
+  pending: PendingSlide[],
+  idGen: ReturnType<typeof createIdGenerator>,
+  fontOverrides: Record<string, string>,
+): Promise<void> {
   const selected = figma.currentPage.selection.filter(isExportable);
   if (selected.length === 0) {
     figma.notify('Select at least one frame on the canvas first.', { error: true });
@@ -248,7 +254,7 @@ async function handlePrepareForSlides(pending: PendingSlide[], idGen: ReturnType
   const copies: ExportableNode[] = [];
   let totalWarnings = 0;
   for (const frame of selected) {
-    const { copy, warnings } = await prepareFrameForSlides(frame);
+    const { copy, warnings } = await prepareFrameForSlides(frame, fontOverrides);
     copies.push(copy);
     totalWarnings += warnings.length;
     await yieldToUi();
@@ -321,7 +327,7 @@ async function main(): Promise<void> {
 
     if (msg.type === 'prepare-for-slides') {
       try {
-        await handlePrepareForSlides(pending, idGen);
+        await handlePrepareForSlides(pending, idGen, (msg.fontOverrides as Record<string, string> | undefined) ?? {});
       } catch (err) {
         console.error(err);
         figma.notify(`Prepare for Slides failed: ${(err as Error).message}`, { error: true });

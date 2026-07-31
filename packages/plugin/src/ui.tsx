@@ -400,7 +400,10 @@ function App() {
   }, []);
 
   function handlePrepareForSlides() {
-    postToPlugin({ type: 'prepare-for-slides' });
+    // Le choix de police fait dans le select "Fonts:" (par famille d'origine)
+    // s'applique désormais directement sur la copie posée sur le canvas —
+    // pas seulement à l'export — pour que la copie soit une vraie preview.
+    postToPlugin({ type: 'prepare-for-slides', fontOverrides });
   }
 
   function handleAddFramesClick() {
