@@ -732,6 +732,9 @@ function App() {
 
         {mode === 'deck' ? (
           <div className="f2s-topbar-actions">
+            <button type="button" className="f2s-btn f2s-btn--tertiary" onClick={handleAddFramesClick}>
+              {selecting ? 'Add selection' : 'Select frames to add'}
+            </button>
             <button
               type="button"
               className="f2s-btn f2s-btn--secondary"
@@ -740,9 +743,6 @@ function App() {
               onClick={handlePrepareForSlides}
             >
               Prepare for Slides
-            </button>
-            <button type="button" className="f2s-btn f2s-btn--tertiary" onClick={handleAddFramesClick}>
-              {selecting ? 'Add selection' : 'Select frames to add'}
             </button>
             {sessionToken ? (
               <button type="button" className="f2s-btn f2s-btn--primary" disabled={exporting || order.length === 0} onClick={startExport}>
