@@ -696,11 +696,59 @@
     return { type: "SOLID", color: { r: f.color.r, g: f.color.g, b: f.color.b, a: f.opacity ?? 1 } };
   }
 
+  // src/serialize/lintFrame.ts
+  async function lintFrame(frame) {
+    const warnings = [];
+    for (const child of frame.children) {
+      await walk2(child, warnings, false);
+    }
+    return warnings;
+  }
+  async function walk2(node, warnings, maskedByAncestor) {
+    const decision = classifyNode(toDecisionInput(node, maskedByAncestor));
+    switch (decision.action) {
+      case "raster":
+        warnings.push({ nodeId: node.id, nodeName: node.name, code: decision.warningCode, message: decision.message });
+        return;
+      case "native-text": {
+        const extraction = extractTextRuns(node);
+        if (extraction.requiresRaster) {
+          warnings.push({
+            nodeId: node.id,
+            nodeName: node.name,
+            code: "LETTER_SPACING_LOST",
+            message: extraction.rasterReason ?? "Texte non repr\xE9sentable \u2014 sera converti en image."
+          });
+        }
+        return;
+      }
+      case "descend": {
+        const container = node;
+        for (const child of container.children) {
+          await walk2(child, warnings, maskedByAncestor);
+        }
+        return;
+      }
+      default:
+        return;
+    }
+  }
+
   // src/code.ts
   var MAX_FRAMES_WARNING = 20;
   var PREVIEW_WIDTH = 960;
+  var SLIDES_READY_KEY = "slidesExportReady";
+  var LINT_GROUP_ID_KEY = "slidesLintGroupId";
+  var SLIDES_READY_PREFIX = "[Slides Ready] ";
+  var COPY_GAP_PX = 200;
   function isExportable(node) {
     return node.type === "FRAME" || node.type === "COMPONENT" || node.type === "INSTANCE";
+  }
+  function isSlidesReady(node) {
+    return node.getPluginData(SLIDES_READY_KEY) === "true";
+  }
+  function stripReadyPrefix(name) {
+    return name.startsWith(SLIDES_READY_PREFIX) ? name.slice(SLIDES_READY_PREFIX.length) : name;
   }
   function yieldToUi() {
     return new Promise((resolve) => setTimeout(resolve, 0));
@@ -734,17 +782,14 @@
     const bytes = await node.exportAsync({ format: "PNG", constraint: { type: "WIDTH", value: PREVIEW_WIDTH } });
     return `data:image/png;base64,${figma.base64Encode(bytes)}`;
   }
-  async function addSelectedFrames(pending, idGen) {
+  async function addFrames(nodes, pending, idGen) {
     const known = new Set(pending.map((p) => p.frame.id));
-    const selected = figma.currentPage.selection.filter((n) => isExportable(n) && !known.has(n.id));
-    if (selected.length === 0) {
-      figma.ui.postMessage({ type: "no-frames-selected" });
-      return;
+    const toAdd = nodes.filter((n) => !known.has(n.id));
+    if (toAdd.length === 0) return;
+    if (toAdd.length > MAX_FRAMES_WARNING) {
+      figma.ui.postMessage({ type: "too-many-frames", count: toAdd.length, max: MAX_FRAMES_WARNING });
     }
-    if (selected.length > MAX_FRAMES_WARNING) {
-      figma.ui.postMessage({ type: "too-many-frames", count: selected.length, max: MAX_FRAMES_WARNING });
-    }
-    for (const frame of selected) {
+    for (const frame of toAdd) {
       const previewDataUrl = await generatePreview(frame);
       const { slide, nodesToRaster } = await serializeFrame(frame, { nextId: idGen });
       pending.push({ frame, slide, nodesToRaster });
@@ -762,6 +807,99 @@
       await yieldToUi();
     }
   }
+  async function addSelectedFrames(pending, idGen) {
+    const selected = figma.currentPage.selection.filter(isExportable);
+    if (selected.length === 0) {
+      figma.ui.postMessage({ type: "no-frames-selected" });
+      return;
+    }
+    await addFrames(selected, pending, idGen);
+  }
+  async function loadTaggedFrames(pending, idGen) {
+    const tagged = figma.currentPage.findAll((n) => isExportable(n) && isSlidesReady(n));
+    if (tagged.length === 0) return;
+    await addFrames(tagged, pending, idGen);
+  }
+  function flattenAutoLayout(node) {
+    if ("layoutMode" in node && node.layoutMode !== "NONE") {
+      node.layoutMode = "NONE";
+    }
+    if ("children" in node) {
+      for (const child of node.children) flattenAutoLayout(child);
+    }
+  }
+  async function removeLintAnnotations(copy) {
+    const groupId = copy.getPluginData(LINT_GROUP_ID_KEY);
+    if (!groupId) return;
+    const group = await figma.getNodeByIdAsync(groupId);
+    if (group && !group.removed) group.remove();
+    copy.setPluginData(LINT_GROUP_ID_KEY, "");
+  }
+  async function addLintAnnotations(copy, warnings) {
+    await removeLintAnnotations(copy);
+    if (warnings.length === 0) return;
+    const badges = [];
+    for (const w of warnings) {
+      const node = await figma.getNodeByIdAsync(w.nodeId);
+      if (!node || !("absoluteBoundingBox" in node) || !node.absoluteBoundingBox) continue;
+      const box = node.absoluteBoundingBox;
+      const badge = figma.createEllipse();
+      badge.resize(10, 10);
+      badge.x = box.x + box.width - 5;
+      badge.y = box.y - 5;
+      badge.fills = [{ type: "SOLID", color: { r: 0.94, g: 0.23, b: 0.18 } }];
+      badge.strokes = [{ type: "SOLID", color: { r: 1, g: 1, b: 1 } }];
+      badge.strokeWeight = 1;
+      badge.name = `\u26A0 ${w.nodeName} \u2014 ${w.message}`;
+      badges.push(badge);
+    }
+    if (badges.length === 0) return;
+    const group = badges.length > 1 ? figma.group(badges, figma.currentPage) : badges[0];
+    group.name = `Slides lint \u2014 ${stripReadyPrefix(copy.name)}`;
+    group.locked = true;
+    if ("expanded" in group) group.expanded = false;
+    copy.setPluginData(LINT_GROUP_ID_KEY, group.id);
+  }
+  async function prepareFrameForSlides(source) {
+    let copy;
+    if (isSlidesReady(source)) {
+      copy = source;
+    } else {
+      const clone = source.clone();
+      if (!isExportable(clone)) throw new Error(`Unexpected clone type for "${source.name}"`);
+      copy = clone;
+      copy.x = source.x + source.width + COPY_GAP_PX;
+      copy.y = source.y;
+      copy.name = SLIDES_READY_PREFIX + stripReadyPrefix(source.name);
+      copy.setPluginData(SLIDES_READY_KEY, "true");
+    }
+    flattenAutoLayout(copy);
+    const warnings = await lintFrame(copy);
+    await addLintAnnotations(copy, warnings);
+    return { copy, warnings };
+  }
+  async function handlePrepareForSlides(pending, idGen) {
+    const selected = figma.currentPage.selection.filter(isExportable);
+    if (selected.length === 0) {
+      figma.notify("Select at least one frame on the canvas first.", { error: true });
+      return;
+    }
+    const copies = [];
+    let totalWarnings = 0;
+    for (const frame of selected) {
+      const { copy, warnings } = await prepareFrameForSlides(frame);
+      copies.push(copy);
+      totalWarnings += warnings.length;
+      await yieldToUi();
+    }
+    figma.currentPage.selection = copies;
+    figma.viewport.scrollAndZoomIntoView(copies);
+    const label = copies.length === 1 ? "frame" : "frames";
+    figma.notify(
+      totalWarnings === 0 ? `Prepared ${copies.length} ${label} for Slides \u2014 no issues found.` : `Prepared ${copies.length} ${label} for Slides \u2014 ${totalWarnings} issue(s) flagged on canvas (red markers).`
+    );
+    await addFrames(copies, pending, idGen);
+  }
   async function main() {
     figma.showUI(__html__, { width: 900, height: 600 });
     const pending = [];
@@ -773,12 +911,33 @@
       });
     });
     figma.ui.onmessage = async (msg) => {
+      if (msg.type === "ui-ready") {
+        figma.ui.postMessage({
+          type: "canvas-selection-changed",
+          hasSelection: figma.currentPage.selection.some(isExportable)
+        });
+        try {
+          await loadTaggedFrames(pending, idGen);
+        } catch (err) {
+          console.error(err);
+        }
+        return;
+      }
       if (msg.type === "add-selected-frames") {
         try {
           await addSelectedFrames(pending, idGen);
         } catch (err) {
           console.error(err);
           figma.ui.postMessage({ type: "export-error", message: err.message });
+        }
+        return;
+      }
+      if (msg.type === "prepare-for-slides") {
+        try {
+          await handlePrepareForSlides(pending, idGen);
+        } catch (err) {
+          console.error(err);
+          figma.notify(`Prepare for Slides failed: ${err.message}`, { error: true });
         }
         return;
       }

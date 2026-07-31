@@ -982,7 +982,7 @@ a {
     const [sessionToken, setSessionToken] = d2();
     const [loginError, setLoginError] = d2();
     const [authUrl, setAuthUrl] = d2();
-    const [backend] = d2({ baseUrl: true ? "https://figma-to-slide-backend.vercel.app" : "https://figma-to-slide-backend.vercel.app" });
+    const [backend] = d2({ baseUrl: true ? "http://localhost:8787" : "https://figma-to-slide-backend.vercel.app" });
     h2(() => {
       if (!activeId && order.length > 0) setActiveId(order[0]);
     }, [order, activeId]);
@@ -1184,6 +1184,12 @@ a {
     h2(() => {
       if (!sessionToken) startLogin();
     }, []);
+    h2(() => {
+      postToPlugin({ type: "ui-ready" });
+    }, []);
+    function handlePrepareForSlides() {
+      postToPlugin({ type: "prepare-for-slides" });
+    }
     function handleAddFramesClick() {
       setSelectionNotice(void 0);
       if (!selecting) {
@@ -1283,6 +1289,17 @@ a {
           /* @__PURE__ */ u3("span", { className: "f2s-dim-box", children: activeFrame ? Math.round(activeFrame.height) : "\u2014" })
         ] }),
         /* @__PURE__ */ u3("div", { className: "f2s-topbar-actions", children: [
+          /* @__PURE__ */ u3(
+            "button",
+            {
+              type: "button",
+              className: "f2s-btn f2s-btn--secondary",
+              disabled: !hasCanvasSelection,
+              title: "Duplicate the selected frame(s) on the Figma canvas, reformatted for Slides, so you can refine them pixel-perfect natively.",
+              onClick: handlePrepareForSlides,
+              children: "Prepare for Slides"
+            }
+          ),
           /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--tertiary", onClick: handleAddFramesClick, children: selecting ? "Add selection" : "Select frames to add" }),
           sessionToken ? /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--primary", disabled: exporting || order.length === 0, onClick: startExport, children: "Export" }) : authUrl ? (
             // Un vrai <a target="_blank"> cliqué par l'utilisateur : voir le

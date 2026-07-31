@@ -391,6 +391,18 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Signale à code.ts que l'iframe a fini de monter : un `figma.ui.postMessage`
+  // envoyé avant ce point (ex. la découverte des frames déjà taguées
+  // `slidesExportReady` à la réouverture du plugin) serait perdu, `postMessage`
+  // ne bufferisant rien côté destinataire.
+  useEffect(() => {
+    postToPlugin({ type: 'ui-ready' });
+  }, []);
+
+  function handlePrepareForSlides() {
+    postToPlugin({ type: 'prepare-for-slides' });
+  }
+
   function handleAddFramesClick() {
     setSelectionNotice(undefined);
     if (!selecting) {
@@ -529,6 +541,15 @@ function App() {
         </div>
 
         <div className="f2s-topbar-actions">
+          <button
+            type="button"
+            className="f2s-btn f2s-btn--secondary"
+            disabled={!hasCanvasSelection}
+            title="Duplicate the selected frame(s) on the Figma canvas, reformatted for Slides, so you can refine them pixel-perfect natively."
+            onClick={handlePrepareForSlides}
+          >
+            Prepare for Slides
+          </button>
           <button type="button" className="f2s-btn f2s-btn--tertiary" onClick={handleAddFramesClick}>
             {selecting ? 'Add selection' : 'Select frames to add'}
           </button>

@@ -176,7 +176,7 @@ async function walk(node: SceneNode, state: WalkState): Promise<void> {
   }
 }
 
-function toDecisionInput(node: SceneNode, maskedByAncestor: boolean): DecisionInput {
+export function toDecisionInput(node: SceneNode, maskedByAncestor: boolean): DecisionInput {
   const kind = nodeKind(node);
   const visible = 'visible' in node ? node.visible : true;
   const opacity = 'opacity' in node ? node.opacity : 1;
