@@ -818,6 +818,7 @@
     const visible = fills.filter((f) => f.visible !== false);
     if (visible.length === 0) return;
     if (visible.length === 1 && (visible[0].type === "SOLID" || visible[0].type === "IMAGE")) return;
+    if (visible.some((f) => f.type === "IMAGE")) return;
     const solid = representativeSolidColor(visible);
     if (solid) node.fills = [solid];
   }
@@ -1069,6 +1070,19 @@
     const bytes = await node.exportAsync({ format: "PNG", constraint: { type: "WIDTH", value: PREVIEW_WIDTH } });
     return `data:image/png;base64,${figma.base64Encode(bytes)}`;
   }
+  function postCandidateMessage(type, frame, previewDataUrl, slide) {
+    const nativeCount = slide.elements.filter((e) => e.kind !== "image" || !e.isRasterFallback).length;
+    const rasterCount = slide.elements.length - nativeCount;
+    figma.ui.postMessage({
+      type,
+      frame: { id: frame.id, name: frame.name, width: frame.width, height: frame.height },
+      previewDataUrl,
+      nativeCount,
+      rasterCount,
+      warnings: slide.warnings,
+      fontSubstitutions: collectFontSubstitutions(slide)
+    });
+  }
   async function addFrames(nodes, pending, idGen) {
     const known = new Set(pending.map((p) => p.frame.id));
     const toAdd = nodes.filter((n) => !known.has(n.id));
@@ -1080,19 +1094,20 @@
       const previewDataUrl = await generatePreview(frame);
       const { slide, nodesToRaster } = await serializeFrame(frame, { nextId: idGen });
       pending.push({ frame, slide, nodesToRaster });
-      const nativeCount = slide.elements.filter((e) => e.kind !== "image" || !e.isRasterFallback).length;
-      const rasterCount = slide.elements.length - nativeCount;
-      figma.ui.postMessage({
-        type: "candidate-added",
-        frame: { id: frame.id, name: frame.name, width: frame.width, height: frame.height },
-        previewDataUrl,
-        nativeCount,
-        rasterCount,
-        warnings: slide.warnings,
-        fontSubstitutions: collectFontSubstitutions(slide)
-      });
+      postCandidateMessage("candidate-added", frame, previewDataUrl, slide);
       await yieldToUi();
     }
+  }
+  async function refreshPendingEntry(frame, pending, idGen) {
+    const idx = pending.findIndex((p) => p.frame.id === frame.id);
+    if (idx === -1) return false;
+    const previewDataUrl = await generatePreview(frame);
+    const { slide, nodesToRaster } = await serializeFrame(frame, { nextId: idGen });
+    pending[idx] = { frame, slide, nodesToRaster };
+    const warnings = await lintFrame(frame);
+    await addLintAnnotations(frame, warnings);
+    postCandidateMessage("candidate-updated", frame, previewDataUrl, slide);
+    return true;
   }
   async function addSelectedFrames(pending, idGen) {
     const selected = figma.currentPage.selection.filter(isExportable);
@@ -1166,18 +1181,33 @@
     await addLintAnnotations(copy, warnings);
     return { copy, warnings };
   }
-  async function handlePrepareForSlides(pending, idGen, fontOverrides) {
-    const selected = figma.currentPage.selection.filter(isExportable);
-    if (selected.length === 0) {
-      figma.notify("Select at least one frame on the canvas first.", { error: true });
+  async function handlePrepareForSlides(pending, idGen, fontOverrides, deckFrameIds) {
+    const deckNodes = (await Promise.all(deckFrameIds.map((id) => figma.getNodeByIdAsync(id)))).filter((n) => n !== null && isExportable(n));
+    const canvasSelected = figma.currentPage.selection.filter(isExportable);
+    const targets = /* @__PURE__ */ new Map();
+    for (const n of [...deckNodes, ...canvasSelected]) targets.set(n.id, n);
+    if (targets.size === 0) {
+      figma.notify("Select at least one frame on the canvas, or add frames to the deck first.", { error: true });
       return;
     }
     const copies = [];
+    const newlyCreated = [];
     let totalWarnings = 0;
-    for (const frame of selected) {
+    for (const frame of targets.values()) {
+      const wasAlreadyTagged = isSlidesReady(frame);
       const { copy, warnings } = await prepareFrameForSlides(frame, fontOverrides);
       copies.push(copy);
       totalWarnings += warnings.length;
+      if (wasAlreadyTagged) {
+        await refreshPendingEntry(copy, pending, idGen);
+      } else {
+        newlyCreated.push(copy);
+        const rawIdx = pending.findIndex((p) => p.frame.id === frame.id);
+        if (rawIdx !== -1) {
+          pending.splice(rawIdx, 1);
+          figma.ui.postMessage({ type: "candidate-removed", id: frame.id });
+        }
+      }
       await yieldToUi();
     }
     figma.currentPage.selection = copies;
@@ -1186,7 +1216,7 @@
     figma.notify(
       totalWarnings === 0 ? `Prepared ${copies.length} ${label} for Slides \u2014 no issues found.` : `Prepared ${copies.length} ${label} for Slides \u2014 ${totalWarnings} issue(s) flagged on canvas (red markers).`
     );
-    await addFrames(copies, pending, idGen);
+    await addFrames(newlyCreated, pending, idGen);
   }
   async function addTemplateLayouts(pending, idGen) {
     const known = new Set(pending.map((p) => p.frame.id));
@@ -1217,6 +1247,59 @@
       await yieldToUi();
     }
   }
+  var LIVE_REFRESH_IGNORABLE_PROPERTIES = /* @__PURE__ */ new Set(["pluginData"]);
+  function isOnlyIgnorableNodeChange(change) {
+    return change.type === "PROPERTY_CHANGE" && change.properties.every((p) => LIVE_REFRESH_IGNORABLE_PROPERTIES.has(p));
+  }
+  function nearestTrackedTaggedAncestor(node, trackedIds) {
+    let current = node;
+    while (current) {
+      if (isExportable(current) && trackedIds.has(current.id) && isSlidesReady(current)) {
+        return current;
+      }
+      current = "parent" in current ? current.parent : null;
+    }
+    return void 0;
+  }
+  var LIVE_REFRESH_DEBOUNCE_MS = 700;
+  function watchTaggedFramesForLiveRefresh(pending, idGen) {
+    const dirtyIds = /* @__PURE__ */ new Set();
+    let timer;
+    const flush = async () => {
+      timer = void 0;
+      const ids = [...dirtyIds];
+      dirtyIds.clear();
+      for (const id of ids) {
+        try {
+          const node = await figma.getNodeByIdAsync(id);
+          if (!node || !isExportable(node)) continue;
+          await refreshPendingEntry(node, pending, idGen);
+        } catch (err) {
+          console.error(`[figma-to-slides] live refresh failed for ${id}`, err);
+        }
+        await yieldToUi();
+      }
+    };
+    figma.currentPage.on("nodechange", (event) => {
+      if (pending.length === 0) return;
+      const trackedIds = new Set(pending.map((p) => p.frame.id));
+      let dirty = false;
+      for (const change of event.nodeChanges) {
+        if (change.type === "DELETE") continue;
+        if (isOnlyIgnorableNodeChange(change)) continue;
+        const node = change.node;
+        if (!node || node.removed) continue;
+        const match = nearestTrackedTaggedAncestor(node, trackedIds);
+        if (match) {
+          dirtyIds.add(match.id);
+          dirty = true;
+        }
+      }
+      if (!dirty) return;
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => void flush(), LIVE_REFRESH_DEBOUNCE_MS);
+    });
+  }
   async function main() {
     figma.showUI(__html__, { width: 900, height: 600 });
     const pending = [];
@@ -1228,6 +1311,7 @@
         hasSelection: figma.currentPage.selection.some(isExportable)
       });
     });
+    watchTaggedFramesForLiveRefresh(pending, idGen);
     figma.ui.onmessage = async (msg) => {
       if (msg.type === "ui-ready") {
         figma.ui.postMessage({
@@ -1252,7 +1336,7 @@
       }
       if (msg.type === "prepare-for-slides") {
         try {
-          await handlePrepareForSlides(pending, idGen, msg.fontOverrides ?? {});
+          await handlePrepareForSlides(pending, idGen, msg.fontOverrides ?? {}, msg.deckFrameIds ?? []);
         } catch (err) {
           console.error(err);
           figma.notify(`Prepare for Slides failed: ${err.message}`, { error: true });

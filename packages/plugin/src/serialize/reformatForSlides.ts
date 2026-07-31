@@ -64,6 +64,13 @@ function flattenFills(node: SceneNode): void {
   const visible = fills.filter((f) => f.visible !== false);
   if (visible.length === 0) return;
   if (visible.length === 1 && (visible[0].type === 'SOLID' || visible[0].type === 'IMAGE')) return;
+  // Un empilement qui contient une image n'a pas d'approximation solide
+  // raisonnable — la remplacer par une couleur perdrait la photo elle-même,
+  // pas juste un dégradé. On laisse alors les fills tels quels : l'arbre de
+  // décision (`decisionTree.ts`, `visibleFillCount > 1`) rasterise le nœud à
+  // l'export, ce qui préserve l'empilement complet — même résultat qu'un
+  // export direct sans "Prepare for Slides".
+  if (visible.some((f) => f.type === 'IMAGE')) return;
   const solid = representativeSolidColor(visible);
   if (solid) node.fills = [solid];
 }
