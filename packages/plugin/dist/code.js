@@ -1444,7 +1444,7 @@
         });
         try {
           const storedSkin = await figma.clientStorage.getAsync(UI_SKIN_STORAGE_KEY);
-          if (storedSkin === "win95" || storedSkin === "modern") {
+          if (storedSkin === "win95" || storedSkin === "modern" || storedSkin === "hybrid") {
             figma.ui.postMessage({ type: "skin-restored", skin: storedSkin });
           }
         } catch (err) {
