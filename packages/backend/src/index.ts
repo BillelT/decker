@@ -17,7 +17,6 @@ import { env } from './env.js';
 import { authRouter } from './routes/auth.js';
 import { assetsRouter } from './routes/assets.js';
 import { exportRouter } from './routes/export.js';
-import { spikeRouter } from './routes/spike.js';
 
 /**
  * Vérification au démarrage plutôt qu'un crash silencieux au premier appel
@@ -92,8 +91,6 @@ app.get('/health', (_req, res) => res.json({ ok: true }));
 app.use(authRouter);
 app.use(assetsRouter);
 app.use(exportRouter);
-// TEMPORAIRE (audit 2026-08, mode template) — voir routes/spike.ts.
-app.use(spikeRouter);
 
 // Doit rester le DERNIER `app.use` : filet de sécurité pour toute erreur
 // synchrone ou passée à `next(err)` non gérée par une route. Sans ça,

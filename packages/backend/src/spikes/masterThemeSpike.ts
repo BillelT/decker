@@ -2,29 +2,25 @@
 import 'dotenv/config';
 
 /**
- * Spike (code jetable, PAS un module testé/maintenu) pour vérifier deux
- * hypothèses issues de l'audit 2026-08 sur le mode template, contredisant ce
- * que documentait jusqu'ici LIMITATIONS.md :
+ * Script de diagnostic ponctuel (PAS un module testé/maintenu, appelé par
+ * aucune route ni aucune UI — la route temporaire `routes/spike.ts` et le
+ * bouton "Run theme spike" du plugin, utilisés pour la validation initiale,
+ * ont été retirés une fois le résultat confirmé). Gardé pour re-tester à la
+ * main si besoin (ex. après un changement côté API Google).
+ *
+ * A confirmé, en conditions réelles (audit 2026-08, captures d'écran à
+ * l'appui), deux hypothèses qui contredisaient ce que documentait jusqu'ici
+ * LIMITATIONS.md :
  *
  * 1. `PageProperties.colorScheme` EST modifiable en écriture via
  *    `UpdatePagePropertiesRequest`, mais uniquement en ciblant la page
  *    `Master` de la présentation, avec les 12 premiers `ThemeColorType`
- *    fournis d'un coup (confirmé sur le schéma officiel de l'API, pas testé
- *    en conditions réelles avant ce script).
- * 2. Un élément posé directement sur cette page Master devrait s'hériter
- *    automatiquement sur toute slide qui référence un Layout descendant de
- *    ce Master (comportement standard du modèle Page → Layout → Master de
- *    l'API, mais jamais vérifié ici avec un vrai rendu Slides).
+ *    fournis d'un coup.
+ * 2. Un élément posé directement sur cette page Master s'hérite bien sur
+ *    toute slide qui référence un Layout descendant de ce Master.
  *
- * Si les deux tiennent, le mode template peut écrire un vrai thème Slides
- * (couleurs liées via `themeColor`, logo/footer posés une seule fois sur le
- * Master) plutôt que des aplats RGB statiques dupliqués sur chaque slide.
- *
- * `runMasterThemeSpike` est appelée à la fois par ce script CLI (`npm run
- * spike:theme`, token Google obtenu via OAuth Playground) ET par la route
- * temporaire `POST /spike/theme-test` (`routes/spike.ts`), qui réutilise la
- * session déjà ouverte dans le plugin — voir ce fichier pour la marche à
- * suivre la plus simple, directement depuis le plugin.
+ * Voir `mapper/theme.ts` pour l'exploitation de ce résultat dans le mapper
+ * de production (TODO.md § Mode template, point 1).
  */
 
 const API_BASE = 'https://slides.googleapis.com/v1';
@@ -256,17 +252,13 @@ Façon la plus rapide de l'obtenir, sans rien lancer en local :
      (valide ~1h).
   5. Relancer avec :
        F2S_SESSION_TOKEN=<access_token> npm run spike:theme --workspace packages/backend
-
-Alternative plus simple : lancer ce même spike depuis le plugin lui-même (déjà
-connecté via "Sign in with Google") — voir le bouton temporaire "Run theme
-spike" dans le footer du plugin (packages/plugin/src/ui.tsx), qui appelle
-POST /spike/theme-test avec la session déjà ouverte, sans token à copier.
 `);
 }
 
-// `routes/spike.ts` importe `runMasterThemeSpike` depuis ce même fichier —
-// sans cette garde, `main()` (et son early-return si aucun token CLI n'est
-// fourni) s'exécuterait aussi à CHAQUE import du module par le serveur.
+// Rien n'importe plus `runMasterThemeSpike` depuis un autre module (la route
+// temporaire qui le faisait a été retirée) — cette garde n'a donc plus
+// d'utilité pratique aujourd'hui, mais reste inoffensive si ce fichier est
+// un jour réimporté ailleurs plutôt qu'exécuté en CLI.
 const isDirectRun = import.meta.url === `file://${process.argv[1]}`;
 if (isDirectRun) {
   main().catch((err) => {
