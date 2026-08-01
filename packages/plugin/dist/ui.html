@@ -88,6 +88,7 @@ body {
   display: flex;
   flex-direction: column;
   position: relative;
+  padding-bottom: 57px;
 }
 
 button {
@@ -360,7 +361,8 @@ a {
 
 .f2s-empty {
   color: var(--color-black-70);
-  font-size: 12px;
+  font-size: 14px;
+  font-weight: 500;
   padding: 24px 0;
   text-align: center;
 }
@@ -786,12 +788,18 @@ a {
 
 .f2s-footer {
   flex: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   padding: 12px 16px;
   border-top: 1px solid var(--color-border);
+  background: var(--color-bg);
+  z-index: 50;
 }
 
 .f2s-footer-settings {
@@ -820,6 +828,17 @@ a {
   display: flex;
   align-items: center;
   gap: 16px;
+}
+
+/* Message d'export échoué (session expirée, 400 Slides API, backend
+   injoignable…) : tronqué sur une ligne pour ne pas casser la mise en page
+   fixe du footer — le message complet reste dans `title`. */
+.f2s-footer-error {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ---- Modale de réglages ---- */
@@ -2758,11 +2777,14 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
       setActiveId(id);
       postToPlugin({ type: "select-nodes", nodeIds: [id] });
     }
+    if (order.length === 0) {
+      return /* @__PURE__ */ u3("div", { className: "f2s-body", children: /* @__PURE__ */ u3("main", { className: "f2s-canvas", children: /* @__PURE__ */ u3("p", { className: "f2s-empty", children: 'Click "Select layout to add" to choose the layouts that make up this template \u2014 e.g. a title slide, a content slide.' }) }) });
+    }
     return /* @__PURE__ */ u3("div", { className: "f2s-body", children: [
       /* @__PURE__ */ u3("aside", { className: "f2s-sidebar", children: [
         notice && /* @__PURE__ */ u3("p", { className: "f2s-error", children: notice }),
-        selecting && order.length > 0 && !hasCanvasSelection && /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: 'Select one or more frames on the Figma canvas, then click "Add selection".' }),
-        order.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-empty", children: selecting ? 'Select one or more frames on the Figma canvas, then click "Add selection".' : 'Click "Select layout to add" to choose the layouts that make up this template \u2014 e.g. a title slide, a content slide.' }) : order.map((id, index) => {
+        selecting && !hasCanvasSelection && /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: 'Select one or more frames on the Figma canvas, then click "Add selection".' }),
+        order.map((id, index) => {
           const layout = layouts[id];
           if (!layout) return null;
           return /* @__PURE__ */ u3("div", { className: "f2s-sidebar-item", children: [
@@ -3090,7 +3112,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
     const [sessionToken, setSessionToken] = d2();
     const [loginError, setLoginError] = d2();
     const [authUrl, setAuthUrl] = d2();
-    const [backend] = d2({ baseUrl: true ? "http://localhost:8787" : "https://figma-to-slide-backend.vercel.app" });
+    const [backend] = d2({ baseUrl: true ? "https://figma-to-slide-backend.vercel.app" : "https://figma-to-slide-backend.vercel.app" });
     const [deckTitle, setDeckTitle] = d2("");
     const [templateTitle, setTemplateTitle] = d2("");
     const [settingsOpen, setSettingsOpen] = d2(false);
@@ -3758,6 +3780,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
           }
         ),
         /* @__PURE__ */ u3("div", { className: "f2s-footer-actions", children: [
+          exportState === "error" && exportSource === mode && exportError && /* @__PURE__ */ u3("p", { className: "f2s-error f2s-footer-error", title: exportError, children: exportError }),
           /* @__PURE__ */ u3("a", { href: "#", className: "f2s-btn f2s-btn--tertiary", children: "Support me with Ko-fi" }),
           exportState === "done" && exportSource === mode && resultUrl && /* @__PURE__ */ u3("a", { href: resultUrl, target: "_blank", rel: "noreferrer", className: "f2s-btn f2s-btn--primary", children: "Open presentation" })
         ] })

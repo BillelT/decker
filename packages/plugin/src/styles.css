@@ -826,6 +826,17 @@ a {
   gap: 16px;
 }
 
+/* Message d'export échoué (session expirée, 400 Slides API, backend
+   injoignable…) : tronqué sur une ligne pour ne pas casser la mise en page
+   fixe du footer — le message complet reste dans `title`. */
+.f2s-footer-error {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ---- Modale de réglages ---- */
 
 :root {
