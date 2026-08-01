@@ -929,6 +929,193 @@ a {
   color: var(--color-bg);
 }
 
+/* ---- Aperçu d'export "Windows 95" ----
+   Pendant un export, le grand aperçu du deck montre la frame dont le lot est
+   en cours d'application côté backend, en la "générant" bande par bande
+   (voir ui/RetroExportPreview.tsx). Les couleurs de cette fenêtre sont
+   volontairement figées (ni thème clair ni thème sombre) : c'est une
+   citation littérale du chrome 95, gris #c0c0c0 et biseaux 1 px compris. */
+
+.f2s-retro {
+  --w95-face: #c0c0c0;
+  --w95-light: #ffffff;
+  --w95-shadow: #808080;
+  --w95-dark: #000000;
+  --w95-title: #000080;
+  --w95-title-fade: #1084d0;
+
+  flex: none;
+  width: 100%;
+  max-width: 640px;
+  padding: 3px;
+  background: var(--w95-face);
+  color: #000000;
+  font-family: Tahoma, Verdana, "MS Sans Serif", Geneva, sans-serif;
+  font-size: 11px;
+  /* Biseau sortant : clair en haut/gauche, deux niveaux d'ombre en bas/droite. */
+  border-top: 1px solid var(--w95-light);
+  border-left: 1px solid var(--w95-light);
+  border-right: 1px solid var(--w95-dark);
+  border-bottom: 1px solid var(--w95-dark);
+  box-shadow: inset -1px -1px 0 var(--w95-shadow);
+}
+
+.f2s-retro-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 2px 2px 4px;
+  background: linear-gradient(90deg, var(--w95-title), var(--w95-title-fade));
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.f2s-retro-title {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.f2s-retro-window-buttons {
+  display: flex;
+  gap: 2px;
+  flex: none;
+}
+
+.f2s-retro-window-buttons i {
+  width: 16px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-style: normal;
+  font-size: 9px;
+  line-height: 1;
+  color: #000000;
+  background: var(--w95-face);
+  border-top: 1px solid var(--w95-light);
+  border-left: 1px solid var(--w95-light);
+  border-right: 1px solid var(--w95-dark);
+  border-bottom: 1px solid var(--w95-dark);
+}
+
+/* Biseau rentrant : l'écran est "enfoncé" dans la fenêtre. */
+.f2s-retro-screen {
+  position: relative;
+  margin-top: 3px;
+  overflow: hidden;
+  background: #008080;
+  border-top: 1px solid var(--w95-shadow);
+  border-left: 1px solid var(--w95-shadow);
+  border-right: 1px solid var(--w95-light);
+  border-bottom: 1px solid var(--w95-light);
+}
+
+.f2s-retro-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* Le tramage VGA de la passe grossière ne survivrait pas à un lissage. */
+  image-rendering: pixelated;
+}
+
+.f2s-retro-noise {
+  padding: 48px 0;
+  text-align: center;
+  color: #00ff00;
+  letter-spacing: 2px;
+}
+
+.f2s-retro-scanlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.16) 0,
+    rgba(0, 0, 0, 0.16) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+/* Ligne de balayage : là où l'image est en train d'être "générée". */
+.f2s-retro-beam {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  pointer-events: none;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.7);
+}
+
+.f2s-retro-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 3px 4px;
+  border-top: 1px solid var(--w95-shadow);
+  border-left: 1px solid var(--w95-shadow);
+  border-right: 1px solid var(--w95-light);
+  border-bottom: 1px solid var(--w95-light);
+}
+
+.f2s-retro-status-text {
+  flex: none;
+  white-space: nowrap;
+}
+
+.f2s-retro-ellipsis {
+  animation: f2s-retro-blink 1s steps(1, end) infinite;
+}
+
+@keyframes f2s-retro-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.f2s-retro-bar {
+  flex: 1;
+  min-width: 0;
+  height: 14px;
+  padding: 1px;
+  background: var(--w95-face);
+  border-top: 1px solid var(--w95-shadow);
+  border-left: 1px solid var(--w95-shadow);
+  border-right: 1px solid var(--w95-light);
+  border-bottom: 1px solid var(--w95-light);
+}
+
+/* Les blocs bleus caractéristiques : un dégradé à paliers durs, découpé par
+   la largeur du remplissage — pas de bloc à moitié peint. */
+.f2s-retro-bar-fill {
+  height: 100%;
+  background: repeating-linear-gradient(
+    to right,
+    var(--w95-title) 0,
+    var(--w95-title) 8px,
+    transparent 8px,
+    transparent 10px
+  );
+  transition: width 120ms linear;
+}
+
+/* Vignette du rail correspondant à la frame en cours d'export. */
+.f2s-frame-preview.is-exporting {
+  border-color: var(--color-orange);
+  animation: f2s-exporting-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes f2s-exporting-pulse {
+  50% {
+    border-color: var(--color-orange-40);
+  }
+}
+
 /* ============================================================================
    Skin Windows 95 (skin PAR DÉFAUT — voir ui/types.ts).
 
@@ -1895,6 +2082,14 @@ html.f2s-skin--win95 .f2s-font-dropdown::-webkit-scrollbar {
     return trimmed.replace(/^["']|["']$/g, "");
   }
 
+  // src/ui/exportCursor.ts
+  function exportCursorFromBatches(batches) {
+    if (!batches || batches.length === 0) return void 0;
+    const index = batches.findIndex((b2) => b2.status === "pending");
+    if (index === -1) return void 0;
+    return { frameId: batches[index].sourceSlideId, index, total: batches.length };
+  }
+
   // src/serialize/fonts.ts
   var GOOGLE_FONTS_SAMPLE = /* @__PURE__ */ new Set([
     "Roboto",
@@ -1960,6 +2155,58 @@ html.f2s-skin--win95 .f2s-font-dropdown::-webkit-scrollbar {
     return next;
   }
 
+  // src/ui/retroDither.ts
+  var VGA_PALETTE = [
+    [0, 0, 0],
+    [128, 0, 0],
+    [0, 128, 0],
+    [128, 128, 0],
+    [0, 0, 128],
+    [128, 0, 128],
+    [0, 128, 128],
+    [192, 192, 192],
+    [128, 128, 128],
+    [255, 0, 0],
+    [0, 255, 0],
+    [255, 255, 0],
+    [0, 0, 255],
+    [255, 0, 255],
+    [0, 255, 255],
+    [255, 255, 255]
+  ];
+  var BAYER_4 = [
+    [0, 8, 2, 10],
+    [12, 4, 14, 6],
+    [3, 11, 1, 9],
+    [15, 7, 13, 5]
+  ];
+  var DEFAULT_STRENGTH = 56;
+  function nearestPaletteIndex(r3, g2, b2) {
+    let best = 0;
+    let bestDistance = Number.POSITIVE_INFINITY;
+    for (let i3 = 0; i3 < VGA_PALETTE.length; i3++) {
+      const [pr, pg, pb] = VGA_PALETTE[i3];
+      const distance = (r3 - pr) * (r3 - pr) + (g2 - pg) * (g2 - pg) + (b2 - pb) * (b2 - pb);
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        best = i3;
+      }
+    }
+    return best;
+  }
+  function ditherToVgaPalette(pixels, width, strength = DEFAULT_STRENGTH) {
+    for (let i3 = 0; i3 < pixels.length; i3 += 4) {
+      const pixelIndex = i3 / 4;
+      const x2 = pixelIndex % width;
+      const y3 = Math.floor(pixelIndex / width);
+      const bias = (BAYER_4[y3 % 4][x2 % 4] / 16 - 0.5) * strength;
+      const [r3, g2, b2] = VGA_PALETTE[nearestPaletteIndex(pixels[i3] + bias, pixels[i3 + 1] + bias, pixels[i3 + 2] + bias)];
+      pixels[i3] = r3;
+      pixels[i3 + 1] = g2;
+      pixels[i3 + 2] = b2;
+    }
+  }
+
   // ../../node_modules/preact/jsx-runtime/dist/jsxRuntime.module.js
   var f3 = 0;
   function u3(e3, t3, n2, o3, i3, u4) {
@@ -1971,10 +2218,149 @@ html.f2s-skin--win95 .f2s-font-dropdown::-webkit-scrollbar {
     return l.vnode && l.vnode(l3), l3;
   }
 
+  // src/ui/RetroExportPreview.tsx
+  var REVEAL_MS = 2600;
+  var TARGET_BANDS = 56;
+  var INTERLACE_STRIDE = 4;
+  var COARSE_PHASE = 0.5;
+  var MAX_CANVAS_WIDTH = 720;
+  var DESKTOP_TEAL = "#008080";
+  function buildCoarseCanvas(image, width, height) {
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.ceil(width / 2));
+    canvas.height = Math.max(1, Math.ceil(height / 2));
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return void 0;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+    try {
+      const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      ditherToVgaPalette(frame.data, canvas.width);
+      ctx.putImageData(frame, 0, 0);
+    } catch {
+    }
+    return canvas;
+  }
+  function RetroExportPreview({ src, frameName, index, total }) {
+    const canvasRef = A2(null);
+    const [reveal, setReveal] = d2(0);
+    h2(() => {
+      const canvas = canvasRef.current;
+      if (!canvas || !src) return;
+      let raf = 0;
+      let cancelled = false;
+      setReveal(0);
+      const image = new Image();
+      image.onload = () => {
+        if (cancelled) return;
+        const scale = Math.min(1, MAX_CANVAS_WIDTH / image.naturalWidth);
+        const width = Math.max(1, Math.round(image.naturalWidth * scale));
+        const height = Math.max(1, Math.round(image.naturalHeight * scale));
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+        ctx.imageSmoothingEnabled = false;
+        ctx.fillStyle = DESKTOP_TEAL;
+        ctx.fillRect(0, 0, width, height);
+        const coarse = buildCoarseCanvas(image, width, height);
+        const bandHeight = Math.max(2, Math.round(height / TARGET_BANDS));
+        const bandCount = Math.ceil(height / bandHeight);
+        const blockCount = Math.ceil(bandCount / INTERLACE_STRIDE);
+        const drawCoarseBlock = (block) => {
+          const top = block * INTERLACE_STRIDE * bandHeight;
+          const destHeight = Math.min(bandHeight * INTERLACE_STRIDE, height - top);
+          if (destHeight <= 0) return;
+          if (coarse) {
+            const sourceTop = Math.min(coarse.height - 1, Math.floor(top / 2));
+            const sourceHeight = Math.max(1, Math.min(Math.round(bandHeight / 2), coarse.height - sourceTop));
+            ctx.drawImage(coarse, 0, sourceTop, coarse.width, sourceHeight, 0, top, width, destHeight);
+          } else {
+            ctx.drawImage(image, 0, top, width, bandHeight, 0, top, width, destHeight);
+          }
+        };
+        const drawFinalBand = (band) => {
+          const top = band * bandHeight;
+          const destHeight = Math.min(bandHeight, height - top);
+          if (destHeight <= 0) return;
+          ctx.drawImage(
+            image,
+            0,
+            top / height * image.naturalHeight,
+            image.naturalWidth,
+            destHeight / height * image.naturalHeight,
+            0,
+            top,
+            width,
+            destHeight
+          );
+        };
+        let drawnBlocks = 0;
+        let drawnBands = 0;
+        const start = performance.now();
+        const step = (now) => {
+          const progress = Math.min(1, (now - start) / REVEAL_MS);
+          const wantedBlocks = Math.round(blockCount * Math.min(1, progress / COARSE_PHASE));
+          while (drawnBlocks < wantedBlocks) drawCoarseBlock(drawnBlocks++);
+          const wantedBands = progress <= COARSE_PHASE ? 0 : Math.round(bandCount * ((progress - COARSE_PHASE) / (1 - COARSE_PHASE)));
+          while (drawnBands < wantedBands) drawFinalBand(drawnBands++);
+          setReveal((prev) => progress === 1 || progress - prev >= 0.02 ? progress : prev);
+          if (progress < 1) raf = requestAnimationFrame(step);
+        };
+        raf = requestAnimationFrame(step);
+      };
+      image.src = src;
+      return () => {
+        cancelled = true;
+        cancelAnimationFrame(raf);
+      };
+    }, [src]);
+    const deckProgress = total > 0 ? Math.min(1, (index + reveal) / total) : 0;
+    return /* @__PURE__ */ u3("div", { className: "f2s-retro", children: [
+      /* @__PURE__ */ u3("div", { className: "f2s-retro-titlebar", children: [
+        /* @__PURE__ */ u3("span", { className: "f2s-retro-title", children: [
+          "Exporting \u2014 ",
+          frameName
+        ] }),
+        /* @__PURE__ */ u3("span", { className: "f2s-retro-window-buttons", "aria-hidden": "true", children: [
+          /* @__PURE__ */ u3("i", { children: "_" }),
+          /* @__PURE__ */ u3("i", { children: "\u25A1" }),
+          /* @__PURE__ */ u3("i", { children: "\u2715" })
+        ] })
+      ] }),
+      /* @__PURE__ */ u3("div", { className: "f2s-retro-screen", children: [
+        /* @__PURE__ */ u3("canvas", { ref: canvasRef, className: "f2s-retro-canvas", role: "img", "aria-label": `Export preview of ${frameName}` }),
+        !src && /* @__PURE__ */ u3("p", { className: "f2s-retro-noise", children: "NO SIGNAL" }),
+        /* @__PURE__ */ u3("div", { className: "f2s-retro-scanlines", "aria-hidden": "true" }),
+        reveal < 1 && /* @__PURE__ */ u3("div", { className: "f2s-retro-beam", style: { top: `${reveal * 100}%` }, "aria-hidden": "true" })
+      ] }),
+      /* @__PURE__ */ u3("div", { className: "f2s-retro-status", children: [
+        /* @__PURE__ */ u3("span", { className: "f2s-retro-status-text", children: [
+          "Generating slide ",
+          index + 1,
+          " of ",
+          total,
+          /* @__PURE__ */ u3("span", { className: "f2s-retro-ellipsis", children: "..." })
+        ] }),
+        /* @__PURE__ */ u3("div", { className: "f2s-retro-bar", children: /* @__PURE__ */ u3("div", { className: "f2s-retro-bar-fill", style: { width: `${Math.round(deckProgress * 100)}%` } }) })
+      ] })
+    ] });
+  }
+
   // src/ui/DeckPanel.tsx
   var DRAG_THRESHOLD_PX = 3;
   var DRAG_SWAP_MARGIN = 0.32;
-  function DeckPanel({ order, setOrder, frames, activeId, setActiveId, selecting, hasCanvasSelection, onRemove }) {
+  function DeckPanel({
+    order,
+    setOrder,
+    frames,
+    activeId,
+    setActiveId,
+    selecting,
+    hasCanvasSelection,
+    onRemove,
+    exportCursor
+  }) {
     const [dragId, setDragId] = d2();
     const [dragOffsetY, setDragOffsetY] = d2(0);
     const [dragActive, setDragActive] = d2(false);
@@ -1985,6 +2371,8 @@ html.f2s-skin--win95 .f2s-font-dropdown::-webkit-scrollbar {
     const slotHeightRef = A2(0);
     const sidebarItemRefs = A2(/* @__PURE__ */ new Map());
     const activeFrame = activeId ? frames[activeId] : void 0;
+    const exportingFrame = exportCursor ? frames[exportCursor.frameId] : void 0;
+    const previewedFrame = exportingFrame ?? activeFrame;
     function selectFrame(id) {
       setActiveId(id);
       postToPlugin({ type: "select-nodes", nodeIds: [id] });
@@ -2078,7 +2466,7 @@ html.f2s-skin--win95 .f2s-font-dropdown::-webkit-scrollbar {
                   "button",
                   {
                     type: "button",
-                    className: `f2s-frame-preview${activeId === id ? " is-active" : ""}`,
+                    className: `f2s-frame-preview${activeId === id ? " is-active" : ""}${exportCursor?.frameId === id ? " is-exporting" : ""}`,
                     onClick: () => selectFrame(id),
                     onPointerDown: (e3) => handleDragPointerDown(e3, id),
                     children: f4.previewDataUrl && /* @__PURE__ */ u3("img", { src: f4.previewDataUrl, alt: f4.name, draggable: false })
@@ -2094,26 +2482,35 @@ html.f2s-skin--win95 .f2s-font-dropdown::-webkit-scrollbar {
           );
         })
       ] }),
-      /* @__PURE__ */ u3("main", { className: "f2s-canvas", children: activeFrame ? /* @__PURE__ */ u3(S, { children: [
-        /* @__PURE__ */ u3("div", { className: "f2s-canvas-preview", children: activeFrame.previewDataUrl && /* @__PURE__ */ u3("img", { src: activeFrame.previewDataUrl, alt: activeFrame.name }) }),
+      /* @__PURE__ */ u3("main", { className: "f2s-canvas", children: previewedFrame ? /* @__PURE__ */ u3(S, { children: [
+        exportingFrame && exportCursor ? /* @__PURE__ */ u3(
+          RetroExportPreview,
+          {
+            src: exportingFrame.previewDataUrl,
+            frameName: exportingFrame.name,
+            index: exportCursor.index,
+            total: exportCursor.total
+          },
+          exportCursor.frameId
+        ) : /* @__PURE__ */ u3("div", { className: "f2s-canvas-preview", children: previewedFrame.previewDataUrl && /* @__PURE__ */ u3("img", { src: previewedFrame.previewDataUrl, alt: previewedFrame.name }) }),
         /* @__PURE__ */ u3("div", { className: "f2s-toolbar-group", children: [
           /* @__PURE__ */ u3("span", { className: "f2s-toolbar-label", children: "Dimensions :" }),
-          /* @__PURE__ */ u3("span", { className: "f2s-dim-box", children: Math.round(activeFrame.width) }),
+          /* @__PURE__ */ u3("span", { className: "f2s-dim-box", children: Math.round(previewedFrame.width) }),
           /* @__PURE__ */ u3("span", { className: "f2s-dim-sep", children: "\xD7" }),
-          /* @__PURE__ */ u3("span", { className: "f2s-dim-box", children: Math.round(activeFrame.height) }),
+          /* @__PURE__ */ u3("span", { className: "f2s-dim-box", children: Math.round(previewedFrame.height) }),
           /* @__PURE__ */ u3("span", { className: "f2s-dim-unit", children: "px" })
         ] }),
         /* @__PURE__ */ u3("div", { className: "f2s-logs", children: [
           /* @__PURE__ */ u3("div", { className: "f2s-logs-header", children: [
             /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Logs" }),
-            activeFrame.nativeCount !== void 0 && activeFrame.rasterCount !== void 0 && /* @__PURE__ */ u3("span", { className: "f2s-toolbar-muted", children: [
-              activeFrame.nativeCount,
+            previewedFrame.nativeCount !== void 0 && previewedFrame.rasterCount !== void 0 && /* @__PURE__ */ u3("span", { className: "f2s-toolbar-muted", children: [
+              previewedFrame.nativeCount,
               " native \xB7 ",
-              activeFrame.rasterCount,
+              previewedFrame.rasterCount,
               " rasterized"
             ] })
           ] }),
-          activeFrame.warnings && activeFrame.warnings.length > 0 ? /* @__PURE__ */ u3("ul", { className: "f2s-tmpl-list", children: activeFrame.warnings.map((w3, i3) => /* @__PURE__ */ u3("li", { children: /* @__PURE__ */ u3(
+          previewedFrame.warnings && previewedFrame.warnings.length > 0 ? /* @__PURE__ */ u3("ul", { className: "f2s-tmpl-list", children: previewedFrame.warnings.map((w3, i3) => /* @__PURE__ */ u3("li", { children: /* @__PURE__ */ u3(
             "button",
             {
               type: "button",
@@ -2519,6 +2916,7 @@ html.f2s-skin--win95 .f2s-font-dropdown::-webkit-scrollbar {
     const [resultUrl, setResultUrl] = d2();
     const [exportError, setExportError] = d2();
     const [exportSource, setExportSource] = d2();
+    const [exportCursor, setExportCursor] = d2();
     const pendingAssets = T2(() => /* @__PURE__ */ new Map(), []);
     const sessionTokenRef = A2(sessionToken);
     h2(() => {
@@ -2764,6 +3162,7 @@ html.f2s-skin--win95 .f2s-font-dropdown::-webkit-scrollbar {
         await pollJob(jobId);
       } catch (err) {
         setExportState("error");
+        setExportCursor(void 0);
         setExportError(err instanceof Error ? err.message : String(err));
         if (err instanceof AuthExpiredError) {
           setSessionToken(void 0);
@@ -2781,15 +3180,18 @@ html.f2s-skin--win95 .f2s-font-dropdown::-webkit-scrollbar {
         if (batches && batches.length > 0) {
           const applied = batches.filter((b2) => b2.status === "applied").length;
           setExportProgress(Math.round(applied / batches.length * 100));
+          setExportCursor(exportCursorFromBatches(batches));
         }
         if (job.status === "done") {
           setExportState("done");
           setExportProgress(100);
+          setExportCursor(void 0);
           setResultUrl(job.presentationUrl);
           return;
         }
         if (job.status === "failed") {
           setExportState("error");
+          setExportCursor(void 0);
           const batchErrors = job.batches?.map((b2) => b2.error).filter((e3) => Boolean(e3));
           setExportError(
             batchErrors && batchErrors.length > 0 ? batchErrors.join(" \xB7 ") : job.error ?? "Unknown server-side failure."
@@ -2799,6 +3201,7 @@ html.f2s-skin--win95 .f2s-font-dropdown::-webkit-scrollbar {
         await new Promise((r3) => setTimeout(r3, 1500));
       }
       setExportState("error");
+      setExportCursor(void 0);
       setExportError("Export timed out after 3 minutes \u2014 the presentation may still be processing; check your Google Drive before retrying.");
     }
     async function pollAuthSession(pollId) {
@@ -2895,6 +3298,7 @@ html.f2s-skin--win95 .f2s-font-dropdown::-webkit-scrollbar {
       setExportState("exporting");
       setExportProgress(0);
       setExportSource("deck");
+      setExportCursor(order.length > 0 ? { frameId: order[0], index: 0, total: order.length } : void 0);
       const options = {
         mode: "new-presentation",
         rasterScale: 2,
@@ -2915,6 +3319,7 @@ html.f2s-skin--win95 .f2s-font-dropdown::-webkit-scrollbar {
       setExportState("exporting");
       setExportProgress(0);
       setExportSource("template");
+      setExportCursor(void 0);
       postToPlugin({
         type: "request-template",
         includedFrameIds: templateOrder,
@@ -3042,7 +3447,8 @@ html.f2s-skin--win95 .f2s-font-dropdown::-webkit-scrollbar {
           setActiveId,
           selecting,
           hasCanvasSelection,
-          onRemove: removeFrame
+          onRemove: removeFrame,
+          exportCursor: exporting && exportSource === "deck" ? exportCursor : void 0
         }
       ) : /* @__PURE__ */ u3(
         TemplatePanel,

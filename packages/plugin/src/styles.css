@@ -924,3 +924,190 @@ a {
   background: var(--color-orange);
   color: var(--color-bg);
 }
+
+/* ---- Aperçu d'export "Windows 95" ----
+   Pendant un export, le grand aperçu du deck montre la frame dont le lot est
+   en cours d'application côté backend, en la "générant" bande par bande
+   (voir ui/RetroExportPreview.tsx). Les couleurs de cette fenêtre sont
+   volontairement figées (ni thème clair ni thème sombre) : c'est une
+   citation littérale du chrome 95, gris #c0c0c0 et biseaux 1 px compris. */
+
+.f2s-retro {
+  --w95-face: #c0c0c0;
+  --w95-light: #ffffff;
+  --w95-shadow: #808080;
+  --w95-dark: #000000;
+  --w95-title: #000080;
+  --w95-title-fade: #1084d0;
+
+  flex: none;
+  width: 100%;
+  max-width: 640px;
+  padding: 3px;
+  background: var(--w95-face);
+  color: #000000;
+  font-family: Tahoma, Verdana, "MS Sans Serif", Geneva, sans-serif;
+  font-size: 11px;
+  /* Biseau sortant : clair en haut/gauche, deux niveaux d'ombre en bas/droite. */
+  border-top: 1px solid var(--w95-light);
+  border-left: 1px solid var(--w95-light);
+  border-right: 1px solid var(--w95-dark);
+  border-bottom: 1px solid var(--w95-dark);
+  box-shadow: inset -1px -1px 0 var(--w95-shadow);
+}
+
+.f2s-retro-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 2px 2px 4px;
+  background: linear-gradient(90deg, var(--w95-title), var(--w95-title-fade));
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.f2s-retro-title {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.f2s-retro-window-buttons {
+  display: flex;
+  gap: 2px;
+  flex: none;
+}
+
+.f2s-retro-window-buttons i {
+  width: 16px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-style: normal;
+  font-size: 9px;
+  line-height: 1;
+  color: #000000;
+  background: var(--w95-face);
+  border-top: 1px solid var(--w95-light);
+  border-left: 1px solid var(--w95-light);
+  border-right: 1px solid var(--w95-dark);
+  border-bottom: 1px solid var(--w95-dark);
+}
+
+/* Biseau rentrant : l'écran est "enfoncé" dans la fenêtre. */
+.f2s-retro-screen {
+  position: relative;
+  margin-top: 3px;
+  overflow: hidden;
+  background: #008080;
+  border-top: 1px solid var(--w95-shadow);
+  border-left: 1px solid var(--w95-shadow);
+  border-right: 1px solid var(--w95-light);
+  border-bottom: 1px solid var(--w95-light);
+}
+
+.f2s-retro-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* Le tramage VGA de la passe grossière ne survivrait pas à un lissage. */
+  image-rendering: pixelated;
+}
+
+.f2s-retro-noise {
+  padding: 48px 0;
+  text-align: center;
+  color: #00ff00;
+  letter-spacing: 2px;
+}
+
+.f2s-retro-scanlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.16) 0,
+    rgba(0, 0, 0, 0.16) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+/* Ligne de balayage : là où l'image est en train d'être "générée". */
+.f2s-retro-beam {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  pointer-events: none;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.7);
+}
+
+.f2s-retro-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 3px 4px;
+  border-top: 1px solid var(--w95-shadow);
+  border-left: 1px solid var(--w95-shadow);
+  border-right: 1px solid var(--w95-light);
+  border-bottom: 1px solid var(--w95-light);
+}
+
+.f2s-retro-status-text {
+  flex: none;
+  white-space: nowrap;
+}
+
+.f2s-retro-ellipsis {
+  animation: f2s-retro-blink 1s steps(1, end) infinite;
+}
+
+@keyframes f2s-retro-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.f2s-retro-bar {
+  flex: 1;
+  min-width: 0;
+  height: 14px;
+  padding: 1px;
+  background: var(--w95-face);
+  border-top: 1px solid var(--w95-shadow);
+  border-left: 1px solid var(--w95-shadow);
+  border-right: 1px solid var(--w95-light);
+  border-bottom: 1px solid var(--w95-light);
+}
+
+/* Les blocs bleus caractéristiques : un dégradé à paliers durs, découpé par
+   la largeur du remplissage — pas de bloc à moitié peint. */
+.f2s-retro-bar-fill {
+  height: 100%;
+  background: repeating-linear-gradient(
+    to right,
+    var(--w95-title) 0,
+    var(--w95-title) 8px,
+    transparent 8px,
+    transparent 10px
+  );
+  transition: width 120ms linear;
+}
+
+/* Vignette du rail correspondant à la frame en cours d'export. */
+.f2s-frame-preview.is-exporting {
+  border-color: var(--color-orange);
+  animation: f2s-exporting-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes f2s-exporting-pulse {
+  50% {
+    border-color: var(--color-orange-40);
+  }
+}
