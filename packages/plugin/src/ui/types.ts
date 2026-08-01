@@ -17,9 +17,28 @@ export interface FontSubstitution {
   resolved: string;
 }
 
+/**
+ * Avertissement de fidélité (natif vs rasterisé) calculé côté sandbox
+ * (serialize/serializeFrame.ts, serialize/decisionTree.ts) et transporté tel
+ * quel jusqu'à l'UI — même structure utilisée pour le panneau "Logs" du deck
+ * et le rapport de template (TemplateWarning est un alias de celle-ci).
+ */
+export type WarningSeverity = 'info' | 'warning' | 'blocking';
+
+export interface FrameWarning {
+  code: string;
+  severity: WarningSeverity;
+  sourceNodeId: string;
+  nodeName: string;
+  message: string;
+}
+
 export interface FrameState extends FrameCandidate {
   previewDataUrl?: string;
   fontSubstitutions?: FontSubstitution[];
+  nativeCount?: number;
+  rasterCount?: number;
+  warnings?: FrameWarning[];
 }
 
 /**
@@ -29,15 +48,7 @@ export interface FrameState extends FrameCandidate {
  * (serialize/templateValidation.ts, serialize/templateSummary.ts) et
  * transporté tel quel jusqu'à l'UI.
  */
-export type WarningSeverity = 'info' | 'warning' | 'blocking';
-
-export interface TemplateWarning {
-  code: string;
-  severity: WarningSeverity;
-  sourceNodeId: string;
-  nodeName: string;
-  message: string;
-}
+export type TemplateWarning = FrameWarning;
 
 export interface TemplatePlaceholder {
   id: string;
@@ -71,4 +82,9 @@ export type AppMode = 'deck' | 'template';
 
 export function postToPlugin(message: Record<string, unknown>): void {
   parent.postMessage({ pluginMessage: message }, '*');
+}
+
+/** Sélectionne dans Figma le(s) nœud(s) source visés par un avertissement ou un placeholder — partagé entre le rapport de fidélité du deck et celui du template. */
+export function selectSourceNodes(sourceNodeIds: string[]): void {
+  postToPlugin({ type: 'select-nodes', nodeIds: sourceNodeIds });
 }

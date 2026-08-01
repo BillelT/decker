@@ -3,7 +3,19 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { ExportOptions, IRDocument } from '@figma-to-slides/shared';
 import { sanitizeSessionToken } from './ui/sanitizeSessionToken.js';
 import { AVAILABLE_SLIDES_FONTS } from './serialize/fonts.js';
-import { postToPlugin, type AppMode, type FontSubstitution, type FrameCandidate, type FrameState, type TemplateColorSwatch, type TemplateFontUsage, type TemplateLayoutState, type TemplatePlaceholder, type TemplateWarning } from './ui/types.js';
+import {
+  postToPlugin,
+  type AppMode,
+  type FontSubstitution,
+  type FrameCandidate,
+  type FrameState,
+  type FrameWarning,
+  type TemplateColorSwatch,
+  type TemplateFontUsage,
+  type TemplateLayoutState,
+  type TemplatePlaceholder,
+  type TemplateWarning,
+} from './ui/types.js';
 import { DeckPanel } from './ui/DeckPanel';
 import { TemplatePanel } from './ui/TemplatePanel';
 
@@ -39,6 +51,21 @@ function Logo() {
         <rect x="30.6235" y="21.0001" width="3" height="37" rx="1.5" fill="#F2ECE8" />
       </svg>
     </a>
+  );
+}
+
+/** Icône du bouton "Settings" du footer — pas encore de panneau de réglages derrière, juste le point d'entrée visuel (cf. demande audit). */
+function GearIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <circle cx="8" cy="8" r="2.5" stroke="currentColor" strokeWidth="1.4" />
+      <path
+        d="M8 1.5v1.6M8 12.9v1.6M14.5 8h-1.6M3.1 8H1.5M12.5 3.5l-1.1 1.1M4.6 11.4l-1.1 1.1M12.5 12.5l-1.1-1.1M4.6 4.6 3.5 3.5"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+    </svg>
   );
 }
 
@@ -83,9 +110,6 @@ function App() {
   useEffect(() => {
     if (!activeTemplateId && templateOrder.length > 0) setActiveTemplateId(templateOrder[0]);
   }, [templateOrder, activeTemplateId]);
-
-  const activeFrame = activeId ? frames[activeId] : undefined;
-  const activeTemplateLayout = activeTemplateId ? templateLayouts[activeTemplateId] : undefined;
 
   /** Déduplique les substitutions de police sur tout le deck, dans l'ordre d'apparition des frames. */
   const deckFontSubstitutions = useMemo(() => {
@@ -158,6 +182,9 @@ function App() {
               ...f,
               previewDataUrl: msg.previewDataUrl,
               fontSubstitutions: msg.fontSubstitutions as FontSubstitution[] | undefined,
+              nativeCount: msg.nativeCount as number | undefined,
+              rasterCount: msg.rasterCount as number | undefined,
+              warnings: msg.warnings as FrameWarning[] | undefined,
             },
           }));
           setOrder((prev) => (prev.includes(f.id) ? prev : [...prev, f.id]));
@@ -178,6 +205,9 @@ function App() {
                     ...f,
                     previewDataUrl: msg.previewDataUrl,
                     fontSubstitutions: msg.fontSubstitutions as FontSubstitution[] | undefined,
+                    nativeCount: msg.nativeCount as number | undefined,
+                    rasterCount: msg.rasterCount as number | undefined,
+                    warnings: msg.warnings as FrameWarning[] | undefined,
                   },
                 }
               : prev,
@@ -680,19 +710,6 @@ function App() {
           </button>
         </div>
 
-        {/* TODO.md — à déplacer hors du header (position à designer). */}
-        <div className="f2s-toolbar-group f2s-topbar-center">
-          <span className="f2s-toolbar-label">Dimensions:</span>
-          <span className="f2s-dim-box">
-            {mode === 'deck' ? (activeFrame ? Math.round(activeFrame.width) : '—') : activeTemplateLayout ? Math.round(activeTemplateLayout.width) : '—'}
-          </span>
-          <span className="f2s-dim-sep">×</span>
-          <span className="f2s-dim-box">
-            {mode === 'deck' ? (activeFrame ? Math.round(activeFrame.height) : '—') : activeTemplateLayout ? Math.round(activeTemplateLayout.height) : '—'}
-          </span>
-          <span className="f2s-dim-unit">px</span>
-        </div>
-
         {mode === 'deck' ? (
           <div className="f2s-topbar-actions">
             <button type="button" className="f2s-btn f2s-btn--tertiary" onClick={handleAddFramesClick}>
@@ -708,11 +725,6 @@ function App() {
               Prepare for Slides
             </button>
             {renderPrimaryAction('Export', exporting || order.length === 0, busyFromOtherMode ? busyTitle : undefined, startExport)}
-            {exportState === 'done' && exportSource === 'deck' && resultUrl && (
-              <a href={resultUrl} target="_blank" rel="noreferrer" className="f2s-btn f2s-btn--secondary">
-                Open presentation
-              </a>
-            )}
           </div>
         ) : (
           <div className="f2s-topbar-actions">
@@ -733,11 +745,6 @@ function App() {
               exporting || templateOrder.length === 0 || templateHasBlockingLayout,
               busyFromOtherMode ? busyTitle : templateHasBlockingLayout ? 'Fix the blocking issues listed below before creating the template.' : undefined,
               startTemplateCreate,
-            )}
-            {exportState === 'done' && exportSource === 'template' && resultUrl && (
-              <a href={resultUrl} target="_blank" rel="noreferrer" className="f2s-btn f2s-btn--secondary">
-                Open presentation
-              </a>
             )}
           </div>
         )}
@@ -818,6 +825,23 @@ function App() {
           onRemove={removeTemplateLayout}
         />
       )}
+
+      <footer className="f2s-footer">
+        <div className="f2s-footer-settings">
+          <GearIcon />
+          <span>Settings</span>
+        </div>
+        <div className="f2s-footer-actions">
+          <a href="#" className="f2s-btn f2s-btn--tertiary">
+            Support me with Ko-fi
+          </a>
+          {exportState === 'done' && exportSource === mode && resultUrl && (
+            <a href={resultUrl} target="_blank" rel="noreferrer" className="f2s-btn f2s-btn--primary">
+              Open presentation
+            </a>
+          )}
+        </div>
+      </footer>
     </>
   );
 }
