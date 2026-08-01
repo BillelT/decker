@@ -68,8 +68,14 @@ différences par rapport à l'export de deck :
   page — qui restent, elles, des slides normales avec leurs placeholders
   — cette limite n'empêche pas de reproduire un vrai comportement de
   thème/master pour ce qui compte : couleurs globales + éléments
-  récurrents. Reste non exploité par le mapper actuel (toujours des
-  `rgbColor` statiques par élément) — voir `TODO.md` § Mode template.
+  récurrents. **Capacité désormais implémentée côté mapper**
+  (`packages/backend/src/mapper/theme.ts`, `IRDocument.theme` +
+  `IRColor.themeRole` dans le contrat partagé) : un `IRDocument` qui porte
+  un `theme` complet (12 rôles) déclenche l'écriture du `colorScheme` sur
+  le Master, et tout `IRColor` avec un `themeRole` est sérialisé en
+  `themeColor` plutôt qu'un `rgbColor` figé. Encore inutilisé en pratique
+  faute d'UI pour assigner ces rôles côté plugin (voir `TODO.md` § Mode
+  template, point 2 — l'onglet "Style").
 - **Placeholders marqués via alt text.** Un calque Figma dont le nom est
   préfixé par `[[title]]`, `[[subtitle]]`, `[[body]]`, `[[image]]`,
   `[[logo]]` ou `[[custom:Libellé]]` devient, côté Slides, un élément dont

@@ -86,13 +86,19 @@ typiquement que le chrome, pas les variantes).
 Backlog, dans un ordre de dépendance logique (le premier point débloque
 les suivants) :
 
-1. **Mapper : écrire le vrai thème plutôt que des aplats statiques.**
-   Faire en sorte que `mapDocumentToBatches` (ou une étape dédiée avant)
-   écrive le `colorScheme` du Master via `UpdatePagePropertiesRequest` à
-   la création du template, et que les éléments dont la couleur porte un
-   rôle assigné (voir point 2) soient sérialisés avec
-   `OpaqueColor.themeColor` plutôt que `rgbColor`. Fondation de tout le
-   reste — rien d'autre ci-dessous n'a de sens sans ce point.
+1. ~~**Mapper : écrire le vrai thème plutôt que des aplats statiques.**~~
+   — fait. `IRDocument.theme` (12 rôles, `packages/shared/src/ir.ts`) +
+   `IRColor.themeRole` dans le contrat partagé ; `mapper/theme.ts`
+   construit le lot `updatePageProperties` sur le Master, préfixé par
+   `mapDocumentToBatches` quand `doc.theme` ET un `masterObjectId` sont
+   fournis (`slides/client.ts` le renvoie désormais depuis la même
+   réponse `presentations.create`, sans appel réseau supplémentaire) ;
+   `colors.ts::toOpaqueColor` émet `themeColor` au lieu de `rgbColor`
+   quand `themeRole` est renseigné. Testé (nouveaux tests `theme.test.ts`,
+   `colors.test.ts`, `client.test.ts`, `index.test.ts`). **Encore inerte
+   en pratique** : rien ne construit `doc.theme` ni n'assigne `themeRole`
+   côté plugin faute d'UI — c'est le point 2 (l'onglet "Style") qui
+   consommera cette capacité.
 2. **Onglet "Style" au niveau du template entier**, en plus du rapport par
    layout actuel (`templateSummary.ts` n'agrège aujourd'hui que couleurs/
    polices d'UN layout à la fois). Agrégerait couleurs + polices de TOUS

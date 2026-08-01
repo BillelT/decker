@@ -13,12 +13,23 @@ describe('toOpaqueColor', () => {
       rgbColor: { red: 1, green: 0, blue: 0.5 },
     });
   });
+
+  it('emits themeColor instead of rgbColor when themeRole is set (audit 2026-08, mode template)', () => {
+    expect(toOpaqueColor({ r: 1, g: 0, b: 0, themeRole: 'ACCENT1' })).toEqual({ themeColor: 'ACCENT1' });
+  });
 });
 
 describe('toSolidFill', () => {
   it('carries alpha from the color', () => {
     expect(toSolidFill({ r: 1, g: 0, b: 0, a: 0.4 })).toEqual({
       color: { rgbColor: { red: 1, green: 0, blue: 0 } },
+      alpha: 0.4,
+    });
+  });
+
+  it('carries themeRole through to a themeColor binding, alpha unaffected', () => {
+    expect(toSolidFill({ r: 1, g: 0, b: 0, a: 0.4, themeRole: 'ACCENT2' })).toEqual({
+      color: { themeColor: 'ACCENT2' },
       alpha: 0.4,
     });
   });

@@ -6,10 +6,12 @@ import { mapText } from './text.js';
 import { mapImage } from './images.js';
 import { mapLine } from './lines.js';
 import { mapPlaceholderAltText } from './placeholder.js';
+import { mapThemeBatch } from './theme.js';
 import type { RequestBatch, SlidesRequest } from './slidesRequests.js';
 
 export * from './slidesRequests.js';
 export { computeScale, roundForSerialization } from './transform.js';
+export { mapThemeBatch, THEME_BATCH_SOURCE_ID } from './theme.js';
 
 const MAX_REQUESTS_PER_BATCH = 300;
 
@@ -23,13 +25,25 @@ export type AssetUrlResolver = (assetKey: string) => string;
  * Spec §6, §5.4 — IRDocument → lots de requêtes `batchUpdate`, un lot par
  * slide au minimum (jamais scindé), triés dans l'ordre de `slides` (déjà
  * trié par `order` côté plugin/UI).
+ *
+ * `masterObjectId` (audit 2026-08, mode template) n'est connu qu'après la
+ * création de la présentation (`slides/client.ts`), donc fourni par
+ * l'appelant plutôt que porté par `doc` — si `doc.theme` est présent ET
+ * que `masterObjectId` est fourni, le lot d'écriture du thème est
+ * préfixé en tête (avant toute slide, pour que les éléments liés à un
+ * rôle de thème affichent la bonne couleur dès leur création).
  */
 export function mapDocumentToBatches(
   doc: IRDocument,
   resolveAssetUrl: AssetUrlResolver,
   calibration: CalibrationData,
+  masterObjectId?: string,
 ): RequestBatch[] {
-  return [...doc.slides].sort((a, b) => a.order - b.order).map((slide) => mapSlide(slide, doc, resolveAssetUrl, calibration));
+  const slideBatches = [...doc.slides].sort((a, b) => a.order - b.order).map((slide) => mapSlide(slide, doc, resolveAssetUrl, calibration));
+  if (doc.theme && masterObjectId) {
+    return [mapThemeBatch(doc.theme, masterObjectId), ...slideBatches];
+  }
+  return slideBatches;
 }
 
 function mapSlide(

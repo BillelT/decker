@@ -11,7 +11,41 @@ export interface IRDocument {
   slideSize: { widthPt: number; heightPt: number };
   slides: IRSlide[];
   options: ExportOptions;
+  /**
+   * Palette à écrire sur la page Master (mode template — audit 2026-08,
+   * voir LIMITATIONS.md § Création de template). Les 12 rôles DOIVENT
+   * tous être fournis si présent : l'API Slides exige les 12
+   * `ThemeColorType` d'un coup pour toute mise à jour de `colorScheme`, un
+   * rôle manquant serait ignoré par Slides plutôt que conservé à sa
+   * valeur précédente — à l'appelant (plugin) de compléter les rôles non
+   * assignés avec une valeur par défaut avant d'émettre ce document.
+   * Ignoré (pas d'écriture de thème) si absent, ce qui reste le cas pour
+   * un export de deck classique.
+   */
+  theme?: Record<ThemeColorRole, { r: number; g: number; b: number }>;
 }
+
+/**
+ * Les 12 slots du thème Slides modifiables en écriture (spec API — seuls
+ * les 12 premiers `ThemeColorType` sont éditables, voir LIMITATIONS.md §
+ * Création de template). Un `IRColor` qui porte `themeRole` est sérialisé
+ * en `OpaqueColor.themeColor` plutôt qu'un `rgbColor` figé : un changement
+ * ultérieur du thème (dans Slides, ou en ré-export) recolore l'élément en
+ * cascade plutôt que de rester figé sur la couleur du moment de l'export.
+ */
+export type ThemeColorRole =
+  | 'DARK1'
+  | 'LIGHT1'
+  | 'DARK2'
+  | 'LIGHT2'
+  | 'ACCENT1'
+  | 'ACCENT2'
+  | 'ACCENT3'
+  | 'ACCENT4'
+  | 'ACCENT5'
+  | 'ACCENT6'
+  | 'HYPERLINK'
+  | 'FOLLOWED_HYPERLINK';
 
 export interface IRSlide {
   /** id du nœud Figma source, pour la traçabilité. */
@@ -160,8 +194,10 @@ export interface IRColor {
   r: number;
   g: number;
   b: number;
-  a: number;
-} // tous 0..1
+  a: number; // r/g/b/a tous 0..1
+  /** Si renseigné, l'élément est lié à ce rôle de thème plutôt qu'à un RGB figé — voir `ThemeColorRole`. */
+  themeRole?: ThemeColorRole;
+}
 
 export interface IRWarning {
   code:
