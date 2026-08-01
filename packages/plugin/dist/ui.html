@@ -463,7 +463,12 @@ a {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  /* `safe center` : centre le contenu quand il tient dans le panneau, mais
+     revient à un alignement de départ dès qu'il déborde — sinon un
+     `justify-content: center` classique sur un conteneur scrollable rogne le
+     bord de tête du contenu hors de portée du scroll (on ne peut jamais
+     remonter jusqu'au haut réel de la preview). */
+  justify-content: safe center;
   gap: 24px;
 }
 
@@ -2864,7 +2869,7 @@ html.f2s-skin--win95 .f2s-font-dropdown::-webkit-scrollbar {
     const [sessionToken, setSessionToken] = d2();
     const [loginError, setLoginError] = d2();
     const [authUrl, setAuthUrl] = d2();
-    const [backend] = d2({ baseUrl: true ? "https://figma-to-slide-backend.vercel.app" : "https://figma-to-slide-backend.vercel.app" });
+    const [backend] = d2({ baseUrl: true ? "http://localhost:8787" : "https://figma-to-slide-backend.vercel.app" });
     const [deckTitle, setDeckTitle] = d2("");
     const [templateTitle, setTemplateTitle] = d2("");
     const [settingsOpen, setSettingsOpen] = d2(false);
