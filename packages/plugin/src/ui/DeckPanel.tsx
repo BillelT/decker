@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { moveToIndex } from './reorderFrames.js';
+import { RetroExportPreview } from './RetroExportPreview.js';
+import type { ExportCursor } from './exportCursor.js';
 import { postToPlugin, selectSourceNodes, type FrameState } from './types.js';
 
 /** En dessous de ce mouvement, un pointerdown reste un simple clic de sélection. */
@@ -21,6 +23,8 @@ export interface DeckPanelProps {
   selecting: boolean;
   hasCanvasSelection: boolean;
   onRemove: (id: string) => void;
+  /** Frame dont le lot est en cours d'application côté backend, s'il y a un export en cours. */
+  exportCursor?: ExportCursor;
 }
 
 /**
@@ -30,7 +34,17 @@ export interface DeckPanelProps {
  * change qu'UNE fois, au relâchement, pendant que les autres vignettes se
  * décalent d'un cran entier via un transform CSS animé.
  */
-export function DeckPanel({ order, setOrder, frames, activeId, setActiveId, selecting, hasCanvasSelection, onRemove }: DeckPanelProps) {
+export function DeckPanel({
+  order,
+  setOrder,
+  frames,
+  activeId,
+  setActiveId,
+  selecting,
+  hasCanvasSelection,
+  onRemove,
+  exportCursor,
+}: DeckPanelProps) {
   const [dragId, setDragId] = useState<string | undefined>();
   const [dragOffsetY, setDragOffsetY] = useState(0);
   // Le retour visuel "grab" ne doit apparaître qu'une fois un vrai
@@ -52,6 +66,12 @@ export function DeckPanel({ order, setOrder, frames, activeId, setActiveId, sele
   const sidebarItemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   const activeFrame = activeId ? frames[activeId] : undefined;
+  // Pendant un export, l'aperçu suit la frame en cours de traitement plutôt
+  // que la sélection du rail : c'est elle que l'utilisateur regarde
+  // "s'imprimer". Dimensions et logs suivent le même repère pour ne pas
+  // décrire une autre frame que celle affichée.
+  const exportingFrame = exportCursor ? frames[exportCursor.frameId] : undefined;
+  const previewedFrame = exportingFrame ?? activeFrame;
 
   function selectFrame(id: string) {
     setActiveId(id);
@@ -184,7 +204,7 @@ export function DeckPanel({ order, setOrder, frames, activeId, setActiveId, sele
             >
               <button
                 type="button"
-                className={`f2s-frame-preview${activeId === id ? ' is-active' : ''}`}
+                className={`f2s-frame-preview${activeId === id ? ' is-active' : ''}${exportCursor?.frameId === id ? ' is-exporting' : ''}`}
                 onClick={() => selectFrame(id)}
                 onPointerDown={(e) => handleDragPointerDown(e, id)}
               >
@@ -204,32 +224,42 @@ export function DeckPanel({ order, setOrder, frames, activeId, setActiveId, sele
       </aside>
 
       <main className="f2s-canvas">
-        {activeFrame ? (
+        {previewedFrame ? (
           <>
-            <div className="f2s-canvas-preview">
-              {activeFrame.previewDataUrl && <img src={activeFrame.previewDataUrl} alt={activeFrame.name} />}
-            </div>
+            {exportingFrame && exportCursor ? (
+              <RetroExportPreview
+                key={exportCursor.frameId}
+                src={exportingFrame.previewDataUrl}
+                frameName={exportingFrame.name}
+                index={exportCursor.index}
+                total={exportCursor.total}
+              />
+            ) : (
+              <div className="f2s-canvas-preview">
+                {previewedFrame.previewDataUrl && <img src={previewedFrame.previewDataUrl} alt={previewedFrame.name} />}
+              </div>
+            )}
 
             <div className="f2s-toolbar-group">
               <span className="f2s-toolbar-label">Dimensions :</span>
-              <span className="f2s-dim-box">{Math.round(activeFrame.width)}</span>
+              <span className="f2s-dim-box">{Math.round(previewedFrame.width)}</span>
               <span className="f2s-dim-sep">×</span>
-              <span className="f2s-dim-box">{Math.round(activeFrame.height)}</span>
+              <span className="f2s-dim-box">{Math.round(previewedFrame.height)}</span>
               <span className="f2s-dim-unit">px</span>
             </div>
 
             <div className="f2s-logs">
               <div className="f2s-logs-header">
                 <h3 className="f2s-tmpl-heading">Logs</h3>
-                {activeFrame.nativeCount !== undefined && activeFrame.rasterCount !== undefined && (
+                {previewedFrame.nativeCount !== undefined && previewedFrame.rasterCount !== undefined && (
                   <span className="f2s-toolbar-muted">
-                    {activeFrame.nativeCount} native · {activeFrame.rasterCount} rasterized
+                    {previewedFrame.nativeCount} native · {previewedFrame.rasterCount} rasterized
                   </span>
                 )}
               </div>
-              {activeFrame.warnings && activeFrame.warnings.length > 0 ? (
+              {previewedFrame.warnings && previewedFrame.warnings.length > 0 ? (
                 <ul className="f2s-tmpl-list">
-                  {activeFrame.warnings.map((w, i) => (
+                  {previewedFrame.warnings.map((w, i) => (
                     <li key={i}>
                       <button
                         type="button"
