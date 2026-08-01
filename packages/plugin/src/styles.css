@@ -542,10 +542,28 @@ a {
 
 /* Une seule ligne, tronquée : voir le commentaire sur `f2s-log-entry-text`
    dans DeckPanel.tsx — un nom de calque texte peut être un paragraphe
-   entier, seul compte de pouvoir identifier l'élément et cliquer dessus. */
+   entier, seul compte de pouvoir identifier l'élément et cliquer dessus.
+   Le message (ce qui a été fait) est prioritaire : c'est le nom du calque
+   qui cède la place et se tronque en premier. */
 .f2s-log-entry-text {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
   flex: 1;
   min-width: 0;
+}
+
+.f2s-log-entry-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.f2s-log-entry-message {
+  flex: 0 1 auto;
+  max-width: 60%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

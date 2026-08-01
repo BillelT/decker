@@ -282,10 +282,11 @@ export function DeckPanel({
                       >
                         {/* Le nom du calque (nodeName) vient de Figma, où le nom par défaut d'un
                             calque texte est son contenu entier : sur un long paragraphe, ça
-                            déborde. Tronqué sur une ligne — le texte n'a qu'à identifier
-                            l'élément et rester cliquable, le libellé complet reste dans `title`. */}
+                            déborde. Tronqué en priorité sur une ligne — le message (ce qui a
+                            été fait) reste lisible, le libellé complet reste dans `title`. */}
                         <span className="f2s-log-entry-text">
-                          <strong>{w.nodeName}</strong> — {w.message}
+                          <strong className="f2s-log-entry-name">{w.nodeName}</strong>
+                          <span className="f2s-log-entry-message">— {w.message}</span>
                         </span>
                       </button>
                     </li>
