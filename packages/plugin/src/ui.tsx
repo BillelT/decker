@@ -60,20 +60,29 @@ function Logo() {
   );
 }
 
-/** Icône d'engrenage minimaliste corporatif pour le bouton "Settings" du footer. */
+/** Les 8 dents sont générées par rotation autour du centre plutôt que codées
+ *  en dur une à une : une seule dent mal recopiée avait rendu l'ancienne
+ *  icône asymétrique (elle ressemblait à un soleil, pas à un engrenage). */
+const GEAR_TOOTH_ANGLES = [0, 45, 90, 135, 180, 225, 270, 315];
+
+/** Icône d'engrenage classique et minimaliste pour le bouton "Settings" du footer. */
 function GearIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <circle cx="8" cy="8" r="3.5" stroke="currentColor" strokeWidth="1.2" />
-      <circle cx="8" cy="8" r="1.5" stroke="currentColor" strokeWidth="1.2" />
-      <rect x="7.4" y="0.5" width="1.2" height="1.8" rx="0.3" fill="currentColor" />
-      <rect x="7.4" y="13.7" width="1.2" height="1.8" rx="0.3" fill="currentColor" />
-      <rect x="13.7" y="7.4" width="1.8" height="1.2" rx="0.3" fill="currentColor" />
-      <rect x="0.5" y="7.4" width="1.8" height="1.2" rx="0.3" fill="currentColor" />
-      <g transform="translate(8, 8) rotate(45)">
-        <rect x="7.4" y="-0.6" width="1.2" height="1.2" rx="0.3" fill="currentColor" />
-        <rect x="-8.6" y="-0.6" width="1.2" height="1.2" rx="0.3" fill="currentColor" />
-      </g>
+      <circle cx="8" cy="8" r="3.2" stroke="currentColor" strokeWidth="1.2" />
+      <circle cx="8" cy="8" r="1.3" stroke="currentColor" strokeWidth="1.2" />
+      {GEAR_TOOTH_ANGLES.map((angle) => (
+        <rect
+          key={angle}
+          x="7.35"
+          y="2.75"
+          width="1.3"
+          height="2.15"
+          rx="0.4"
+          fill="currentColor"
+          transform={`rotate(${angle} 8 8)`}
+        />
+      ))}
     </svg>
   );
 }
