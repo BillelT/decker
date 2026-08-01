@@ -66,20 +66,44 @@ function Logo() {
  *  traits droits au lieu d'un vrai contour arrondi). */
 function GearIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <svg
+      className="f2s-icon-gear"
+      width="16"
+      height="16"
+      viewBox="0 0 32 32"
+      fill="currentColor"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
       <path d="M27,16.76c0-.25,0-.5,0-.76s0-.51,0-.77l1.92-1.68A2,2,0,0,0,29.3,11L26.94,7a2,2,0,0,0-1.73-1,2,2,0,0,0-.64.1l-2.43.82a11.35,11.35,0,0,0-1.31-.75l-.51-2.52a2,2,0,0,0-2-1.61H13.64a2,2,0,0,0-2,1.61l-.51,2.52a11.48,11.48,0,0,0-1.32.75L7.43,6.06A2,2,0,0,0,6.79,6,2,2,0,0,0,5.06,7L2.7,11a2,2,0,0,0,.41,2.51L5,15.24c0,.25,0,.5,0,.76s0,.51,0,.77L3.11,18.45A2,2,0,0,0,2.7,21L5.06,25a2,2,0,0,0,1.73,1,2,2,0,0,0,.64-.1l2.43-.82a11.35,11.35,0,0,0,1.31.75l.51,2.52a2,2,0,0,0,2,1.61h4.72a2,2,0,0,0,2-1.61l.51-2.52a11.48,11.48,0,0,0,1.32-.75l2.42.82a2,2,0,0,0,.64.1,2,2,0,0,0,1.73-1L29.3,21a2,2,0,0,0-.41-2.51ZM25.21,24l-3.43-1.16a8.86,8.86,0,0,1-2.71,1.57L18.36,28H13.64l-.71-3.55a9.36,9.36,0,0,1-2.7-1.57L6.79,24,4.43,20l2.72-2.4a8.9,8.9,0,0,1,0-3.13L4.43,12,6.79,8l3.43,1.16a8.86,8.86,0,0,1,2.71-1.57L13.64,4h4.72l.71,3.55a9.36,9.36,0,0,1,2.7,1.57L25.21,8,27.57,12l-2.72,2.4a8.9,8.9,0,0,1,0,3.13L27.57,20Z" />
       <path d="M16,22a6,6,0,1,1,6-6A5.94,5.94,0,0,1,16,22Zm0-10a3.91,3.91,0,0,0-4,4,3.91,3.91,0,0,0,4,4,3.91,3.91,0,0,0,4-4A3.91,3.91,0,0,0,16,12Z" />
     </svg>
   );
 }
 
-/** Tracé exact d'IBM Carbon Design System (icône "settings--adjust", 32×32,
- *  licence Apache-2.0) — alternative à GearIcon, en comparaison le temps de choisir. */
+/** Version "settings--adjust" d'IBM Carbon, mais recomposée en éléments
+ *  <line>/<circle> distincts (au lieu du path plein unique) pour que
+ *  chaque poignée puisse être animée indépendamment au hover/pressed —
+ *  viewBox 0 0 16 16 (1 unité = 1px rendu) pour que les translateX en px
+ *  ci-dessous en styles.css produisent un déplacement exact, sans le
+ *  facteur d'échelle qu'aurait introduit le viewBox 32×32 d'origine. */
 function SlidersIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <path d="M30,8h-4.1c-0.5-2.3-2.5-4-4.9-4s-4.4,1.7-4.9,4H2v2h14.1c0.5,2.3,2.5,4,4.9,4s4.4-1.7,4.9-4H30V8z M21,12c-1.7,0-3-1.3-3-3s1.3-3,3-3s3,1.3,3,3S22.7,12,21,12z" />
-      <path d="M2,24h4.1c0.5,2.3,2.5,4,4.9,4s4.4-1.7,4.9-4H30v-2H15.9c-0.5-2.3-2.5-4-4.9-4s-4.4,1.7-4.9,4H2V24z M11,20c1.7,0,3,1.3,3,3s-1.3,3-3,3s-3-1.3-3-3S9.3,20,11,20z" />
+    <svg
+      className="f2s-icon-sliders"
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <line x1="1" y1="4.5" x2="9" y2="4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <line x1="12" y1="4.5" x2="15" y2="4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <circle className="f2s-slider-knob f2s-slider-knob--top" cx="10.5" cy="4.5" r="1.5" stroke="currentColor" strokeWidth="1.3" />
+      <line x1="1" y1="11.5" x2="4" y2="11.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <line x1="7" y1="11.5" x2="15" y2="11.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <circle className="f2s-slider-knob f2s-slider-knob--bottom" cx="5.5" cy="11.5" r="1.5" stroke="currentColor" strokeWidth="1.3" />
     </svg>
   );
 }
@@ -1047,7 +1071,7 @@ function App() {
           onClick={() => setSettingsOpen((open) => !open)}
         >
           <SlidersIcon />
-          <span>Settings adjust</span>
+          <span>Settings</span>
         </button>
         <div className="f2s-footer-actions">
           {/* Sans ce message, un export échoué (session expirée, 400 Slides
