@@ -865,16 +865,19 @@ html:not(.f2s-skin--win95) .f2s-footer-settings:hover:not(:disabled) .f2s-slider
   transform: translateX(2.25px);
 }
 
+/* 0.88 rendait le pressed trop brutal ; poignées repoussées en sens
+   inverse du hover (au lieu de converger encore plus) pour un vrai effet
+   de "relâchement" plutôt qu'un simple hover accentué. */
 html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-icon-sliders {
-  transform: scale(0.88);
+  transform: scale(0.94);
 }
 
 html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-slider-knob--top {
-  transform: translateX(-1.25px);
+  transform: translateX(1px);
 }
 
 html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-slider-knob--bottom {
-  transform: translateX(1px);
+  transform: translateX(-1px);
 }
 
 .f2s-footer-actions {
