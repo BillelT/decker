@@ -53,7 +53,9 @@ describe('createPresentation', () => {
   });
 
   it('omits pageSize when none is given (Slides defaults to 16:9)', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, { presentationId: 'p1', slides: [{ objectId: 's1' }] }));
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse(200, { presentationId: 'p1', slides: [{ objectId: 's1' }], masters: [{ objectId: 'm1' }] }));
     vi.stubGlobal('fetch', fetchMock);
 
     await createPresentation('token', 'My deck');
@@ -63,7 +65,9 @@ describe('createPresentation', () => {
   });
 
   it('passes pageSize in points so the presentation matches the source frame ratio', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, { presentationId: 'p1', slides: [{ objectId: 's1' }] }));
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse(200, { presentationId: 'p1', slides: [{ objectId: 's1' }], masters: [{ objectId: 'm1' }] }));
     vi.stubGlobal('fetch', fetchMock);
 
     await createPresentation('token', 'My deck', { widthPt: 720, heightPt: 460 });
@@ -73,5 +77,17 @@ describe('createPresentation', () => {
       title: 'My deck',
       pageSize: { width: { magnitude: 720, unit: 'PT' }, height: { magnitude: 460, unit: 'PT' } },
     });
+  });
+
+  it('returns the master objectId from the same create response (audit 2026-08 — no extra getPresentation call needed)', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse(200, { presentationId: 'p1', slides: [{ objectId: 's1' }], masters: [{ objectId: 'm1' }] }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await createPresentation('token', 'My deck');
+
+    expect(result).toEqual({ presentationId: 'p1', firstSlideObjectId: 's1', masterObjectId: 'm1' });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

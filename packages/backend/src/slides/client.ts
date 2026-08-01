@@ -68,7 +68,7 @@ export async function createPresentation(
   accessToken: string,
   title: string,
   pageSizePt?: { widthPt: number; heightPt: number },
-): Promise<{ presentationId: string; firstSlideObjectId: string }> {
+): Promise<{ presentationId: string; firstSlideObjectId: string; masterObjectId: string }> {
   // Le pageSize (comme le ratio d'aspect de la présentation entière) ne se
   // règle qu'à la création — la Slides API n'a aucune requête batchUpdate
   // pour le modifier après coup. Sans ça, une frame Figma qui n'est pas en
@@ -80,11 +80,16 @@ export async function createPresentation(
         height: { magnitude: pageSizePt.heightPt, unit: 'PT' },
       }
     : undefined;
-  const body = await callApi<{ presentationId: string; slides: { objectId: string }[] }>(accessToken, '/presentations', {
-    method: 'POST',
-    body: JSON.stringify({ title, ...(pageSize ? { pageSize } : {}) }),
-  });
-  return { presentationId: body.presentationId, firstSlideObjectId: body.slides[0].objectId };
+  // `presentations.create` renvoie la ressource `Presentation` complète
+  // (masters/layouts inclus, pas juste les slides) — pas besoin d'un
+  // second appel `getPresentation` pour récupérer l'id du Master (audit
+  // 2026-08, mode template : voir `mapper/theme.ts`).
+  const body = await callApi<{ presentationId: string; slides: { objectId: string }[]; masters: { objectId: string }[] }>(
+    accessToken,
+    '/presentations',
+    { method: 'POST', body: JSON.stringify({ title, ...(pageSize ? { pageSize } : {}) }) },
+  );
+  return { presentationId: body.presentationId, firstSlideObjectId: body.slides[0].objectId, masterObjectId: body.masters[0].objectId };
 }
 
 export async function batchUpdate(

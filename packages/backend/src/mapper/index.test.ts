@@ -159,6 +159,42 @@ describe('mapDocumentToBatches', () => {
     expect(lineReq.createLine.objectId).toBe('line1');
     expect(lineReq.createLine.lineCategory).toBe('STRAIGHT');
   });
+
+  describe('theme batch (audit 2026-08, mode template)', () => {
+    const THEME: IRDocument['theme'] = {
+      DARK1: { r: 0.1, g: 0.1, b: 0.18 },
+      LIGHT1: { r: 1, g: 1, b: 1 },
+      DARK2: { r: 0.09, g: 0.13, b: 0.24 },
+      LIGHT2: { r: 0.96, g: 0.96, b: 0.96 },
+      ACCENT1: { r: 1, g: 0.42, b: 0 },
+      ACCENT2: { r: 0, g: 0.7, b: 0.85 },
+      ACCENT3: { r: 0.48, g: 0.17, b: 0.75 },
+      ACCENT4: { r: 0.02, g: 0.84, b: 0.63 },
+      ACCENT5: { r: 1, g: 0.84, b: 0.04 },
+      ACCENT6: { r: 0.94, g: 0.28, b: 0.44 },
+      HYPERLINK: { r: 0.11, g: 0.6, b: 0.67 },
+      FOLLOWED_HYPERLINK: { r: 0.42, g: 0.3, b: 0.58 },
+    };
+
+    it('prepends the theme batch before any slide when both doc.theme and masterObjectId are given', () => {
+      const doc = { ...baseDoc([baseSlide()]), theme: THEME };
+      const batches = mapDocumentToBatches(doc, () => '', UNCALIBRATED_DEFAULTS, 'master1');
+      expect(batches[0].sourceSlideId).toBe('__theme__');
+      expect(batches[1].sourceSlideId).toBe('frame1');
+    });
+
+    it('omits the theme batch when doc.theme is absent, even with a masterObjectId (plain deck export)', () => {
+      const doc = baseDoc([baseSlide()]);
+      const batches = mapDocumentToBatches(doc, () => '', UNCALIBRATED_DEFAULTS, 'master1');
+      expect(batches.map((b) => b.sourceSlideId)).toEqual(['frame1']);
+    });
+
+    it('omits the theme batch when masterObjectId is missing, even with doc.theme set (append-to-existing has no fresh Master to target)', () => {
+      const doc = { ...baseDoc([baseSlide()]), theme: THEME };
+      const batches = mapDocumentToBatches(doc, () => '', UNCALIBRATED_DEFAULTS);
+      expect(batches.map((b) => b.sourceSlideId)).toEqual(['frame1']);
+    });
+  });
 });
 
 describe('chunkBatchesForApi', () => {

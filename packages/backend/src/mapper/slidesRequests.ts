@@ -6,6 +6,8 @@
  * sans réseau.
  */
 
+import type { ThemeColorRole } from '@figma-to-slides/shared';
+
 export interface Dimension {
   magnitude: number;
   unit: 'PT' | 'EMU';
@@ -17,9 +19,14 @@ export interface RgbColor {
   blue?: number;
 }
 
-export interface OpaqueColor {
-  rgbColor: RgbColor;
-}
+/**
+ * `ThemeColorRole` (contrat IR) EST le `ThemeColorType` de l'API Slides —
+ * mêmes 12 valeurs, réutilisées telles quelles plutôt que redéfinies ici.
+ */
+export type ThemeColorType = ThemeColorRole;
+
+/** Un `OpaqueColor` porte soit une couleur figée, soit une liaison à un slot du thème (audit 2026-08) — jamais les deux. */
+export type OpaqueColor = { rgbColor: RgbColor } | { themeColor: ThemeColorType };
 
 export interface SolidFill {
   color: OpaqueColor;
@@ -197,6 +204,28 @@ export interface UpdatePageElementAltTextRequest {
   description?: string;
 }
 
+/**
+ * Écriture du vrai thème Slides (audit 2026-08 — voir LIMITATIONS.md §
+ * Création de template) : `PageProperties.colorScheme` n'est modifiable
+ * qu'en ciblant la page `Master`, et seulement en fournissant les 12
+ * premiers `ThemeColorType` d'un coup (confirmé sur le schéma officiel de
+ * l'API ET en conditions réelles, voir `spikes/masterThemeSpike.ts`).
+ */
+export interface ThemeColorPair {
+  type: ThemeColorType;
+  color: RgbColor;
+}
+
+export interface ColorScheme {
+  colors: ThemeColorPair[];
+}
+
+export interface UpdatePagePropertiesRequest {
+  objectId: string;
+  pageProperties: { colorScheme: ColorScheme };
+  fields: string;
+}
+
 /** Une entrée du tableau `requests` d'un `presentations.batchUpdate`. */
 export type SlidesRequest =
   | { createSlide: CreateSlideRequest }
@@ -211,6 +240,7 @@ export type SlidesRequest =
   | { updateShapeProperties: UpdateShapePropertiesRequest }
   | { updatePageElementsZOrder: UpdatePageElementsZOrderRequest }
   | { updatePageElementAltText: UpdatePageElementAltTextRequest }
+  | { updatePageProperties: UpdatePagePropertiesRequest }
   | { deleteObject: DeleteObjectRequest };
 
 /** Un lot indivisible : toutes les requêtes d'une slide (spec §5.4). */

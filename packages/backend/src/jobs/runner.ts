@@ -1,5 +1,5 @@
 import type { CalibrationData, IRDocument } from '@figma-to-slides/shared';
-import { chunkBatchesForApi, mapDocumentToBatches, type AssetUrlResolver } from '../mapper/index.js';
+import { chunkBatchesForApi, mapDocumentToBatches, THEME_BATCH_SOURCE_ID, type AssetUrlResolver } from '../mapper/index.js';
 import { applyBatch, createPresentation } from '../slides/client.js';
 import { updateBatchStatus, updateJob, type JobRecord } from './jobStore.js';
 
@@ -22,15 +22,17 @@ export async function runExportJob(
   try {
     let presentationId = doc.targetPresentationId;
     let defaultSlideObjectId: string | undefined;
+    let masterObjectId: string | undefined;
 
     if (!presentationId) {
       const created = await createPresentation(accessToken, doc.presentationTitle, doc.slideSize);
       presentationId = created.presentationId;
       defaultSlideObjectId = created.firstSlideObjectId;
+      masterObjectId = created.masterObjectId;
       await updateJob(job.id, { presentationId, presentationUrl: presentationUrl(presentationId) });
     }
 
-    const batches = mapDocumentToBatches(doc, resolveAssetUrl, calibration);
+    const batches = mapDocumentToBatches(doc, resolveAssetUrl, calibration, masterObjectId);
     // Spec §5.4 : une slide = un lot indivisible ; on applique lot par lot
     // (chunkBatchesForApi ne serait utile que si l'API supportait la fusion
     // de plusieurs slides dans un seul batchUpdate sans risque partiel —
@@ -39,8 +41,11 @@ export async function runExportJob(
 
     // Un `batch.error` nu ("Slides API 400 on …") n'identifie pas QUELLE
     // slide a échoué — le nom de frame Figma est le repère que l'utilisateur
-    // du plugin connaît, on le préfixe donc à chaque erreur de lot.
+    // du plugin connaît, on le préfixe donc à chaque erreur de lot. Le lot
+    // spécial d'écriture du thème (audit 2026-08, `mapper/theme.ts`) n'est
+    // pas une slide : nom lisible dédié plutôt que l'id technique brut.
     const frameNameBySlideId = new Map(doc.slides.map((s) => [s.sourceNodeId, s.frameName]));
+    frameNameBySlideId.set(THEME_BATCH_SOURCE_ID, 'Theme (Master colors)');
     const failedSlideNames: string[] = [];
     for (const batch of batches) {
       try {
