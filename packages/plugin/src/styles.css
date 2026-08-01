@@ -154,6 +154,12 @@ a {
   display: block;
 }
 
+.f2s-logo svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 /* ---- Toolbar (polices) ---- */
 
 .f2s-toolbar {
