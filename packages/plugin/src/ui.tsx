@@ -4,7 +4,9 @@ import type { ExportOptions, IRDocument } from '@figma-to-slides/shared';
 import { sanitizeSessionToken } from './ui/sanitizeSessionToken.js';
 import { AVAILABLE_SLIDES_FONTS } from './serialize/fonts.js';
 import {
+  DEFAULT_UI_SKIN,
   postToPlugin,
+  skinClassName,
   type AppMode,
   type FontSubstitution,
   type FrameCandidate,
@@ -15,6 +17,7 @@ import {
   type TemplateLayoutState,
   type TemplatePlaceholder,
   type TemplateWarning,
+  type UiSkin,
 } from './ui/types.js';
 import { DeckPanel } from './ui/DeckPanel';
 import { TemplatePanel } from './ui/TemplatePanel';
@@ -69,8 +72,48 @@ function GearIcon() {
   );
 }
 
+/** Barre de titre du skin Windows 95 : la fenêtre du plugin en devient une vraie fenêtre 95. */
+function TitleBar({ mode }: { mode: AppMode }) {
+  return (
+    <div className="f2s-titlebar">
+      <span className="f2s-titlebar-text">Figma → Slides — {mode === 'deck' ? 'Deck export' : 'Template creation'}</span>
+      {/* Seule case classique qui ait un équivalent réel côté Figma
+          (`figma.closePlugin()`) — pas de réduire/agrandir décoratifs. */}
+      <button
+        type="button"
+        className="f2s-titlebar-btn"
+        title="Close the plugin"
+        aria-label="Close the plugin"
+        onClick={() => postToPlugin({ type: 'close-plugin' })}
+      >
+        ✕
+      </button>
+    </div>
+  );
+}
+
 function App() {
   const [mode, setMode] = useState<AppMode>('deck');
+
+  // Habillage de l'UI — Windows 95 par défaut, l'habillage du design system
+  // ("modern") restant accessible depuis le footer. Le choix est persisté
+  // côté sandbox (clientStorage) et restauré au montage via `skin-restored`.
+  const [skin, setSkin] = useState<UiSkin>(DEFAULT_UI_SKIN);
+
+  // Les deux feuilles de style scopent leurs règles sur cette classe : elle
+  // vit sur <html> plutôt que sur #app pour pouvoir aussi repeindre le fond
+  // du document et les ascenseurs.
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.toggle(skinClassName('win95'), skin === 'win95');
+    root.classList.toggle(skinClassName('modern'), skin === 'modern');
+  }, [skin]);
+
+  function changeSkin(next: UiSkin) {
+    setSkin(next);
+    postToPlugin({ type: 'save-ui-skin', skin: next });
+  }
+
   // Le handler `onMessage` (branché une seule fois, deps: []) doit toujours
   // lire le mode COURANT pour router `no-frames-selected`/`too-many-frames`
   // vers le bon panneau — même piège que `sessionTokenRef` plus bas.
@@ -286,6 +329,12 @@ function App() {
         }
         case 'canvas-selection-changed':
           setHasCanvasSelection(Boolean(msg.hasSelection));
+          break;
+        // Habillage persisté via clientStorage (code.ts) : sans stockage
+        // durable dans l'iframe UI, c'est le seul moyen que le choix
+        // survive à la fermeture du plugin.
+        case 'skin-restored':
+          if (msg.skin === 'win95' || msg.skin === 'modern') setSkin(msg.skin);
           break;
         // Session Google persistée via clientStorage (code.ts) — restaurée à
         // l'ouverture pour ne pas refaire l'OAuth à chaque session. Sans
@@ -697,6 +746,8 @@ function App() {
 
   return (
     <>
+      {skin === 'win95' && <TitleBar mode={mode} />}
+
       <header className="f2s-topbar">
         <div className="f2s-topbar-left">
           <Logo />
@@ -830,6 +881,28 @@ function App() {
         <div className="f2s-footer-settings">
           <GearIcon />
           <span>Settings</span>
+          {/* Bascule d'habillage : au même endroit dans les deux skins, pour
+              qu'on puisse toujours revenir en arrière depuis l'autre. */}
+          <div className="f2s-skin-switch" role="group" aria-label="Interface style">
+            <button
+              type="button"
+              className={`f2s-skin-btn${skin === 'win95' ? ' is-active' : ''}`}
+              aria-pressed={skin === 'win95'}
+              title="Retro Windows 95 interface."
+              onClick={() => changeSkin('win95')}
+            >
+              Windows 95
+            </button>
+            <button
+              type="button"
+              className={`f2s-skin-btn${skin === 'modern' ? ' is-active' : ''}`}
+              aria-pressed={skin === 'modern'}
+              title="Modern interface."
+              onClick={() => changeSkin('modern')}
+            >
+              Modern
+            </button>
+          </div>
         </div>
         <div className="f2s-footer-actions">
           <a href="#" className="f2s-btn f2s-btn--tertiary">

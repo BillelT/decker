@@ -38,6 +38,11 @@ const COPY_GAP_PX = 200;
 // présentation NEUVE côté backend (mode 'new-presentation') : réutiliser la
 // session Google ne peut donc jamais écraser un deck déjà envoyé.
 const SESSION_TOKEN_STORAGE_KEY = 'f2s:sessionToken';
+// Habillage visuel choisi dans l'UI ('win95' par défaut, 'modern' pour le
+// design system historique). Même raison que le jeton de session : l'iframe
+// UI est recréée à chaque ouverture et n'a aucun stockage durable, donc le
+// choix ne survit que s'il est gardé côté sandbox.
+const UI_SKIN_STORAGE_KEY = 'f2s:uiSkin';
 
 type ExportableNode = FrameNode | ComponentNode | InstanceNode;
 
@@ -688,6 +693,17 @@ async function main(): Promise<void> {
         type: 'canvas-selection-changed',
         hasSelection: figma.currentPage.selection.some(isExportable),
       });
+      // Skin persisté : envoyé en tout premier pour que l'UI repeigne son
+      // premier rendu avant d'afficher quoi que ce soit d'autre (sinon on
+      // verrait le skin par défaut clignoter vers celui choisi).
+      try {
+        const storedSkin = await figma.clientStorage.getAsync(UI_SKIN_STORAGE_KEY);
+        if (storedSkin === 'win95' || storedSkin === 'modern') {
+          figma.ui.postMessage({ type: 'skin-restored', skin: storedSkin });
+        }
+      } catch (err) {
+        console.error(err);
+      }
       // Session Google persistée (voir SESSION_TOKEN_STORAGE_KEY) : envoyée
       // AVANT les frames taguées pour que l'UI sache tout de suite si le
       // bouton Export/Create doit être actif ou proposer la connexion.
@@ -713,6 +729,24 @@ async function main(): Promise<void> {
       } catch (err) {
         console.error(err);
       }
+      return;
+    }
+
+    if (msg.type === 'save-ui-skin') {
+      try {
+        await figma.clientStorage.setAsync(UI_SKIN_STORAGE_KEY, msg.skin as string);
+      } catch (err) {
+        console.error(err);
+      }
+      return;
+    }
+
+    // Bouton de fermeture de la barre de titre Windows 95 : la seule des
+    // trois cases classiques qui ait un équivalent réel côté Figma (pas de
+    // réduction/agrandissement pour une iframe de plugin), donc la seule
+    // rendue par l'UI.
+    if (msg.type === 'close-plugin') {
+      figma.closePlugin();
       return;
     }
 

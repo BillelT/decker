@@ -35,8 +35,14 @@ const uiScript = uiResult.outputFiles[0].text;
 // billeltighidet) est donc inlinée en base64 directement dans le CSS.
 const fontBase64 = (await readFile('src/assets/CabinetGrotesk-Variable.woff2')).toString('base64');
 const fontDataUri = `data:font/woff2;base64,${fontBase64}`;
+// Les deux habillages sont servis dans la MÊME feuille, dans cet ordre :
+// styles.css pose la structure et le skin moderne, styles.win95.css repeint
+// par-dessus sous `html.f2s-skin--win95`. L'ordre compte — plusieurs règles
+// de thème (`html.figma-dark`, `prefers-color-scheme`) ont la même
+// spécificité que le scope du skin rétro, qui doit l'emporter.
 const stylesTemplate = await readFile('src/styles.css', 'utf8');
-const styles = stylesTemplate.replace('__FONT_DATA_URI__', () => fontDataUri);
+const win95Styles = await readFile('src/styles.win95.css', 'utf8');
+const styles = `${stylesTemplate}\n${win95Styles}`.replace('__FONT_DATA_URI__', () => fontDataUri);
 
 const template = await readFile('src/ui.html', 'utf8');
 const html = template.replace('__STYLES__', () => styles).replace('__UI_SCRIPT__', () => uiScript);

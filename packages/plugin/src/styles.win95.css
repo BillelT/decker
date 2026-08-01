@@ -1,0 +1,467 @@
+/* ============================================================================
+   Skin Windows 95 (skin PAR DÉFAUT — voir ui/types.ts).
+
+   Cette feuille ne redéfinit AUCUNE structure : la mise en page (flex,
+   tailles, colonnes) reste celle de styles.css, seul l'habillage est
+   repeint. Toutes les règles sont scopées sous `html.f2s-skin--win95` —
+   posé sur <html> par ui.tsx — et ce fichier est concaténé APRÈS
+   styles.css (esbuild.config.mjs), donc il l'emporte y compris sur les
+   blocs de thème sombre `html.figma-dark` / `prefers-color-scheme` qui ont
+   la même spécificité.
+
+   Le skin est volontairement mono-thème : Windows 95, c'est ce gris-là. Il
+   ignore donc le thème clair/sombre de Figma, contrairement au skin
+   moderne.
+   ============================================================================ */
+
+html.f2s-skin--win95 {
+  /* Palette système 16 couleurs. */
+  --w95-face: #c0c0c0;
+  --w95-shadow: #808080;
+  --w95-dark: #0a0a0a;
+  --w95-light: #dfdfdf;
+  --w95-white: #ffffff;
+  --w95-navy: #000080;
+  --w95-navy-light: #1084d0;
+
+  /* Les trois biseaux du chrome 95, en ombres internes empilées : deux
+     pixels de relief (clair/foncé) sur chaque bord. `out` = bouton au
+     repos, `in` = champ ou zone creusée, `pressed` = bouton enfoncé. */
+  --w95-out: inset -1px -1px var(--w95-dark), inset 1px 1px var(--w95-white), inset -2px -2px var(--w95-shadow),
+    inset 2px 2px var(--w95-light);
+  --w95-in: inset -1px -1px var(--w95-white), inset 1px 1px var(--w95-shadow), inset -2px -2px var(--w95-light),
+    inset 2px 2px var(--w95-dark);
+  --w95-pressed: inset -1px -1px var(--w95-white), inset 1px 1px var(--w95-dark), inset -2px -2px var(--w95-light),
+    inset 2px 2px var(--w95-shadow);
+  /* Cadre "gravé" 1px des group boxes (Logs, sections du rapport). */
+  --w95-etched: inset -1px -1px var(--w95-white), inset 1px 1px var(--w95-shadow);
+
+  /* Remappage des tokens du design system : tout ce qui n'est pas repeint
+     explicitement plus bas reste cohérent avec la palette système. L'accent
+     de marque (orange) devient le bleu de sélection Windows. */
+  --color-bg: var(--w95-face);
+  --color-text: #000000;
+  --color-black-70: #3f3f3f;
+  --color-scrollbar: var(--w95-face);
+  --color-gray-light: var(--w95-light);
+  --color-border: var(--w95-shadow);
+  --color-surface: var(--w95-white);
+  --color-surface-muted: var(--w95-face);
+  --color-orange: var(--w95-navy);
+  --color-orange-40: var(--w95-navy-light);
+  --color-orange-red: var(--w95-navy);
+  --color-error: #a80000;
+}
+
+html.f2s-skin--win95 body {
+  /* Pas de webfont pixel disponible hors ligne (le HTML du plugin est une
+     chaîne autonome, cf. esbuild.config.mjs) : Tahoma est la police système
+     la plus proche de MS Sans Serif, présente partout. */
+  font-family: Tahoma, 'MS Sans Serif', Geneva, Verdana, sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  color: #000;
+  background: var(--w95-face);
+}
+
+/* Le panneau entier devient LA fenêtre : cadre en relief autour de tout. */
+html.f2s-skin--win95 #app {
+  padding: 3px;
+  background: var(--w95-face);
+  box-shadow: var(--w95-out);
+}
+
+html.f2s-skin--win95 a {
+  color: var(--w95-navy);
+}
+
+/* ---- Barre de titre (rendue par ui.tsx uniquement dans ce skin) ---- */
+
+.f2s-titlebar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 20px;
+  padding: 0 2px 0 4px;
+  margin-bottom: 3px;
+  background: linear-gradient(90deg, var(--w95-navy), var(--w95-navy-light));
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  user-select: none;
+}
+
+.f2s-titlebar-text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Seule case de la barre de titre à avoir un équivalent réel côté Figma
+   (`figma.closePlugin()`) — pas de réduire/agrandir pour une iframe de
+   plugin, donc pas de bouton décoratif qui ne ferait rien. */
+.f2s-titlebar-btn {
+  flex: none;
+  width: 16px;
+  height: 14px;
+  padding: 0;
+  border: none;
+  background: var(--w95-face);
+  color: #000;
+  box-shadow: var(--w95-out);
+  font-family: inherit;
+  font-size: 9px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.f2s-titlebar-btn:active {
+  box-shadow: var(--w95-pressed);
+}
+
+/* ---- Barres (topbar / toolbar / footer) ---- */
+
+html.f2s-skin--win95 .f2s-topbar {
+  padding: 6px 6px 0;
+  gap: 8px;
+}
+
+html.f2s-skin--win95 .f2s-topbar-left,
+html.f2s-skin--win95 .f2s-topbar-actions,
+html.f2s-skin--win95 .f2s-footer-actions {
+  gap: 6px;
+}
+
+html.f2s-skin--win95 .f2s-toolbar {
+  gap: 8px;
+  padding: 6px;
+}
+
+html.f2s-skin--win95 .f2s-toolbar-row {
+  gap: 16px;
+}
+
+html.f2s-skin--win95 .f2s-toolbar-label {
+  font-weight: 400;
+  color: #000;
+}
+
+html.f2s-skin--win95 .f2s-toolbar-muted,
+html.f2s-skin--win95 .f2s-frame-text,
+html.f2s-skin--win95 .f2s-dim-unit,
+html.f2s-skin--win95 .f2s-dim-sep,
+html.f2s-skin--win95 .f2s-font-original,
+html.f2s-skin--win95 .f2s-font-arrow,
+html.f2s-skin--win95 .f2s-empty,
+html.f2s-skin--win95 .f2s-canvas-empty,
+html.f2s-skin--win95 .f2s-tmpl-note {
+  color: #000;
+}
+
+html.f2s-skin--win95 .f2s-footer {
+  padding: 6px;
+  /* Séparateur gravé classique : ligne foncée puis ligne claire. */
+  border-top: 1px solid var(--w95-shadow);
+  box-shadow: inset 0 1px 0 var(--w95-white);
+  background: var(--w95-face);
+}
+
+html.f2s-skin--win95 .f2s-footer-settings {
+  font-weight: 400;
+  color: #000;
+  gap: 6px;
+}
+
+html.f2s-skin--win95 .f2s-body {
+  border-top: 1px solid var(--w95-shadow);
+  box-shadow: inset 0 1px 0 var(--w95-white);
+}
+
+/* ---- Boutons ----
+   Un bouton 95 : face grise, biseau en relief, texte au ras. Le bouton par
+   défaut porte en plus un liseré noir 1px À L'EXTÉRIEUR du biseau — d'où la
+   bordure transparente de même épaisseur sur tous les autres, qui garde les
+   hauteurs alignées. */
+
+html.f2s-skin--win95 .f2s-btn {
+  font-size: 11px;
+  font-weight: 400;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  border-radius: 0;
+  padding: 4px 12px;
+  min-width: 72px;
+  background-color: var(--w95-face);
+  color: #000;
+  box-shadow: var(--w95-out);
+  outline: none;
+  transition: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Un bouton 95 ne réagit pas au survol — seul l'enfoncement le fait. Les
+   trois variantes du design system convergent donc vers le même rendu. */
+html.f2s-skin--win95 .f2s-btn--primary:hover:not(:disabled),
+html.f2s-skin--win95 .f2s-btn--secondary:hover:not(:disabled),
+html.f2s-skin--win95 .f2s-btn--tertiary:hover:not(:disabled) {
+  background-color: var(--w95-face);
+  color: #000;
+  box-shadow: var(--w95-out);
+  outline-color: transparent;
+}
+
+/* L'enfoncement décale le libellé d'un pixel vers le bas/droite. */
+html.f2s-skin--win95 .f2s-btn:active:not(:disabled) {
+  box-shadow: var(--w95-pressed);
+  padding: 5px 11px 3px 13px;
+}
+
+html.f2s-skin--win95 .f2s-btn--primary {
+  border-color: var(--w95-dark);
+  font-weight: 700;
+}
+
+/* Grisé 95 : le libellé est gravé (gris + rehaut blanc), pas atténué en
+   opacité — un bouton désactivé garde son relief. */
+html.f2s-skin--win95 .f2s-btn:disabled {
+  opacity: 1;
+  color: var(--w95-shadow);
+  text-shadow: 1px 1px 0 var(--w95-white);
+}
+
+/* ---- Champs (saisie, listes déroulantes, boîtes de dimensions) ---- */
+
+html.f2s-skin--win95 .f2s-title-input,
+html.f2s-skin--win95 .f2s-font-dropdown,
+html.f2s-skin--win95 .f2s-dim-box {
+  font-size: 11px;
+  border: none;
+  border-radius: 0;
+  background: var(--w95-white);
+  color: #000;
+  box-shadow: var(--w95-in);
+  padding: 3px 6px;
+}
+
+html.f2s-skin--win95 .f2s-title-input:focus,
+html.f2s-skin--win95 .f2s-font-dropdown:focus {
+  outline: none;
+  box-shadow: var(--w95-in);
+}
+
+html.f2s-skin--win95 .f2s-title-input::placeholder {
+  color: var(--w95-shadow);
+  opacity: 1;
+}
+
+/* ---- Rail de vignettes + zone principale : deux zones creusées ---- */
+
+html.f2s-skin--win95 .f2s-sidebar {
+  padding: 6px;
+  gap: 10px;
+  border-right: 1px solid var(--w95-shadow);
+  box-shadow: inset -1px 0 0 var(--w95-white);
+}
+
+html.f2s-skin--win95 .f2s-canvas {
+  padding: 12px;
+  gap: 12px;
+}
+
+/* La vignette : puits creusé blanc, liseré de sélection bleu Windows. */
+html.f2s-skin--win95 .f2s-frame-preview {
+  border: 2px solid var(--w95-face);
+  border-radius: 0;
+  background: var(--w95-white);
+  box-shadow: var(--w95-in);
+}
+
+html.f2s-skin--win95 .f2s-frame-preview:hover:not(.is-active) {
+  border-color: var(--w95-shadow);
+}
+
+html.f2s-skin--win95 .f2s-frame-preview.is-active {
+  border-color: var(--w95-navy);
+}
+
+html.f2s-skin--win95 .f2s-frame-preview--blocking {
+  border-color: var(--color-error);
+}
+
+html.f2s-skin--win95 .f2s-canvas-preview {
+  border: none;
+  background: var(--w95-white);
+  box-shadow: var(--w95-in);
+  padding: 2px;
+}
+
+/* Petit bouton carré à biseau (croix de suppression). */
+html.f2s-skin--win95 .f2s-icon-btn {
+  width: 16px;
+  height: 16px;
+  border-radius: 0;
+  font-size: 9px;
+  background: var(--w95-face);
+  color: #000;
+  box-shadow: var(--w95-out);
+}
+
+html.f2s-skin--win95 .f2s-icon-btn:hover:not(:disabled) {
+  background: var(--w95-face);
+}
+
+html.f2s-skin--win95 .f2s-icon-btn:active:not(:disabled) {
+  box-shadow: var(--w95-pressed);
+}
+
+/* ---- Group boxes : Logs et sections du rapport de template ---- */
+
+html.f2s-skin--win95 .f2s-logs,
+html.f2s-skin--win95 .f2s-tmpl-section {
+  border: none;
+  border-radius: 0;
+  background: var(--w95-face);
+  box-shadow: var(--w95-etched);
+  padding: 10px;
+}
+
+html.f2s-skin--win95 .f2s-tmpl-heading {
+  font-weight: 700;
+  color: #000;
+}
+
+html.f2s-skin--win95 .f2s-tmpl-section--blocking .f2s-tmpl-heading {
+  color: var(--color-error);
+}
+
+/* Entrées de liste cliquables : boutons à biseau, pas des puces à bord
+   arrondi qui changent de couleur au survol. */
+html.f2s-skin--win95 .f2s-log-entry,
+html.f2s-skin--win95 .f2s-tmpl-warning,
+html.f2s-skin--win95 .f2s-tmpl-chip {
+  font-size: 11px;
+  border: none;
+  border-radius: 0;
+  background: var(--w95-face);
+  color: #000;
+  box-shadow: var(--w95-out);
+  padding: 4px 8px;
+}
+
+html.f2s-skin--win95 .f2s-log-entry:hover,
+html.f2s-skin--win95 .f2s-tmpl-warning:hover,
+html.f2s-skin--win95 .f2s-tmpl-chip:hover {
+  border-color: transparent;
+}
+
+html.f2s-skin--win95 .f2s-log-entry:active,
+html.f2s-skin--win95 .f2s-tmpl-warning:active,
+html.f2s-skin--win95 .f2s-tmpl-chip:active {
+  box-shadow: var(--w95-pressed);
+}
+
+html.f2s-skin--win95 .f2s-log-entry--blocking,
+html.f2s-skin--win95 .f2s-tmpl-warning {
+  color: var(--color-error);
+}
+
+html.f2s-skin--win95 .f2s-tmpl-role {
+  color: #000;
+}
+
+html.f2s-skin--win95 .f2s-tmpl-swatch {
+  border: none;
+  border-radius: 0;
+  box-shadow: var(--w95-in);
+}
+
+/* ---- Progression / erreurs ---- */
+
+html.f2s-skin--win95 .f2s-spinner {
+  border-radius: 0;
+  border-color: var(--w95-shadow);
+  border-top-color: var(--w95-navy);
+}
+
+html.f2s-skin--win95 .f2s-error {
+  color: var(--color-error);
+}
+
+/* ---- Sélecteur de skin (les deux skins l'affichent, ici en boutons
+        bascule : l'habillage actif est le bouton enfoncé) ---- */
+
+html.f2s-skin--win95 .f2s-skin-switch {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  gap: 3px;
+}
+
+html.f2s-skin--win95 .f2s-skin-btn {
+  font-size: 11px;
+  font-weight: 400;
+  border-radius: 0;
+  padding: 3px 10px;
+  background: var(--w95-face);
+  color: #000;
+  box-shadow: var(--w95-out);
+}
+
+/* Bascule enfoncée : creusé + trame de fond, comme un bouton de barre
+   d'outils Windows resté actif. */
+html.f2s-skin--win95 .f2s-skin-btn.is-active {
+  background-color: var(--w95-face);
+  color: #000;
+  box-shadow: var(--w95-pressed);
+  background-image: linear-gradient(45deg, var(--w95-white) 25%, transparent 25%, transparent 75%, var(--w95-white) 75%),
+    linear-gradient(45deg, var(--w95-white) 25%, transparent 25%, transparent 75%, var(--w95-white) 75%);
+  background-size: 2px 2px;
+  background-position: 0 0, 1px 1px;
+}
+
+/* ---- Ascenseurs ---- */
+
+html.f2s-skin--win95 ::-webkit-scrollbar {
+  width: 16px;
+  height: 16px;
+}
+
+/* Piste tramée 1px blanc/gris — le motif emblématique. */
+html.f2s-skin--win95 ::-webkit-scrollbar-track {
+  background-color: var(--w95-face);
+  background-image: linear-gradient(45deg, var(--w95-white) 25%, transparent 25%, transparent 75%, var(--w95-white) 75%),
+    linear-gradient(45deg, var(--w95-white) 25%, transparent 25%, transparent 75%, var(--w95-white) 75%);
+  background-size: 2px 2px;
+  background-position: 0 0, 1px 1px;
+}
+
+html.f2s-skin--win95 ::-webkit-scrollbar-thumb {
+  background: var(--w95-face);
+  border-radius: 0;
+  box-shadow: var(--w95-out);
+}
+
+html.f2s-skin--win95 ::-webkit-scrollbar-button {
+  background: var(--w95-face);
+  box-shadow: var(--w95-out);
+  height: 16px;
+  width: 16px;
+}
+
+html.f2s-skin--win95 * {
+  scrollbar-color: var(--w95-face) var(--w95-light);
+  scrollbar-width: auto;
+}
+
+/* Le menu déroulant natif n'a pas la place d'un ascenseur de 16px. */
+html.f2s-skin--win95 .f2s-font-dropdown::-webkit-scrollbar {
+  width: 16px;
+  height: 16px;
+}

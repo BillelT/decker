@@ -1055,6 +1055,7 @@
   var TEMPLATE_READY_PREFIX = "[Template Ready] ";
   var COPY_GAP_PX = 200;
   var SESSION_TOKEN_STORAGE_KEY = "f2s:sessionToken";
+  var UI_SKIN_STORAGE_KEY = "f2s:uiSkin";
   function isExportable(node) {
     return node.type === "FRAME" || node.type === "COMPONENT" || node.type === "INSTANCE";
   }
@@ -1441,6 +1442,14 @@
           hasSelection: figma.currentPage.selection.some(isExportable)
         });
         try {
+          const storedSkin = await figma.clientStorage.getAsync(UI_SKIN_STORAGE_KEY);
+          if (storedSkin === "win95" || storedSkin === "modern") {
+            figma.ui.postMessage({ type: "skin-restored", skin: storedSkin });
+          }
+        } catch (err) {
+          console.error(err);
+        }
+        try {
           const storedToken = await figma.clientStorage.getAsync(SESSION_TOKEN_STORAGE_KEY);
           if (typeof storedToken === "string" && storedToken.length > 0) {
             figma.ui.postMessage({ type: "session-token-restored", token: storedToken });
@@ -1461,6 +1470,18 @@
         } catch (err) {
           console.error(err);
         }
+        return;
+      }
+      if (msg.type === "save-ui-skin") {
+        try {
+          await figma.clientStorage.setAsync(UI_SKIN_STORAGE_KEY, msg.skin);
+        } catch (err) {
+          console.error(err);
+        }
+        return;
+      }
+      if (msg.type === "close-plugin") {
+        figma.closePlugin();
         return;
       }
       if (msg.type === "clear-session-token") {

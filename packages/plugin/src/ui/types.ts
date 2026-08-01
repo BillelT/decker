@@ -80,6 +80,23 @@ export interface TemplateLayoutState extends FrameCandidate {
 
 export type AppMode = 'deck' | 'template';
 
+/**
+ * Habillage visuel de l'UI. `win95` est le skin PAR DÉFAUT (demande
+ * produit) : la même arborescence de composants, repeinte en chrome
+ * Windows 95 (biseaux, gris #C0C0C0, barre de titre). `modern` est
+ * l'habillage historique du design system (orange de marque, coins
+ * arrondis). Le choix est persisté côté sandbox via `clientStorage`
+ * (l'iframe UI n'a aucun stockage durable) — voir code.ts.
+ */
+export type UiSkin = 'win95' | 'modern';
+
+export const DEFAULT_UI_SKIN: UiSkin = 'win95';
+
+/** Classe posée sur <html> pour le skin actif — les deux feuilles de style scopent leurs règles dessus. */
+export function skinClassName(skin: UiSkin): string {
+  return `f2s-skin--${skin}`;
+}
+
 export function postToPlugin(message: Record<string, unknown>): void {
   parent.postMessage({ pluginMessage: message }, '*');
 }
