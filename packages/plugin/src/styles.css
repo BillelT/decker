@@ -889,8 +889,7 @@ html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) {
    pas d'animation). */
 html:not(.f2s-skin--win95) .f2s-icon-gear,
 html:not(.f2s-skin--win95) .f2s-icon-sliders,
-html:not(.f2s-skin--win95) .f2s-slider-knob,
-html:not(.f2s-skin--win95) .f2s-slider-track {
+html:not(.f2s-skin--win95) .f2s-slider-knob {
   transition: transform 0.15s ease;
 }
 
@@ -902,20 +901,19 @@ html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-icon-
   transform: rotate(-6deg) scale(0.975);
 }
 
+/* Le trait de chaque piste est plein d'un bout à l'autre (voir GearIcon/
+   SlidersIcon dans ui.tsx) : la poignée glisse dessus et le masque sous
+   elle grâce à son fond opaque, donc plus besoin de faire suivre un
+   segment de piste pour éviter un chevauchement ou un vide. */
 html:not(.f2s-skin--win95) .f2s-footer-settings:hover:not(:disabled) .f2s-icon-sliders {
   transform: scale(1.01);
 }
 
-/* La poignée s'éloigne de la piste de droite (l'écart s'ouvre, sans
-   risque) mais se rapproche de celle de gauche : on la fait avancer avec
-   elle du même déplacement pour garder l'écart constant. */
-html:not(.f2s-skin--win95) .f2s-footer-settings:hover:not(:disabled) .f2s-slider-knob--top,
-html:not(.f2s-skin--win95) .f2s-footer-settings:hover:not(:disabled) .f2s-slider-track--top-left {
+html:not(.f2s-skin--win95) .f2s-footer-settings:hover:not(:disabled) .f2s-slider-knob--top {
   transform: translateX(-2px);
 }
 
-html:not(.f2s-skin--win95) .f2s-footer-settings:hover:not(:disabled) .f2s-slider-knob--bottom,
-html:not(.f2s-skin--win95) .f2s-footer-settings:hover:not(:disabled) .f2s-slider-track--bottom-right {
+html:not(.f2s-skin--win95) .f2s-footer-settings:hover:not(:disabled) .f2s-slider-knob--bottom {
   transform: translateX(2.25px);
 }
 
@@ -926,17 +924,21 @@ html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-icon-
   transform: scale(0.94);
 }
 
-/* Sens inverse du hover : la poignée du haut se rapproche cette fois de
-   la piste de droite, celle du bas de la piste de gauche — donc ce sont
-   les DEUX AUTRES segments qui suivent ici, du même déplacement. */
-html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-slider-knob--top,
-html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-slider-track--top-right {
+html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-slider-knob--top {
   transform: translateX(1px);
 }
 
-html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-slider-knob--bottom,
-html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-slider-track--bottom-left {
+html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-slider-knob--bottom {
   transform: translateX(-1px);
+}
+
+/* Le fond de la poignée (qui masque le trait plein sous elle) doit suivre
+   le fond réel du bouton, pas rester calé sur --color-bg : le bouton
+   passe à --color-surface-muted au hover/ouvert, sans quoi un disque plus
+   clair/foncé que son entourage apparaîtrait derrière la poignée. */
+.f2s-footer-settings:hover:not(:disabled) .f2s-slider-knob,
+.f2s-footer-settings[aria-expanded='true'] .f2s-slider-knob {
+  fill: var(--color-surface-muted);
 }
 
 .f2s-footer-actions {

@@ -91,12 +91,12 @@ function GearIcon() {
  *  ci-dessous en styles.css produisent un déplacement exact, sans le
  *  facteur d'échelle qu'aurait introduit le viewBox 32×32 d'origine.
  *
- *  Géométrie de repos identique à l'originale (poignées et pistes
- *  parfaitement jointives) : élargir les espaces avait cassé cet
- *  alignement. À la place, chaque segment de piste vers lequel une
- *  poignée se rapproche est réanimé du même déplacement qu'elle (classes
- *  f2s-slider-track--*), donc l'écart reste constant et ne se chevauche
- *  jamais, sans toucher au rendu par défaut. */
+ *  Essayer de faire suivre juste le segment de piste voisin (au lieu de
+ *  garder un trait plein) laissait un vide visible du côté qui s'éloigne
+ *  — la poignée découvrait un espace sans ligne ni cercle. Plus simple et
+ *  robuste : un trait plein d'un bout à l'autre par ligne, et la poignée
+ *  (peinte après, donc au-dessus) a un fond opaque de la couleur du
+ *  bouton pour masquer le trait sous elle, où qu'elle glisse. */
 function SlidersIcon() {
   return (
     <svg
@@ -108,12 +108,10 @@ function SlidersIcon() {
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
     >
-      <line className="f2s-slider-track f2s-slider-track--top-left" x1="1" y1="4.5" x2="9" y2="4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-      <line className="f2s-slider-track f2s-slider-track--top-right" x1="12" y1="4.5" x2="15" y2="4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-      <circle className="f2s-slider-knob f2s-slider-knob--top" cx="10.5" cy="4.5" r="1.5" stroke="currentColor" strokeWidth="1.3" />
-      <line className="f2s-slider-track f2s-slider-track--bottom-left" x1="1" y1="11.5" x2="4" y2="11.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-      <line className="f2s-slider-track f2s-slider-track--bottom-right" x1="7" y1="11.5" x2="15" y2="11.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-      <circle className="f2s-slider-knob f2s-slider-knob--bottom" cx="5.5" cy="11.5" r="1.5" stroke="currentColor" strokeWidth="1.3" />
+      <line x1="1" y1="4.5" x2="15" y2="4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <circle className="f2s-slider-knob f2s-slider-knob--top" cx="10.5" cy="4.5" r="1.5" fill="var(--color-bg)" stroke="currentColor" strokeWidth="1.3" />
+      <line x1="1" y1="11.5" x2="15" y2="11.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <circle className="f2s-slider-knob f2s-slider-knob--bottom" cx="5.5" cy="11.5" r="1.5" fill="var(--color-bg)" stroke="currentColor" strokeWidth="1.3" />
     </svg>
   );
 }
