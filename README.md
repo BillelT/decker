@@ -112,6 +112,25 @@ Pense à ajouter ce domaine à `networkAccess.allowedDomains` dans
 `manifest.json` (spec §11.12 — sinon les requêtes de l'iframe sont
 bloquées silencieusement).
 
+### 5.1 Habillage de l'interface (Windows 95 / Modern)
+
+L'UI existe en deux habillages, permutables à chaud depuis le sélecteur
+du footer :
+
+- **Windows 95** (par défaut) — chrome rétro : barre de titre, biseaux
+  système, gris `#C0C0C0`, ascenseurs tramés. Mono-thème : il ignore
+  volontairement le thème clair/sombre de Figma.
+- **Modern** — le design system du plugin (orange de marque, coins
+  arrondis), avec son thème clair/sombre suivant celui de Figma.
+
+Les deux partagent exactement la même arborescence de composants : seule
+la peinture change. `src/styles.css` porte la structure **et** le skin
+moderne ; `src/styles.win95.css`, concaténé après lui au build, repeint
+par-dessus sous `html.f2s-skin--win95` (l'ordre compte : plusieurs règles
+de thème ont la même spécificité que ce scope). Le choix est persisté
+dans `figma.clientStorage` côté sandbox — l'iframe de l'UI n'a aucun
+stockage durable.
+
 ## 6. Tests
 
 ```bash

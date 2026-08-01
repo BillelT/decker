@@ -759,3 +759,39 @@ a {
   align-items: center;
   gap: 16px;
 }
+
+/* ---- Sélecteur d'habillage (Windows 95 / Modern) ----
+   Présent dans les deux skins, au même endroit du footer, pour qu'on
+   puisse toujours revenir en arrière depuis l'autre habillage. Le rendu
+   rétro de ce même balisage vit dans styles.win95.css. */
+
+.f2s-skin-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+}
+
+.f2s-skin-btn {
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 10px;
+  background: transparent;
+  color: var(--color-black-70);
+  white-space: nowrap;
+}
+
+.f2s-skin-btn:hover:not(.is-active) {
+  color: var(--color-text);
+}
+
+.f2s-skin-btn.is-active {
+  background: var(--color-orange);
+  color: var(--color-bg);
+}
