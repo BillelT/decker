@@ -85,10 +85,14 @@ export type AppMode = 'deck' | 'template';
  * produit) : la même arborescence de composants, repeinte en chrome
  * Windows 95 (biseaux, gris #C0C0C0, barre de titre). `modern` est
  * l'habillage historique du design system (orange de marque, coins
- * arrondis). Le choix est persisté côté sandbox via `clientStorage`
- * (l'iframe UI n'a aucun stockage durable) — voir code.ts.
+ * arrondis). `hybrid` croise les deux : palette et typo du skin moderne,
+ * mais biseaux et angles droits empruntés au skin 95 — sans reprendre les
+ * éléments les plus identifiants de ce dernier (barre de titre, bleu
+ * marine, trame, police système), qui restent exclusifs à `win95` (voir
+ * styles.hybrid.css). Le choix est persisté côté sandbox via
+ * `clientStorage` (l'iframe UI n'a aucun stockage durable) — voir code.ts.
  */
-export type UiSkin = 'win95' | 'modern';
+export type UiSkin = 'win95' | 'modern' | 'hybrid';
 
 export const DEFAULT_UI_SKIN: UiSkin = 'win95';
 

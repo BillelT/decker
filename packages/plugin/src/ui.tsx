@@ -120,6 +120,7 @@ function App() {
     const root = document.documentElement;
     root.classList.toggle(skinClassName('win95'), skin === 'win95');
     root.classList.toggle(skinClassName('modern'), skin === 'modern');
+    root.classList.toggle(skinClassName('hybrid'), skin === 'hybrid');
   }, [skin]);
 
   function changeSkin(next: UiSkin) {
@@ -449,7 +450,7 @@ function App() {
         // durable dans l'iframe UI, c'est le seul moyen que le choix
         // survive à la fermeture du plugin.
         case 'skin-restored':
-          if (msg.skin === 'win95' || msg.skin === 'modern') setSkin(msg.skin);
+          if (msg.skin === 'win95' || msg.skin === 'modern' || msg.skin === 'hybrid') setSkin(msg.skin);
           break;
         // Session Google persistée via clientStorage (code.ts) — restaurée à
         // l'ouverture pour ne pas refaire l'OAuth à chaque session. Sans

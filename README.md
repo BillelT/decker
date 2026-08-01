@@ -112,9 +112,9 @@ Pense à ajouter ce domaine à `networkAccess.allowedDomains` dans
 `manifest.json` (spec §11.12 — sinon les requêtes de l'iframe sont
 bloquées silencieusement).
 
-### 5.1 Habillage de l'interface (Windows 95 / Modern)
+### 5.1 Habillage de l'interface (Windows 95 / Modern / Hybrid)
 
-L'UI existe en deux habillages, permutables à chaud depuis la modale de
+L'UI existe en trois habillages, permutables à chaud depuis la modale de
 réglages (bouton **Settings** du footer, réglage *Interface*) :
 
 - **Windows 95** (par défaut) — chrome rétro : barre de titre, biseaux
@@ -123,14 +123,20 @@ réglages (bouton **Settings** du footer, réglage *Interface*) :
   *Appearance* y est désactivé et le dit.
 - **Modern** — le design system du plugin (orange de marque, coins
   arrondis), avec son thème clair/sombre suivant celui de Figma.
+- **Hybrid** — la palette et la typo du skin Modern, mais les biseaux et
+  les angles droits du skin Windows 95. Il laisse volontairement de côté
+  les éléments les plus identifiants de ce dernier (barre de titre, bleu
+  marine, trame, police système, ascenseur épais), qui restent exclusifs
+  au skin Windows 95. Suit le thème clair/sombre comme Modern.
 
-Les deux partagent exactement la même arborescence de composants : seule
+Les trois partagent exactement la même arborescence de composants : seule
 la peinture change. `src/styles.css` porte la structure **et** le skin
-moderne ; `src/styles.win95.css`, concaténé après lui au build, repeint
-par-dessus sous `html.f2s-skin--win95` (l'ordre compte : plusieurs règles
-de thème ont la même spécificité que ce scope). Le choix est persisté
-dans `figma.clientStorage` côté sandbox — l'iframe de l'UI n'a aucun
-stockage durable.
+moderne ; `src/styles.win95.css` et `src/styles.hybrid.css`, concaténés
+après lui au build (dans cet ordre), repeignent par-dessus sous
+`html.f2s-skin--win95` et `html.f2s-skin--hybrid` respectivement (l'ordre
+compte : plusieurs règles de thème ont la même spécificité que ces
+scopes). Le choix est persisté dans `figma.clientStorage` côté sandbox —
+l'iframe de l'UI n'a aucun stockage durable.
 
 ## 6. Tests
 

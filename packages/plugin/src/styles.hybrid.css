@@ -1,0 +1,182 @@
+/* ============================================================================
+   Skin Hybride — palette et typographie du skin moderne (styles.css),
+   biseaux et angles droits empruntés au skin Windows 95 (styles.win95.css).
+
+   Comme win95.css, cette feuille ne redéfinit AUCUNE structure (flex,
+   tailles, colonnes) : seul l'habillage est repeint, sous
+   `html.f2s-skin--hybrid`.
+
+   Contrairement à win95.css, elle NE remappe PAS les tokens sémantiques
+   (--color-orange, --color-bg, etc.) : ce skin reste la palette de marque
+   du skin moderne, thème clair/sombre compris (voir :root et les blocs
+   `html.figma-dark` de styles.css, non touchés ici).
+
+   Ce qu'il reprend du chrome 95 : la mécanique de biseau à quatre ombres
+   internes (rehaut clair + creux sombre sur deux niveaux, cf. --w95-out/in/
+   pressed dans styles.win95.css) et les angles droits (border-radius: 0),
+   appliqués aux mêmes éléments interactifs.
+
+   Ce qu'il NE reprend PAS — jugé trop identifiant pour être mélangé à une
+   palette de marque, donc laissé exclusif au skin `win95` : la barre de
+   titre, le bleu marine de sélection, le motif tramé (onglet actif,
+   ascenseur), l'ascenseur épais 16px, la police système Tahoma, et le
+   grisé "gravé" des éléments désactivés.
+   ============================================================================ */
+
+html.f2s-skin--hybrid {
+  /* Même mécanique que --w95-out/in/pressed/etched, mais teintée depuis le
+     texte/fond du thème actif (rgba sur --color-text) plutôt que sur un
+     gris système fixe — le biseau reste lisible en clair comme en sombre. */
+  --hyb-hi: rgba(255, 255, 255, 0.9);
+  --hyb-lo: rgba(18, 15, 13, 0.22);
+  --hyb-lo-strong: rgba(18, 15, 13, 0.4);
+
+  --hyb-out: inset -1px -1px var(--hyb-lo), inset 1px 1px var(--hyb-hi), inset -2px -2px var(--hyb-lo-strong),
+    inset 2px 2px var(--hyb-hi);
+  --hyb-in: inset -1px -1px var(--hyb-hi), inset 1px 1px var(--hyb-lo), inset -2px -2px var(--hyb-hi),
+    inset 2px 2px var(--hyb-lo-strong);
+  --hyb-pressed: inset -1px -1px var(--hyb-hi), inset 1px 1px var(--hyb-lo-strong), inset -2px -2px var(--hyb-hi),
+    inset 2px 2px var(--hyb-lo);
+  --hyb-etched: inset -1px -1px var(--hyb-hi), inset 1px 1px var(--hyb-lo);
+}
+
+html.f2s-skin--hybrid.figma-dark:not(.f2s-theme-light),
+html.f2s-skin--hybrid.f2s-theme-dark {
+  --hyb-hi: rgba(255, 255, 255, 0.16);
+  --hyb-lo: rgba(0, 0, 0, 0.5);
+  --hyb-lo-strong: rgba(0, 0, 0, 0.7);
+}
+
+@media (prefers-color-scheme: dark) {
+  html.f2s-skin--hybrid:not(.figma-light):not(.f2s-theme-light) {
+    --hyb-hi: rgba(255, 255, 255, 0.16);
+    --hyb-lo: rgba(0, 0, 0, 0.5);
+    --hyb-lo-strong: rgba(0, 0, 0, 0.7);
+  }
+}
+
+/* ---- Boutons ---- */
+
+html.f2s-skin--hybrid .f2s-btn {
+  border-radius: 0;
+  box-shadow: var(--hyb-out);
+}
+
+html.f2s-skin--hybrid .f2s-btn:active:not(:disabled) {
+  box-shadow: var(--hyb-pressed);
+}
+
+/* ---- Champs (saisie, listes déroulantes, boîtes de dimensions) ---- */
+
+html.f2s-skin--hybrid .f2s-title-input,
+html.f2s-skin--hybrid .f2s-font-dropdown,
+html.f2s-skin--hybrid .f2s-dim-box {
+  border: none;
+  border-radius: 0;
+  box-shadow: var(--hyb-in);
+}
+
+html.f2s-skin--hybrid .f2s-title-input:focus,
+html.f2s-skin--hybrid .f2s-font-dropdown:focus {
+  outline: none;
+  box-shadow: var(--hyb-in), 0 0 0 2px var(--color-orange-40);
+}
+
+/* ---- Vignettes du rail ---- */
+
+html.f2s-skin--hybrid .f2s-frame-preview {
+  border-radius: 0;
+  box-shadow: var(--hyb-in);
+}
+
+/* ---- Petit bouton carré (croix de suppression) : chrome seulement au
+   survol/appui, pour rester discret dans le rail de vignettes. ---- */
+
+html.f2s-skin--hybrid .f2s-icon-btn {
+  border-radius: 0;
+}
+
+html.f2s-skin--hybrid .f2s-icon-btn:hover:not(:disabled) {
+  box-shadow: var(--hyb-out);
+}
+
+html.f2s-skin--hybrid .f2s-icon-btn:active:not(:disabled) {
+  box-shadow: var(--hyb-pressed);
+}
+
+/* ---- Group boxes : Logs et sections du rapport de template ---- */
+
+html.f2s-skin--hybrid .f2s-logs,
+html.f2s-skin--hybrid .f2s-tmpl-section {
+  border: none;
+  border-radius: 0;
+  box-shadow: var(--hyb-etched);
+}
+
+/* Entrées de liste cliquables : biseau sortant/enfoncé plutôt que puces
+   arrondies, l'accent orange au survol reste celui du skin moderne. */
+html.f2s-skin--hybrid .f2s-log-entry,
+html.f2s-skin--hybrid .f2s-tmpl-warning,
+html.f2s-skin--hybrid .f2s-tmpl-chip {
+  border-radius: 0;
+  border-color: transparent;
+  box-shadow: var(--hyb-out);
+}
+
+html.f2s-skin--hybrid .f2s-log-entry:active,
+html.f2s-skin--hybrid .f2s-tmpl-warning:active,
+html.f2s-skin--hybrid .f2s-tmpl-chip:active {
+  box-shadow: var(--hyb-pressed);
+}
+
+html.f2s-skin--hybrid .f2s-log-entry--blocking,
+html.f2s-skin--hybrid .f2s-tmpl-warning {
+  border-color: transparent;
+}
+
+html.f2s-skin--hybrid .f2s-tmpl-swatch {
+  border: none;
+  border-radius: 0;
+  box-shadow: var(--hyb-in);
+}
+
+/* ---- Modale de réglages ----
+   Biseau sortant ET ombre portée moderne cumulés : la carte reste "posée"
+   sur l'overlay (comme le skin moderne) tout en gagnant le relief 95. */
+
+html.f2s-skin--hybrid .f2s-modal {
+  border: none;
+  border-radius: 0;
+  box-shadow: var(--hyb-out), 0 16px 40px rgba(18, 15, 13, 0.25);
+}
+
+/* ---- Tab menus des réglages : segmented control aux angles droits, l'onglet
+   actif enfoncé — sans la trame tramée, exclusive au skin win95. ---- */
+
+html.f2s-skin--hybrid .f2s-tabs {
+  border-radius: 0;
+}
+
+html.f2s-skin--hybrid .f2s-tab {
+  border-radius: 0;
+}
+
+html.f2s-skin--hybrid .f2s-tab.is-active {
+  box-shadow: var(--hyb-pressed);
+}
+
+/* ---- Bouton "Settings" du footer ---- */
+
+html.f2s-skin--hybrid .f2s-footer-settings {
+  border-radius: 0;
+}
+
+html.f2s-skin--hybrid .f2s-footer-settings:hover {
+  box-shadow: var(--hyb-out);
+  border-color: transparent;
+}
+
+html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
+  box-shadow: var(--hyb-pressed);
+  border-color: transparent;
+}

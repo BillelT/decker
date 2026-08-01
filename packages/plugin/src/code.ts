@@ -43,7 +43,7 @@ const SESSION_TOKEN_STORAGE_KEY = 'f2s:sessionToken';
 // stockage durable, donc un choix ne survit que s'il est gardé côté sandbox.
 //
 // Habillage visuel de l'UI ('win95' par défaut, 'modern' pour le design
-// system historique).
+// system historique, 'hybrid' pour le mélange des deux).
 const UI_SKIN_STORAGE_KEY = 'f2s:uiSkin';
 // Thème forcé depuis la modale de réglages ('light' | 'dark'). Absent =
 // l'UI suit le thème de Figma (`themeColors: true`).
@@ -703,7 +703,7 @@ async function main(): Promise<void> {
       // verrait le skin par défaut clignoter vers celui choisi).
       try {
         const storedSkin = await figma.clientStorage.getAsync(UI_SKIN_STORAGE_KEY);
-        if (storedSkin === 'win95' || storedSkin === 'modern') {
+        if (storedSkin === 'win95' || storedSkin === 'modern' || storedSkin === 'hybrid') {
           figma.ui.postMessage({ type: 'skin-restored', skin: storedSkin });
         }
       } catch (err) {
