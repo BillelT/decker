@@ -150,6 +150,12 @@ html.f2s-skin--hybrid .f2s-modal {
   box-shadow: var(--hyb-out), 0 16px 40px rgba(18, 15, 13, 0.25);
 }
 
+html.f2s-skin--hybrid .f2s-toast {
+  border: none;
+  border-radius: 0;
+  box-shadow: var(--hyb-out), 0 8px 20px rgba(18, 15, 13, 0.18);
+}
+
 /* ---- Tab menus des réglages : segmented control aux angles droits, l'onglet
    actif enfoncé — sans la trame tramée, exclusive au skin win95. ---- */
 

@@ -387,6 +387,13 @@ html.f2s-skin--win95 .f2s-error {
   color: var(--color-error);
 }
 
+html.f2s-skin--win95 .f2s-toast {
+  border: none;
+  border-radius: 0;
+  background: var(--w95-face);
+  box-shadow: var(--w95-out);
+}
+
 /* ---- Modale de réglages (habillage + thème) ----
    Une boîte de dialogue 95 : cadre en relief, barre de titre en dégradé,
    pas d'ombre portée ni de coins arrondis. L'animation d'ouverture reste

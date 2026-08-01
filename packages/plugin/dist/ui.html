@@ -345,11 +345,54 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
 /* ---- Body : rail de miniatures + canvas ---- */
 
 .f2s-body {
+  position: relative;
   flex: 1;
   min-height: 0;
   display: flex;
   align-items: stretch;
   border-top: 1px solid var(--color-border);
+}
+
+/* ---- Toast temporaire ----
+   Pour les messages sans place dédiée dans le layout (ex. notices de
+   sélection du mode deck) : un overlay auto-dismiss (délai piloté par
+   ui.tsx) plutôt qu'un texte inline qui pousserait le contenu autour de lui. */
+
+.f2s-toast {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  max-width: calc(100% - 32px);
+  padding: 8px 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(18, 15, 13, 0.18);
+  color: var(--color-error);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  pointer-events: none;
+  animation: f2s-toast-in 160ms var(--f2s-modal-ease);
+}
+
+@keyframes f2s-toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -6px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .f2s-toast {
+    animation-duration: 0.01ms;
+  }
 }
 
 .f2s-sidebar {
@@ -1625,6 +1668,13 @@ html.f2s-skin--win95 .f2s-error {
   color: var(--color-error);
 }
 
+html.f2s-skin--win95 .f2s-toast {
+  border: none;
+  border-radius: 0;
+  background: var(--w95-face);
+  box-shadow: var(--w95-out);
+}
+
 /* ---- Modale de réglages (habillage + thème) ----
    Une boîte de dialogue 95 : cadre en relief, barre de titre en dégradé,
    pas d'ombre portée ni de coins arrondis. L'animation d'ouverture reste
@@ -1938,6 +1988,12 @@ html.f2s-skin--hybrid .f2s-modal {
   border: none;
   border-radius: 0;
   box-shadow: var(--hyb-out), 0 16px 40px rgba(18, 15, 13, 0.25);
+}
+
+html.f2s-skin--hybrid .f2s-toast {
+  border: none;
+  border-radius: 0;
+  box-shadow: var(--hyb-out), 0 8px 20px rgba(18, 15, 13, 0.18);
 }
 
 /* ---- Tab menus des réglages : segmented control aux angles droits, l'onglet
@@ -2654,7 +2710,8 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
     selecting,
     hasCanvasSelection,
     onRemove,
-    exportCursor
+    exportCursor,
+    notice
   }) {
     const [dragId, setDragId] = d2();
     const [dragOffsetY, setDragOffsetY] = d2(0);
@@ -2730,13 +2787,17 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
       return () => cancelAnimationFrame(frame);
     }, [suppressShiftTransition]);
     if (order.length === 0) {
-      return /* @__PURE__ */ u3("div", { className: "f2s-body", children: /* @__PURE__ */ u3("main", { className: "f2s-canvas", children: /* @__PURE__ */ u3("p", { className: "f2s-empty", children: [
-        'Use "Select frames to add", then select the frames',
-        /* @__PURE__ */ u3("br", {}),
-        "you want to export on the Figma canvas, and click the button again to add your selection."
-      ] }) }) });
+      return /* @__PURE__ */ u3("div", { className: "f2s-body", children: [
+        notice && /* @__PURE__ */ u3("div", { className: "f2s-toast", role: "status", children: notice }),
+        /* @__PURE__ */ u3("main", { className: "f2s-canvas", children: /* @__PURE__ */ u3("p", { className: "f2s-empty", children: [
+          'Use "Select frames to add", then select the frames',
+          /* @__PURE__ */ u3("br", {}),
+          "you want to export on the Figma canvas, and click the button again to add your selection."
+        ] }) })
+      ] });
     }
     return /* @__PURE__ */ u3("div", { className: "f2s-body", children: [
+      notice && /* @__PURE__ */ u3("div", { className: "f2s-toast", role: "status", children: notice }),
       /* @__PURE__ */ u3("aside", { className: "f2s-sidebar", children: [
         selecting && !hasCanvasSelection && /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: 'Select one or more frames on the Figma canvas, then click "Add selection".' }),
         order.map((id, index) => {
@@ -3084,6 +3145,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
 
   // src/ui.tsx
   var MIN_SLIDE_VISIBLE_MS = REVEAL_MS + 400;
+  var SELECTION_NOTICE_MS = 4e3;
   var AuthExpiredError = class extends Error {
     constructor() {
       super("Your Google session has expired \u2014 sign in again, then retry.");
@@ -3177,7 +3239,26 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
     const [templateSelecting, setTemplateSelecting] = d2(false);
     const [templateSelectionNotice, setTemplateSelectionNotice] = d2();
     const [selecting, setSelecting] = d2(false);
-    const [, setSelectionNotice] = d2();
+    const [selectionNotice, setSelectionNotice] = d2();
+    const selectionNoticeTimerRef = A2();
+    function showSelectionNotice(message) {
+      if (selectionNoticeTimerRef.current !== void 0) clearTimeout(selectionNoticeTimerRef.current);
+      setSelectionNotice(message);
+      selectionNoticeTimerRef.current = setTimeout(() => setSelectionNotice(void 0), SELECTION_NOTICE_MS);
+    }
+    function clearSelectionNotice() {
+      if (selectionNoticeTimerRef.current !== void 0) {
+        clearTimeout(selectionNoticeTimerRef.current);
+        selectionNoticeTimerRef.current = void 0;
+      }
+      setSelectionNotice(void 0);
+    }
+    h2(
+      () => () => {
+        if (selectionNoticeTimerRef.current !== void 0) clearTimeout(selectionNoticeTimerRef.current);
+      },
+      []
+    );
     const [hasCanvasSelection, setHasCanvasSelection] = d2(false);
     const [sessionToken, setSessionToken] = d2();
     const [loginError, setLoginError] = d2();
@@ -3432,14 +3513,14 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
             if (modeRef.current === "template") {
               setTemplateSelectionNotice("Select at least one frame on the Figma canvas before clicking.");
             } else {
-              setSelectionNotice("Select at least one frame on the Figma canvas before clicking.");
+              showSelectionNotice("Select at least one frame on the Figma canvas before clicking.");
             }
             break;
           case "too-many-frames":
             if (modeRef.current === "template") {
               setTemplateSelectionNotice(`${msg.count} layouts selected \u2014 a template is capped at ${msg.max} to stay focused.`);
             } else {
-              setSelectionNotice(`${msg.count} frames selected \u2014 beyond ${msg.max}, export may become slow.`);
+              showSelectionNotice(`${msg.count} frames selected \u2014 beyond ${msg.max}, export may become slow.`);
             }
             break;
           case "export-payload":
@@ -3651,7 +3732,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
       postToPlugin({ type: "prepare-template-for-slides", layoutFrameIds: templateOrder, fontOverrides });
     }
     function handleAddFramesClick() {
-      setSelectionNotice(void 0);
+      clearSelectionNotice();
       if (!selecting) {
         setSelecting(true);
         return;
@@ -3755,14 +3836,24 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
           )
         ] }),
         mode === "deck" ? /* @__PURE__ */ u3("div", { className: "f2s-topbar-actions", children: [
-          /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--tertiary", onClick: handleAddFramesClick, children: selecting ? "Add selection" : "Select frames to add" }),
+          /* @__PURE__ */ u3(
+            "button",
+            {
+              type: "button",
+              className: "f2s-btn f2s-btn--tertiary",
+              disabled: exporting,
+              title: exporting ? "An export is running \u2014 wait for it to finish before changing the deck." : void 0,
+              onClick: handleAddFramesClick,
+              children: selecting ? "Add selection" : "Select frames to add"
+            }
+          ),
           /* @__PURE__ */ u3(
             "button",
             {
               type: "button",
               className: "f2s-btn f2s-btn--secondary",
-              disabled: !hasCanvasSelection && order.length === 0,
-              title: "Duplicate and reformat every frame already in the deck (plus any extra selection on the Figma canvas) for Slides, so you can refine them pixel-perfect natively.",
+              disabled: exporting || !hasCanvasSelection && order.length === 0,
+              title: exporting ? "An export is running \u2014 wait for it to finish before changing the deck." : "Duplicate and reformat every frame already in the deck (plus any extra selection on the Figma canvas) for Slides, so you can refine them pixel-perfect natively.",
               onClick: handlePrepareForSlides,
               children: "Prepare for Slides"
             }
@@ -3843,7 +3934,8 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
           selecting,
           hasCanvasSelection,
           onRemove: removeFrame,
-          exportCursor: exporting && exportSource === "deck" ? exportCursor : void 0
+          exportCursor: exporting && exportSource === "deck" ? exportCursor : void 0,
+          notice: selectionNotice
         }
       ) : /* @__PURE__ */ u3(
         TemplatePanel,
