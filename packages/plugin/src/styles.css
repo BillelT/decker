@@ -84,6 +84,7 @@ body {
   display: flex;
   flex-direction: column;
   position: relative;
+  padding-bottom: 57px;
 }
 
 button {
@@ -356,7 +357,8 @@ a {
 
 .f2s-empty {
   color: var(--color-black-70);
-  font-size: 12px;
+  font-size: 14px;
+  font-weight: 500;
   padding: 24px 0;
   text-align: center;
 }
@@ -782,12 +784,18 @@ a {
 
 .f2s-footer {
   flex: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   padding: 12px 16px;
   border-top: 1px solid var(--color-border);
+  background: var(--color-bg);
+  z-index: 50;
 }
 
 .f2s-footer-settings {
