@@ -60,60 +60,26 @@ function Logo() {
   );
 }
 
-/** 6 dents (pas 8) espacées de 60°, en traits à bouts ronds plutôt qu'en
- *  pastilles pleines accolées à l'anneau — moins de bruit, tracé plus proche
- *  des engrenages Vercel/Claude pris en référence. Calculées par trigo pour
- *  garantir un espacement parfaitement régulier (une dent mal recopiée à la
- *  main avait déjà rendu une version précédente asymétrique). */
-const GEAR_TOOTH_ANGLES_DEG = [0, 60, 120, 180, 240, 300];
-const GEAR_CENTER = 8;
-const GEAR_TOOTH_INNER_R = 2.9;
-const GEAR_TOOTH_OUTER_R = 4.6;
-
-/** Icône d'engrenage classique et minimaliste pour le bouton "Settings" du footer. */
+/** Tracé exact d'IBM Carbon Design System (icône "settings", 32×32,
+ *  licence Apache-2.0) — recopié tel quel plutôt que réapproximé à la main,
+ *  après plusieurs tentatives maison ratées (dents asymétriques, puis
+ *  traits droits au lieu d'un vrai contour arrondi). */
 function GearIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <circle cx={GEAR_CENTER} cy={GEAR_CENTER} r="3.3" stroke="currentColor" strokeWidth="1.3" />
-      <circle cx={GEAR_CENTER} cy={GEAR_CENTER} r="1.2" stroke="currentColor" strokeWidth="1.3" />
-      {GEAR_TOOTH_ANGLES_DEG.map((deg) => {
-        const rad = (deg * Math.PI) / 180;
-        const dx = Math.sin(rad);
-        const dy = -Math.cos(rad);
-        return (
-          <line
-            key={deg}
-            x1={GEAR_CENTER + dx * GEAR_TOOTH_INNER_R}
-            y1={GEAR_CENTER + dy * GEAR_TOOTH_INNER_R}
-            x2={GEAR_CENTER + dx * GEAR_TOOTH_OUTER_R}
-            y2={GEAR_CENTER + dy * GEAR_TOOTH_OUTER_R}
-            stroke="currentColor"
-            strokeWidth="1.3"
-            strokeLinecap="round"
-          />
-        );
-      })}
+    <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M27,16.76c0-.25,0-.5,0-.76s0-.51,0-.77l1.92-1.68A2,2,0,0,0,29.3,11L26.94,7a2,2,0,0,0-1.73-1,2,2,0,0,0-.64.1l-2.43.82a11.35,11.35,0,0,0-1.31-.75l-.51-2.52a2,2,0,0,0-2-1.61H13.64a2,2,0,0,0-2,1.61l-.51,2.52a11.48,11.48,0,0,0-1.32.75L7.43,6.06A2,2,0,0,0,6.79,6,2,2,0,0,0,5.06,7L2.7,11a2,2,0,0,0,.41,2.51L5,15.24c0,.25,0,.5,0,.76s0,.51,0,.77L3.11,18.45A2,2,0,0,0,2.7,21L5.06,25a2,2,0,0,0,1.73,1,2,2,0,0,0,.64-.1l2.43-.82a11.35,11.35,0,0,0,1.31.75l.51,2.52a2,2,0,0,0,2,1.61h4.72a2,2,0,0,0,2-1.61l.51-2.52a11.48,11.48,0,0,0,1.32-.75l2.42.82a2,2,0,0,0,.64.1,2,2,0,0,0,1.73-1L29.3,21a2,2,0,0,0-.41-2.51ZM25.21,24l-3.43-1.16a8.86,8.86,0,0,1-2.71,1.57L18.36,28H13.64l-.71-3.55a9.36,9.36,0,0,1-2.7-1.57L6.79,24,4.43,20l2.72-2.4a8.9,8.9,0,0,1,0-3.13L4.43,12,6.79,8l3.43,1.16a8.86,8.86,0,0,1,2.71-1.57L13.64,4h4.72l.71,3.55a9.36,9.36,0,0,1,2.7,1.57L25.21,8,27.57,12l-2.72,2.4a8.9,8.9,0,0,1,0,3.13L27.57,20Z" />
+      <path d="M16,22a6,6,0,1,1,6-6A5.94,5.94,0,0,1,16,22Zm0-10a3.91,3.91,0,0,0-4,4,3.91,3.91,0,0,0,4,4,3.91,3.91,0,0,0,4-4A3.91,3.91,0,0,0,16,12Z" />
     </svg>
   );
 }
 
-/** Deux pistes (pas trois), chacune interrompue par une vraie poignée en
- *  anneau (cercle au trait, pas rempli) plutôt qu'un pavé plein. */
-const SLIDER_ROWS = [
-  { y: 4.5, knobCx: 4.5, lineX1: 7.5, lineX2: 14.5 },
-  { y: 11.5, knobCx: 11.5, lineX1: 1.5, lineX2: 8.5 },
-];
-
-/** Icône "settings adjust" (curseurs) — alternative à GearIcon, en comparaison le temps de choisir. */
+/** Tracé exact d'IBM Carbon Design System (icône "settings--adjust", 32×32,
+ *  licence Apache-2.0) — alternative à GearIcon, en comparaison le temps de choisir. */
 function SlidersIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      {SLIDER_ROWS.map(({ y, knobCx, lineX1, lineX2 }) => (
-        <g key={y}>
-          <line x1={lineX1} y1={y} x2={lineX2} y2={y} stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-          <circle cx={knobCx} cy={y} r="2" stroke="currentColor" strokeWidth="1.3" />
-        </g>
-      ))}
+    <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M30,8h-4.1c-0.5-2.3-2.5-4-4.9-4s-4.4,1.7-4.9,4H2v2h14.1c0.5,2.3,2.5,4,4.9,4s4.4-1.7,4.9-4H30V8z M21,12c-1.7,0-3-1.3-3-3s1.3-3,3-3s3,1.3,3,3S22.7,12,21,12z" />
+      <path d="M2,24h4.1c0.5,2.3,2.5,4,4.9,4s4.4-1.7,4.9-4H30v-2H15.9c-0.5-2.3-2.5-4-4.9-4s-4.4,1.7-4.9,4H2V24z M11,20c1.7,0,3,1.3,3,3s-1.3,3-3,3s-3-1.3-3-3S9.3,20,11,20z" />
     </svg>
   );
 }
