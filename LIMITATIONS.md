@@ -41,14 +41,35 @@ différences par rapport à l'export de deck :
   du template tant que ce n'est pas corrigé dans Figma — un template
   rasterisé fige l'élément pour tous ses futurs utilisateurs, qui n'ont ni
   le fichier Figma source ni la main sur le rendu.
-- **Pas de vrai Master/Layout Google Slides.** L'API Slides ne permet
-  aucune création de Placeholder/Master/Layout personnalisé en écriture :
-  seuls les ~8 layouts prédéfinis créés avec une présentation neuve
-  existent, et `CreateSlideRequest` ne peut que référencer l'un d'eux. Un
-  "template" produit par ce plugin est donc une présentation Slides
-  normale à dupliquer, pas un objet `Layout` natif de l'API — la même
-  limite documentée dans le brief comme la raison pour laquelle aucun
-  concurrent ne couvre bien ce cas.
+- **Pas de nouvel objet `Layout` personnalisé.** L'API Slides ne permet
+  aucune création de Placeholder/Layout personnalisé en écriture : seuls
+  les ~8 layouts prédéfinis créés avec une présentation neuve existent, et
+  `CreateSlideRequest` ne peut que référencer l'un d'eux. Un "template"
+  produit par ce plugin reste donc une présentation Slides normale à
+  dupliquer, pas un objet `Layout` natif de l'API — la même limite
+  documentée dans le brief comme la raison pour laquelle aucun concurrent
+  ne couvre bien ce cas.
+- **En revanche, le vrai thème Slides (couleurs) EST modifiable en
+  écriture** — corrige une conclusion erronée d'un précédent audit.
+  Confirmé sur le schéma officiel de l'API ET testé en conditions réelles
+  (`packages/backend/src/spikes/masterThemeSpike.ts`, audit 2026-08) :
+  `PageProperties.colorScheme` de la page `Master` accepte un
+  `UpdatePagePropertiesRequest` avec les 12 premiers `ThemeColorType`
+  (DARK1/2, LIGHT1/2, ACCENT1-6, HYPERLINK, FOLLOWED_HYPERLINK), et un
+  élément (forme ou texte) peut être lié à l'un de ces slots via
+  `OpaqueColor.themeColor` plutôt qu'un `rgbColor` figé — un changement
+  ultérieur du thème (à la main dans Slides, ou en ré-import) recolore
+  alors l'élément en cascade. **De plus, un élément posé directement sur
+  la page Master s'hérite bien sur toute slide qui référence un layout
+  descendant de ce Master** (confirmé visuellement : un bandeau posé
+  UNIQUEMENT sur le Master apparaît sur toutes les slides). Donc si le
+  master lui-même ne porte typiquement que le chrome récurrent (logo,
+  footer, mention de confidentialité) plutôt que les variantes de mise en
+  page — qui restent, elles, des slides normales avec leurs placeholders
+  — cette limite n'empêche pas de reproduire un vrai comportement de
+  thème/master pour ce qui compte : couleurs globales + éléments
+  récurrents. Reste non exploité par le mapper actuel (toujours des
+  `rgbColor` statiques par élément) — voir `TODO.md` § Mode template.
 - **Placeholders marqués via alt text.** Un calque Figma dont le nom est
   préfixé par `[[title]]`, `[[subtitle]]`, `[[body]]`, `[[image]]`,
   `[[logo]]` ou `[[custom:Libellé]]` devient, côté Slides, un élément dont

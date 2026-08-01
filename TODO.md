@@ -56,81 +56,115 @@ restante précise.
 - **"Buy me a coffee".** Le bouton "Support me with Ko-fi" est déjà posé
   dans le footer (`href="#"`) — en attente du vrai lien avant de le
   finaliser, pas une tâche de conception restante.
+
 ## Mode template — refonte interface & flow (audit 2026-08, benchmark workflow expert Slides / limites API)
 
 Confrontation de deux docs de référence (workflow d'un expert Slides côté
 métier, limites techniques de l'API Slides côté technique) avec le code
-existant. Conclusions qui ne bougent pas (déjà correctement documentées
-dans `LIMITATIONS.md`, confirmées indépendamment par les deux docs) :
-**aucune vraie "couleur de thème" Slides modifiable en écriture** (chaque
-forme reçoit un `RGBColor` statique, pas de rôle de couleur global), et
-**aucun vrai Master/Layout créable en écriture** (`presentations.create`
-fige un thème + ~8 layouts prédéfinis, `CreateSlideRequest` ne peut que
-RÉFÉRENCER un layout existant). Le mode template reste donc, structurellement,
-une présentation normale à dupliquer — pas d'alternative native à chercher.
+existant, puis **validation en conditions réelles** via un spike
+(`packages/backend/src/spikes/masterThemeSpike.ts`, bouton "Run theme
+spike" du plugin, testé le 2026-08 — captures d'écran à l'appui : écriture
+confirmée, bandeau témoin hérité sur toutes les slides, éditeur "Modifier
+le thème" affichant déjà la palette custom). Deux conclusions corrigées
+par rapport à un précédent audit et aux deux docs de référence, qui
+affirmaient tous les deux le contraire :
 
-Ce qu'on contrôle en revanche, et qu'on exploite mal aujourd'hui : la
-cohérence côté Figma avant export, et la lisibilité de ce qui est livré.
-Axes de refonte, du plus structurant au plus cosmétique :
+- **Le vrai thème Slides (couleurs) EST modifiable en écriture** —
+  `UpdatePagePropertiesRequest` sur la page `Master`, 12 `ThemeColorType`
+  d'un coup, et un élément peut être lié à un slot via `OpaqueColor.themeColor`
+  plutôt qu'un `rgbColor` figé. Voir `LIMITATIONS.md` § Création de template.
+- **Un élément posé sur le Master s'hérite bien** sur toute slide qui
+  référence un layout descendant — confirmé visuellement, pas juste déduit
+  du schéma. Le master peut donc porter le chrome récurrent (logo, footer,
+  mention de confidentialité) une seule fois plutôt que dupliqué par slide.
 
-- **Onglet "Style" au niveau du template entier**, en plus du rapport par
-  layout actuel (`templateSummary.ts` n'agrège aujourd'hui que couleurs/
-  polices d'UN layout à la fois). Agrégerait couleurs + polices de TOUS
-  les layouts, avec édition possible : assigner un rôle sémantique à
-  chaque couleur détectée (Primary/Secondary/Accent/Text/Background),
-  polices présentées par rôle (Heading/Body) plutôt qu'en liste plate.
-  Rôles pré-suggérés à partir du **nom du style de couleur Figma**
-  (`fillStyleId`/variable liée) quand il existe, plutôt que d'un hex brut
-  sans contexte — non lu du tout aujourd'hui (`serializeFrame.ts` ne
-  capture que la couleur résolue, jamais le style/la variable dont elle
-  vient).
-  - Optionnel, en plus : bouton "Harmoniser" qui réécrit les calques Figma
-    utilisant une couleur quasi-identique (ex. `#3366FE` vs `#3467FF`) vers
-    le hex canonique choisi pour le rôle — une vraie édition Figma, pas
-    juste un rapport en lecture seule.
-- **Slide de style guide optionnelle** (checkbox à l'export), générée en
-  première position du template : swatches + rôles + échantillon typo par
-  police. Une vraie slide Slides (texte/formes natifs, donc 100 %
-  faisable), qui documente le "thème" puisque Slides n'a pas d'onglet
-  thème éditable dans notre cas.
-- **Étiquette "Cover/Master" purement visuelle** sur une vignette du rail
-  de layouts — aucune portée technique côté Slides, juste pour que le
-  rail se lise comme un vrai jeu de layouts (Cover → Section → Content)
-  sans prétendre à un héritage réel qui n'existe pas.
-- **Texte de placeholder visuellement explicite** : un calque tagué
-  `[[title]]` envoie aujourd'hui à Slides le texte BRUT du calque Figma
-  (`placeholder: parsePlaceholderTag(node.name)` ne touche que les
-  métadonnées, jamais le contenu texte réel extrait à côté). Remplacer ce
-  texte par un indicateur lisible type `[Title]` rendrait évident, pour
-  quiconque duplique la slide à la main (même sans outil compagnon), qu'il
-  faut le remplacer — et prépare le terrain pour un futur `replaceAllText`
-  automatisé (technique du doc API qu'on n'utilise pas du tout aujourd'hui :
-  on ne pose que l'alt text `f2s-placeholder:<RÔLE>`, jamais de token
-  `{{title}}` dans le texte lui-même).
-- **Validation de composition des templates** (approche à définir).
-  Exemples concrets à couvrir : deux calques tagués `[[title]]` dans le
-  même layout (ambigu : lequel est LE titre ?) ; layout sans aucun
-  placeholder (volontaire — slide de séparation — ou oubli ?) ; tag
-  incohérent avec le type de calque, ex. `[[image]]` posé sur un calque
-  TEXTE (reste du texte côté Slides mais étiqueté "image", trompeur pour
-  l'utilisateur final). Commencer par des warnings informatifs non
-  bloquants, durcir ensuite si l'usage le confirme.
-- **Réordonnancement par glisser-déposer des layouts de template** — même
-  besoin que le deck (juste réarranger l'ordre des slides), qui a déjà
-  toute la mécanique (`DeckPanel.tsx` + `ui/reorderFrames.ts`) ; à porter
-  telle quelle sur `TemplatePanel.tsx`, qui n'a aujourd'hui aucune logique
-  de drag.
-- **Remplacer la convention de nom de calque `[[role]]`** par un contrôle
-  actif dans l'éditeur Figma (property/plugin data assignée depuis un
-  panneau du plugin), pour guider la création sans devoir renommer les
-  calques à la main.
-- **Outil compagnon "dupliquer un layout + remplir ses placeholders"** —
-  idée de backlog pour l'utilisateur FINAL d'un template (pas son
-  créateur) : repérer automatiquement titre/image/corps de texte grâce au
-  tag `f2s-placeholder:<RÔLE>` déjà posé en alt text côté Slides (et, si
-  le point ci-dessus sur `replaceAllText` est fait, remplir directement
-  via un `batchUpdate` plutôt qu'à la main), pour l'aider à remplir une
-  nouvelle slide dupliquée depuis un layout.
+Ce qui NE change pas : toujours aucun nouvel objet `Layout` créable en
+écriture (`CreateSlideRequest` ne fait que référencer un des ~8 layouts
+prédéfinis) — les variantes de mise en page restent des slides normales
+avec leurs placeholders, ce n'est pas un problème puisque c'est là
+qu'était la vraie valeur de toute façon (le master lui-même ne porte
+typiquement que le chrome, pas les variantes).
+
+Backlog, dans un ordre de dépendance logique (le premier point débloque
+les suivants) :
+
+1. **Mapper : écrire le vrai thème plutôt que des aplats statiques.**
+   Faire en sorte que `mapDocumentToBatches` (ou une étape dédiée avant)
+   écrive le `colorScheme` du Master via `UpdatePagePropertiesRequest` à
+   la création du template, et que les éléments dont la couleur porte un
+   rôle assigné (voir point 2) soient sérialisés avec
+   `OpaqueColor.themeColor` plutôt que `rgbColor`. Fondation de tout le
+   reste — rien d'autre ci-dessous n'a de sens sans ce point.
+2. **Onglet "Style" au niveau du template entier**, en plus du rapport par
+   layout actuel (`templateSummary.ts` n'agrège aujourd'hui que couleurs/
+   polices d'UN layout à la fois). Agrégerait couleurs + polices de TOUS
+   les layouts, avec assignation d'un rôle sémantique à chaque couleur
+   détectée (Primary/Secondary/Accent1-6/Text/Background — mappable
+   directement sur les 12 `ThemeColorType`), polices présentées par rôle
+   (Heading/Body) plutôt qu'en liste plate. Rôles pré-suggérés à partir du
+   **nom du style de couleur Figma** (`fillStyleId`/variable liée) quand
+   il existe, plutôt que d'un hex brut sans contexte — non lu du tout
+   aujourd'hui (`serializeFrame.ts` ne capture que la couleur résolue,
+   jamais le style/la variable dont elle vient).
+   - Optionnel, en plus : bouton "Harmoniser" qui réécrit les calques
+     Figma utilisant une couleur quasi-identique (ex. `#3366FE` vs
+     `#3467FF`) vers le hex canonique choisi pour le rôle — une vraie
+     édition Figma, pas juste un rapport en lecture seule.
+3. **Chrome de master (logo/footer/watermark) posé une seule fois.** UI
+   pour désigner un ou plusieurs éléments Figma comme "chrome récurrent"
+   (plutôt que de les dupliquer manuellement sur chaque layout comme
+   aujourd'hui) ; à l'export, ces éléments sont écrits sur la page Master
+   plutôt que sur chaque slide individuellement.
+4. **Slide de style guide optionnelle** (checkbox à l'export), générée en
+   première position du template : swatches + rôles + échantillon typo par
+   police. Une vraie slide Slides (texte/formes natifs, donc 100 %
+   faisable) — sert maintenant surtout de preuve visuelle de ce qui a été
+   écrit dans le vrai thème (point 1), plus de filet de secours en son
+   absence.
+5. **Étiquette "Cover/Master" purement visuelle** sur une vignette du rail
+   de layouts — distincte du chrome réellement écrit sur le Master (point
+   3), juste pour que le rail se lise comme un vrai jeu de layouts
+   (Cover → Section → Content).
+6. **Texte de placeholder visuellement explicite** : un calque tagué
+   `[[title]]` envoie aujourd'hui à Slides le texte BRUT du calque Figma
+   (`placeholder: parsePlaceholderTag(node.name)` ne touche que les
+   métadonnées, jamais le contenu texte réel extrait à côté). Remplacer ce
+   texte par un indicateur lisible type `[Title]` rendrait évident, pour
+   quiconque duplique la slide à la main (même sans outil compagnon), qu'il
+   faut le remplacer — et prépare le terrain pour un futur `replaceAllText`
+   automatisé (technique du doc API qu'on n'utilise pas du tout aujourd'hui :
+   on ne pose que l'alt text `f2s-placeholder:<RÔLE>`, jamais de token
+   `{{title}}` dans le texte lui-même).
+7. **Validation de composition des templates** (approche à définir).
+   Exemples concrets à couvrir : deux calques tagués `[[title]]` dans le
+   même layout (ambigu : lequel est LE titre ?) ; layout sans aucun
+   placeholder (volontaire — slide de séparation — ou oubli ?) ; tag
+   incohérent avec le type de calque, ex. `[[image]]` posé sur un calque
+   TEXTE (reste du texte côté Slides mais étiqueté "image", trompeur pour
+   l'utilisateur final). Commencer par des warnings informatifs non
+   bloquants, durcir ensuite si l'usage le confirme.
+8. **Réordonnancement par glisser-déposer des layouts de template** — même
+   besoin que le deck (juste réarranger l'ordre des slides), qui a déjà
+   toute la mécanique (`DeckPanel.tsx` + `ui/reorderFrames.ts`) ; à porter
+   telle quelle sur `TemplatePanel.tsx`, qui n'a aujourd'hui aucune logique
+   de drag.
+9. **Remplacer la convention de nom de calque `[[role]]`** par un contrôle
+   actif dans l'éditeur Figma (property/plugin data assignée depuis un
+   panneau du plugin), pour guider la création sans devoir renommer les
+   calques à la main.
+10. **Outil compagnon "dupliquer un layout + remplir ses placeholders"** —
+    idée de backlog pour l'utilisateur FINAL d'un template (pas son
+    créateur) : repérer automatiquement titre/image/corps de texte grâce au
+    tag `f2s-placeholder:<RÔLE>` déjà posé en alt text côté Slides (et, si
+    le point 6 sur `replaceAllText` est fait, remplir directement via un
+    `batchUpdate` plutôt qu'à la main), pour l'aider à remplir une nouvelle
+    slide dupliquée depuis un layout.
+
+**Nettoyage à faire une fois ce backlog entamé :** le spike de validation
+(`packages/backend/src/spikes/masterThemeSpike.ts`, `routes/spike.ts`, le
+bouton "Run theme spike" du footer plugin) est explicitement temporaire —
+à retirer (route + bouton) une fois le point 1 ci-dessus construit sur des
+bases propres ; le script CLI peut rester comme outil de diagnostic ponctuel.
 
 ## Checklist de test manuel — trouver les limites réelles du plugin
 
