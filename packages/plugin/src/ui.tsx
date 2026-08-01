@@ -60,49 +60,58 @@ function Logo() {
   );
 }
 
-/** Les 8 dents sont générées par rotation autour du centre plutôt que codées
- *  en dur une à une : une seule dent mal recopiée avait rendu l'ancienne
- *  icône asymétrique (elle ressemblait à un soleil, pas à un engrenage). */
-const GEAR_TOOTH_ANGLES = [0, 45, 90, 135, 180, 225, 270, 315];
+/** 6 dents (pas 8) espacées de 60°, en traits à bouts ronds plutôt qu'en
+ *  pastilles pleines accolées à l'anneau — moins de bruit, tracé plus proche
+ *  des engrenages Vercel/Claude pris en référence. Calculées par trigo pour
+ *  garantir un espacement parfaitement régulier (une dent mal recopiée à la
+ *  main avait déjà rendu une version précédente asymétrique). */
+const GEAR_TOOTH_ANGLES_DEG = [0, 60, 120, 180, 240, 300];
+const GEAR_CENTER = 8;
+const GEAR_TOOTH_INNER_R = 2.9;
+const GEAR_TOOTH_OUTER_R = 4.6;
 
 /** Icône d'engrenage classique et minimaliste pour le bouton "Settings" du footer. */
 function GearIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <circle cx="8" cy="8" r="3.2" stroke="currentColor" strokeWidth="1.2" />
-      <circle cx="8" cy="8" r="1.3" stroke="currentColor" strokeWidth="1.2" />
-      {GEAR_TOOTH_ANGLES.map((angle) => (
-        <rect
-          key={angle}
-          x="7.35"
-          y="2.75"
-          width="1.3"
-          height="2.15"
-          rx="0.4"
-          fill="currentColor"
-          transform={`rotate(${angle} 8 8)`}
-        />
-      ))}
+      <circle cx={GEAR_CENTER} cy={GEAR_CENTER} r="3.3" stroke="currentColor" strokeWidth="1.3" />
+      <circle cx={GEAR_CENTER} cy={GEAR_CENTER} r="1.2" stroke="currentColor" strokeWidth="1.3" />
+      {GEAR_TOOTH_ANGLES_DEG.map((deg) => {
+        const rad = (deg * Math.PI) / 180;
+        const dx = Math.sin(rad);
+        const dy = -Math.cos(rad);
+        return (
+          <line
+            key={deg}
+            x1={GEAR_CENTER + dx * GEAR_TOOTH_INNER_R}
+            y1={GEAR_CENTER + dy * GEAR_TOOTH_INNER_R}
+            x2={GEAR_CENTER + dx * GEAR_TOOTH_OUTER_R}
+            y2={GEAR_CENTER + dy * GEAR_TOOTH_OUTER_R}
+            stroke="currentColor"
+            strokeWidth="1.3"
+            strokeLinecap="round"
+          />
+        );
+      })}
     </svg>
   );
 }
 
-/** Trois pistes, chacune coupée par une poignée ronde à une position différente. */
+/** Deux pistes (pas trois), chacune interrompue par une vraie poignée en
+ *  anneau (cercle au trait, pas rempli) plutôt qu'un pavé plein. */
 const SLIDER_ROWS = [
-  { y: 4, knobX: 6 },
-  { y: 8, knobX: 10 },
-  { y: 12, knobX: 5 },
+  { y: 4.5, knobCx: 4.5, lineX1: 7.5, lineX2: 14.5 },
+  { y: 11.5, knobCx: 11.5, lineX1: 1.5, lineX2: 8.5 },
 ];
 
 /** Icône "settings adjust" (curseurs) — alternative à GearIcon, en comparaison le temps de choisir. */
 function SlidersIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      {SLIDER_ROWS.map(({ y, knobX }) => (
+      {SLIDER_ROWS.map(({ y, knobCx, lineX1, lineX2 }) => (
         <g key={y}>
-          <line x1="1" y1={y} x2={knobX - 2} y2={y} stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-          <line x1={knobX + 2} y1={y} x2="15" y2={y} stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-          <circle cx={knobX} cy={y} r="1.8" fill="currentColor" />
+          <line x1={lineX1} y1={y} x2={lineX2} y2={y} stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+          <circle cx={knobCx} cy={y} r="2" stroke="currentColor" strokeWidth="1.3" />
         </g>
       ))}
     </svg>
