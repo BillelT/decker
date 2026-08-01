@@ -884,7 +884,7 @@ html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) {
 
 .f2s-modal {
   width: 100%;
-  max-width: 420px;
+  max-width: 480px;
   /* Surface (et non --color-bg) : le panneau doit se détacher du fond de
      l'app derrière l'overlay, y compris en thème sombre où bordure et ombre
      seules suffisent à peine. */

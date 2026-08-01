@@ -60,17 +60,21 @@ function Logo() {
   );
 }
 
-/** Icône du bouton "Settings" du footer, qui ouvre la modale de réglages (ui/SettingsModal.tsx). */
+/** Icône d'engrenage classique pour le bouton "Settings" du footer. */
 function GearIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <circle cx="8" cy="8" r="2.5" stroke="currentColor" strokeWidth="1.4" />
-      <path
-        d="M8 1.5v1.6M8 12.9v1.6M14.5 8h-1.6M3.1 8H1.5M12.5 3.5l-1.1 1.1M4.6 11.4l-1.1 1.1M12.5 12.5l-1.1-1.1M4.6 4.6 3.5 3.5"
-        stroke="currentColor"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-      />
+      <circle cx="8" cy="8" r="2" stroke="currentColor" strokeWidth="1.2" />
+      <g stroke="currentColor" strokeWidth="1.2" strokeLinecap="round">
+        <path d="M8 0.5v1.2" />
+        <path d="M8 14.3v1.2" />
+        <path d="M15.5 8h-1.2" />
+        <path d="M1.7 8H0.5" />
+        <path d="M13.14 2.86l-0.85 0.85" />
+        <path d="M3.71 13.29l-0.85 0.85" />
+        <path d="M13.14 13.14l-0.85 -0.85" />
+        <path d="M3.71 2.71l-0.85 -0.85" />
+      </g>
     </svg>
   );
 }
