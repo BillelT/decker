@@ -10,6 +10,7 @@
 
 :root {
   --color-orange: #f06800;
+  --color-orange-20: rgba(240, 104, 0, 0.2);
   --color-orange-40: rgba(240, 104, 0, 0.4);
   --color-orange-red: #f04000;
   /* Rouge PLEIN réservé aux états d'erreur/bloquants — distinct de
@@ -63,6 +64,10 @@ html.f2s-theme-dark {
 
 * {
   box-sizing: border-box;
+}
+
+::selection {
+  background: var(--color-orange-20);
 }
 
 html,
