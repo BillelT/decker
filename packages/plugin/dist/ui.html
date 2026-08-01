@@ -16,6 +16,11 @@
   --color-orange: #f06800;
   --color-orange-40: rgba(240, 104, 0, 0.4);
   --color-orange-red: #f04000;
+  /* Rouge PLEIN réservé aux états d'erreur/bloquants — distinct de
+     --color-orange-red, qui marque la sélection active : les deux étaient
+     identiques et une vignette bloquante était indiscernable d'une vignette
+     sélectionnée (audit template). */
+  --color-error: #e00000;
   --color-bg: #fff9f5;
   --color-text: #120f0d;
   --color-black-70: rgba(18, 15, 13, 0.7);
@@ -26,6 +31,33 @@
      que le monogramme (#F2ECE8) plutôt que des gris neutres génériques. */
   --color-surface: #ffffff;
   --color-surface-muted: #f2ece8;
+}
+
+/* Thème sombre : Figma pose `figma-dark`/`figma-light` sur <html> quand le
+   plugin est ouvert avec `themeColors: true` (code.ts) — palette claire
+   inversée, l'orange de marque reste identique. Le fallback
+   prefers-color-scheme couvre le rendu hors Figma (dev navigateur), sans
+   jamais contredire une classe posée par Figma. */
+html.figma-dark {
+  --color-bg: #171310;
+  --color-text: #f2ece8;
+  --color-black-70: rgba(242, 236, 232, 0.7);
+  --color-scrollbar: #4d453e;
+  --color-border: #332c26;
+  --color-surface: #211c17;
+  --color-surface-muted: #2a231d;
+}
+
+@media (prefers-color-scheme: dark) {
+  html:not(.figma-light) {
+    --color-bg: #171310;
+    --color-text: #f2ece8;
+    --color-black-70: rgba(242, 236, 232, 0.7);
+    --color-scrollbar: #4d453e;
+    --color-border: #332c26;
+    --color-surface: #211c17;
+    --color-surface-muted: #2a231d;
+  }
 }
 
 * {
@@ -139,6 +171,7 @@ a {
 .f2s-toolbar-row {
   display: flex;
   flex-wrap: wrap;
+  gap: 24px;
 }
 
 .f2s-toolbar-group {
@@ -171,6 +204,34 @@ a {
 
 .f2s-dim-sep {
   color: var(--color-black-70);
+}
+
+.f2s-dim-unit {
+  font-size: 11px;
+  color: var(--color-black-70);
+}
+
+/* Champ de nommage du deck/template (toolbar) — même gabarit que le select
+   de polices, un peu plus large pour un vrai titre. */
+.f2s-title-input {
+  font-family: inherit;
+  font-size: 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-radius: 4px;
+  padding: 3px 8px;
+  width: 220px;
+}
+
+.f2s-title-input:focus {
+  outline: none;
+  border-color: var(--color-orange-40);
+}
+
+.f2s-title-input::placeholder {
+  color: var(--color-black-70);
+  opacity: 0.7;
 }
 
 .f2s-font-select {
@@ -224,15 +285,18 @@ a {
   transition: background-color 0.15s ease, color 0.15s ease, outline-color 0.15s ease;
 }
 
+/* Contour seul au repos (le noir plein pesait visuellement plus lourd que le
+   bouton primaire orange — hiérarchie inversée, cf. audit) ; le fond
+   n'apparaît qu'au hover. */
 .f2s-btn--tertiary {
-  background: var(--color-text);
-  color: var(--color-bg);
+  background: transparent;
+  color: var(--color-text);
   border-color: var(--color-text);
 }
 
 .f2s-btn--tertiary:hover:not(:disabled) {
-  background: var(--color-bg);
-  color: var(--color-text);
+  background: var(--color-text);
+  color: var(--color-bg);
 }
 
 .f2s-btn--secondary {
@@ -358,7 +422,11 @@ a {
 .f2s-frame-preview img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  /* `contain` plutôt que `cover` : les slots restent tous au même format
+     16:9 (rail cohérent), mais une frame portrait/carrée est montrée en
+     entier sur le fond de surface au lieu d'être tronquée par un cadrage
+     qui ne correspond ni à la frame ni au rendu Slides. */
+  object-fit: contain;
   display: block;
   pointer-events: none;
 }
@@ -466,7 +534,16 @@ a {
 }
 
 .f2s-tmpl-section--blocking .f2s-tmpl-heading {
-  color: var(--color-orange-red);
+  color: var(--color-error);
+}
+
+/* Attentes de fin de parcours : ce que "template" veut dire côté Slides
+   (présentation à dupliquer, pas un vrai master) — voir TemplatePanel.tsx. */
+.f2s-tmpl-note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-black-70);
+  max-width: 720px;
 }
 
 .f2s-tmpl-list {
@@ -495,8 +572,8 @@ a {
 }
 
 .f2s-tmpl-warning {
-  border-color: var(--color-orange-40);
-  color: var(--color-orange-red);
+  border-color: var(--color-error);
+  color: var(--color-error);
 }
 
 .f2s-tmpl-warning:hover,
@@ -504,48 +581,68 @@ a {
   border-color: var(--color-orange);
 }
 
+/* Rôle de placeholder en texte neutre (les anciens badges colorés
+   title/subtitle=orange, image/logo=rouge ne portaient aucune sémantique
+   lisible — décoration retirée, cf. audit). */
 .f2s-tmpl-role {
   flex: none;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  color: var(--color-bg);
-  background: var(--color-black-70);
-  border-radius: 4px;
-  padding: 2px 6px;
-}
-
-.f2s-tmpl-role--title,
-.f2s-tmpl-role--subtitle {
-  background: var(--color-orange);
-}
-
-.f2s-tmpl-role--image,
-.f2s-tmpl-role--logo {
-  background: var(--color-orange-red);
+  color: var(--color-black-70);
 }
 
 .f2s-tmpl-swatches {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.f2s-tmpl-swatch-item {
+  display: flex;
+  align-items: center;
   gap: 8px;
 }
 
+/* Damier sous la pastille : une couleur semi-transparente se lit comme
+   telle au lieu d'être faussée par le fond du panneau. */
 .f2s-tmpl-swatch {
   width: 28px;
   height: 28px;
   border-radius: 6px;
   border: 1px solid var(--color-border);
   flex: none;
+  overflow: hidden;
+  display: block;
+  background-image: linear-gradient(45deg, rgba(127, 127, 127, 0.25) 25%, transparent 25%, transparent 75%, rgba(127, 127, 127, 0.25) 75%),
+    linear-gradient(45deg, rgba(127, 127, 127, 0.25) 25%, transparent 25%, transparent 75%, rgba(127, 127, 127, 0.25) 75%);
+  background-size: 12px 12px;
+  background-position: 0 0, 6px 6px;
+}
+
+.f2s-tmpl-swatch-color {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.f2s-tmpl-swatch-label {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
 }
 
 .f2s-tmpl-font-family {
   font-weight: 700;
 }
 
+/* Rouge plein, distinct de la bordure de sélection active (orange-red) —
+   TODO.md : affordance d'erreur plus riche à designer. */
 .f2s-frame-preview--blocking {
-  border-color: var(--color-orange-red);
+  border-color: var(--color-error);
 }
 
 /* ---- Barre de statut (login / progression / erreurs) ---- */
@@ -585,7 +682,7 @@ a {
 }
 
 .f2s-error {
-  color: var(--color-orange-red);
+  color: var(--color-error);
   font-size: 12px;
   margin: 0;
 }
@@ -1010,16 +1107,6 @@ a {
     return trimmed.replace(/^["']|["']$/g, "");
   }
 
-  // src/ui/reorderFrames.ts
-  function moveToIndex(order, id, targetIndex) {
-    const idx = order.indexOf(id);
-    if (idx === -1 || targetIndex < 0 || targetIndex >= order.length || idx === targetIndex) return order;
-    const next = [...order];
-    next.splice(idx, 1);
-    next.splice(targetIndex, 0, id);
-    return next;
-  }
-
   // src/serialize/fonts.ts
   var GOOGLE_FONTS_SAMPLE = /* @__PURE__ */ new Set([
     "Roboto",
@@ -1063,6 +1150,21 @@ a {
   var AVAILABLE_SLIDES_FONTS = [...GOOGLE_FONTS_SAMPLE, ...SLIDES_SYSTEM_FONTS].sort((a3, b2) => a3.localeCompare(b2));
   var AVAILABLE_FAMILIES = [...GOOGLE_FONTS_SAMPLE, ...SLIDES_SYSTEM_FONTS].sort((a3, b2) => b2.length - a3.length);
 
+  // src/ui/types.ts
+  function postToPlugin(message) {
+    parent.postMessage({ pluginMessage: message }, "*");
+  }
+
+  // src/ui/reorderFrames.ts
+  function moveToIndex(order, id, targetIndex) {
+    const idx = order.indexOf(id);
+    if (idx === -1 || targetIndex < 0 || targetIndex >= order.length || idx === targetIndex) return order;
+    const next = [...order];
+    next.splice(idx, 1);
+    next.splice(targetIndex, 0, id);
+    return next;
+  }
+
   // ../../node_modules/preact/jsx-runtime/dist/jsxRuntime.module.js
   var f3 = 0;
   function u3(e3, t3, n2, o3, i3, u4) {
@@ -1074,46 +1176,10 @@ a {
     return l.vnode && l.vnode(l3), l3;
   }
 
-  // src/ui.tsx
-  function postToPlugin(message) {
-    parent.postMessage({ pluginMessage: message }, "*");
-  }
+  // src/ui/DeckPanel.tsx
   var DRAG_THRESHOLD_PX = 3;
   var DRAG_SWAP_MARGIN = 0.32;
-  function Logo() {
-    return /* @__PURE__ */ u3("a", { href: "https://billeltighidet.fr", target: "_blank", rel: "noreferrer", title: "billeltighidet.fr", children: /* @__PURE__ */ u3("svg", { className: "f2s-logo", viewBox: "0 0 80 80", fill: "none", xmlns: "http://www.w3.org/2000/svg", children: [
-      /* @__PURE__ */ u3("rect", { width: "80", height: "80", rx: "40", fill: "#F06800" }),
-      /* @__PURE__ */ u3(
-        "path",
-        {
-          d: "M48.6887 47.1716C50.2508 48.7337 50.2508 51.2664 48.6887 52.8285L44.2034 57.3138C41.6836 59.8336 37.375 58.049 37.375 54.4854L37.375 45.5148C37.375 41.9512 41.6836 40.1665 44.2034 42.6864L48.6887 47.1716Z",
-          fill: "#F2ECE8"
-        }
-      ),
-      /* @__PURE__ */ u3(
-        "path",
-        {
-          d: "M48.6887 27.1715C50.2508 28.7335 50.2508 31.2662 48.6887 32.8283L44.2034 37.3136C41.6836 39.8334 37.375 38.0488 37.375 34.4852L37.375 25.5146C37.375 21.951 41.6836 20.1663 44.2034 22.6862L48.6887 27.1715Z",
-          fill: "#F2ECE8"
-        }
-      ),
-      /* @__PURE__ */ u3("rect", { x: "30.6235", y: "21.0001", width: "3", height: "37", rx: "1.5", fill: "#F2ECE8" })
-    ] }) });
-  }
-  function App() {
-    const [mode, setMode] = d2("deck");
-    const modeRef = A2(mode);
-    h2(() => {
-      modeRef.current = mode;
-    }, [mode]);
-    const [frames, setFrames] = d2({});
-    const [order, setOrder] = d2([]);
-    const [activeId, setActiveId] = d2();
-    const [templateLayouts, setTemplateLayouts] = d2({});
-    const [templateOrder, setTemplateOrder] = d2([]);
-    const [activeTemplateId, setActiveTemplateId] = d2();
-    const [templateSelecting, setTemplateSelecting] = d2(false);
-    const [templateSelectionNotice, setTemplateSelectionNotice] = d2();
+  function DeckPanel({ order, setOrder, frames, activeId, setActiveId, selecting, hasCanvasSelection, onRemove }) {
     const [dragId, setDragId] = d2();
     const [dragOffsetY, setDragOffsetY] = d2(0);
     const [dragActive, setDragActive] = d2(false);
@@ -1123,345 +1189,10 @@ a {
     const dragStartIndexRef = A2(0);
     const slotHeightRef = A2(0);
     const sidebarItemRefs = A2(/* @__PURE__ */ new Map());
-    const [selecting, setSelecting] = d2(false);
-    const [selectionNotice, setSelectionNotice] = d2();
-    const [hasCanvasSelection, setHasCanvasSelection] = d2(false);
-    const [sessionToken, setSessionToken] = d2();
-    const [loginError, setLoginError] = d2();
-    const [authUrl, setAuthUrl] = d2();
-    const [backend] = d2({ baseUrl: true ? "https://figma-to-slide-backend.vercel.app" : "https://figma-to-slide-backend.vercel.app" });
-    h2(() => {
-      if (!activeId && order.length > 0) setActiveId(order[0]);
-    }, [order, activeId]);
-    h2(() => {
-      if (!activeTemplateId && templateOrder.length > 0) setActiveTemplateId(templateOrder[0]);
-    }, [templateOrder, activeTemplateId]);
     const activeFrame = activeId ? frames[activeId] : void 0;
-    const activeTemplateLayout = activeTemplateId ? templateLayouts[activeTemplateId] : void 0;
-    const deckFontSubstitutions = T2(() => {
-      const seen = /* @__PURE__ */ new Set();
-      const subs = [];
-      for (const id of order) {
-        for (const s3 of frames[id]?.fontSubstitutions ?? []) {
-          const key = `${s3.original}\u2192${s3.resolved}`;
-          if (seen.has(key)) continue;
-          seen.add(key);
-          subs.push(s3);
-        }
-      }
-      return subs;
-    }, [order, frames]);
-    const templateFontSubstitutions = T2(() => {
-      const seen = /* @__PURE__ */ new Set();
-      const subs = [];
-      for (const id of templateOrder) {
-        for (const s3 of templateLayouts[id]?.fontSubstitutions ?? []) {
-          const key = `${s3.original}\u2192${s3.resolved}`;
-          if (seen.has(key)) continue;
-          seen.add(key);
-          subs.push(s3);
-        }
-      }
-      return subs;
-    }, [templateOrder, templateLayouts]);
-    const templateHasBlockingLayout = templateOrder.some((id) => templateLayouts[id]?.blocking);
-    const [fontOverrides, setFontOverrides] = d2({});
-    const [exportState, setExportState] = d2("idle");
-    const [exportProgress, setExportProgress] = d2(0);
-    const [resultUrl, setResultUrl] = d2();
-    const [exportError, setExportError] = d2();
-    const pendingAssets = T2(() => /* @__PURE__ */ new Map(), []);
-    const sessionTokenRef = A2(sessionToken);
-    h2(() => {
-      sessionTokenRef.current = sessionToken;
-    }, [sessionToken]);
-    h2(() => {
-      const onMessage = (event) => {
-        const msg = event.data.pluginMessage;
-        if (!msg) return;
-        switch (msg.type) {
-          case "candidate-added": {
-            const f4 = msg.frame;
-            setFrames((prev) => ({
-              ...prev,
-              [f4.id]: {
-                ...f4,
-                previewDataUrl: msg.previewDataUrl,
-                fontSubstitutions: msg.fontSubstitutions
-              }
-            }));
-            setOrder((prev) => prev.includes(f4.id) ? prev : [...prev, f4.id]);
-            break;
-          }
-          // Rafraîchissement en place d'une frame `[Slides Ready]` déjà connue
-          // (re-clic sur "Prepare for Slides", ou suivi live des retouches
-          // faites sur le canvas — voir `watchTaggedFramesForLiveRefresh` côté
-          // code.ts) : met à jour l'aperçu SANS toucher `order`, la vignette
-          // reste à la même place dans le rail.
-          case "candidate-updated": {
-            const f4 = msg.frame;
-            setFrames(
-              (prev) => prev[f4.id] ? {
-                ...prev,
-                [f4.id]: {
-                  ...prev[f4.id],
-                  ...f4,
-                  previewDataUrl: msg.previewDataUrl,
-                  fontSubstitutions: msg.fontSubstitutions
-                }
-              } : prev
-            );
-            break;
-          }
-          // Une frame brute du panneau vient d'être remplacée par sa copie
-          // `[Slides Ready]` (préparation groupée) — retirée de la liste, la
-          // copie arrive séparément via `candidate-added`.
-          case "candidate-removed": {
-            const id = msg.id;
-            setOrder((prev) => prev.filter((x2) => x2 !== id));
-            setFrames((prev) => {
-              if (!(id in prev)) return prev;
-              const next = { ...prev };
-              delete next[id];
-              return next;
-            });
-            setActiveId((prev) => prev === id ? void 0 : prev);
-            break;
-          }
-          case "template-candidate-added": {
-            const f4 = msg.frame;
-            setTemplateLayouts((prev) => ({
-              ...prev,
-              [f4.id]: {
-                ...f4,
-                previewDataUrl: msg.previewDataUrl,
-                warnings: msg.warnings ?? [],
-                blocking: Boolean(msg.blocking),
-                placeholders: msg.placeholders ?? [],
-                colors: msg.colors ?? [],
-                fonts: msg.fonts ?? [],
-                fontSubstitutions: msg.fontSubstitutions
-              }
-            }));
-            setTemplateOrder((prev) => prev.includes(f4.id) ? prev : [...prev, f4.id]);
-            break;
-          }
-          case "canvas-selection-changed":
-            setHasCanvasSelection(Boolean(msg.hasSelection));
-            break;
-          case "no-frames-selected":
-            if (modeRef.current === "template") {
-              setTemplateSelectionNotice("Select at least one frame on the Figma canvas before clicking.");
-            } else {
-              setSelectionNotice("Select at least one frame on the Figma canvas before clicking.");
-            }
-            break;
-          case "too-many-frames":
-            if (modeRef.current === "template") {
-              setTemplateSelectionNotice(`${msg.count} layouts selected \u2014 beyond ${msg.max}, keep a template focused.`);
-            } else {
-              setSelectionNotice(`${msg.count} frames selected \u2014 beyond ${msg.max}, export may become slow.`);
-            }
-            break;
-          case "export-payload":
-            void handleExportPayload(msg.document);
-            break;
-          case "export-asset":
-            pendingAssets.set(msg.assetKey, msg.bytes);
-            break;
-          case "export-error":
-            setExportState("error");
-            setExportError(msg.message);
-            break;
-          default:
-            break;
-        }
-      };
-      window.addEventListener("message", onMessage);
-      return () => window.removeEventListener("message", onMessage);
-    }, []);
-    const ASSET_BATCH_BUDGET_BYTES = 3.5 * 1024 * 1024;
-    async function uploadAssetBatches(assets) {
-      let batch = [];
-      let batchBytes = 0;
-      const flush = async () => {
-        if (batch.length === 0) return;
-        const form = new FormData();
-        for (const [assetKey, buf] of batch) {
-          form.append(assetKey, new Blob([buf], { type: "image/png" }), assetKey);
-        }
-        const res = await fetch(`${backend.baseUrl}/assets`, {
-          method: "POST",
-          body: form,
-          headers: sessionTokenRef.current ? { Authorization: `Bearer ${sessionTokenRef.current}` } : void 0,
-          credentials: "include"
-        });
-        if (!res.ok) {
-          const body = await res.json().catch(() => void 0);
-          throw new Error(body?.error ? `${body.error} (${res.status})` : `Asset upload rejected (${res.status})`);
-        }
-        batch = [];
-        batchBytes = 0;
-      };
-      for (const asset of assets) {
-        const size = asset[1].byteLength;
-        if (batch.length > 0 && batchBytes + size > ASSET_BATCH_BUDGET_BYTES) {
-          await flush();
-        }
-        batch.push(asset);
-        batchBytes += size;
-      }
-      await flush();
-    }
-    async function handleExportPayload(doc) {
-      setExportState("exporting");
-      setExportProgress(0);
-      setExportError(void 0);
-      try {
-        await new Promise((r3) => setTimeout(r3, 50));
-        await uploadAssetBatches([...pendingAssets]);
-        const form = new FormData();
-        form.append("document", JSON.stringify(doc));
-        const res = await fetch(`${backend.baseUrl}/export`, {
-          method: "POST",
-          body: form,
-          headers: sessionTokenRef.current ? { Authorization: `Bearer ${sessionTokenRef.current}` } : void 0,
-          credentials: "include"
-        });
-        if (!res.ok) {
-          const body = await res.json().catch(() => void 0);
-          throw new Error(body?.error ? `${body.error} (${res.status})` : `Export rejected (${res.status})`);
-        }
-        const { jobId } = await res.json();
-        await pollJob(jobId);
-      } catch (err) {
-        setExportState("error");
-        setExportError(err instanceof Error ? err.message : String(err));
-        console.error(err);
-      }
-    }
-    async function pollJob(jobId) {
-      for (let i3 = 0; i3 < 120; i3++) {
-        const res = await fetch(`${backend.baseUrl}/export/${jobId}`, { credentials: "include" });
-        const job = await res.json();
-        const batches = job.batches;
-        if (batches && batches.length > 0) {
-          const applied = batches.filter((b2) => b2.status === "applied").length;
-          setExportProgress(Math.round(applied / batches.length * 100));
-        }
-        if (job.status === "done") {
-          setExportState("done");
-          setExportProgress(100);
-          setResultUrl(job.presentationUrl);
-          return;
-        }
-        if (job.status === "failed") {
-          setExportState("error");
-          const batchErrors = job.batches?.map((b2) => b2.error).filter((e3) => Boolean(e3));
-          setExportError(
-            batchErrors && batchErrors.length > 0 ? batchErrors.join(" \xB7 ") : job.error ?? "Unknown server-side failure."
-          );
-          return;
-        }
-        await new Promise((r3) => setTimeout(r3, 1500));
-      }
-      setExportState("error");
-    }
-    async function pollAuthSession(pollId) {
-      for (let i3 = 0; i3 < 400; i3++) {
-        if (sessionTokenRef.current) return;
-        try {
-          const res = await fetch(`${backend.baseUrl}/auth/session/${pollId}`, { credentials: "include" });
-          const result = await res.json();
-          if (result.status === "ready") {
-            setSessionToken(sanitizeSessionToken(result.sessionToken));
-            setAuthUrl(void 0);
-            return;
-          }
-          if (result.status === "error") {
-            setLoginError(result.message);
-            setAuthUrl(void 0);
-            return;
-          }
-        } catch {
-        }
-        await new Promise((r3) => setTimeout(r3, 1500));
-      }
-      setLoginError("Sign-in timed out \u2014 try again.");
-      setAuthUrl(void 0);
-    }
-    function startLogin() {
-      setLoginError(void 0);
-      setAuthUrl(void 0);
-      fetch(`${backend.baseUrl}/auth/google`, { method: "POST" }).then(async (res) => {
-        if (!res.ok) {
-          const body = await res.json().catch(() => void 0);
-          throw new Error(body?.message ?? `Backend responded ${res.status}`);
-        }
-        return res.json();
-      }).then(({ authUrl: authUrl2, pollId }) => {
-        setAuthUrl(authUrl2);
-        void pollAuthSession(pollId);
-      }).catch((err) => {
-        setLoginError(err instanceof Error ? err.message : String(err));
-        console.error("[figma-to-slides] startLogin failed", err);
-      });
-    }
-    h2(() => {
-      if (!sessionToken) startLogin();
-    }, []);
-    h2(() => {
-      postToPlugin({ type: "ui-ready" });
-    }, []);
-    function handlePrepareForSlides() {
-      postToPlugin({ type: "prepare-for-slides", deckFrameIds: order, fontOverrides });
-    }
-    function handleAddFramesClick() {
-      setSelectionNotice(void 0);
-      if (!selecting) {
-        setSelecting(true);
-        return;
-      }
-      postToPlugin({ type: "add-selected-frames" });
-      setSelecting(false);
-    }
     function selectFrame(id) {
       setActiveId(id);
       postToPlugin({ type: "select-nodes", nodeIds: [id] });
-    }
-    function removeFrame(id) {
-      setOrder((prev) => prev.filter((x2) => x2 !== id));
-      setFrames((prev) => {
-        const next = { ...prev };
-        delete next[id];
-        return next;
-      });
-      setActiveId((prev) => prev === id ? void 0 : prev);
-    }
-    function handleAddTemplateLayoutClick() {
-      setTemplateSelectionNotice(void 0);
-      if (!templateSelecting) {
-        setTemplateSelecting(true);
-        return;
-      }
-      postToPlugin({ type: "add-template-layout" });
-      setTemplateSelecting(false);
-    }
-    function selectTemplateLayout(id) {
-      setActiveTemplateId(id);
-      postToPlugin({ type: "select-nodes", nodeIds: [id] });
-    }
-    function selectSourceNodes(sourceNodeIds) {
-      postToPlugin({ type: "select-nodes", nodeIds: sourceNodeIds });
-    }
-    function removeTemplateLayout(id) {
-      setTemplateOrder((prev) => prev.filter((x2) => x2 !== id));
-      setTemplateLayouts((prev) => {
-        const next = { ...prev };
-        delete next[id];
-        return next;
-      });
-      setActiveTemplateId((prev) => prev === id ? void 0 : prev);
     }
     function targetIndexFromOffset(offsetY) {
       const slotHeight = slotHeightRef.current;
@@ -1515,9 +1246,616 @@ a {
       });
       return () => cancelAnimationFrame(frame);
     }, [suppressShiftTransition]);
+    return /* @__PURE__ */ u3("div", { className: "f2s-body", children: [
+      /* @__PURE__ */ u3("aside", { className: "f2s-sidebar", children: [
+        selecting && order.length > 0 && !hasCanvasSelection && /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: 'Select one or more frames on the Figma canvas, then click "Add selection".' }),
+        order.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-empty", children: selecting ? 'Select one or more frames on the Figma canvas, then click "Add selection".' : 'Click "Select frames to add" to choose what should be exported.' }) : order.map((id, index) => {
+          const f4 = frames[id];
+          if (!f4) return null;
+          const isDragging = dragId === id && dragActive;
+          let ghostShift = 0;
+          if (dragId && dragActive && !isDragging) {
+            const start = dragStartIndexRef.current;
+            if (start < dragTargetIndex && index > start && index <= dragTargetIndex) {
+              ghostShift = -slotHeightRef.current;
+            } else if (start > dragTargetIndex && index >= dragTargetIndex && index < start) {
+              ghostShift = slotHeightRef.current;
+            }
+          }
+          return /* @__PURE__ */ u3(
+            "div",
+            {
+              ref: (el) => {
+                if (el) sidebarItemRefs.current.set(id, el);
+                else sidebarItemRefs.current.delete(id);
+              },
+              className: `f2s-sidebar-item${isDragging ? " is-dragging" : ""}${suppressShiftTransition ? " is-releasing" : ""}`,
+              style: isDragging ? { transform: `translateY(${dragOffsetY}px)` } : ghostShift !== 0 ? { transform: `translateY(${ghostShift}px)` } : void 0,
+              children: [
+                /* @__PURE__ */ u3(
+                  "button",
+                  {
+                    type: "button",
+                    className: `f2s-frame-preview${activeId === id ? " is-active" : ""}`,
+                    onClick: () => selectFrame(id),
+                    onPointerDown: (e3) => handleDragPointerDown(e3, id),
+                    children: f4.previewDataUrl && /* @__PURE__ */ u3("img", { src: f4.previewDataUrl, alt: f4.name, draggable: false })
+                  }
+                ),
+                /* @__PURE__ */ u3("div", { className: "f2s-frame-info", children: [
+                  /* @__PURE__ */ u3("span", { className: "f2s-frame-text", children: index + 1 }),
+                  /* @__PURE__ */ u3("div", { className: "f2s-frame-controls", children: /* @__PURE__ */ u3("button", { type: "button", className: "f2s-icon-btn", title: "Remove", onClick: () => onRemove(id), children: "\u2715" }) })
+                ] })
+              ]
+            },
+            id
+          );
+        })
+      ] }),
+      /* @__PURE__ */ u3("main", { className: "f2s-canvas", children: activeFrame ? /* @__PURE__ */ u3("div", { className: "f2s-canvas-preview", children: activeFrame.previewDataUrl && /* @__PURE__ */ u3("img", { src: activeFrame.previewDataUrl, alt: activeFrame.name }) }) : /* @__PURE__ */ u3("p", { className: "f2s-canvas-empty", children: "Select a frame on the left to preview it." }) })
+    ] });
+  }
+
+  // src/ui/TemplatePanel.tsx
+  function selectSourceNodes(sourceNodeIds) {
+    postToPlugin({ type: "select-nodes", nodeIds: sourceNodeIds });
+  }
+  function TemplatePanel({ order, layouts, activeId, setActiveId, selecting, hasCanvasSelection, notice, onRemove }) {
+    const activeLayout = activeId ? layouts[activeId] : void 0;
+    function selectLayout(id) {
+      setActiveId(id);
+      postToPlugin({ type: "select-nodes", nodeIds: [id] });
+    }
+    return /* @__PURE__ */ u3("div", { className: "f2s-body", children: [
+      /* @__PURE__ */ u3("aside", { className: "f2s-sidebar", children: [
+        notice && /* @__PURE__ */ u3("p", { className: "f2s-error", children: notice }),
+        selecting && order.length > 0 && !hasCanvasSelection && /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: 'Select one or more frames on the Figma canvas, then click "Add selection".' }),
+        order.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-empty", children: selecting ? 'Select one or more frames on the Figma canvas, then click "Add selection".' : 'Click "Select layout to add" to choose the layouts that make up this template \u2014 e.g. a title slide, a content slide.' }) : order.map((id, index) => {
+          const layout = layouts[id];
+          if (!layout) return null;
+          return /* @__PURE__ */ u3("div", { className: "f2s-sidebar-item", children: [
+            /* @__PURE__ */ u3(
+              "button",
+              {
+                type: "button",
+                className: `f2s-frame-preview${activeId === id ? " is-active" : ""}${layout.blocking ? " f2s-frame-preview--blocking" : ""}`,
+                onClick: () => selectLayout(id),
+                title: layout.blocking ? "Contains an element that would be rasterized \u2014 open it to see the details." : void 0,
+                children: layout.previewDataUrl && /* @__PURE__ */ u3("img", { src: layout.previewDataUrl, alt: layout.name, draggable: false })
+              }
+            ),
+            /* @__PURE__ */ u3("div", { className: "f2s-frame-info", children: [
+              /* @__PURE__ */ u3("span", { className: "f2s-frame-text", children: [
+                index + 1,
+                ". ",
+                layout.name
+              ] }),
+              /* @__PURE__ */ u3("div", { className: "f2s-frame-controls", children: /* @__PURE__ */ u3("button", { type: "button", className: "f2s-icon-btn", title: "Remove", onClick: () => onRemove(id), children: "\u2715" }) })
+            ] })
+          ] }, id);
+        })
+      ] }),
+      /* @__PURE__ */ u3("main", { className: "f2s-canvas f2s-canvas--template", children: [
+        /* @__PURE__ */ u3("p", { className: "f2s-tmpl-note", children: "A template is a reusable Slides deck (like a Slides theme): each layout becomes a slide your team duplicates and fills. The Slides API can't create native masters/layouts, so the result is a regular presentation to copy from." }),
+        activeLayout ? /* @__PURE__ */ u3("div", { className: "f2s-tmpl-report", children: [
+          /* @__PURE__ */ u3("div", { className: "f2s-canvas-preview f2s-tmpl-preview", children: activeLayout.previewDataUrl && /* @__PURE__ */ u3("img", { src: activeLayout.previewDataUrl, alt: activeLayout.name }) }),
+          /* @__PURE__ */ u3("div", { className: "f2s-tmpl-panel", children: [
+            activeLayout.warnings.filter((w3) => w3.severity === "blocking").length > 0 && /* @__PURE__ */ u3("section", { className: "f2s-tmpl-section f2s-tmpl-section--blocking", children: [
+              /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Fix before creating the template" }),
+              /* @__PURE__ */ u3("ul", { className: "f2s-tmpl-list", children: activeLayout.warnings.filter((w3) => w3.severity === "blocking").map((w3, i3) => /* @__PURE__ */ u3("li", { children: /* @__PURE__ */ u3("button", { type: "button", className: "f2s-tmpl-warning", onClick: () => selectSourceNodes([w3.sourceNodeId]), children: [
+                /* @__PURE__ */ u3("strong", { children: w3.nodeName }),
+                " \u2014 ",
+                w3.message
+              ] }) }, i3)) })
+            ] }),
+            /* @__PURE__ */ u3("section", { className: "f2s-tmpl-section", children: [
+              /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Placeholders" }),
+              activeLayout.placeholders.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: [
+                "No tagged placeholder yet \u2014 prefix a layer name in Figma with ",
+                /* @__PURE__ */ u3("code", { children: "[[title]]" }),
+                ", ",
+                /* @__PURE__ */ u3("code", { children: "[[body]]" }),
+                ",",
+                " ",
+                /* @__PURE__ */ u3("code", { children: "[[image]]" }),
+                ", ",
+                /* @__PURE__ */ u3("code", { children: "[[subtitle]]" }),
+                " or ",
+                /* @__PURE__ */ u3("code", { children: "[[logo]]" }),
+                " to mark it."
+              ] }) : /* @__PURE__ */ u3("ul", { className: "f2s-tmpl-list", children: activeLayout.placeholders.map((p3) => /* @__PURE__ */ u3("li", { children: /* @__PURE__ */ u3("button", { type: "button", className: "f2s-tmpl-chip", onClick: () => selectSourceNodes([p3.sourceNodeId]), children: [
+                /* @__PURE__ */ u3("span", { className: "f2s-tmpl-role", children: p3.role }),
+                p3.label
+              ] }) }, p3.id)) })
+            ] }),
+            /* @__PURE__ */ u3("section", { className: "f2s-tmpl-section", children: [
+              /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Colors" }),
+              activeLayout.colors.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: "No solid color detected." }) : /* @__PURE__ */ u3("ul", { className: "f2s-tmpl-swatches", children: activeLayout.colors.map((c3, i3) => /* @__PURE__ */ u3("li", { className: "f2s-tmpl-swatch-item", children: [
+                /* @__PURE__ */ u3("span", { className: "f2s-tmpl-swatch", children: /* @__PURE__ */ u3(
+                  "span",
+                  {
+                    className: "f2s-tmpl-swatch-color",
+                    style: { backgroundColor: c3.hex, opacity: c3.alpha }
+                  }
+                ) }),
+                /* @__PURE__ */ u3("span", { className: "f2s-tmpl-swatch-label", children: [
+                  c3.hex,
+                  c3.alpha < 1 ? ` \xB7 ${Math.round(c3.alpha * 100)}%` : "",
+                  /* @__PURE__ */ u3("span", { className: "f2s-toolbar-muted", children: [
+                    " \xB7 used ",
+                    c3.usageCount,
+                    "\xD7"
+                  ] })
+                ] })
+              ] }, i3)) })
+            ] }),
+            /* @__PURE__ */ u3("section", { className: "f2s-tmpl-section", children: [
+              /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Typography" }),
+              activeLayout.fonts.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: "No text detected." }) : /* @__PURE__ */ u3("ul", { className: "f2s-tmpl-list", children: activeLayout.fonts.map((f4) => /* @__PURE__ */ u3("li", { children: [
+                /* @__PURE__ */ u3("span", { className: "f2s-tmpl-font-family", children: f4.family }),
+                " ",
+                /* @__PURE__ */ u3("span", { className: "f2s-toolbar-muted", children: [
+                  "(",
+                  f4.weights.join(", "),
+                  ")"
+                ] })
+              ] }, f4.family)) })
+            ] })
+          ] })
+        ] }) : /* @__PURE__ */ u3("p", { className: "f2s-canvas-empty", children: "Select a layout on the left to see its report." })
+      ] })
+    ] });
+  }
+
+  // src/ui.tsx
+  var AuthExpiredError = class extends Error {
+    constructor() {
+      super("Your Google session has expired \u2014 sign in again, then retry.");
+    }
+  };
+  function Logo() {
+    return /* @__PURE__ */ u3("a", { href: "https://billeltighidet.fr", target: "_blank", rel: "noreferrer", title: "billeltighidet.fr", children: /* @__PURE__ */ u3("svg", { className: "f2s-logo", viewBox: "0 0 80 80", fill: "none", xmlns: "http://www.w3.org/2000/svg", children: [
+      /* @__PURE__ */ u3("rect", { width: "80", height: "80", rx: "40", fill: "#F06800" }),
+      /* @__PURE__ */ u3(
+        "path",
+        {
+          d: "M48.6887 47.1716C50.2508 48.7337 50.2508 51.2664 48.6887 52.8285L44.2034 57.3138C41.6836 59.8336 37.375 58.049 37.375 54.4854L37.375 45.5148C37.375 41.9512 41.6836 40.1665 44.2034 42.6864L48.6887 47.1716Z",
+          fill: "#F2ECE8"
+        }
+      ),
+      /* @__PURE__ */ u3(
+        "path",
+        {
+          d: "M48.6887 27.1715C50.2508 28.7335 50.2508 31.2662 48.6887 32.8283L44.2034 37.3136C41.6836 39.8334 37.375 38.0488 37.375 34.4852L37.375 25.5146C37.375 21.951 41.6836 20.1663 44.2034 22.6862L48.6887 27.1715Z",
+          fill: "#F2ECE8"
+        }
+      ),
+      /* @__PURE__ */ u3("rect", { x: "30.6235", y: "21.0001", width: "3", height: "37", rx: "1.5", fill: "#F2ECE8" })
+    ] }) });
+  }
+  function App() {
+    const [mode, setMode] = d2("deck");
+    const modeRef = A2(mode);
+    h2(() => {
+      modeRef.current = mode;
+    }, [mode]);
+    const [frames, setFrames] = d2({});
+    const [order, setOrder] = d2([]);
+    const [activeId, setActiveId] = d2();
+    const [templateLayouts, setTemplateLayouts] = d2({});
+    const [templateOrder, setTemplateOrder] = d2([]);
+    const [activeTemplateId, setActiveTemplateId] = d2();
+    const [templateSelecting, setTemplateSelecting] = d2(false);
+    const [templateSelectionNotice, setTemplateSelectionNotice] = d2();
+    const [selecting, setSelecting] = d2(false);
+    const [, setSelectionNotice] = d2();
+    const [hasCanvasSelection, setHasCanvasSelection] = d2(false);
+    const [sessionToken, setSessionToken] = d2();
+    const [loginError, setLoginError] = d2();
+    const [authUrl, setAuthUrl] = d2();
+    const [backend] = d2({ baseUrl: true ? "https://figma-to-slide-backend.vercel.app" : "https://figma-to-slide-backend.vercel.app" });
+    const [deckTitle, setDeckTitle] = d2("");
+    const [templateTitle, setTemplateTitle] = d2("");
+    h2(() => {
+      if (!activeId && order.length > 0) setActiveId(order[0]);
+    }, [order, activeId]);
+    h2(() => {
+      if (!activeTemplateId && templateOrder.length > 0) setActiveTemplateId(templateOrder[0]);
+    }, [templateOrder, activeTemplateId]);
+    const activeFrame = activeId ? frames[activeId] : void 0;
+    const activeTemplateLayout = activeTemplateId ? templateLayouts[activeTemplateId] : void 0;
+    const deckFontSubstitutions = T2(() => {
+      const seen = /* @__PURE__ */ new Set();
+      const subs = [];
+      for (const id of order) {
+        for (const s3 of frames[id]?.fontSubstitutions ?? []) {
+          const key = `${s3.original}\u2192${s3.resolved}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          subs.push(s3);
+        }
+      }
+      return subs;
+    }, [order, frames]);
+    const templateFontSubstitutions = T2(() => {
+      const seen = /* @__PURE__ */ new Set();
+      const subs = [];
+      for (const id of templateOrder) {
+        for (const s3 of templateLayouts[id]?.fontSubstitutions ?? []) {
+          const key = `${s3.original}\u2192${s3.resolved}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          subs.push(s3);
+        }
+      }
+      return subs;
+    }, [templateOrder, templateLayouts]);
+    const templateHasBlockingLayout = templateOrder.some((id) => templateLayouts[id]?.blocking);
+    const [fontOverrides, setFontOverrides] = d2({});
+    const [exportState, setExportState] = d2("idle");
+    const [exportProgress, setExportProgress] = d2(0);
+    const [resultUrl, setResultUrl] = d2();
+    const [exportError, setExportError] = d2();
+    const [exportSource, setExportSource] = d2();
+    const pendingAssets = T2(() => /* @__PURE__ */ new Map(), []);
+    const sessionTokenRef = A2(sessionToken);
+    h2(() => {
+      sessionTokenRef.current = sessionToken;
+    }, [sessionToken]);
+    h2(() => {
+      const onMessage = (event) => {
+        const msg = event.data.pluginMessage;
+        if (!msg) return;
+        switch (msg.type) {
+          case "candidate-added": {
+            const f4 = msg.frame;
+            setFrames((prev) => ({
+              ...prev,
+              [f4.id]: {
+                ...f4,
+                previewDataUrl: msg.previewDataUrl,
+                fontSubstitutions: msg.fontSubstitutions
+              }
+            }));
+            setOrder((prev) => prev.includes(f4.id) ? prev : [...prev, f4.id]);
+            break;
+          }
+          // Rafraîchissement en place d'une frame `[Slides Ready]` déjà connue
+          // (re-clic sur "Prepare for Slides", ou suivi live des retouches
+          // faites sur le canvas — voir `watchFramesForLiveRefresh` côté
+          // code.ts) : met à jour l'aperçu SANS toucher `order`.
+          case "candidate-updated": {
+            const f4 = msg.frame;
+            setFrames(
+              (prev) => prev[f4.id] ? {
+                ...prev,
+                [f4.id]: {
+                  ...prev[f4.id],
+                  ...f4,
+                  previewDataUrl: msg.previewDataUrl,
+                  fontSubstitutions: msg.fontSubstitutions
+                }
+              } : prev
+            );
+            break;
+          }
+          // Une frame brute du panneau vient d'être remplacée par sa copie
+          // `[Slides Ready]` (préparation groupée) — retirée de la liste, la
+          // copie arrive séparément via `candidate-added`.
+          case "candidate-removed": {
+            const id = msg.id;
+            setOrder((prev) => prev.filter((x2) => x2 !== id));
+            setFrames((prev) => {
+              if (!(id in prev)) return prev;
+              const next = { ...prev };
+              delete next[id];
+              return next;
+            });
+            setActiveId((prev) => prev === id ? void 0 : prev);
+            break;
+          }
+          case "template-candidate-added": {
+            const f4 = msg.frame;
+            setTemplateLayouts((prev) => ({
+              ...prev,
+              [f4.id]: {
+                ...f4,
+                previewDataUrl: msg.previewDataUrl,
+                warnings: msg.warnings ?? [],
+                blocking: Boolean(msg.blocking),
+                placeholders: msg.placeholders ?? [],
+                colors: msg.colors ?? [],
+                fonts: msg.fonts ?? [],
+                fontSubstitutions: msg.fontSubstitutions
+              }
+            }));
+            setTemplateOrder((prev) => prev.includes(f4.id) ? prev : [...prev, f4.id]);
+            break;
+          }
+          // Boucle centrale du mode template refermée : un layout corrigé dans
+          // Figma est re-validé côté sandbox (live refresh) et son rapport se
+          // met à jour ICI, en place — plus besoin de supprimer/re-ajouter.
+          case "template-candidate-updated": {
+            const f4 = msg.frame;
+            setTemplateLayouts(
+              (prev) => prev[f4.id] ? {
+                ...prev,
+                [f4.id]: {
+                  ...prev[f4.id],
+                  ...f4,
+                  previewDataUrl: msg.previewDataUrl,
+                  warnings: msg.warnings ?? [],
+                  blocking: Boolean(msg.blocking),
+                  placeholders: msg.placeholders ?? [],
+                  colors: msg.colors ?? [],
+                  fonts: msg.fonts ?? [],
+                  fontSubstitutions: msg.fontSubstitutions
+                }
+              } : prev
+            );
+            break;
+          }
+          case "template-candidate-removed": {
+            const id = msg.id;
+            setTemplateOrder((prev) => prev.filter((x2) => x2 !== id));
+            setTemplateLayouts((prev) => {
+              if (!(id in prev)) return prev;
+              const next = { ...prev };
+              delete next[id];
+              return next;
+            });
+            setActiveTemplateId((prev) => prev === id ? void 0 : prev);
+            break;
+          }
+          case "canvas-selection-changed":
+            setHasCanvasSelection(Boolean(msg.hasSelection));
+            break;
+          // Session Google persistée via clientStorage (code.ts) — restaurée à
+          // l'ouverture pour ne pas refaire l'OAuth à chaque session. Sans
+          // risque pour les decks déjà envoyés : chaque export crée une
+          // présentation NEUVE (mode 'new-presentation').
+          case "session-token-restored":
+            setSessionToken(sanitizeSessionToken(msg.token));
+            setAuthUrl(void 0);
+            setLoginError(void 0);
+            break;
+          case "no-frames-selected":
+            if (modeRef.current === "template") {
+              setTemplateSelectionNotice("Select at least one frame on the Figma canvas before clicking.");
+            } else {
+              setSelectionNotice("Select at least one frame on the Figma canvas before clicking.");
+            }
+            break;
+          case "too-many-frames":
+            if (modeRef.current === "template") {
+              setTemplateSelectionNotice(`${msg.count} layouts selected \u2014 a template is capped at ${msg.max} to stay focused.`);
+            } else {
+              setSelectionNotice(`${msg.count} frames selected \u2014 beyond ${msg.max}, export may become slow.`);
+            }
+            break;
+          case "export-payload":
+            void handleExportPayload(
+              msg.document,
+              (msg.assets ?? []).map((a3) => a3.assetKey)
+            );
+            break;
+          case "export-asset":
+            pendingAssets.set(msg.assetKey, msg.bytes);
+            break;
+          case "export-error":
+            setExportState("error");
+            setExportError(msg.message);
+            break;
+          default:
+            break;
+        }
+      };
+      window.addEventListener("message", onMessage);
+      return () => window.removeEventListener("message", onMessage);
+    }, []);
+    const ASSET_BATCH_BUDGET_BYTES = 3.5 * 1024 * 1024;
+    async function uploadAssetBatches(assets) {
+      let batch = [];
+      let batchBytes = 0;
+      const flush = async () => {
+        if (batch.length === 0) return;
+        const form = new FormData();
+        for (const [assetKey, buf] of batch) {
+          form.append(assetKey, new Blob([buf], { type: "image/png" }), assetKey);
+        }
+        const res = await fetch(`${backend.baseUrl}/assets`, {
+          method: "POST",
+          body: form,
+          headers: sessionTokenRef.current ? { Authorization: `Bearer ${sessionTokenRef.current}` } : void 0,
+          credentials: "include"
+        });
+        if (res.status === 401) throw new AuthExpiredError();
+        if (!res.ok) {
+          const body = await res.json().catch(() => void 0);
+          throw new Error(body?.error ? `${body.error} (${res.status})` : `Asset upload rejected (${res.status})`);
+        }
+        batch = [];
+        batchBytes = 0;
+      };
+      for (const asset of assets) {
+        const size = asset[1].byteLength;
+        if (batch.length > 0 && batchBytes + size > ASSET_BATCH_BUDGET_BYTES) {
+          await flush();
+        }
+        batch.push(asset);
+        batchBytes += size;
+      }
+      await flush();
+    }
+    async function waitForExpectedAssets(expectedKeys) {
+      const deadline = Date.now() + 15e3;
+      while (Date.now() < deadline) {
+        if (expectedKeys.every((k3) => pendingAssets.has(k3))) return;
+        await new Promise((r3) => setTimeout(r3, 25));
+      }
+      const missing = expectedKeys.filter((k3) => !pendingAssets.has(k3)).length;
+      throw new Error(`${missing} image asset(s) never arrived from Figma \u2014 close and reopen the plugin, then retry.`);
+    }
+    async function handleExportPayload(doc, expectedAssetKeys) {
+      setExportState("exporting");
+      setExportProgress(0);
+      setExportError(void 0);
+      try {
+        const expected = new Set(expectedAssetKeys);
+        for (const key of [...pendingAssets.keys()]) {
+          if (!expected.has(key)) pendingAssets.delete(key);
+        }
+        await waitForExpectedAssets(expectedAssetKeys);
+        await uploadAssetBatches(expectedAssetKeys.map((k3) => [k3, pendingAssets.get(k3)]));
+        pendingAssets.clear();
+        const form = new FormData();
+        form.append("document", JSON.stringify(doc));
+        const res = await fetch(`${backend.baseUrl}/export`, {
+          method: "POST",
+          body: form,
+          headers: sessionTokenRef.current ? { Authorization: `Bearer ${sessionTokenRef.current}` } : void 0,
+          credentials: "include"
+        });
+        if (res.status === 401) throw new AuthExpiredError();
+        if (!res.ok) {
+          const body = await res.json().catch(() => void 0);
+          throw new Error(body?.error ? `${body.error} (${res.status})` : `Export rejected (${res.status})`);
+        }
+        const { jobId } = await res.json();
+        await pollJob(jobId);
+      } catch (err) {
+        setExportState("error");
+        setExportError(err instanceof Error ? err.message : String(err));
+        if (err instanceof AuthExpiredError) {
+          setSessionToken(void 0);
+          postToPlugin({ type: "clear-session-token" });
+          startLogin();
+        }
+        console.error(err);
+      }
+    }
+    async function pollJob(jobId) {
+      for (let i3 = 0; i3 < 120; i3++) {
+        const res = await fetch(`${backend.baseUrl}/export/${jobId}`, { credentials: "include" });
+        const job = await res.json();
+        const batches = job.batches;
+        if (batches && batches.length > 0) {
+          const applied = batches.filter((b2) => b2.status === "applied").length;
+          setExportProgress(Math.round(applied / batches.length * 100));
+        }
+        if (job.status === "done") {
+          setExportState("done");
+          setExportProgress(100);
+          setResultUrl(job.presentationUrl);
+          return;
+        }
+        if (job.status === "failed") {
+          setExportState("error");
+          const batchErrors = job.batches?.map((b2) => b2.error).filter((e3) => Boolean(e3));
+          setExportError(
+            batchErrors && batchErrors.length > 0 ? batchErrors.join(" \xB7 ") : job.error ?? "Unknown server-side failure."
+          );
+          return;
+        }
+        await new Promise((r3) => setTimeout(r3, 1500));
+      }
+      setExportState("error");
+      setExportError("Export timed out after 3 minutes \u2014 the presentation may still be processing; check your Google Drive before retrying.");
+    }
+    async function pollAuthSession(pollId) {
+      for (let i3 = 0; i3 < 400; i3++) {
+        if (sessionTokenRef.current) return;
+        try {
+          const res = await fetch(`${backend.baseUrl}/auth/session/${pollId}`, { credentials: "include" });
+          const result = await res.json();
+          if (result.status === "ready") {
+            const token = sanitizeSessionToken(result.sessionToken);
+            setSessionToken(token);
+            setAuthUrl(void 0);
+            if (token) postToPlugin({ type: "save-session-token", token });
+            return;
+          }
+          if (result.status === "error") {
+            setLoginError(result.message);
+            setAuthUrl(void 0);
+            return;
+          }
+        } catch {
+        }
+        await new Promise((r3) => setTimeout(r3, 1500));
+      }
+      setLoginError("Sign-in timed out \u2014 try again.");
+      setAuthUrl(void 0);
+    }
+    function startLogin() {
+      setLoginError(void 0);
+      setAuthUrl(void 0);
+      fetch(`${backend.baseUrl}/auth/google`, { method: "POST" }).then(async (res) => {
+        if (!res.ok) {
+          const body = await res.json().catch(() => void 0);
+          throw new Error(body?.message ?? `Backend responded ${res.status}`);
+        }
+        return res.json();
+      }).then(({ authUrl: authUrl2, pollId }) => {
+        setAuthUrl(authUrl2);
+        void pollAuthSession(pollId);
+      }).catch((err) => {
+        setLoginError(err instanceof Error ? err.message : String(err));
+        console.error("[figma-to-slides] startLogin failed", err);
+      });
+    }
+    h2(() => {
+      if (!sessionToken) startLogin();
+    }, []);
+    h2(() => {
+      postToPlugin({ type: "ui-ready" });
+    }, []);
+    function handlePrepareForSlides() {
+      postToPlugin({ type: "prepare-for-slides", deckFrameIds: order, fontOverrides });
+    }
+    function handlePrepareTemplateForSlides() {
+      postToPlugin({ type: "prepare-template-for-slides", layoutFrameIds: templateOrder, fontOverrides });
+    }
+    function handleAddFramesClick() {
+      setSelectionNotice(void 0);
+      if (!selecting) {
+        setSelecting(true);
+        return;
+      }
+      postToPlugin({ type: "add-selected-frames" });
+      setSelecting(false);
+    }
+    function removeFrame(id) {
+      setOrder((prev) => prev.filter((x2) => x2 !== id));
+      setFrames((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      setActiveId((prev) => prev === id ? void 0 : prev);
+    }
+    function handleAddTemplateLayoutClick() {
+      setTemplateSelectionNotice(void 0);
+      if (!templateSelecting) {
+        setTemplateSelecting(true);
+        return;
+      }
+      postToPlugin({ type: "add-template-layout" });
+      setTemplateSelecting(false);
+    }
+    function removeTemplateLayout(id) {
+      setTemplateOrder((prev) => prev.filter((x2) => x2 !== id));
+      setTemplateLayouts((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      setActiveTemplateId((prev) => prev === id ? void 0 : prev);
+    }
     function startExport() {
       setExportState("exporting");
       setExportProgress(0);
+      setExportSource("deck");
       const options = {
         mode: "new-presentation",
         rasterScale: 2,
@@ -1530,22 +1868,37 @@ a {
         includedFrameIds: order,
         order,
         options,
-        presentationTitle: "Export Figma \u2192 Slides",
+        presentationTitle: deckTitle.trim() || "Figma \u2192 Slides export",
         fontOverrides
       });
     }
     function startTemplateCreate() {
       setExportState("exporting");
       setExportProgress(0);
+      setExportSource("template");
       postToPlugin({
         type: "request-template",
         includedFrameIds: templateOrder,
         order: templateOrder,
-        presentationTitle: "Figma template",
+        presentationTitle: templateTitle.trim() || "Figma template",
         fontOverrides
       });
     }
     const exporting = exportState === "exporting";
+    const busyFromOtherMode = exporting && exportSource !== void 0 && exportSource !== mode;
+    const busyTitle = exportSource === "deck" ? "A deck export is still running \u2014 wait for it to finish." : "A template creation is still running \u2014 wait for it to finish.";
+    function renderPrimaryAction(label, disabled, disabledTitle, onClick) {
+      if (sessionToken) {
+        return /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--primary", disabled, title: disabledTitle, onClick, children: label });
+      }
+      if (authUrl) {
+        return /* @__PURE__ */ u3("a", { href: authUrl, target: "_blank", rel: "noreferrer", className: "f2s-btn f2s-btn--primary", title: `Connect your Google account to enable "${label}".`, children: "Sign in with Google" });
+      }
+      if (loginError) {
+        return /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--primary", title: loginError, onClick: startLogin, children: "Retry Google sign-in" });
+      }
+      return /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--primary", disabled: true, children: "Sign in with Google" });
+    }
     return /* @__PURE__ */ u3(S, { children: [
       /* @__PURE__ */ u3("header", { className: "f2s-topbar", children: [
         /* @__PURE__ */ u3("div", { className: "f2s-topbar-left", children: [
@@ -1565,7 +1918,8 @@ a {
           /* @__PURE__ */ u3("span", { className: "f2s-toolbar-label", children: "Dimensions:" }),
           /* @__PURE__ */ u3("span", { className: "f2s-dim-box", children: mode === "deck" ? activeFrame ? Math.round(activeFrame.width) : "\u2014" : activeTemplateLayout ? Math.round(activeTemplateLayout.width) : "\u2014" }),
           /* @__PURE__ */ u3("span", { className: "f2s-dim-sep", children: "\xD7" }),
-          /* @__PURE__ */ u3("span", { className: "f2s-dim-box", children: mode === "deck" ? activeFrame ? Math.round(activeFrame.height) : "\u2014" : activeTemplateLayout ? Math.round(activeTemplateLayout.height) : "\u2014" })
+          /* @__PURE__ */ u3("span", { className: "f2s-dim-box", children: mode === "deck" ? activeFrame ? Math.round(activeFrame.height) : "\u2014" : activeTemplateLayout ? Math.round(activeTemplateLayout.height) : "\u2014" }),
+          /* @__PURE__ */ u3("span", { className: "f2s-dim-unit", children: "px" })
         ] }),
         mode === "deck" ? /* @__PURE__ */ u3("div", { className: "f2s-topbar-actions", children: [
           /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--tertiary", onClick: handleAddFramesClick, children: selecting ? "Add selection" : "Select frames to add" }),
@@ -1580,185 +1934,98 @@ a {
               children: "Prepare for Slides"
             }
           ),
-          sessionToken ? /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--primary", disabled: exporting || order.length === 0, onClick: startExport, children: "Export" }) : authUrl ? (
-            // Un vrai <a target="_blank"> cliqué par l'utilisateur : voir le
-            // commentaire de startLogin plus haut sur la CSP du plugin Figma.
-            /* @__PURE__ */ u3("a", { href: authUrl, target: "_blank", rel: "noreferrer", className: "f2s-btn f2s-btn--primary", children: "Export" })
-          ) : loginError ? /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--primary", onClick: startLogin, children: "Export" }) : (
-            // TODO(TODO.md) : état de chargement pendant qu'on attend le lien
-            // Google — pour l'instant juste désactivé, sans feedback visuel.
-            /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--primary", disabled: true, children: "Export" })
-          ),
-          exportState === "done" && resultUrl && /* @__PURE__ */ u3("a", { href: resultUrl, target: "_blank", rel: "noreferrer", className: "f2s-btn f2s-btn--secondary", children: "Open presentation" })
+          renderPrimaryAction("Export", exporting || order.length === 0, busyFromOtherMode ? busyTitle : void 0, startExport),
+          exportState === "done" && exportSource === "deck" && resultUrl && /* @__PURE__ */ u3("a", { href: resultUrl, target: "_blank", rel: "noreferrer", className: "f2s-btn f2s-btn--secondary", children: "Open presentation" })
         ] }) : /* @__PURE__ */ u3("div", { className: "f2s-topbar-actions", children: [
           /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--tertiary", onClick: handleAddTemplateLayoutClick, children: templateSelecting ? "Add selection" : "Select layout to add" }),
-          sessionToken ? /* @__PURE__ */ u3(
+          /* @__PURE__ */ u3(
             "button",
             {
               type: "button",
-              className: "f2s-btn f2s-btn--primary",
-              disabled: exporting || templateOrder.length === 0 || templateHasBlockingLayout,
-              title: templateHasBlockingLayout ? "Fix the blocking issues listed below before creating the template." : void 0,
-              onClick: startTemplateCreate,
-              children: "Create template"
+              className: "f2s-btn f2s-btn--secondary",
+              disabled: !hasCanvasSelection && templateOrder.length === 0,
+              title: "Duplicate and reformat every layout for Slides \u2014 clears most blocking issues (gradients, shadows, letter spacing\u2026) automatically.",
+              onClick: handlePrepareTemplateForSlides,
+              children: "Prepare for Slides"
             }
-          ) : authUrl ? /* @__PURE__ */ u3("a", { href: authUrl, target: "_blank", rel: "noreferrer", className: "f2s-btn f2s-btn--primary", children: "Create template" }) : loginError ? /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--primary", onClick: startLogin, children: "Create template" }) : /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--primary", disabled: true, children: "Create template" }),
-          exportState === "done" && resultUrl && /* @__PURE__ */ u3("a", { href: resultUrl, target: "_blank", rel: "noreferrer", className: "f2s-btn f2s-btn--secondary", children: "Open presentation" })
+          ),
+          renderPrimaryAction(
+            "Create template",
+            exporting || templateOrder.length === 0 || templateHasBlockingLayout,
+            busyFromOtherMode ? busyTitle : templateHasBlockingLayout ? "Fix the blocking issues listed below before creating the template." : void 0,
+            startTemplateCreate
+          ),
+          exportState === "done" && exportSource === "template" && resultUrl && /* @__PURE__ */ u3("a", { href: resultUrl, target: "_blank", rel: "noreferrer", className: "f2s-btn f2s-btn--secondary", children: "Open presentation" })
         ] })
       ] }),
-      /* @__PURE__ */ u3("div", { className: "f2s-toolbar", children: /* @__PURE__ */ u3("div", { className: "f2s-toolbar-row", children: /* @__PURE__ */ u3("div", { className: "f2s-toolbar-group", children: [
-        /* @__PURE__ */ u3("span", { className: "f2s-toolbar-label", children: "Fonts:" }),
-        (mode === "deck" ? deckFontSubstitutions : templateFontSubstitutions).length === 0 ? /* @__PURE__ */ u3("span", { className: "f2s-toolbar-muted", children: "No substitution" }) : (mode === "deck" ? deckFontSubstitutions : templateFontSubstitutions).map((s3) => /* @__PURE__ */ u3("label", { className: "f2s-font-select", title: `"${s3.original}" isn't available in Slides \u2014 pick the replacement to use.`, children: [
-          /* @__PURE__ */ u3("span", { className: "f2s-font-original", children: s3.original }),
-          /* @__PURE__ */ u3("span", { className: "f2s-font-arrow", children: "\u2192" }),
-          /* @__PURE__ */ u3(
-            "select",
+      /* @__PURE__ */ u3("div", { className: "f2s-toolbar", children: /* @__PURE__ */ u3("div", { className: "f2s-toolbar-row", children: [
+        /* @__PURE__ */ u3("div", { className: "f2s-toolbar-group", children: [
+          /* @__PURE__ */ u3("span", { className: "f2s-toolbar-label", children: mode === "deck" ? "Deck name:" : "Template name:" }),
+          mode === "deck" ? /* @__PURE__ */ u3(
+            "input",
             {
-              className: "f2s-font-dropdown",
-              value: fontOverrides[s3.original] ?? s3.resolved,
-              onChange: (e3) => {
-                const value = e3.target.value;
-                setFontOverrides((prev) => ({ ...prev, [s3.original]: value }));
-              },
-              children: AVAILABLE_SLIDES_FONTS.map((font) => /* @__PURE__ */ u3("option", { value: font, children: font }, font))
+              type: "text",
+              className: "f2s-title-input",
+              placeholder: "Figma \u2192 Slides export",
+              value: deckTitle,
+              onInput: (e3) => setDeckTitle(e3.target.value)
+            }
+          ) : /* @__PURE__ */ u3(
+            "input",
+            {
+              type: "text",
+              className: "f2s-title-input",
+              placeholder: "Figma template",
+              value: templateTitle,
+              onInput: (e3) => setTemplateTitle(e3.target.value)
             }
           )
-        ] }, s3.original))
-      ] }) }) }),
-      mode === "deck" ? /* @__PURE__ */ u3("div", { className: "f2s-body", children: [
-        /* @__PURE__ */ u3("aside", { className: "f2s-sidebar", children: [
-          selecting && order.length > 0 && !hasCanvasSelection && /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: 'Select one or more frames on the Figma canvas, then click "Add selection".' }),
-          order.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-empty", children: selecting ? 'Select one or more frames on the Figma canvas, then click "Add selection".' : 'Click "Select frames to add" to choose what should be exported.' }) : order.map((id, index) => {
-            const f4 = frames[id];
-            if (!f4) return null;
-            const isDragging = dragId === id && dragActive;
-            let ghostShift = 0;
-            if (dragId && dragActive && !isDragging) {
-              const start = dragStartIndexRef.current;
-              if (start < dragTargetIndex && index > start && index <= dragTargetIndex) {
-                ghostShift = -slotHeightRef.current;
-              } else if (start > dragTargetIndex && index >= dragTargetIndex && index < start) {
-                ghostShift = slotHeightRef.current;
-              }
-            }
-            return /* @__PURE__ */ u3(
-              "div",
+        ] }),
+        /* @__PURE__ */ u3("div", { className: "f2s-toolbar-group", children: [
+          /* @__PURE__ */ u3("span", { className: "f2s-toolbar-label", children: "Fonts:" }),
+          (mode === "deck" ? deckFontSubstitutions : templateFontSubstitutions).length === 0 ? /* @__PURE__ */ u3("span", { className: "f2s-toolbar-muted", children: "No substitution" }) : (mode === "deck" ? deckFontSubstitutions : templateFontSubstitutions).map((s3) => /* @__PURE__ */ u3("label", { className: "f2s-font-select", title: `"${s3.original}" isn't available in Slides \u2014 pick the replacement to use.`, children: [
+            /* @__PURE__ */ u3("span", { className: "f2s-font-original", children: s3.original }),
+            /* @__PURE__ */ u3("span", { className: "f2s-font-arrow", children: "\u2192" }),
+            /* @__PURE__ */ u3(
+              "select",
               {
-                ref: (el) => {
-                  if (el) sidebarItemRefs.current.set(id, el);
-                  else sidebarItemRefs.current.delete(id);
+                className: "f2s-font-dropdown",
+                value: fontOverrides[s3.original] ?? s3.resolved,
+                onChange: (e3) => {
+                  const value = e3.target.value;
+                  setFontOverrides((prev) => ({ ...prev, [s3.original]: value }));
                 },
-                className: `f2s-sidebar-item${isDragging ? " is-dragging" : ""}${suppressShiftTransition ? " is-releasing" : ""}`,
-                style: isDragging ? { transform: `translateY(${dragOffsetY}px)` } : ghostShift !== 0 ? { transform: `translateY(${ghostShift}px)` } : void 0,
-                children: [
-                  /* @__PURE__ */ u3(
-                    "button",
-                    {
-                      type: "button",
-                      className: `f2s-frame-preview${activeId === id ? " is-active" : ""}`,
-                      onClick: () => selectFrame(id),
-                      onPointerDown: (e3) => handleDragPointerDown(e3, id),
-                      children: f4.previewDataUrl && /* @__PURE__ */ u3("img", { src: f4.previewDataUrl, alt: f4.name, draggable: false })
-                    }
-                  ),
-                  /* @__PURE__ */ u3("div", { className: "f2s-frame-info", children: [
-                    /* @__PURE__ */ u3("span", { className: "f2s-frame-text", children: index + 1 }),
-                    /* @__PURE__ */ u3("div", { className: "f2s-frame-controls", children: /* @__PURE__ */ u3("button", { type: "button", className: "f2s-icon-btn", title: "Remove", onClick: () => removeFrame(id), children: "\u2715" }) })
-                  ] })
-                ]
-              },
-              id
-            );
-          })
-        ] }),
-        /* @__PURE__ */ u3("main", { className: "f2s-canvas", children: activeFrame ? /* @__PURE__ */ u3("div", { className: "f2s-canvas-preview", children: activeFrame.previewDataUrl && /* @__PURE__ */ u3("img", { src: activeFrame.previewDataUrl, alt: activeFrame.name }) }) : /* @__PURE__ */ u3("p", { className: "f2s-canvas-empty", children: "Select a frame on the left to preview it." }) })
-      ] }) : /* @__PURE__ */ u3("div", { className: "f2s-body", children: [
-        /* @__PURE__ */ u3("aside", { className: "f2s-sidebar", children: [
-          templateSelectionNotice && /* @__PURE__ */ u3("p", { className: "f2s-error", children: templateSelectionNotice }),
-          templateSelecting && templateOrder.length > 0 && !hasCanvasSelection && /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: 'Select one or more frames on the Figma canvas, then click "Add selection".' }),
-          templateOrder.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-empty", children: templateSelecting ? 'Select one or more frames on the Figma canvas, then click "Add selection".' : 'Click "Select layout to add" to choose the layouts that make up this template \u2014 e.g. a title slide, a content slide.' }) : templateOrder.map((id, index) => {
-            const layout = templateLayouts[id];
-            if (!layout) return null;
-            return /* @__PURE__ */ u3("div", { className: "f2s-sidebar-item", children: [
-              /* @__PURE__ */ u3(
-                "button",
-                {
-                  type: "button",
-                  className: `f2s-frame-preview${activeTemplateId === id ? " is-active" : ""}${layout.blocking ? " f2s-frame-preview--blocking" : ""}`,
-                  onClick: () => selectTemplateLayout(id),
-                  title: layout.blocking ? "Contains an element that would be rasterized \u2014 open it to see the details." : void 0,
-                  children: layout.previewDataUrl && /* @__PURE__ */ u3("img", { src: layout.previewDataUrl, alt: layout.name, draggable: false })
-                }
-              ),
-              /* @__PURE__ */ u3("div", { className: "f2s-frame-info", children: [
-                /* @__PURE__ */ u3("span", { className: "f2s-frame-text", children: [
-                  index + 1,
-                  ". ",
-                  layout.name
-                ] }),
-                /* @__PURE__ */ u3("div", { className: "f2s-frame-controls", children: /* @__PURE__ */ u3("button", { type: "button", className: "f2s-icon-btn", title: "Remove", onClick: () => removeTemplateLayout(id), children: "\u2715" }) })
-              ] })
-            ] }, id);
-          })
-        ] }),
-        /* @__PURE__ */ u3("main", { className: "f2s-canvas f2s-canvas--template", children: activeTemplateLayout ? /* @__PURE__ */ u3("div", { className: "f2s-tmpl-report", children: [
-          /* @__PURE__ */ u3("div", { className: "f2s-canvas-preview f2s-tmpl-preview", children: activeTemplateLayout.previewDataUrl && /* @__PURE__ */ u3("img", { src: activeTemplateLayout.previewDataUrl, alt: activeTemplateLayout.name }) }),
-          /* @__PURE__ */ u3("div", { className: "f2s-tmpl-panel", children: [
-            activeTemplateLayout.warnings.filter((w3) => w3.severity === "blocking").length > 0 && /* @__PURE__ */ u3("section", { className: "f2s-tmpl-section f2s-tmpl-section--blocking", children: [
-              /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Fix before creating the template" }),
-              /* @__PURE__ */ u3("ul", { className: "f2s-tmpl-list", children: activeTemplateLayout.warnings.filter((w3) => w3.severity === "blocking").map((w3, i3) => /* @__PURE__ */ u3("li", { children: /* @__PURE__ */ u3("button", { type: "button", className: "f2s-tmpl-warning", onClick: () => selectSourceNodes([w3.sourceNodeId]), children: [
-                /* @__PURE__ */ u3("strong", { children: w3.nodeName }),
-                " \u2014 ",
-                w3.message
-              ] }) }, i3)) })
-            ] }),
-            /* @__PURE__ */ u3("section", { className: "f2s-tmpl-section", children: [
-              /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Placeholders" }),
-              activeTemplateLayout.placeholders.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: [
-                "No tagged placeholder yet \u2014 prefix a layer name in Figma with ",
-                /* @__PURE__ */ u3("code", { children: "[[title]]" }),
-                ", ",
-                /* @__PURE__ */ u3("code", { children: "[[body]]" }),
-                ",",
-                " ",
-                /* @__PURE__ */ u3("code", { children: "[[image]]" }),
-                ", ",
-                /* @__PURE__ */ u3("code", { children: "[[subtitle]]" }),
-                " or ",
-                /* @__PURE__ */ u3("code", { children: "[[logo]]" }),
-                " to mark it."
-              ] }) : /* @__PURE__ */ u3("ul", { className: "f2s-tmpl-list", children: activeTemplateLayout.placeholders.map((p3) => /* @__PURE__ */ u3("li", { children: /* @__PURE__ */ u3("button", { type: "button", className: "f2s-tmpl-chip", onClick: () => selectSourceNodes([p3.sourceNodeId]), children: [
-                /* @__PURE__ */ u3("span", { className: `f2s-tmpl-role f2s-tmpl-role--${p3.role.toLowerCase()}`, children: p3.role }),
-                p3.label
-              ] }) }, p3.id)) })
-            ] }),
-            /* @__PURE__ */ u3("section", { className: "f2s-tmpl-section", children: [
-              /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Colors" }),
-              activeTemplateLayout.colors.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: "No solid color detected." }) : /* @__PURE__ */ u3("div", { className: "f2s-tmpl-swatches", children: activeTemplateLayout.colors.map((c3, i3) => /* @__PURE__ */ u3(
-                "span",
-                {
-                  className: "f2s-tmpl-swatch",
-                  style: { backgroundColor: c3.hex, opacity: c3.alpha },
-                  title: `${c3.hex} \xB7 used ${c3.usageCount}\xD7`
-                },
-                i3
-              )) })
-            ] }),
-            /* @__PURE__ */ u3("section", { className: "f2s-tmpl-section", children: [
-              /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Typography" }),
-              activeTemplateLayout.fonts.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: "No text detected." }) : /* @__PURE__ */ u3("ul", { className: "f2s-tmpl-list", children: activeTemplateLayout.fonts.map((f4) => /* @__PURE__ */ u3("li", { children: [
-                /* @__PURE__ */ u3("span", { className: "f2s-tmpl-font-family", children: f4.family }),
-                " ",
-                /* @__PURE__ */ u3("span", { className: "f2s-toolbar-muted", children: [
-                  "(",
-                  f4.weights.join(", "),
-                  ")"
-                ] })
-              ] }, f4.family)) })
-            ] })
-          ] })
-        ] }) : /* @__PURE__ */ u3("p", { className: "f2s-canvas-empty", children: "Select a layout on the left to see its report." }) })
-      ] })
+                children: AVAILABLE_SLIDES_FONTS.map((font) => /* @__PURE__ */ u3("option", { value: font, children: font }, font))
+              }
+            )
+          ] }, s3.original))
+        ] })
+      ] }) }),
+      mode === "deck" ? /* @__PURE__ */ u3(
+        DeckPanel,
+        {
+          order,
+          setOrder,
+          frames,
+          activeId,
+          setActiveId,
+          selecting,
+          hasCanvasSelection,
+          onRemove: removeFrame
+        }
+      ) : /* @__PURE__ */ u3(
+        TemplatePanel,
+        {
+          order: templateOrder,
+          layouts: templateLayouts,
+          activeId: activeTemplateId,
+          setActiveId: setActiveTemplateId,
+          selecting: templateSelecting,
+          hasCanvasSelection,
+          notice: templateSelectionNotice,
+          onRemove: removeTemplateLayout
+        }
+      )
     ] });
   }
   R(/* @__PURE__ */ u3(App, {}), document.getElementById("app"));

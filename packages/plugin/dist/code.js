@@ -13,57 +13,57 @@
     if (input.opacity === 0) return { action: "ignore" };
     if (input.width < 0.5 && input.height < 0.5) return { action: "ignore" };
     if (!BLEND_MODES_EQUIVALENT_TO_NORMAL.has(input.blendMode)) {
-      return { action: "raster", warningCode: "BLEND_MODE_RASTERIZED", message: `Mode de fusion \xAB ${input.blendMode} \xBB non support\xE9 par Slides \u2014 converti en image.` };
+      return { action: "raster", warningCode: "BLEND_MODE_RASTERIZED", message: `Blend mode "${input.blendMode}" isn't supported by Slides \u2014 converted to an image.` };
     }
     if (input.hasVisibleShadowOrBlur) {
-      return { action: "raster", warningCode: "EFFECT_RASTERIZED", message: "Ombre port\xE9e ou flou non support\xE9 nativement par Slides \u2014 converti en image." };
+      return { action: "raster", warningCode: "EFFECT_RASTERIZED", message: "Drop shadow or blur has no native Slides equivalent \u2014 converted to an image." };
     }
     if (input.isMasked) {
-      return { action: "raster", warningCode: "MASK_RASTERIZED", message: "Masque de calque non support\xE9 nativement \u2014 le groupe masqu\xE9 est aplati en image." };
+      return { action: "raster", warningCode: "MASK_RASTERIZED", message: "Layer masks have no native Slides equivalent \u2014 the masked group is flattened into an image." };
     }
     if (input.kind === "LINE") {
       const l = input.line;
       if (!l || l.visibleStrokeCount === 0) return { action: "ignore" };
       if (l.visibleStrokeCount > 1) {
-        return { action: "raster", warningCode: "LINE_RASTERIZED", message: "Plusieurs contours sur une ligne \u2014 Slides n'en supporte qu'un seul, convertie en image." };
+        return { action: "raster", warningCode: "LINE_RASTERIZED", message: "Multiple strokes on a line \u2014 Slides supports only one, converted to an image." };
       }
       if (l.strokeIsGradient) {
-        return { action: "raster", warningCode: "GRADIENT_RASTERIZED", message: "D\xE9grad\xE9 sur une ligne non support\xE9 par Slides \u2014 convertie en image." };
+        return { action: "raster", warningCode: "GRADIENT_RASTERIZED", message: "Gradient stroke on a line is not supported by Slides \u2014 converted to an image." };
       }
       if (l.strokeWeightIsMixed) {
-        return { action: "raster", warningCode: "LINE_RASTERIZED", message: "\xC9paisseur de contour non uniforme sur cette ligne \u2014 convertie en image." };
+        return { action: "raster", warningCode: "LINE_RASTERIZED", message: "Non-uniform stroke weight on this line \u2014 converted to an image." };
       }
       if (l.hasUnsupportedCap) {
-        return { action: "raster", warningCode: "LINE_RASTERIZED", message: "Terminaison de ligne (fl\xE8che, losange, cercle\u2026) non support\xE9e nativement \u2014 convertie en image." };
+        return { action: "raster", warningCode: "LINE_RASTERIZED", message: "Decorative line cap (arrow, diamond, circle\u2026) has no native Slides equivalent \u2014 converted to an image." };
       }
       return { action: "native-line" };
     }
     if (input.kind === "TEXT") {
       const t = input.text;
       if (t?.fontUnavailable) {
-        return { action: "raster", warningCode: "FONT_MISSING", message: "Police introuvable et non substituable \u2014 texte converti en image." };
+        return { action: "raster", warningCode: "FONT_MISSING", message: "Font not found and no substitute available \u2014 text converted to an image." };
       }
       if (t?.letterSpacingExceedsThreshold) {
-        return { action: "raster", warningCode: "LETTER_SPACING_LOST", message: "L'espacement des lettres modifie la largeur du texte de plus de 2 % \u2014 converti en image." };
+        return { action: "raster", warningCode: "LETTER_SPACING_LOST", message: "Letter spacing changes the text width by more than 2% \u2014 converted to an image." };
       }
       if (t?.hasUnrepresentableMixedStyle) {
-        return { action: "raster", warningCode: "EFFECT_RASTERIZED", message: "Style de texte mixte non repr\xE9sentable \u2014 converti en image." };
+        return { action: "raster", warningCode: "EFFECT_RASTERIZED", message: "Mixed text styling cannot be represented \u2014 converted to an image." };
       }
       return { action: "native-text" };
     }
     if (input.kind === "RECTANGLE" || input.kind === "ELLIPSE" || input.kind === "POLYGON" || input.kind === "STAR") {
       const s = input.shape;
       if (s && s.visibleFillCount > 1) {
-        return { action: "raster", warningCode: "MULTIPLE_FILLS_RASTERIZED", message: "Plusieurs remplissages visibles \u2014 Slides ne supporte qu'un seul fill, converti en image." };
+        return { action: "raster", warningCode: "MULTIPLE_FILLS_RASTERIZED", message: "Multiple visible fills \u2014 Slides supports only one, converted to an image." };
       }
       if (s?.fillIsGradient) {
-        return { action: "raster", warningCode: "GRADIENT_RASTERIZED", message: "D\xE9grad\xE9 non support\xE9 par Slides \u2014 converti en image." };
+        return { action: "raster", warningCode: "GRADIENT_RASTERIZED", message: "Gradients are not supported by Slides \u2014 converted to an image." };
       }
       if (s?.fillIsImage) {
         return { action: "image" };
       }
       if (s?.hasMultipleOrOffCenterStroke) {
-        return { action: "raster", warningCode: "EFFECT_RASTERIZED", message: "Contour multiple ou non centr\xE9 au-del\xE0 de la tol\xE9rance \u2014 converti en image." };
+        return { action: "raster", warningCode: "EFFECT_RASTERIZED", message: "Multiple or off-center stroke beyond tolerance \u2014 converted to an image." };
       }
       if (input.kind === "RECTANGLE" && s?.radiusDecision) {
         const rd = s.radiusDecision;
@@ -78,11 +78,11 @@
       return { action: "native-shape-preset" };
     }
     if (input.kind === "VECTOR_LIKE") {
-      return { action: "raster", warningCode: "VECTOR_RASTERIZED", message: "Forme vectorielle custom (ic\xF4ne, op\xE9ration bool\xE9enne, trac\xE9) \u2014 convertie en image." };
+      return { action: "raster", warningCode: "VECTOR_RASTERIZED", message: "Custom vector shape (icon, boolean operation, path) \u2014 converted to an image." };
     }
     if (input.kind === "GROUP_LIKE") {
       if (input.container?.clipsContentWithOverflow) {
-        return { action: "raster", warningCode: "EFFECT_RASTERIZED", message: "Groupe avec recadrage et enfants d\xE9bordants \u2014 aplati en image." };
+        return { action: "raster", warningCode: "EFFECT_RASTERIZED", message: "Group clips overflowing children \u2014 flattened into an image." };
       }
       return { action: "descend" };
     }
@@ -96,7 +96,7 @@
     const allZero = topLeft === 0 && topRight === 0 && bottomLeft === 0 && bottomRight === 0;
     if (allZero) return { kind: "rectangle" };
     const uniform = topLeft === topRight && topRight === bottomLeft && bottomLeft === bottomRight;
-    if (!uniform) return { kind: "raster", reason: "Rayons de coin non uniformes \u2014 non repr\xE9sentable nativement." };
+    if (!uniform) return { kind: "raster", reason: "Corner radii differ between corners \u2014 not representable natively." };
     const minDim = Math.min(w, h);
     if (topLeft >= minDim / 2) {
       return w === h ? { kind: "ellipse" } : { kind: "round-rectangle", approximated: true };
@@ -105,7 +105,7 @@
     if (ratio >= tolerance.min && ratio <= tolerance.max) {
       return { kind: "round-rectangle", approximated: true };
     }
-    return { kind: "raster", reason: `Rapport rayon/min(w,h) = ${ratio.toFixed(3)}, hors tol\xE9rance [${tolerance.min}; ${tolerance.max}].` };
+    return { kind: "raster", reason: `Corner radius ratio ${ratio.toFixed(3)} of min(w,h) is outside the supported range [${tolerance.min}; ${tolerance.max}].` };
   }
 
   // src/serialize/fonts.ts
@@ -280,7 +280,7 @@
         const impact = letterSpacingImpactRatio(seg.letterSpacing.value, seg.end - seg.start, width);
         if (impact > LETTER_SPACING_RASTER_THRESHOLD) {
           requiresRaster = true;
-          rasterReason = `Espacement des lettres modifie la largeur de ${(impact * 100).toFixed(1)} % (> 2%).`;
+          rasterReason = `Letter spacing changes the text width by ${(impact * 100).toFixed(1)}% (> 2%).`;
         }
       }
       runs.push({
@@ -398,6 +398,12 @@
     const label = match[2]?.trim();
     return { role, label: label && label.length > 0 ? label : defaultLabel(role) };
   }
+  function findUnknownPlaceholderTag(layerName) {
+    const match = TAG_PATTERN.exec(layerName);
+    if (!match) return void 0;
+    return ROLE_ALIASES[match[1].toLowerCase()] ? void 0 : match[1];
+  }
+  var KNOWN_ROLE_TAGS = ["title", "subtitle", "body", "image", "logo", "custom"];
 
   // src/serialize/serializeFrame.ts
   function evaluateStroke(node) {
@@ -435,6 +441,16 @@
     };
   }
   async function walk(node, state) {
+    const unknownTag = findUnknownPlaceholderTag(node.name);
+    if (unknownTag) {
+      state.warnings.push({
+        code: "PLACEHOLDER_TAG_UNKNOWN",
+        severity: "warning",
+        sourceNodeId: node.id,
+        nodeName: node.name,
+        message: `Unknown placeholder tag "[[${unknownTag}]]" \u2014 use one of: ${KNOWN_ROLE_TAGS.map((r) => `[[${r}]]`).join(", ")}.`
+      });
+    }
     const decision = classifyNode(toDecisionInput(node, state.maskedByAncestor ?? false));
     switch (decision.action) {
       case "ignore":
@@ -470,7 +486,7 @@
             severity: "warning",
             sourceNodeId: node.id,
             nodeName: node.name,
-            message: extraction.rasterReason ?? "Texte converti en image."
+            message: extraction.rasterReason ?? "Text converted to an image."
           });
           return;
         }
@@ -481,7 +497,7 @@
               severity: "info",
               sourceNodeId: node.id,
               nodeName: node.name,
-              message: `Police \xAB ${w.original} \xBB remplac\xE9e par \xAB ${w.substitute} \xBB.`
+              message: `Font "${w.original}" replaced with "${w.substitute}".`
             });
           }
         }
@@ -513,7 +529,7 @@
             severity: "info",
             sourceNodeId: node.id,
             nodeName: node.name,
-            message: "Le rayon de coin est approxim\xE9 par Slides (valeur fixe non param\xE9trable)."
+            message: "Corner radius is approximated by Slides (fixed, non-adjustable value)."
           });
         }
         return;
@@ -768,7 +784,7 @@
             nodeId: node.id,
             nodeName: node.name,
             code: "LETTER_SPACING_LOST",
-            message: extraction.rasterReason ?? "Texte non repr\xE9sentable \u2014 sera converti en image."
+            message: extraction.rasterReason ?? "Text cannot be represented \u2014 it will be converted to an image."
           });
         }
         return;
@@ -956,7 +972,13 @@
     "LINE_RASTERIZED",
     "LETTER_SPACING_LOST",
     "CORNER_RADIUS_RASTERIZED",
-    "MULTIPLE_FILLS_RASTERIZED"
+    "MULTIPLE_FILLS_RASTERIZED",
+    // Pas un raster, mais bloquant quand même en mode template : un tag de
+    // placeholder mal orthographié (`[[titel]]`…) signifie qu'un placeholder
+    // prévu MANQUERA dans le template livré — exactement le genre d'erreur qui
+    // retombe sur tous les futurs utilisateurs, donc à corriger avant création
+    // plutôt qu'à ignorer en silence.
+    "PLACEHOLDER_TAG_UNKNOWN"
   ]);
   function enforceTemplateStrictness(warnings) {
     return warnings.map((w) => RASTER_WARNING_CODES.has(w.code) ? { ...w, severity: "blocking" } : w);
@@ -1026,17 +1048,29 @@
   var TEMPLATE_MAX_LAYOUTS = 10;
   var PREVIEW_WIDTH = 960;
   var SLIDES_READY_KEY = "slidesExportReady";
+  var DECK_TAG = "true";
+  var TEMPLATE_TAG = "template";
   var LINT_GROUP_ID_KEY = "slidesLintGroupId";
   var SLIDES_READY_PREFIX = "[Slides Ready] ";
+  var TEMPLATE_READY_PREFIX = "[Template Ready] ";
   var COPY_GAP_PX = 200;
+  var SESSION_TOKEN_STORAGE_KEY = "f2s:sessionToken";
   function isExportable(node) {
     return node.type === "FRAME" || node.type === "COMPONENT" || node.type === "INSTANCE";
   }
+  function readyTagOf(node) {
+    return node.getPluginData(SLIDES_READY_KEY);
+  }
   function isSlidesReady(node) {
-    return node.getPluginData(SLIDES_READY_KEY) === "true";
+    return readyTagOf(node) === DECK_TAG;
+  }
+  function isTemplateReady(node) {
+    return readyTagOf(node) === TEMPLATE_TAG;
   }
   function stripReadyPrefix(name) {
-    return name.startsWith(SLIDES_READY_PREFIX) ? name.slice(SLIDES_READY_PREFIX.length) : name;
+    if (name.startsWith(SLIDES_READY_PREFIX)) return name.slice(SLIDES_READY_PREFIX.length);
+    if (name.startsWith(TEMPLATE_READY_PREFIX)) return name.slice(TEMPLATE_READY_PREFIX.length);
+    return name;
   }
   function yieldToUi() {
     return new Promise((resolve) => setTimeout(resolve, 0));
@@ -1083,9 +1117,30 @@
       fontSubstitutions: collectFontSubstitutions(slide)
     });
   }
+  var RATIO_TOLERANCE = 0.01;
+  function sameAspectRatio(a, b) {
+    if (a.height <= 0 || b.height <= 0) return false;
+    const ra = a.width / a.height;
+    const rb = b.width / b.height;
+    return Math.abs(ra - rb) / rb <= RATIO_TOLERANCE;
+  }
+  function filterMatchingRatio(nodes, reference) {
+    const ref = reference ?? nodes[0];
+    if (!ref) return nodes;
+    const kept = nodes.filter((n) => sameAspectRatio(n, ref));
+    const rejected = nodes.length - kept.length;
+    if (rejected > 0) {
+      figma.notify(
+        `${rejected} frame(s) skipped: a Slides presentation has a single page size, so every frame must match the aspect ratio of "${stripReadyPrefix(ref.name)}".`,
+        { error: true, timeout: 6e3 }
+      );
+    }
+    return kept;
+  }
   async function addFrames(nodes, pending, idGen) {
     const known = new Set(pending.map((p) => p.frame.id));
-    const toAdd = nodes.filter((n) => !known.has(n.id));
+    const candidates = nodes.filter((n) => !known.has(n.id));
+    const toAdd = filterMatchingRatio(candidates, pending[0]?.frame);
     if (toAdd.length === 0) return;
     if (toAdd.length > MAX_FRAMES_WARNING) {
       figma.ui.postMessage({ type: "too-many-frames", count: toAdd.length, max: MAX_FRAMES_WARNING });
@@ -1117,10 +1172,11 @@
     }
     await addFrames(selected, pending, idGen);
   }
-  async function loadTaggedFrames(pending, idGen) {
-    const tagged = figma.currentPage.findAll((n) => isExportable(n) && isSlidesReady(n));
-    if (tagged.length === 0) return;
-    await addFrames(tagged, pending, idGen);
+  async function loadTaggedFrames(pending, templatePending, idGen) {
+    const deckTagged = figma.currentPage.findAll((n) => isExportable(n) && isSlidesReady(n));
+    if (deckTagged.length > 0) await addFrames(deckTagged, pending, idGen);
+    const templateTagged = figma.currentPage.findAll((n) => isExportable(n) && isTemplateReady(n));
+    if (templateTagged.length > 0) await addTemplateLayoutNodes(templateTagged, templatePending, idGen);
   }
   function flattenAutoLayout(node) {
     if ("layoutMode" in node && node.layoutMode !== "NONE") {
@@ -1162,9 +1218,9 @@
     if ("expanded" in group) group.expanded = false;
     copy.setPluginData(LINT_GROUP_ID_KEY, group.id);
   }
-  async function prepareFrameForSlides(source, fontOverrides) {
+  async function prepareFrameForSlides(source, fontOverrides, tag = DECK_TAG) {
     let copy;
-    if (isSlidesReady(source)) {
+    if (readyTagOf(source) === tag) {
       copy = source;
     } else {
       const clone = source.clone();
@@ -1172,8 +1228,8 @@
       copy = clone;
       copy.x = source.x + source.width + COPY_GAP_PX;
       copy.y = source.y;
-      copy.name = SLIDES_READY_PREFIX + stripReadyPrefix(source.name);
-      copy.setPluginData(SLIDES_READY_KEY, "true");
+      copy.name = (tag === TEMPLATE_TAG ? TEMPLATE_READY_PREFIX : SLIDES_READY_PREFIX) + stripReadyPrefix(source.name);
+      copy.setPluginData(SLIDES_READY_KEY, tag);
     }
     flattenAutoLayout(copy);
     await reformatForSlides(copy, fontOverrides);
@@ -1218,43 +1274,108 @@
     );
     await addFrames(newlyCreated, pending, idGen);
   }
-  async function addTemplateLayouts(pending, idGen) {
+  function postTemplateCandidateMessage(type, frame, previewDataUrl, slide) {
+    figma.ui.postMessage({
+      type,
+      frame: { id: frame.id, name: frame.name, width: frame.width, height: frame.height },
+      previewDataUrl,
+      warnings: slide.warnings,
+      blocking: hasBlockingWarnings(slide.warnings),
+      placeholders: summarizePlaceholders(slide.elements),
+      colors: summarizeColors(slide.elements),
+      fonts: summarizeFonts(slide.elements),
+      fontSubstitutions: collectFontSubstitutions(slide)
+    });
+  }
+  async function addTemplateLayoutNodes(nodes, pending, idGen) {
     const known = new Set(pending.map((p) => p.frame.id));
-    const selected = figma.currentPage.selection.filter((n) => isExportable(n) && !known.has(n.id));
-    if (selected.length === 0) {
-      figma.ui.postMessage({ type: "no-frames-selected" });
-      return;
+    const candidates = filterMatchingRatio(nodes.filter((n) => !known.has(n.id)), pending[0]?.frame);
+    if (candidates.length === 0) return;
+    const remaining = TEMPLATE_MAX_LAYOUTS - pending.length;
+    const toAdd = candidates.slice(0, Math.max(0, remaining));
+    if (toAdd.length < candidates.length) {
+      figma.ui.postMessage({ type: "too-many-frames", count: pending.length + candidates.length, max: TEMPLATE_MAX_LAYOUTS });
+      figma.notify(
+        `A template is capped at ${TEMPLATE_MAX_LAYOUTS} layouts (plugin limit to keep templates focused) \u2014 ${candidates.length - toAdd.length} frame(s) not added.`,
+        { error: true, timeout: 6e3 }
+      );
     }
-    if (pending.length + selected.length > TEMPLATE_MAX_LAYOUTS) {
-      figma.ui.postMessage({ type: "too-many-frames", count: pending.length + selected.length, max: TEMPLATE_MAX_LAYOUTS });
-    }
-    for (const frame of selected) {
+    for (const frame of toAdd) {
       const previewDataUrl = await generatePreview(frame);
       const { slide, nodesToRaster } = await serializeFrame(frame, { nextId: idGen });
       slide.warnings = enforceTemplateStrictness(slide.warnings);
       pending.push({ frame, slide, nodesToRaster });
-      figma.ui.postMessage({
-        type: "template-candidate-added",
-        frame: { id: frame.id, name: frame.name, width: frame.width, height: frame.height },
-        previewDataUrl,
-        warnings: slide.warnings,
-        blocking: hasBlockingWarnings(slide.warnings),
-        placeholders: summarizePlaceholders(slide.elements),
-        colors: summarizeColors(slide.elements),
-        fonts: summarizeFonts(slide.elements),
-        fontSubstitutions: collectFontSubstitutions(slide)
-      });
+      postTemplateCandidateMessage("template-candidate-added", frame, previewDataUrl, slide);
       await yieldToUi();
     }
+  }
+  async function addSelectedTemplateLayouts(pending, idGen) {
+    const selected = figma.currentPage.selection.filter(isExportable);
+    if (selected.length === 0) {
+      figma.ui.postMessage({ type: "no-frames-selected" });
+      return;
+    }
+    await addTemplateLayoutNodes(selected, pending, idGen);
+  }
+  async function refreshTemplateEntry(frame, pending, idGen) {
+    const idx = pending.findIndex((p) => p.frame.id === frame.id);
+    if (idx === -1) return false;
+    const previewDataUrl = await generatePreview(frame);
+    const { slide, nodesToRaster } = await serializeFrame(frame, { nextId: idGen });
+    slide.warnings = enforceTemplateStrictness(slide.warnings);
+    pending[idx] = { frame, slide, nodesToRaster };
+    if (isTemplateReady(frame)) {
+      const warnings = await lintFrame(frame);
+      await addLintAnnotations(frame, warnings);
+    }
+    postTemplateCandidateMessage("template-candidate-updated", frame, previewDataUrl, slide);
+    return true;
+  }
+  async function handlePrepareTemplateForSlides(pending, idGen, fontOverrides, layoutFrameIds) {
+    const listNodes = (await Promise.all(layoutFrameIds.map((id) => figma.getNodeByIdAsync(id)))).filter((n) => n !== null && isExportable(n));
+    const canvasSelected = figma.currentPage.selection.filter(isExportable);
+    const targets = /* @__PURE__ */ new Map();
+    for (const n of [...listNodes, ...canvasSelected]) targets.set(n.id, n);
+    if (targets.size === 0) {
+      figma.notify("Select at least one frame on the canvas, or add layouts to the template first.", { error: true });
+      return;
+    }
+    const copies = [];
+    const newlyCreated = [];
+    let totalWarnings = 0;
+    for (const frame of targets.values()) {
+      const wasAlreadyTagged = isTemplateReady(frame);
+      const { copy, warnings } = await prepareFrameForSlides(frame, fontOverrides, TEMPLATE_TAG);
+      copies.push(copy);
+      totalWarnings += warnings.length;
+      if (wasAlreadyTagged) {
+        await refreshTemplateEntry(copy, pending, idGen);
+      } else {
+        newlyCreated.push(copy);
+        const rawIdx = pending.findIndex((p) => p.frame.id === frame.id);
+        if (rawIdx !== -1) {
+          pending.splice(rawIdx, 1);
+          figma.ui.postMessage({ type: "template-candidate-removed", id: frame.id });
+        }
+      }
+      await yieldToUi();
+    }
+    figma.currentPage.selection = copies;
+    figma.viewport.scrollAndZoomIntoView(copies);
+    const label = copies.length === 1 ? "layout" : "layouts";
+    figma.notify(
+      totalWarnings === 0 ? `Prepared ${copies.length} ${label} for Slides \u2014 no issues found.` : `Prepared ${copies.length} ${label} for Slides \u2014 ${totalWarnings} issue(s) flagged on canvas (red markers).`
+    );
+    await addTemplateLayoutNodes(newlyCreated, pending, idGen);
   }
   var LIVE_REFRESH_IGNORABLE_PROPERTIES = /* @__PURE__ */ new Set(["pluginData"]);
   function isOnlyIgnorableNodeChange(change) {
     return change.type === "PROPERTY_CHANGE" && change.properties.every((p) => LIVE_REFRESH_IGNORABLE_PROPERTIES.has(p));
   }
-  function nearestTrackedTaggedAncestor(node, trackedIds) {
+  function nearestTrackedAncestor(node, trackedIds, accepts) {
     let current = node;
     while (current) {
-      if (isExportable(current) && trackedIds.has(current.id) && isSlidesReady(current)) {
+      if (isExportable(current) && trackedIds.has(current.id) && accepts(current)) {
         return current;
       }
       current = "parent" in current ? current.parent : null;
@@ -1262,7 +1383,7 @@
     return void 0;
   }
   var LIVE_REFRESH_DEBOUNCE_MS = 700;
-  function watchTaggedFramesForLiveRefresh(pending, idGen) {
+  function watchFramesForLiveRefresh(pending, accepts, refresh) {
     const dirtyIds = /* @__PURE__ */ new Set();
     let timer;
     const flush = async () => {
@@ -1273,7 +1394,7 @@
         try {
           const node = await figma.getNodeByIdAsync(id);
           if (!node || !isExportable(node)) continue;
-          await refreshPendingEntry(node, pending, idGen);
+          await refresh(node);
         } catch (err) {
           console.error(`[figma-to-slides] live refresh failed for ${id}`, err);
         }
@@ -1289,7 +1410,7 @@
         if (isOnlyIgnorableNodeChange(change)) continue;
         const node = change.node;
         if (!node || node.removed) continue;
-        const match = nearestTrackedTaggedAncestor(node, trackedIds);
+        const match = nearestTrackedAncestor(node, trackedIds, accepts);
         if (match) {
           dirtyIds.add(match.id);
           dirty = true;
@@ -1301,7 +1422,7 @@
     });
   }
   async function main() {
-    figma.showUI(__html__, { width: 900, height: 600 });
+    figma.showUI(__html__, { width: 960, height: 640, themeColors: true });
     const pending = [];
     const templatePending = [];
     const idGen = createIdGenerator(figma.root.id.slice(0, 8));
@@ -1311,7 +1432,8 @@
         hasSelection: figma.currentPage.selection.some(isExportable)
       });
     });
-    watchTaggedFramesForLiveRefresh(pending, idGen);
+    watchFramesForLiveRefresh(pending, isSlidesReady, (frame) => refreshPendingEntry(frame, pending, idGen));
+    watchFramesForLiveRefresh(templatePending, () => true, (frame) => refreshTemplateEntry(frame, templatePending, idGen));
     figma.ui.onmessage = async (msg) => {
       if (msg.type === "ui-ready") {
         figma.ui.postMessage({
@@ -1319,7 +1441,31 @@
           hasSelection: figma.currentPage.selection.some(isExportable)
         });
         try {
-          await loadTaggedFrames(pending, idGen);
+          const storedToken = await figma.clientStorage.getAsync(SESSION_TOKEN_STORAGE_KEY);
+          if (typeof storedToken === "string" && storedToken.length > 0) {
+            figma.ui.postMessage({ type: "session-token-restored", token: storedToken });
+          }
+        } catch (err) {
+          console.error(err);
+        }
+        try {
+          await loadTaggedFrames(pending, templatePending, idGen);
+        } catch (err) {
+          console.error(err);
+        }
+        return;
+      }
+      if (msg.type === "save-session-token") {
+        try {
+          await figma.clientStorage.setAsync(SESSION_TOKEN_STORAGE_KEY, msg.token);
+        } catch (err) {
+          console.error(err);
+        }
+        return;
+      }
+      if (msg.type === "clear-session-token") {
+        try {
+          await figma.clientStorage.deleteAsync(SESSION_TOKEN_STORAGE_KEY);
         } catch (err) {
           console.error(err);
         }
@@ -1345,10 +1491,24 @@
       }
       if (msg.type === "add-template-layout") {
         try {
-          await addTemplateLayouts(templatePending, idGen);
+          await addSelectedTemplateLayouts(templatePending, idGen);
         } catch (err) {
           console.error(err);
           figma.ui.postMessage({ type: "export-error", message: err.message });
+        }
+        return;
+      }
+      if (msg.type === "prepare-template-for-slides") {
+        try {
+          await handlePrepareTemplateForSlides(
+            templatePending,
+            idGen,
+            msg.fontOverrides ?? {},
+            msg.layoutFrameIds ?? []
+          );
+        } catch (err) {
+          console.error(err);
+          figma.notify(`Prepare for Slides failed: ${err.message}`, { error: true });
         }
         return;
       }
@@ -1445,7 +1605,7 @@
     if (blocked) {
       figma.ui.postMessage({
         type: "export-error",
-        message: `"${blocked.frame.name}" contient encore des \xE9l\xE9ments qui seraient convertis en image \u2014 corrige-les dans Figma avant de cr\xE9er le template.`
+        message: `"${blocked.frame.name}" still contains elements that would be converted to images \u2014 fix them in Figma before creating the template.`
       });
       return;
     }
@@ -1461,6 +1621,6 @@
   }
   main().catch((err) => {
     console.error(err);
-    figma.notify(`Erreur d'export : ${err.message}`, { error: true });
+    figma.notify(`Plugin error: ${err.message}`, { error: true });
   });
 })();

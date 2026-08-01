@@ -55,7 +55,7 @@ export function extractTextRuns(node: TextNode): TextExtractionResult {
       const impact = letterSpacingImpactRatio(seg.letterSpacing.value, seg.end - seg.start, width);
       if (impact > LETTER_SPACING_RASTER_THRESHOLD) {
         requiresRaster = true;
-        rasterReason = `Espacement des lettres modifie la largeur de ${(impact * 100).toFixed(1)} % (> 2%).`;
+        rasterReason = `Letter spacing changes the text width by ${(impact * 100).toFixed(1)}% (> 2%).`;
       }
     }
 

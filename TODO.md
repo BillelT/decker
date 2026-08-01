@@ -1,11 +1,50 @@
 # TODO
 
-- **Indicateur de chargement du bouton Export.** Tant que le lien Google
-  n'est pas prêt (juste après montage, ou après une erreur), le bouton
-  Export est simplement désactivé sans aucun feedback visuel. Concevoir
-  un état de chargement sympa (spinner, animation…) pour ce moment.
+## Feedback utilisateur — à designer AVANT d'intégrer (audit 2026-08)
+
+L'ancien footer de statut a été retiré ; tous les états existent encore
+dans le code (`ui.tsx` : `exportError`, `exportProgress`, `selectionNotice`,
+`too-many-frames`…) mais ne sont plus affichés en mode deck. À designer
+proprement plutôt que réintégrer tel quel :
+
+- **Affichage des erreurs** (export échoué, backend injoignable, session
+  expirée). Le backend renvoie désormais des messages détaillés par slide
+  (`Slide "Nom": Slides API 400 — …`) — l'UI doit juste leur trouver une
+  place.
+- **Progression pendant l'export** (le % par lots est déjà calculé dans
+  `pollJob`, jamais affiché).
+- **Notices de sélection en mode deck** (`selectionNotice` :
+  "no-frames-selected", "too-many-frames") — état aujourd'hui muet.
+- **Rapport de fidélité du deck** (badge "N natifs · M rasterisés" +
+  warnings cliquables — les données arrivent déjà dans `candidate-added`
+  et sont ignorées par l'UI). Utilité à confirmer : peut-être ne jamais
+  l'afficher, les pastilles rouges de "Prepare for Slides" couvrent déjà
+  le besoin sur le canvas.
+- **Lien "Open presentation"** : ne doit PAS s'ajouter au header (position
+  actuelle = provisoire) ; concevoir une autre apparition du lien de
+  résultat (toast, zone dédiée…). Problème global aux deux modes.
+- **Retour d'erreur sur une vignette de layout bloquante** (mode
+  template) : rouge plein `--color-error` pour l'instant — concevoir un
+  retour plus riche qu'une simple bordure.
+- **Emplacement des dimensions** : unités `px` ajoutées, mais le bloc n'a
+  plus sa place dans le header — à déplacer (où ?).
+- **Indicateur de chargement du bouton "Sign in with Google".** Tant que
+  le lien Google n'est pas prêt (juste après montage, ou après une
+  erreur), le bouton est simplement désactivé sans feedback visuel.
+- **Avertissements non bloquants dans le rapport template** (substitution
+  de police, rayon approximé, tag inconnu…) : réfléchir à leur
+  intégration dans l'UI du rapport — jugés plus importants côté template
+  que côté deck.
+
+## Divers
+
 - **"Buy me a coffee".** Ajouter un rappel discret (pied de page ou petit
   encart en bas de l'UI) pointant vers un lien Buy Me a Coffee.
+- **Validation de composition des templates** (approche à définir — voir
+  discussion d'audit) : layout sans aucun placeholder, rôles dupliqués
+  (`[[title]]` ×2), tag incohérent avec le type de calque (`[[image]]`
+  sur un texte)… Commencer par des warnings informatifs non bloquants,
+  durcir ensuite si l'usage le confirme.
 - **Création de template — suite (voir
   brief-creation-template-google-slides.md § Décisions prises).**
   - Réordonnancement par glisser-déposer des layouts de template (le deck
@@ -16,9 +55,6 @@
     calques à la main.
   - Outil compagnon "dupliquer un layout + remplir ses placeholders" qui
     lirait le tag `f2s-placeholder:<RÔLE>` porté en alt text côté Slides.
-  - Étendre `TemplateWarning`/le rapport de fidélité pour couvrir aussi
-    les avertissements non bloquants (substitution de police, rayon
-    approximé) dans l'UI de template, pas seulement les bloquants.
 
 ## Checklist de test manuel — trouver les limites réelles du plugin
 

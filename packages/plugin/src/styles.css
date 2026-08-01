@@ -12,6 +12,11 @@
   --color-orange: #f06800;
   --color-orange-40: rgba(240, 104, 0, 0.4);
   --color-orange-red: #f04000;
+  /* Rouge PLEIN réservé aux états d'erreur/bloquants — distinct de
+     --color-orange-red, qui marque la sélection active : les deux étaient
+     identiques et une vignette bloquante était indiscernable d'une vignette
+     sélectionnée (audit template). */
+  --color-error: #e00000;
   --color-bg: #fff9f5;
   --color-text: #120f0d;
   --color-black-70: rgba(18, 15, 13, 0.7);
@@ -22,6 +27,33 @@
      que le monogramme (#F2ECE8) plutôt que des gris neutres génériques. */
   --color-surface: #ffffff;
   --color-surface-muted: #f2ece8;
+}
+
+/* Thème sombre : Figma pose `figma-dark`/`figma-light` sur <html> quand le
+   plugin est ouvert avec `themeColors: true` (code.ts) — palette claire
+   inversée, l'orange de marque reste identique. Le fallback
+   prefers-color-scheme couvre le rendu hors Figma (dev navigateur), sans
+   jamais contredire une classe posée par Figma. */
+html.figma-dark {
+  --color-bg: #171310;
+  --color-text: #f2ece8;
+  --color-black-70: rgba(242, 236, 232, 0.7);
+  --color-scrollbar: #4d453e;
+  --color-border: #332c26;
+  --color-surface: #211c17;
+  --color-surface-muted: #2a231d;
+}
+
+@media (prefers-color-scheme: dark) {
+  html:not(.figma-light) {
+    --color-bg: #171310;
+    --color-text: #f2ece8;
+    --color-black-70: rgba(242, 236, 232, 0.7);
+    --color-scrollbar: #4d453e;
+    --color-border: #332c26;
+    --color-surface: #211c17;
+    --color-surface-muted: #2a231d;
+  }
 }
 
 * {
@@ -135,6 +167,7 @@ a {
 .f2s-toolbar-row {
   display: flex;
   flex-wrap: wrap;
+  gap: 24px;
 }
 
 .f2s-toolbar-group {
@@ -167,6 +200,34 @@ a {
 
 .f2s-dim-sep {
   color: var(--color-black-70);
+}
+
+.f2s-dim-unit {
+  font-size: 11px;
+  color: var(--color-black-70);
+}
+
+/* Champ de nommage du deck/template (toolbar) — même gabarit que le select
+   de polices, un peu plus large pour un vrai titre. */
+.f2s-title-input {
+  font-family: inherit;
+  font-size: 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-radius: 4px;
+  padding: 3px 8px;
+  width: 220px;
+}
+
+.f2s-title-input:focus {
+  outline: none;
+  border-color: var(--color-orange-40);
+}
+
+.f2s-title-input::placeholder {
+  color: var(--color-black-70);
+  opacity: 0.7;
 }
 
 .f2s-font-select {
@@ -220,15 +281,18 @@ a {
   transition: background-color 0.15s ease, color 0.15s ease, outline-color 0.15s ease;
 }
 
+/* Contour seul au repos (le noir plein pesait visuellement plus lourd que le
+   bouton primaire orange — hiérarchie inversée, cf. audit) ; le fond
+   n'apparaît qu'au hover. */
 .f2s-btn--tertiary {
-  background: var(--color-text);
-  color: var(--color-bg);
+  background: transparent;
+  color: var(--color-text);
   border-color: var(--color-text);
 }
 
 .f2s-btn--tertiary:hover:not(:disabled) {
-  background: var(--color-bg);
-  color: var(--color-text);
+  background: var(--color-text);
+  color: var(--color-bg);
 }
 
 .f2s-btn--secondary {
@@ -354,7 +418,11 @@ a {
 .f2s-frame-preview img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  /* `contain` plutôt que `cover` : les slots restent tous au même format
+     16:9 (rail cohérent), mais une frame portrait/carrée est montrée en
+     entier sur le fond de surface au lieu d'être tronquée par un cadrage
+     qui ne correspond ni à la frame ni au rendu Slides. */
+  object-fit: contain;
   display: block;
   pointer-events: none;
 }
@@ -462,7 +530,16 @@ a {
 }
 
 .f2s-tmpl-section--blocking .f2s-tmpl-heading {
-  color: var(--color-orange-red);
+  color: var(--color-error);
+}
+
+/* Attentes de fin de parcours : ce que "template" veut dire côté Slides
+   (présentation à dupliquer, pas un vrai master) — voir TemplatePanel.tsx. */
+.f2s-tmpl-note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-black-70);
+  max-width: 720px;
 }
 
 .f2s-tmpl-list {
@@ -491,8 +568,8 @@ a {
 }
 
 .f2s-tmpl-warning {
-  border-color: var(--color-orange-40);
-  color: var(--color-orange-red);
+  border-color: var(--color-error);
+  color: var(--color-error);
 }
 
 .f2s-tmpl-warning:hover,
@@ -500,48 +577,68 @@ a {
   border-color: var(--color-orange);
 }
 
+/* Rôle de placeholder en texte neutre (les anciens badges colorés
+   title/subtitle=orange, image/logo=rouge ne portaient aucune sémantique
+   lisible — décoration retirée, cf. audit). */
 .f2s-tmpl-role {
   flex: none;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  color: var(--color-bg);
-  background: var(--color-black-70);
-  border-radius: 4px;
-  padding: 2px 6px;
-}
-
-.f2s-tmpl-role--title,
-.f2s-tmpl-role--subtitle {
-  background: var(--color-orange);
-}
-
-.f2s-tmpl-role--image,
-.f2s-tmpl-role--logo {
-  background: var(--color-orange-red);
+  color: var(--color-black-70);
 }
 
 .f2s-tmpl-swatches {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.f2s-tmpl-swatch-item {
+  display: flex;
+  align-items: center;
   gap: 8px;
 }
 
+/* Damier sous la pastille : une couleur semi-transparente se lit comme
+   telle au lieu d'être faussée par le fond du panneau. */
 .f2s-tmpl-swatch {
   width: 28px;
   height: 28px;
   border-radius: 6px;
   border: 1px solid var(--color-border);
   flex: none;
+  overflow: hidden;
+  display: block;
+  background-image: linear-gradient(45deg, rgba(127, 127, 127, 0.25) 25%, transparent 25%, transparent 75%, rgba(127, 127, 127, 0.25) 75%),
+    linear-gradient(45deg, rgba(127, 127, 127, 0.25) 25%, transparent 25%, transparent 75%, rgba(127, 127, 127, 0.25) 75%);
+  background-size: 12px 12px;
+  background-position: 0 0, 6px 6px;
+}
+
+.f2s-tmpl-swatch-color {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.f2s-tmpl-swatch-label {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
 }
 
 .f2s-tmpl-font-family {
   font-weight: 700;
 }
 
+/* Rouge plein, distinct de la bordure de sélection active (orange-red) —
+   TODO.md : affordance d'erreur plus riche à designer. */
 .f2s-frame-preview--blocking {
-  border-color: var(--color-orange-red);
+  border-color: var(--color-error);
 }
 
 /* ---- Barre de statut (login / progression / erreurs) ---- */
@@ -581,7 +678,7 @@ a {
 }
 
 .f2s-error {
-  color: var(--color-orange-red);
+  color: var(--color-error);
   font-size: 12px;
   margin: 0;
 }

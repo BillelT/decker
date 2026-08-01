@@ -37,16 +37,22 @@ export async function runExportJob(
     // ici on l'utilise seulement pour documenter le regroupement logique).
     void chunkBatchesForApi;
 
-    let anyFailed = false;
+    // Un `batch.error` nu ("Slides API 400 on …") n'identifie pas QUELLE
+    // slide a échoué — le nom de frame Figma est le repère que l'utilisateur
+    // du plugin connaît, on le préfixe donc à chaque erreur de lot.
+    const frameNameBySlideId = new Map(doc.slides.map((s) => [s.sourceNodeId, s.frameName]));
+    const failedSlideNames: string[] = [];
     for (const batch of batches) {
       try {
         await applyBatch(accessToken, presentationId, batch);
         await updateBatchStatus(job.id, batch.sourceSlideId, 'applied');
       } catch (err) {
-        anyFailed = true;
-        await updateBatchStatus(job.id, batch.sourceSlideId, 'failed', (err as Error).message);
+        const frameName = frameNameBySlideId.get(batch.sourceSlideId) ?? batch.sourceSlideId;
+        failedSlideNames.push(frameName);
+        await updateBatchStatus(job.id, batch.sourceSlideId, 'failed', `Slide "${frameName}": ${(err as Error).message}`);
       }
     }
+    const anyFailed = failedSlideNames.length > 0;
 
     // Spec §11.14 : la présentation nouvellement créée a une slide vide par
     // défaut — la supprimer une fois qu'au moins une slide réelle existe.
@@ -59,7 +65,7 @@ export async function runExportJob(
 
     await updateJob(job.id, {
       status: anyFailed ? 'failed' : 'done',
-      error: anyFailed ? 'Une ou plusieurs slides ont échoué — voir le détail par slide.' : undefined,
+      error: anyFailed ? `${failedSlideNames.length} slide(s) failed (${failedSlideNames.join(', ')}) — see the per-slide errors for details.` : undefined,
     });
   } catch (err) {
     await updateJob(job.id, { status: 'failed', error: (err as Error).message });
