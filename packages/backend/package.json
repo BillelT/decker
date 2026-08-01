@@ -15,7 +15,8 @@
     "test:coverage": "vitest run --coverage",
     "lint": "tsc -p tsconfig.json --noEmit",
     "precalibrate": "npm --prefix ../shared run build",
-    "calibrate": "tsx src/calibration/calibrate.ts"
+    "calibrate": "tsx src/calibration/calibrate.ts",
+    "spike:theme": "tsx src/spikes/masterThemeSpike.ts"
   },
   "dependencies": {
     "@figma-to-slides/shared": "0.1.0",
