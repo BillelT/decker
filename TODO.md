@@ -11,8 +11,11 @@ proprement plutôt que réintégrer tel quel :
   expirée). Le backend renvoie désormais des messages détaillés par slide
   (`Slide "Nom": Slides API 400 — …`) — l'UI doit juste leur trouver une
   place.
-- **Progression pendant l'export** (le % par lots est déjà calculé dans
-  `pollJob`, jamais affiché).
+- ~~**Progression pendant l'export**~~ — fait en mode deck : l'aperçu
+  affiche la frame dont le lot est en cours d'application, "générée" bande
+  par bande façon Windows 95, avec "Generating slide N of M" et une barre
+  de progression (`ui/RetroExportPreview.tsx`, `ui/exportCursor.ts`).
+  Reste à faire pour le mode template, qui n'a pas d'équivalent.
 - **Notices de sélection en mode deck** (`selectionNotice` :
   "no-frames-selected", "too-many-frames") — état aujourd'hui muet.
 - **Rapport de fidélité du deck** (badge "N natifs · M rasterisés" +

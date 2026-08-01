@@ -2,6 +2,7 @@ import { render } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { ExportOptions, IRDocument } from '@figma-to-slides/shared';
 import { sanitizeSessionToken } from './ui/sanitizeSessionToken.js';
+import { exportCursorFromBatches, type ExportBatch, type ExportCursor } from './ui/exportCursor.js';
 import { AVAILABLE_SLIDES_FONTS } from './serialize/fonts.js';
 import {
   postToPlugin,
@@ -176,6 +177,11 @@ function App() {
   // un export de deck laissait un "Open presentation" trompeur dans le
   // panneau template (et inversement).
   const [exportSource, setExportSource] = useState<AppMode | undefined>();
+  // Frame dont le lot est en cours d'application côté backend : c'est elle
+  // que le grand aperçu du deck "génère" bande par bande pendant l'export
+  // (DeckPanel → RetroExportPreview). Défini dès le clic sur Export, sur la
+  // première frame du deck, puis suivi via les lots renvoyés par le polling.
+  const [exportCursor, setExportCursor] = useState<ExportCursor | undefined>();
   const pendingAssets = useMemo(() => new Map<string, ArrayBuffer>(), []);
 
   // Le handler `onMessage` ci-dessous n'est branché qu'une fois (deps: []) ;
@@ -453,6 +459,7 @@ function App() {
       await pollJob(jobId);
     } catch (err) {
       setExportState('error');
+      setExportCursor(undefined);
       setExportError(err instanceof Error ? err.message : String(err));
       if (err instanceof AuthExpiredError) {
         // Session Google périmée : on purge le jeton persisté et on repart
@@ -471,19 +478,24 @@ function App() {
     for (let i = 0; i < 120; i++) {
       const res = await fetch(`${backend.baseUrl}/export/${jobId}`, { credentials: 'include' });
       const job = await res.json();
-      const batches = job.batches as { status: string }[] | undefined;
+      const batches = job.batches as ExportBatch[] | undefined;
       if (batches && batches.length > 0) {
         const applied = batches.filter((b) => b.status === 'applied').length;
         setExportProgress(Math.round((applied / batches.length) * 100));
+        // Les lots sont appliqués séquentiellement, dans l'ordre du deck :
+        // le premier lot encore `pending` EST la frame en cours d'export.
+        setExportCursor(exportCursorFromBatches(batches));
       }
       if (job.status === 'done') {
         setExportState('done');
         setExportProgress(100);
+        setExportCursor(undefined);
         setResultUrl(job.presentationUrl);
         return;
       }
       if (job.status === 'failed') {
         setExportState('error');
+        setExportCursor(undefined);
         // Priorité aux erreurs par slide (`batch.error`) : bien plus
         // actionnables que le message générique de `job.error`, qui ne
         // couvre que l'échec global (ex. la création de présentation
@@ -499,6 +511,7 @@ function App() {
       await new Promise((r) => setTimeout(r, 1500));
     }
     setExportState('error');
+    setExportCursor(undefined);
     setExportError('Export timed out after 3 minutes — the presentation may still be processing; check your Google Drive before retrying.');
   }
 
@@ -644,6 +657,10 @@ function App() {
     setExportState('exporting');
     setExportProgress(0);
     setExportSource('deck');
+    // L'aperçu rétro démarre dès le clic, sur la première frame : la
+    // sérialisation puis l'upload des assets prennent déjà plusieurs
+    // secondes avant que le premier lot n'existe côté backend.
+    setExportCursor(order.length > 0 ? { frameId: order[0], index: 0, total: order.length } : undefined);
     const options: ExportOptions = {
       mode: 'new-presentation',
       rasterScale: 2,
@@ -670,6 +687,7 @@ function App() {
     setExportState('exporting');
     setExportProgress(0);
     setExportSource('template');
+    setExportCursor(undefined);
     postToPlugin({
       type: 'request-template',
       includedFrameIds: templateOrder,
@@ -837,6 +855,7 @@ function App() {
           selecting={selecting}
           hasCanvasSelection={hasCanvasSelection}
           onRemove={removeFrame}
+          exportCursor={exporting && exportSource === 'deck' ? exportCursor : undefined}
         />
       ) : (
         <TemplatePanel
