@@ -884,7 +884,8 @@ html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) {
    pas d'animation). */
 html:not(.f2s-skin--win95) .f2s-icon-gear,
 html:not(.f2s-skin--win95) .f2s-icon-sliders,
-html:not(.f2s-skin--win95) .f2s-slider-knob {
+html:not(.f2s-skin--win95) .f2s-slider-knob,
+html:not(.f2s-skin--win95) .f2s-slider-track {
   transition: transform 0.15s ease;
 }
 
@@ -900,11 +901,16 @@ html:not(.f2s-skin--win95) .f2s-footer-settings:hover:not(:disabled) .f2s-icon-s
   transform: scale(1.01);
 }
 
-html:not(.f2s-skin--win95) .f2s-footer-settings:hover:not(:disabled) .f2s-slider-knob--top {
+/* La poignée s'éloigne de la piste de droite (l'écart s'ouvre, sans
+   risque) mais se rapproche de celle de gauche : on la fait avancer avec
+   elle du même déplacement pour garder l'écart constant. */
+html:not(.f2s-skin--win95) .f2s-footer-settings:hover:not(:disabled) .f2s-slider-knob--top,
+html:not(.f2s-skin--win95) .f2s-footer-settings:hover:not(:disabled) .f2s-slider-track--top-left {
   transform: translateX(-2px);
 }
 
-html:not(.f2s-skin--win95) .f2s-footer-settings:hover:not(:disabled) .f2s-slider-knob--bottom {
+html:not(.f2s-skin--win95) .f2s-footer-settings:hover:not(:disabled) .f2s-slider-knob--bottom,
+html:not(.f2s-skin--win95) .f2s-footer-settings:hover:not(:disabled) .f2s-slider-track--bottom-right {
   transform: translateX(2.25px);
 }
 
@@ -915,11 +921,16 @@ html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-icon-
   transform: scale(0.94);
 }
 
-html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-slider-knob--top {
+/* Sens inverse du hover : la poignée du haut se rapproche cette fois de
+   la piste de droite, celle du bas de la piste de gauche — donc ce sont
+   les DEUX AUTRES segments qui suivent ici, du même déplacement. */
+html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-slider-knob--top,
+html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-slider-track--top-right {
   transform: translateX(1px);
 }
 
-html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-slider-knob--bottom {
+html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-slider-knob--bottom,
+html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-slider-track--bottom-left {
   transform: translateX(-1px);
 }
 
