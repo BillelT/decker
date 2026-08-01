@@ -179,6 +179,15 @@ function App() {
   const [authUrl, setAuthUrl] = useState<string | undefined>();
   const [backend] = useState<BackendConfig>({ baseUrl: typeof __BACKEND_URL__ === 'string' ? __BACKEND_URL__ : 'https://figma-to-slide-backend.vercel.app' });
 
+  // SPIKE TEMPORAIRE (audit 2026-08, mode template) — à retirer avec le
+  // bouton "Run theme spike" du footer une fois la validation faite. Voir
+  // packages/backend/src/spikes/masterThemeSpike.ts et routes/spike.ts.
+  const [spikeRunning, setSpikeRunning] = useState(false);
+  const [spikeError, setSpikeError] = useState<string | undefined>();
+  const [spikeResult, setSpikeResult] = useState<
+    { presentationUrl: string; colorSchemeWriteConfirmed: boolean; checklist: string[] } | undefined
+  >();
+
   /** Titres saisis par l'utilisateur — deviennent le nom du fichier créé dans Drive (un titre figé rendait chaque export indistinguable du précédent). */
   const [deckTitle, setDeckTitle] = useState('');
   const [templateTitle, setTemplateTitle] = useState('');
@@ -717,6 +726,30 @@ function App() {
     setAuthUrl(undefined);
   }
 
+  // SPIKE TEMPORAIRE (audit 2026-08, mode template) — voir la déclaration
+  // des states ci-dessus et le bouton dans le footer.
+  async function runThemeSpike() {
+    setSpikeRunning(true);
+    setSpikeError(undefined);
+    setSpikeResult(undefined);
+    try {
+      const res = await fetch(`${backend.baseUrl}/spike/theme-test`, {
+        method: 'POST',
+        headers: sessionToken ? { Authorization: `Bearer ${sessionToken}` } : undefined,
+        credentials: 'include',
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => undefined);
+        throw new Error(body?.message ?? `Backend responded ${res.status}`);
+      }
+      setSpikeResult(await res.json());
+    } catch (err) {
+      setSpikeError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSpikeRunning(false);
+    }
+  }
+
   function startLogin() {
     setLoginError(undefined);
     setAuthUrl(undefined);
@@ -1073,6 +1106,33 @@ function App() {
           <SlidersIcon />
           <span>Settings</span>
         </button>
+        {/* SPIKE TEMPORAIRE (audit 2026-08, mode template) — à retirer une
+            fois la validation faite, voir packages/backend/src/spikes/masterThemeSpike.ts. */}
+        {sessionToken && (
+          <button type="button" className="f2s-btn f2s-btn--tertiary" disabled={spikeRunning} onClick={runThemeSpike}>
+            {spikeRunning ? 'Running theme spike…' : 'Run theme spike (temp)'}
+          </button>
+        )}
+        {spikeError && (
+          <p className="f2s-error" title={spikeError}>
+            Theme spike failed: {spikeError}
+          </p>
+        )}
+        {spikeResult && (
+          <div className="f2s-toolbar-muted" style={{ maxWidth: 260 }}>
+            <p>
+              ColorScheme write: {spikeResult.colorSchemeWriteConfirmed ? '✅ confirmed' : '⚠️ not confirmed'} —{' '}
+              <a href={spikeResult.presentationUrl} target="_blank" rel="noreferrer">
+                open presentation
+              </a>
+            </p>
+            <ul style={{ margin: 0, paddingLeft: 16 }}>
+              {spikeResult.checklist.map((line, i) => (
+                <li key={i}>{line}</li>
+              ))}
+            </ul>
+          </div>
+        )}
         <div className="f2s-footer-actions">
           {/* Sans ce message, un export échoué (session expirée, 400 Slides
               API, backend injoignable…) redevenait totalement silencieux :

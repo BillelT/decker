@@ -3180,6 +3180,9 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
     const [loginError, setLoginError] = d2();
     const [authUrl, setAuthUrl] = d2();
     const [backend] = d2({ baseUrl: true ? "https://figma-to-slide-backend.vercel.app" : "https://figma-to-slide-backend.vercel.app" });
+    const [spikeRunning, setSpikeRunning] = d2(false);
+    const [spikeError, setSpikeError] = d2();
+    const [spikeResult, setSpikeResult] = d2();
     const [deckTitle, setDeckTitle] = d2("");
     const [templateTitle, setTemplateTitle] = d2("");
     const [settingsOpen, setSettingsOpen] = d2(false);
@@ -3594,6 +3597,27 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
       setLoginError("Sign-in timed out \u2014 try again.");
       setAuthUrl(void 0);
     }
+    async function runThemeSpike() {
+      setSpikeRunning(true);
+      setSpikeError(void 0);
+      setSpikeResult(void 0);
+      try {
+        const res = await fetch(`${backend.baseUrl}/spike/theme-test`, {
+          method: "POST",
+          headers: sessionToken ? { Authorization: `Bearer ${sessionToken}` } : void 0,
+          credentials: "include"
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => void 0);
+          throw new Error(body?.message ?? `Backend responded ${res.status}`);
+        }
+        setSpikeResult(await res.json());
+      } catch (err) {
+        setSpikeError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setSpikeRunning(false);
+      }
+    }
     function startLogin() {
       setLoginError(void 0);
       setAuthUrl(void 0);
@@ -3860,6 +3884,21 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
             ]
           }
         ),
+        sessionToken && /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--tertiary", disabled: spikeRunning, onClick: runThemeSpike, children: spikeRunning ? "Running theme spike\u2026" : "Run theme spike (temp)" }),
+        spikeError && /* @__PURE__ */ u3("p", { className: "f2s-error", title: spikeError, children: [
+          "Theme spike failed: ",
+          spikeError
+        ] }),
+        spikeResult && /* @__PURE__ */ u3("div", { className: "f2s-toolbar-muted", style: { maxWidth: 260 }, children: [
+          /* @__PURE__ */ u3("p", { children: [
+            "ColorScheme write: ",
+            spikeResult.colorSchemeWriteConfirmed ? "\u2705 confirmed" : "\u26A0\uFE0F not confirmed",
+            " \u2014",
+            " ",
+            /* @__PURE__ */ u3("a", { href: spikeResult.presentationUrl, target: "_blank", rel: "noreferrer", children: "open presentation" })
+          ] }),
+          /* @__PURE__ */ u3("ul", { style: { margin: 0, paddingLeft: 16 }, children: spikeResult.checklist.map((line, i3) => /* @__PURE__ */ u3("li", { children: line }, i3)) })
+        ] }),
         /* @__PURE__ */ u3("div", { className: "f2s-footer-actions", children: [
           exportState === "error" && exportSource === mode && exportError && /* @__PURE__ */ u3("p", { className: "f2s-error f2s-footer-error", title: exportError, children: exportError }),
           /* @__PURE__ */ u3("a", { href: "#", className: "f2s-btn f2s-btn--tertiary", children: "Support me with Ko-fi" }),

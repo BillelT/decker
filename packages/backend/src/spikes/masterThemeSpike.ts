@@ -2,7 +2,7 @@
 import 'dotenv/config';
 
 /**
- * Spike (script jetable, PAS un module testé/maintenu) pour vérifier deux
+ * Spike (code jetable, PAS un module testé/maintenu) pour vérifier deux
  * hypothèses issues de l'audit 2026-08 sur le mode template, contredisant ce
  * que documentait jusqu'ici LIMITATIONS.md :
  *
@@ -20,8 +20,11 @@ import 'dotenv/config';
  * (couleurs liées via `themeColor`, logo/footer posés une seule fois sur le
  * Master) plutôt que des aplats RGB statiques dupliqués sur chaque slide.
  *
- * Usage : F2S_SESSION_TOKEN=<access_token_google> npm run spike:theme --workspace packages/backend
- * (voir le message d'aide plus bas pour obtenir ce token)
+ * `runMasterThemeSpike` est appelée à la fois par ce script CLI (`npm run
+ * spike:theme`, token Google obtenu via OAuth Playground) ET par la route
+ * temporaire `POST /spike/theme-test` (`routes/spike.ts`), qui réutilise la
+ * session déjà ouverte dans le plugin — voir ce fichier pour la marche à
+ * suivre la plus simple, directement depuis le plugin.
  */
 
 const API_BASE = 'https://slides.googleapis.com/v1';
@@ -77,32 +80,40 @@ interface PresentationSummary {
   layouts: { objectId: string; layoutProperties?: { displayName?: string } }[];
 }
 
-async function main(): Promise<void> {
-  const token = process.env.F2S_SESSION_TOKEN;
-  if (!token) {
-    printMissingCredentialsHelp();
-    process.exitCode = 1;
-    return;
-  }
+export interface MasterThemeSpikeResult {
+  presentationId: string;
+  presentationUrl: string;
+  masterId: string;
+  layoutId: string;
+  layoutName: string;
+  colorSchemeWriteConfirmed: boolean;
+  writtenAccent1: RgbColor | undefined;
+  checklist: string[];
+}
 
-  console.log('1/6 — Création de la présentation de test...');
-  const created = await callApi<{ presentationId: string; slides: { objectId: string }[] }>(token, '/presentations', {
+const CHECKLIST = [
+  'Sur la 2e slide : le bandeau magenta "F2S MASTER TEST" (posé UNIQUEMENT sur le Master, jamais sur cette slide) apparaît-il en haut à gauche ? → confirme l\'héritage Master → Layout → Slide.',
+  'Sur cette même slide : le grand rectangle est-il ORANGE (#FF6B00) avec un texte CYAN (#00B4D8) ? → confirme le binding themeColor (fill ET texte).',
+  'Menu "Diapositive > Modifier le thème" : les 12 couleurs custom apparaissent-elles déjà dans l\'éditeur au lieu du thème par défaut ?',
+  'Changer "Accent 1" à la main dans cet éditeur : le rectangle de l\'étape 2 se recolore-t-il EN DIRECT ?',
+];
+
+/** Crée une présentation Slides jetable et exécute les deux vérifications décrites en tête de fichier. */
+export async function runMasterThemeSpike(accessToken: string): Promise<MasterThemeSpikeResult> {
+  const created = await callApi<{ presentationId: string; slides: { objectId: string }[] }>(accessToken, '/presentations', {
     method: 'POST',
     body: JSON.stringify({ title: 'F2S — spike thème & master (jetable, à supprimer après test)' }),
   });
   const presentationId = created.presentationId;
 
-  console.log('2/6 — Lecture de la structure (masters/layouts)...');
-  const before = await callApi<PresentationSummary>(token, `/presentations/${presentationId}`);
+  const before = await callApi<PresentationSummary>(accessToken, `/presentations/${presentationId}`);
   const masterId = before.masters[0]?.objectId;
   const layout = before.layouts[0];
   if (!masterId || !layout) {
     throw new Error('Présentation créée sans master/layout — impossible de continuer le spike.');
   }
-  console.log(`   master=${masterId} layout=${layout.objectId} (${layout.layoutProperties?.displayName ?? 'sans nom'})`);
 
-  console.log('3/6 — Écriture des 12 couleurs de thème sur le Master...');
-  await callApi(token, `/presentations/${presentationId}:batchUpdate`, {
+  await callApi(accessToken, `/presentations/${presentationId}:batchUpdate`, {
     method: 'POST',
     body: JSON.stringify({
       requests: [
@@ -121,8 +132,7 @@ async function main(): Promise<void> {
     }),
   });
 
-  console.log("4/6 — Ajout d'un élément témoin directement sur le Master (test d'héritage)...");
-  await callApi(token, `/presentations/${presentationId}:batchUpdate`, {
+  await callApi(accessToken, `/presentations/${presentationId}:batchUpdate`, {
     method: 'POST',
     body: JSON.stringify({
       requests: [
@@ -149,8 +159,7 @@ async function main(): Promise<void> {
     }),
   });
 
-  console.log("5/6 — Création d'une slide référençant ce layout, avec une forme + un texte liés au thème...");
-  await callApi(token, `/presentations/${presentationId}:batchUpdate`, {
+  await callApi(accessToken, `/presentations/${presentationId}:batchUpdate`, {
     method: 'POST',
     body: JSON.stringify({
       requests: [
@@ -192,57 +201,76 @@ async function main(): Promise<void> {
     }),
   });
 
-  console.log('6/6 — Vérification automatique (relecture de la présentation)...');
-  const after = await callApi<PresentationSummary>(token, `/presentations/${presentationId}`);
+  const after = await callApi<PresentationSummary>(accessToken, `/presentations/${presentationId}`);
   const masterAfter = after.masters.find((m) => m.objectId === masterId);
   const accent1 = masterAfter?.pageProperties?.colorScheme?.colors.find((c) => c.type === 'ACCENT1');
+  const expected = hexToRgb('#FF6B00');
+  const colorSchemeWriteConfirmed = !!accent1 && Math.abs(accent1.color.red - expected.red) < 0.01;
+
+  return {
+    presentationId,
+    presentationUrl: `https://docs.google.com/presentation/d/${presentationId}/edit`,
+    masterId,
+    layoutId: layout.objectId,
+    layoutName: layout.layoutProperties?.displayName ?? 'sans nom',
+    colorSchemeWriteConfirmed,
+    writtenAccent1: accent1?.color,
+    checklist: CHECKLIST,
+  };
+}
+
+async function main(): Promise<void> {
+  const token = process.env.F2S_SESSION_TOKEN;
+  if (!token) {
+    printMissingCredentialsHelp();
+    process.exitCode = 1;
+    return;
+  }
+
+  console.log('Création de la présentation de test et écriture du thème...');
+  const result = await runMasterThemeSpike(token);
+
   console.log(
-    '   ColorScheme relu sur le Master → ACCENT1 =',
-    accent1 ? JSON.stringify(accent1.color) + (Math.abs(accent1.color.red - hexToRgb('#FF6B00').red) < 0.01 ? ' ✅ correspond' : ' ⚠️ différent de ce qu\'on a envoyé') : '❌ ABSENT — écriture refusée ou ignorée',
+    `\nColorScheme relu sur le Master → ACCENT1 = ${result.writtenAccent1 ? JSON.stringify(result.writtenAccent1) : 'ABSENT'} ` +
+      (result.colorSchemeWriteConfirmed ? '✅ correspond' : '⚠️ ne correspond pas à ce qui a été envoyé'),
   );
-
-  const url = `https://docs.google.com/presentation/d/${presentationId}/edit`;
-  console.log(`\nPrésentation créée : ${url}`);
-  console.log(`
-Checklist à vérifier à l'oeil dans Slides (voir aussi le message renvoyé à l'utilisateur) :
-  1. Ouvrir l'URL ci-dessus.
-  2. Sur la 2e slide : le bandeau magenta "F2S MASTER TEST" (posé UNIQUEMENT sur le
-     Master, jamais sur cette slide) apparaît-il en haut à gauche ?
-     → confirme l'héritage Master → Layout → Slide.
-  3. Sur cette même slide : le grand rectangle est-il ORANGE (#FF6B00) avec un
-     texte CYAN (#00B4D8) ?
-     → confirme le binding themeColor (fill ET texte).
-  4. Menu "Diapositive > Modifier le thème" : les 12 couleurs custom
-     apparaissent-elles déjà dans l'éditeur au lieu du thème par défaut ?
-  5. Changer "Accent 1" à la main dans cet éditeur : le rectangle de l'étape 3
-     se recolore-t-il EN DIRECT ?
-
-Présentation jetable — à supprimer de Google Drive une fois le test terminé.
-`);
+  console.log(`\nPrésentation créée : ${result.presentationUrl}`);
+  console.log('\nCheckilst à vérifier à l\'oeil dans Slides :');
+  result.checklist.forEach((line, i) => console.log(`  ${i + 1}. ${line}`));
+  console.log('\nPrésentation jetable — à supprimer de Google Drive une fois le test terminé.');
 }
 
 function printMissingCredentialsHelp(): void {
   console.error(`
 Ce spike a besoin d'un vrai access token Google (PAS le token de session du
 plugin, qui est un identifiant interne à ce backend — voir
-packages/backend/src/auth/getAccessToken.ts) avec les scopes :
+packages/backend/src/auth/getAccessToken.ts) avec le scope :
   - https://www.googleapis.com/auth/presentations
-  - https://www.googleapis.com/auth/drive.file (pas strictement nécessaire
-    pour ce spike précis, qui ne crée aucune image)
 
 Façon la plus rapide de l'obtenir, sans rien lancer en local :
   1. Ouvrir https://developers.google.com/oauthplayground
-  2. Dans la liste à gauche (ou le champ en bas "Input your own scopes"),
-     ajouter : https://www.googleapis.com/auth/presentations
+  2. Dans le champ en bas "Input your own scopes", ajouter :
+     https://www.googleapis.com/auth/presentations
   3. "Authorize APIs" → se connecter avec le compte Google à tester → autoriser.
   4. "Exchange authorization code for tokens" → copier la valeur "Access token"
      (valide ~1h).
   5. Relancer avec :
        F2S_SESSION_TOKEN=<access_token> npm run spike:theme --workspace packages/backend
+
+Alternative plus simple : lancer ce même spike depuis le plugin lui-même (déjà
+connecté via "Sign in with Google") — voir le bouton temporaire "Run theme
+spike" dans le footer du plugin (packages/plugin/src/ui.tsx), qui appelle
+POST /spike/theme-test avec la session déjà ouverte, sans token à copier.
 `);
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exitCode = 1;
-});
+// `routes/spike.ts` importe `runMasterThemeSpike` depuis ce même fichier —
+// sans cette garde, `main()` (et son early-return si aucun token CLI n'est
+// fourni) s'exécuterait aussi à CHAQUE import du module par le serveur.
+const isDirectRun = import.meta.url === `file://${process.argv[1]}`;
+if (isDirectRun) {
+  main().catch((err) => {
+    console.error(err);
+    process.exitCode = 1;
+  });
+}
