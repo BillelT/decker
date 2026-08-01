@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { moveToIndex } from './reorderFrames.js';
-import { postToPlugin, type FrameState } from './types.js';
+import { postToPlugin, selectSourceNodes, type FrameState } from './types.js';
 
 /** En dessous de ce mouvement, un pointerdown reste un simple clic de sélection. */
 const DRAG_THRESHOLD_PX = 3;
@@ -205,9 +205,47 @@ export function DeckPanel({ order, setOrder, frames, activeId, setActiveId, sele
 
       <main className="f2s-canvas">
         {activeFrame ? (
-          <div className="f2s-canvas-preview">
-            {activeFrame.previewDataUrl && <img src={activeFrame.previewDataUrl} alt={activeFrame.name} />}
-          </div>
+          <>
+            <div className="f2s-canvas-preview">
+              {activeFrame.previewDataUrl && <img src={activeFrame.previewDataUrl} alt={activeFrame.name} />}
+            </div>
+
+            <div className="f2s-toolbar-group">
+              <span className="f2s-toolbar-label">Dimensions :</span>
+              <span className="f2s-dim-box">{Math.round(activeFrame.width)}</span>
+              <span className="f2s-dim-sep">×</span>
+              <span className="f2s-dim-box">{Math.round(activeFrame.height)}</span>
+              <span className="f2s-dim-unit">px</span>
+            </div>
+
+            <div className="f2s-logs">
+              <div className="f2s-logs-header">
+                <h3 className="f2s-tmpl-heading">Logs</h3>
+                {activeFrame.nativeCount !== undefined && activeFrame.rasterCount !== undefined && (
+                  <span className="f2s-toolbar-muted">
+                    {activeFrame.nativeCount} native · {activeFrame.rasterCount} rasterized
+                  </span>
+                )}
+              </div>
+              {activeFrame.warnings && activeFrame.warnings.length > 0 ? (
+                <ul className="f2s-tmpl-list">
+                  {activeFrame.warnings.map((w, i) => (
+                    <li key={i}>
+                      <button
+                        type="button"
+                        className={`f2s-log-entry${w.severity === 'blocking' ? ' f2s-log-entry--blocking' : ''}`}
+                        onClick={() => selectSourceNodes([w.sourceNodeId])}
+                      >
+                        <strong>{w.nodeName}</strong> — {w.message}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="f2s-toolbar-muted">No issues detected on this frame.</p>
+              )}
+            </div>
+          </>
         ) : (
           <p className="f2s-canvas-empty">Select a frame on the left to preview it.</p>
         )}

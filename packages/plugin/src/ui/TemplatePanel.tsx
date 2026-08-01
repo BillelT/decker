@@ -1,4 +1,4 @@
-import { postToPlugin, type TemplateLayoutState } from './types.js';
+import { postToPlugin, selectSourceNodes, type TemplateLayoutState } from './types.js';
 
 export interface TemplatePanelProps {
   order: string[];
@@ -9,11 +9,6 @@ export interface TemplatePanelProps {
   hasCanvasSelection: boolean;
   notice: string | undefined;
   onRemove: (id: string) => void;
-}
-
-/** Sélectionne dans Figma le(s) nœud(s) source visés par un avertissement ou un placeholder — même geste que le rapport de fidélité du deck (spec §8.3). */
-function selectSourceNodes(sourceNodeIds: string[]) {
-  postToPlugin({ type: 'select-nodes', nodeIds: sourceNodeIds });
 }
 
 /**
