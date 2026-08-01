@@ -60,20 +60,19 @@ function Logo() {
   );
 }
 
-/** Icône d'engrenage classique pour le bouton "Settings" du footer. */
+/** Icône d'engrenage minimaliste corporatif pour le bouton "Settings" du footer. */
 function GearIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <circle cx="8" cy="8" r="2" stroke="currentColor" strokeWidth="1.2" />
-      <g stroke="currentColor" strokeWidth="1.2" strokeLinecap="round">
-        <path d="M8 0.5v1.2" />
-        <path d="M8 14.3v1.2" />
-        <path d="M15.5 8h-1.2" />
-        <path d="M1.7 8H0.5" />
-        <path d="M13.14 2.86l-0.85 0.85" />
-        <path d="M3.71 13.29l-0.85 0.85" />
-        <path d="M13.14 13.14l-0.85 -0.85" />
-        <path d="M3.71 2.71l-0.85 -0.85" />
+      <circle cx="8" cy="8" r="3.5" stroke="currentColor" strokeWidth="1.2" />
+      <circle cx="8" cy="8" r="1.5" stroke="currentColor" strokeWidth="1.2" />
+      <rect x="7.4" y="0.5" width="1.2" height="1.8" rx="0.3" fill="currentColor" />
+      <rect x="7.4" y="13.7" width="1.2" height="1.8" rx="0.3" fill="currentColor" />
+      <rect x="13.7" y="7.4" width="1.8" height="1.2" rx="0.3" fill="currentColor" />
+      <rect x="0.5" y="7.4" width="1.8" height="1.2" rx="0.3" fill="currentColor" />
+      <g transform="translate(8, 8) rotate(45)">
+        <rect x="7.4" y="-0.6" width="1.2" height="1.2" rx="0.3" fill="currentColor" />
+        <rect x="-8.6" y="-0.6" width="1.2" height="1.2" rx="0.3" fill="currentColor" />
       </g>
     </svg>
   );
