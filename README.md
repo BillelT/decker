@@ -114,12 +114,13 @@ bloquées silencieusement).
 
 ### 5.1 Habillage de l'interface (Windows 95 / Modern)
 
-L'UI existe en deux habillages, permutables à chaud depuis le sélecteur
-du footer :
+L'UI existe en deux habillages, permutables à chaud depuis la modale de
+réglages (bouton **Settings** du footer, réglage *Interface*) :
 
 - **Windows 95** (par défaut) — chrome rétro : barre de titre, biseaux
   système, gris `#C0C0C0`, ascenseurs tramés. Mono-thème : il ignore
-  volontairement le thème clair/sombre de Figma.
+  volontairement le thème clair/sombre de Figma, donc le réglage
+  *Appearance* y est désactivé et le dit.
 - **Modern** — le design system du plugin (orange de marque, coins
   arrondis), avec son thème clair/sombre suivant celui de Figma.
 

@@ -33,8 +33,13 @@
    plugin est ouvert avec `themeColors: true` (code.ts) — palette claire
    inversée, l'orange de marque reste identique. Le fallback
    prefers-color-scheme couvre le rendu hors Figma (dev navigateur), sans
-   jamais contredire une classe posée par Figma. */
-html.figma-dark {
+   jamais contredire une classe posée par Figma.
+
+   `f2s-theme-light`/`f2s-theme-dark` sont le choix EXPLICITE fait dans la
+   modale de réglages (ui/theme.ts) : il l'emporte sur le thème de Figma comme
+   sur la préférence système, d'où les `:not(.f2s-theme-light)` ci-dessous. */
+html.figma-dark:not(.f2s-theme-light),
+html.f2s-theme-dark {
   --color-bg: #171310;
   --color-text: #f2ece8;
   --color-black-70: rgba(242, 236, 232, 0.7);
@@ -45,7 +50,7 @@ html.figma-dark {
 }
 
 @media (prefers-color-scheme: dark) {
-  html:not(.figma-light) {
+  html:not(.figma-light):not(.f2s-theme-light) {
     --color-bg: #171310;
     --color-text: #f2ece8;
     --color-black-70: rgba(242, 236, 232, 0.7);
@@ -752,6 +757,19 @@ a {
   color: var(--color-black-70);
   font-size: 12px;
   font-weight: 700;
+  font-family: inherit;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin-left: -10px;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.f2s-footer-settings:hover,
+.f2s-footer-settings[aria-expanded='true'] {
+  color: var(--color-text);
+  border-color: var(--color-border);
 }
 
 .f2s-footer-actions {
@@ -760,38 +778,149 @@ a {
   gap: 16px;
 }
 
-/* ---- Sélecteur d'habillage (Windows 95 / Modern) ----
-   Présent dans les deux skins, au même endroit du footer, pour qu'on
-   puisse toujours revenir en arrière depuis l'autre habillage. Le rendu
-   rétro de ce même balisage vit dans styles.win95.css. */
+/* ---- Modale de réglages ---- */
 
-.f2s-skin-switch {
-  display: inline-flex;
+:root {
+  /* Aligné sur TRANSITION_MS (ui/SettingsModal.tsx), qui pilote le démontage
+     du composant à la fin de l'animation de sortie. */
+  --f2s-modal-duration: 220ms;
+  --f2s-modal-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.f2s-modal-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  display: flex;
   align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(18, 15, 13, 0.45);
+  /* État de DÉPART de l'ouverture (et d'arrivée de la fermeture) : `.is-open`
+     est posée un frame après le montage pour que la transition ait deux états
+     distincts à interpoler. */
+  opacity: 0;
+  transition: opacity var(--f2s-modal-duration) var(--f2s-modal-ease);
+}
+
+.f2s-modal-overlay.is-open {
+  opacity: 1;
+}
+
+.f2s-modal {
+  width: 100%;
+  max-width: 420px;
+  /* Surface (et non --color-bg) : le panneau doit se détacher du fond de
+     l'app derrière l'overlay, y compris en thème sombre où bordure et ombre
+     seules suffisent à peine. */
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(18, 15, 13, 0.18);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(8px) scale(0.98);
+  transition: opacity var(--f2s-modal-duration) var(--f2s-modal-ease), transform var(--f2s-modal-duration) var(--f2s-modal-ease);
+}
+
+.f2s-modal:focus {
+  outline: none;
+}
+
+.f2s-modal-overlay.is-open .f2s-modal {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* Figma n'expose pas de réglage "réduire les animations" à l'iframe : on suit
+   la préférence système, la modale apparaît alors sans glissement. */
+@media (prefers-reduced-motion: reduce) {
+  .f2s-modal-overlay,
+  .f2s-modal {
+    transition-duration: 0.01ms;
+  }
+
+  .f2s-modal {
+    transform: none;
+  }
+}
+
+.f2s-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.f2s-modal-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.f2s-modal-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.f2s-setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.f2s-setting-text {
+  min-width: 0;
+}
+
+.f2s-setting-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.f2s-setting-desc {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--color-black-70);
+}
+
+/* ---- Tab menu (segmented control) ---- */
+
+.f2s-tabs {
+  display: inline-flex;
+  flex: none;
   gap: 2px;
   padding: 2px;
   border: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
   border-radius: 8px;
-  background: var(--color-surface);
 }
 
-.f2s-skin-btn {
+.f2s-tab {
   font-family: inherit;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
+  color: var(--color-black-70);
+  background: transparent;
   border: none;
   border-radius: 6px;
-  padding: 4px 10px;
-  background: transparent;
-  color: var(--color-black-70);
-  white-space: nowrap;
+  padding: 5px 14px;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-.f2s-skin-btn:hover:not(.is-active) {
+.f2s-tab:hover:not(.is-active) {
   color: var(--color-text);
 }
 
-.f2s-skin-btn.is-active {
+.f2s-tab.is-active {
   background: var(--color-orange);
   color: var(--color-bg);
 }

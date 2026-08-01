@@ -170,12 +170,6 @@ html.f2s-skin--win95 .f2s-footer {
   background: var(--w95-face);
 }
 
-html.f2s-skin--win95 .f2s-footer-settings {
-  font-weight: 400;
-  color: #000;
-  gap: 6px;
-}
-
 html.f2s-skin--win95 .f2s-body {
   border-top: 1px solid var(--w95-shadow);
   box-shadow: inset 0 1px 0 var(--w95-white);
@@ -393,10 +387,63 @@ html.f2s-skin--win95 .f2s-error {
   color: var(--color-error);
 }
 
-/* ---- Sélecteur de skin (les deux skins l'affichent, ici en boutons
-        bascule : l'habillage actif est le bouton enfoncé) ---- */
+/* ---- Modale de réglages (habillage + thème) ----
+   Une boîte de dialogue 95 : cadre en relief, barre de titre en dégradé,
+   pas d'ombre portée ni de coins arrondis. L'animation d'ouverture reste
+   celle du skin moderne — elle ne dépend d'aucune couleur. */
 
-html.f2s-skin--win95 .f2s-skin-switch {
+html.f2s-skin--win95 .f2s-modal-overlay {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+html.f2s-skin--win95 .f2s-modal {
+  border: none;
+  border-radius: 0;
+  background: var(--w95-face);
+  box-shadow: var(--w95-out);
+  padding: 3px;
+  max-width: 380px;
+}
+
+/* L'en-tête DEVIENT la barre de titre de la boîte de dialogue. */
+html.f2s-skin--win95 .f2s-modal-header {
+  height: 20px;
+  padding: 0 2px 0 4px;
+  border-bottom: none;
+  background: linear-gradient(90deg, var(--w95-navy), var(--w95-navy-light));
+  color: #fff;
+}
+
+html.f2s-skin--win95 .f2s-modal-title {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* La croix de fermeture est ici une case de barre de titre, pas le petit
+   bouton plat du rail de vignettes. */
+html.f2s-skin--win95 .f2s-modal-header .f2s-icon-btn {
+  width: 16px;
+  height: 14px;
+}
+
+html.f2s-skin--win95 .f2s-modal-body {
+  padding: 12px 10px;
+  gap: 14px;
+}
+
+html.f2s-skin--win95 .f2s-setting-title {
+  font-weight: 700;
+  color: #000;
+}
+
+html.f2s-skin--win95 .f2s-setting-desc {
+  font-size: 11px;
+  color: #000;
+}
+
+/* ---- Tab menus des réglages : boutons bascule, l'option active enfoncée ---- */
+
+html.f2s-skin--win95 .f2s-tabs {
   border: none;
   border-radius: 0;
   background: transparent;
@@ -404,19 +451,24 @@ html.f2s-skin--win95 .f2s-skin-switch {
   gap: 3px;
 }
 
-html.f2s-skin--win95 .f2s-skin-btn {
+html.f2s-skin--win95 .f2s-tab {
   font-size: 11px;
   font-weight: 400;
   border-radius: 0;
   padding: 3px 10px;
-  background: var(--w95-face);
+  background-color: var(--w95-face);
   color: #000;
   box-shadow: var(--w95-out);
+  transition: none;
+}
+
+html.f2s-skin--win95 .f2s-tab:hover:not(.is-active) {
+  color: #000;
 }
 
 /* Bascule enfoncée : creusé + trame de fond, comme un bouton de barre
    d'outils Windows resté actif. */
-html.f2s-skin--win95 .f2s-skin-btn.is-active {
+html.f2s-skin--win95 .f2s-tab.is-active {
   background-color: var(--w95-face);
   color: #000;
   box-shadow: var(--w95-pressed);
@@ -424,6 +476,38 @@ html.f2s-skin--win95 .f2s-skin-btn.is-active {
     linear-gradient(45deg, var(--w95-white) 25%, transparent 25%, transparent 75%, var(--w95-white) 75%);
   background-size: 2px 2px;
   background-position: 0 0, 1px 1px;
+}
+
+/* Grisé 95 : libellé gravé, relief conservé — le tab menu du thème est
+   désactivé sous ce skin (palette unique, cf. SettingsModal.tsx). */
+html.f2s-skin--win95 .f2s-tab:disabled {
+  opacity: 1;
+  color: var(--w95-shadow);
+  text-shadow: 1px 1px 0 var(--w95-white);
+}
+
+/* ---- Bouton "Settings" du footer ---- */
+
+html.f2s-skin--win95 .f2s-footer-settings {
+  font-weight: 400;
+  color: #000;
+  gap: 6px;
+  border: none;
+  border-radius: 0;
+  margin-left: 0;
+  padding: 3px 8px;
+  background: var(--w95-face);
+  box-shadow: var(--w95-out);
+  transition: none;
+}
+
+html.f2s-skin--win95 .f2s-footer-settings:hover {
+  color: #000;
+}
+
+html.f2s-skin--win95 .f2s-footer-settings[aria-expanded='true'] {
+  color: #000;
+  box-shadow: var(--w95-pressed);
 }
 
 /* ---- Ascenseurs ---- */

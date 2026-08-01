@@ -1056,6 +1056,7 @@
   var COPY_GAP_PX = 200;
   var SESSION_TOKEN_STORAGE_KEY = "f2s:sessionToken";
   var UI_SKIN_STORAGE_KEY = "f2s:uiSkin";
+  var THEME_STORAGE_KEY = "f2s:theme";
   function isExportable(node) {
     return node.type === "FRAME" || node.type === "COMPONENT" || node.type === "INSTANCE";
   }
@@ -1458,7 +1459,23 @@
           console.error(err);
         }
         try {
+          const storedTheme = await figma.clientStorage.getAsync(THEME_STORAGE_KEY);
+          if (storedTheme === "light" || storedTheme === "dark") {
+            figma.ui.postMessage({ type: "theme-preference-restored", theme: storedTheme });
+          }
+        } catch (err) {
+          console.error(err);
+        }
+        try {
           await loadTaggedFrames(pending, templatePending, idGen);
+        } catch (err) {
+          console.error(err);
+        }
+        return;
+      }
+      if (msg.type === "save-theme-preference") {
+        try {
+          await figma.clientStorage.setAsync(THEME_STORAGE_KEY, msg.theme);
         } catch (err) {
           console.error(err);
         }
