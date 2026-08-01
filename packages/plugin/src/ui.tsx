@@ -86,7 +86,14 @@ function GearIcon() {
  *  chaque poignée puisse être animée indépendamment au hover/pressed —
  *  viewBox 0 0 16 16 (1 unité = 1px rendu) pour que les translateX en px
  *  ci-dessous en styles.css produisent un déplacement exact, sans le
- *  facteur d'échelle qu'aurait introduit le viewBox 32×32 d'origine. */
+ *  facteur d'échelle qu'aurait introduit le viewBox 32×32 d'origine.
+ *
+ *  Les segments de piste sont volontairement tenus à distance de la
+ *  position de repos des poignées (pas juste un petit espace visuel) :
+ *  il faut couvrir la position la PLUS PROCHE que chaque poignée atteint
+ *  en hover (±2 / ±2.25) et en pressed (±1, sens inverse), sans quoi la
+ *  poignée traverse le trait pendant l'animation au lieu de coulisser
+ *  dessus (bug remonté : piste et cercle qui se chevauchent au hover). */
 function SlidersIcon() {
   return (
     <svg
@@ -98,11 +105,11 @@ function SlidersIcon() {
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
     >
-      <line x1="1" y1="4.5" x2="9" y2="4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-      <line x1="12" y1="4.5" x2="15" y2="4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <line x1="1" y1="4.5" x2="6.5" y2="4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <line x1="13.5" y1="4.5" x2="15" y2="4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
       <circle className="f2s-slider-knob f2s-slider-knob--top" cx="10.5" cy="4.5" r="1.5" stroke="currentColor" strokeWidth="1.3" />
-      <line x1="1" y1="11.5" x2="4" y2="11.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-      <line x1="7" y1="11.5" x2="15" y2="11.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <line x1="1" y1="11.5" x2="2.5" y2="11.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <line x1="9.7" y1="11.5" x2="15" y2="11.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
       <circle className="f2s-slider-knob f2s-slider-knob--bottom" cx="5.5" cy="11.5" r="1.5" stroke="currentColor" strokeWidth="1.3" />
     </svg>
   );
