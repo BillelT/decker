@@ -1,63 +1,85 @@
 # TODO
 
-## Feedback utilisateur — à designer AVANT d'intégrer (audit 2026-08)
+## Feedback utilisateur — audit 2026-08
 
-L'ancien footer de statut a été retiré ; tous les états existent encore
-dans le code (`ui.tsx` : `exportError`, `exportProgress`, `selectionNotice`,
-`too-many-frames`…) mais ne sont plus affichés en mode deck. À designer
-proprement plutôt que réintégrer tel quel :
+Plusieurs points ci-dessous ont depuis été implémentés (le rapport de
+fidélité du deck, l'affichage des erreurs, la position des dimensions et
+du lien "Open presentation", l'animation rétro de progression du deck) —
+gardés ici seulement comme trace de décision, ou reformulés en tâche
+restante précise.
 
-- **Affichage des erreurs** (export échoué, backend injoignable, session
-  expirée). Le backend renvoie désormais des messages détaillés par slide
-  (`Slide "Nom": Slides API 400 — …`) — l'UI doit juste leur trouver une
-  place.
+- ~~**Affichage des erreurs**~~ — fait (footer, par mode) : le backend
+  renvoie des messages détaillés par slide (`Slide "Nom": Slides API 400
+  — …`) et l'UI les affiche désormais (`ui.tsx`, corrigé dans `d271152`).
 - ~~**Progression pendant l'export**~~ — fait en mode deck : l'aperçu
   affiche la frame dont le lot est en cours d'application, "générée" bande
   par bande façon Windows 95, avec "Generating slide N of M" et une barre
   de progression (`ui/RetroExportPreview.tsx`, `ui/exportCursor.ts`).
-  Reste à faire pour le mode template, qui n'a pas d'équivalent.
-- **Notices de sélection en mode deck** (`selectionNotice` :
-  "no-frames-selected", "too-many-frames") — état aujourd'hui muet.
-- **Rapport de fidélité du deck** (badge "N natifs · M rasterisés" +
-  warnings cliquables — les données arrivent déjà dans `candidate-added`
-  et sont ignorées par l'UI). Utilité à confirmer : peut-être ne jamais
-  l'afficher, les pastilles rouges de "Prepare for Slides" couvrent déjà
-  le besoin sur le canvas.
-- **Lien "Open presentation"** : ne doit PAS s'ajouter au header (position
-  actuelle = provisoire) ; concevoir une autre apparition du lien de
-  résultat (toast, zone dédiée…). Problème global aux deux modes.
+  **Reste à faire pour le mode template** : `TemplatePanel` ne reçoit pas
+  d'`exportCursor` (contrairement à `DeckPanel`), l'écran ne bouge pas
+  pendant toute la création du template.
+- ~~**Rapport de fidélité du deck**~~ — fait : badge "N natifs · M
+  rasterisés" + liste de warnings cliquable qui sélectionne l'élément dans
+  Figma (`DeckPanel.tsx`).
+- ~~**Lien "Open presentation"**~~ — fait : sorti du header, position
+  définitive en footer à côté de Ko-fi.
+- ~~**Emplacement des dimensions**~~ — fait : déplacé sous l'aperçu
+  (`Dimensions : W × H px`), plus dans le header.
+- **Notice de sélection en mode deck** (`selectionNotice` :
+  "no-frames-selected" quand on clique "Add selection" sans rien avoir
+  sélectionné, "too-many-frames" au-delà de 20 frames ajoutées) — **bug**,
+  pas un manque de design : le getter du state est jeté à la
+  destructuration (`const [, setSelectionNotice] = useState(...)` dans
+  `ui.tsx`), donc rien ne s'affiche jamais côté deck. Le mode template a
+  le même besoin et lui l'affiche bien (`templateSelectionNotice` →
+  `TemplatePanel`) — porter la même correction côté deck.
 - **Retour d'erreur sur une vignette de layout bloquante** (mode
   template) : rouge plein `--color-error` pour l'instant — concevoir un
   retour plus riche qu'une simple bordure.
-- **Emplacement des dimensions** : unités `px` ajoutées, mais le bloc n'a
-  plus sa place dans le header — à déplacer (où ?).
-- **Indicateur de chargement du bouton "Sign in with Google".** Tant que
-  le lien Google n'est pas prêt (juste après montage, ou après une
-  erreur), le bouton est simplement désactivé sans feedback visuel.
-- **Avertissements non bloquants dans le rapport template** (substitution
-  de police, rayon approximé, tag inconnu…) : réfléchir à leur
-  intégration dans l'UI du rapport — jugés plus importants côté template
-  que côté deck.
+- **Indicateur de chargement du bouton "Sign in with Google".** Deux
+  moments d'attente distincts, aucun des deux visible aujourd'hui :
+  (a) juste après montage, pendant l'appel au backend qui récupère l'URL
+  Google (bouton grisé, pas de texte) ; (b) après clic sur le lien, tout
+  le temps du polling (`pollAuthSession`, jusqu'à 10 min) en attendant que
+  l'utilisateur finisse l'auth dans son navigateur — le bouton reste
+  affiché "Sign in with Google" sans dire qu'il attend une réponse. Le
+  (b) est le plus gênant en pratique.
+- **Avertissements non bloquants dans le rapport template** (police
+  substituée automatiquement, rayon d'angle approximé…) : n'empêchent pas
+  la création du template (l'élément reste éditable), mais ne s'affichent
+  nulle part dans le rapport — seuls les warnings *bloquants* y figurent.
+  Utile pour que le créateur sache qu'une police n'est pas garantie
+  identique dans Slides avant de diffuser son template.
 
 ## Divers
 
-- **"Buy me a coffee".** Ajouter un rappel discret (pied de page ou petit
-  encart en bas de l'UI) pointant vers un lien Buy Me a Coffee.
-- **Validation de composition des templates** (approche à définir — voir
-  discussion d'audit) : layout sans aucun placeholder, rôles dupliqués
-  (`[[title]]` ×2), tag incohérent avec le type de calque (`[[image]]`
-  sur un texte)… Commencer par des warnings informatifs non bloquants,
-  durcir ensuite si l'usage le confirme.
+- **"Buy me a coffee".** Le bouton "Support me with Ko-fi" est déjà posé
+  dans le footer (`href="#"`) — en attente du vrai lien avant de le
+  finaliser, pas une tâche de conception restante.
+- **Validation de composition des templates** (approche à définir).
+  Exemples concrets à couvrir : deux calques tagués `[[title]]` dans le
+  même layout (ambigu : lequel est LE titre ?) ; layout sans aucun
+  placeholder (volontaire — slide de séparation — ou oubli ?) ; tag
+  incohérent avec le type de calque, ex. `[[image]]` posé sur un calque
+  TEXTE (reste du texte côté Slides mais étiqueté "image", trompeur pour
+  l'utilisateur final). Commencer par des warnings informatifs non
+  bloquants, durcir ensuite si l'usage le confirme.
 - **Création de template — suite (voir
   brief-creation-template-google-slides.md § Décisions prises).**
-  - Réordonnancement par glisser-déposer des layouts de template (le deck
-    export l'a déjà via `ui/reorderFrames.ts`).
+  - Réordonnancement par glisser-déposer des layouts de template — même
+    besoin que le deck (juste réarranger l'ordre des slides), qui a déjà
+    toute la mécanique (`DeckPanel.tsx` + `ui/reorderFrames.ts`) ; à
+    porter telle quelle sur `TemplatePanel.tsx`, qui n'a aujourd'hui aucune
+    logique de drag.
   - Remplacer la convention de nom de calque `[[role]]` par un contrôle
     actif dans l'éditeur Figma (property/plugin data assignée depuis un
     panneau du plugin), pour guider la création sans devoir renommer les
     calques à la main.
-  - Outil compagnon "dupliquer un layout + remplir ses placeholders" qui
-    lirait le tag `f2s-placeholder:<RÔLE>` porté en alt text côté Slides.
+  - Outil compagnon "dupliquer un layout + remplir ses placeholders" —
+    idée de backlog pour l'utilisateur FINAL d'un template (pas son
+    créateur) : repérer automatiquement titre/image/corps de texte grâce
+    au tag `f2s-placeholder:<RÔLE>` déjà posé en alt text côté Slides,
+    pour l'aider à remplir une nouvelle slide dupliquée depuis un layout.
 
 ## Checklist de test manuel — trouver les limites réelles du plugin
 

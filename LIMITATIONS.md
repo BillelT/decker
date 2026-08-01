@@ -102,11 +102,15 @@ avec les couches suivantes **testées et fonctionnelles hors ligne** :
 - Le jeu de fixtures complet (spec §9, `01-rects` à `13-batch`) n'existe
   que pour `01-rects` (généré en code, sans fichier Figma réel). Les
   fixtures `02` à `13` nécessitent un fichier Figma dédié à créer.
-- Le stockage d'assets S3/R2 (spec §5.3, option recommandée) n'est pas
-  implémenté : seul un stockage disque local de développement existe
-  derrière l'interface `AssetStore`. À implémenter avant tout déploiement
-  multi-instance ou public.
-- Conséquence directe du point précédent en local : Slides récupère
+- Le stockage d'assets utilisé en production est **Vercel Blob**
+  (`ASSET_STORAGE_DRIVER=vercel-blob`, `src/storage/vercelBlobAssetStore.ts`
+  — voir README §8.2), pas juste un stockage disque local : ça couvre déjà
+  le besoin d'un stockage multi-instance/public tant que le déploiement
+  reste sur Vercel. Seule l'alternative S3/R2 (spec §5.3) reste un stub
+  qui lève une erreur si sélectionné (`ASSET_STORAGE_DRIVER=s3`) — à
+  implémenter seulement si un déploiement hors Vercel devient nécessaire.
+- Conséquence du point précédent **en dev local** (driver
+  `local-disk`) : Slides récupère
   chaque image/asset exporté lui-même depuis les serveurs Google, donc
   une URL `PUBLIC_BACKEND_URL=http://localhost:...` n'est jamais
   joignable pour lui. Tant qu'une slide n'a aucun élément rasterisé
