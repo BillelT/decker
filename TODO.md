@@ -158,11 +158,10 @@ les suivants) :
     `batchUpdate` plutôt qu'à la main), pour l'aider à remplir une nouvelle
     slide dupliquée depuis un layout.
 
-**Nettoyage à faire une fois ce backlog entamé :** le spike de validation
-(`packages/backend/src/spikes/masterThemeSpike.ts`, `routes/spike.ts`, le
-bouton "Run theme spike" du footer plugin) est explicitement temporaire —
-à retirer (route + bouton) une fois le point 1 ci-dessus construit sur des
-bases propres ; le script CLI peut rester comme outil de diagnostic ponctuel.
+~~**Nettoyage**~~ — fait : la route temporaire `routes/spike.ts` et le
+bouton "Run theme spike" du footer plugin ont été retirés une fois la
+validation confirmée. `packages/backend/src/spikes/masterThemeSpike.ts`
+reste comme script CLI de diagnostic ponctuel (`npm run spike:theme`).
 
 ## Checklist de test manuel — trouver les limites réelles du plugin
 
