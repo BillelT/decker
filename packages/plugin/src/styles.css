@@ -836,6 +836,47 @@ html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) {
   transform: translateY(0.5px);
 }
 
+/* Micro-interactions des icônes settings (comparaison gear vs sliders) —
+   comme le translateY() ci-dessus, désactivées en win95 (esprit rétro,
+   pas d'animation). */
+html:not(.f2s-skin--win95) .f2s-icon-gear,
+html:not(.f2s-skin--win95) .f2s-icon-sliders,
+html:not(.f2s-skin--win95) .f2s-slider-knob {
+  transition: transform 0.15s ease;
+}
+
+html:not(.f2s-skin--win95) .f2s-footer-settings:hover:not(:disabled) .f2s-icon-gear {
+  transform: rotate(4deg) scale(1.035);
+}
+
+html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-icon-gear {
+  transform: rotate(-6deg) scale(0.975);
+}
+
+html:not(.f2s-skin--win95) .f2s-footer-settings:hover:not(:disabled) .f2s-icon-sliders {
+  transform: scale(1.01);
+}
+
+html:not(.f2s-skin--win95) .f2s-footer-settings:hover:not(:disabled) .f2s-slider-knob--top {
+  transform: translateX(-2px);
+}
+
+html:not(.f2s-skin--win95) .f2s-footer-settings:hover:not(:disabled) .f2s-slider-knob--bottom {
+  transform: translateX(2.25px);
+}
+
+html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-icon-sliders {
+  transform: scale(0.88);
+}
+
+html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-slider-knob--top {
+  transform: translateX(-1.25px);
+}
+
+html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-slider-knob--bottom {
+  transform: translateX(1px);
+}
+
 .f2s-footer-actions {
   display: flex;
   align-items: center;
