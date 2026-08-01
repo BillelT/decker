@@ -2,7 +2,8 @@ import { render } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { ExportOptions, IRDocument } from '@figma-to-slides/shared';
 import { sanitizeSessionToken } from './ui/sanitizeSessionToken.js';
-import { exportCursorFromBatches, type ExportBatch, type ExportCursor } from './ui/exportCursor.js';
+import type { ExportCursor } from './ui/exportCursor.js';
+import { REVEAL_MS } from './ui/RetroExportPreview.js';
 import { AVAILABLE_SLIDES_FONTS } from './serialize/fonts.js';
 import {
   DEFAULT_UI_SKIN,
@@ -29,6 +30,15 @@ type AuthPollResult = { status: 'pending' } | { status: 'ready'; sessionToken: s
 
 type BackendConfig = { baseUrl: string };
 type ExportState = 'idle' | 'exporting' | 'done' | 'error';
+type JobConclusion = { status: 'done'; resultUrl: string } | { status: 'failed'; error: string };
+
+/**
+ * Temps minimum d'affichage de chaque frame pendant la simulation d'export
+ * (beginExportPacing) — calé sur la durée de la révélation rétro
+ * (RetroExportPreview) plus une courte pause sur l'image complète, pour
+ * qu'on la voie "posée" avant d'enchaîner sur la suivante.
+ */
+const MIN_SLIDE_VISIBLE_MS = REVEAL_MS + 400;
 
 // Injecté au build (voir esbuild.config.mjs).
 declare const __BACKEND_URL__: string;
@@ -226,6 +236,85 @@ function App() {
   // première frame du deck, puis suivi via les lots renvoyés par le polling.
   const [exportCursor, setExportCursor] = useState<ExportCursor | undefined>();
   const pendingAssets = useMemo(() => new Map<string, ArrayBuffer>(), []);
+
+  // Quel mode a démarré l'export en cours, lu depuis `handleExportPayload` —
+  // qui vit dans le handler `onMessage` ci-dessous, monté une seule fois
+  // (deps: []) et donc figé sur un `exportSource` toujours `undefined` s'il
+  // lisait le state directement (même piège que `sessionTokenRef`).
+  const exportModeRef = useRef<AppMode | undefined>();
+  // Résultat RÉEL du job (done/failed), écrit par `handleExportPayload` une
+  // fois le polling conclu. En mode deck, il n'est PAS appliqué directement :
+  // la simulation visuelle (beginExportPacing) le lit et ne bascule dessus
+  // qu'une fois qu'elle a fini de dérouler toutes les frames — sinon un
+  // export plus rapide que l'animation (petit deck, ou lots tous appliqués
+  // entre deux pollings) ferait sauter l'aperçu de la 1ère frame directement
+  // au résultat, sans jamais montrer les suivantes.
+  const jobConclusionRef = useRef<JobConclusion | undefined>();
+  const exportPacingTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>();
+
+  function stopExportPacing() {
+    if (exportPacingTimerRef.current !== undefined) {
+      clearTimeout(exportPacingTimerRef.current);
+      exportPacingTimerRef.current = undefined;
+    }
+  }
+  useEffect(() => () => stopExportPacing(), []);
+
+  /** Applique une conclusion de job (réelle) à l'état visible : fin d'export, réussie ou non. */
+  function applyConclusion(concluded: JobConclusion) {
+    setExportCursor(undefined);
+    if (concluded.status === 'done') {
+      setExportState('done');
+      setExportProgress(100);
+      setResultUrl(concluded.resultUrl);
+    } else {
+      setExportState('error');
+      setExportError(concluded.error);
+    }
+  }
+
+  /**
+   * Fait défiler `frameIds` dans le grand aperçu (donc dans le rail via
+   * `exportCursor`), une frame à la fois et à un rythme fixe
+   * (`MIN_SLIDE_VISIBLE_MS`) — indépendant de la vitesse réelle du backend.
+   * Ne bascule sur le résultat réel (`jobConclusionRef`) qu'une fois la
+   * dernière frame simulée montrée le temps voulu, sauf échec : celui-ci
+   * interrompt la simulation tout de suite, inutile de continuer à "faire
+   * semblant" de générer les slides restantes.
+   */
+  function beginExportPacing(frameIds: string[]) {
+    stopExportPacing();
+    jobConclusionRef.current = undefined;
+    const total = frameIds.length;
+    if (total === 0) return;
+
+    const step = (index: number) => {
+      setExportCursor({ frameId: frameIds[index], index, total });
+      setExportProgress(Math.round(((index + 1) / total) * 100));
+
+      const wait = () => {
+        exportPacingTimerRef.current = setTimeout(() => {
+          const concluded = jobConclusionRef.current;
+          if (concluded?.status === 'failed') {
+            applyConclusion(concluded);
+            return;
+          }
+          if (index < total - 1) {
+            step(index + 1);
+            return;
+          }
+          if (concluded) {
+            applyConclusion(concluded);
+          } else {
+            wait();
+          }
+        }, MIN_SLIDE_VISIBLE_MS);
+      };
+      wait();
+    };
+
+    step(0);
+  }
 
   // Le handler `onMessage` ci-dessous n'est branché qu'une fois (deps: []) ;
   // sans cette ref, `handleExportPayload` y capturerait à jamais la valeur
@@ -505,8 +594,17 @@ function App() {
         throw new Error(body?.error ? `${body.error} (${res.status})` : `Export rejected (${res.status})`);
       }
       const { jobId } = await res.json();
-      await pollJob(jobId);
+      const concluded = await pollJob(jobId);
+      if (exportModeRef.current === 'deck') {
+        // Voir jobConclusionRef : la simulation en cours (démarrée dans
+        // startExport) applique elle-même ce résultat une fois qu'elle a
+        // fini de dérouler toutes les frames.
+        jobConclusionRef.current = concluded;
+      } else {
+        applyConclusion(concluded);
+      }
     } catch (err) {
+      stopExportPacing();
       setExportState('error');
       setExportCursor(undefined);
       setExportError(err instanceof Error ? err.message : String(err));
@@ -523,45 +621,42 @@ function App() {
     }
   }
 
-  async function pollJob(jobId: string) {
-    for (let i = 0; i < 120; i++) {
-      const res = await fetch(`${backend.baseUrl}/export/${jobId}`, { credentials: 'include' });
-      const job = await res.json();
-      const batches = job.batches as ExportBatch[] | undefined;
-      if (batches && batches.length > 0) {
-        const applied = batches.filter((b) => b.status === 'applied').length;
-        setExportProgress(Math.round((applied / batches.length) * 100));
-        // Les lots sont appliqués séquentiellement, dans l'ordre du deck :
-        // le premier lot encore `pending` EST la frame en cours d'export.
-        setExportCursor(exportCursorFromBatches(batches));
+  /**
+   * Sonde `/export/:jobId` jusqu'à conclusion (réussie ou non) et la
+   * RENVOIE, sans toucher au state directement : selon le mode (deck ou
+   * template), c'est `handleExportPayload` qui décide de l'appliquer tout de
+   * suite ou de la confier à la simulation visuelle (voir plus haut).
+   */
+  async function pollJob(jobId: string): Promise<JobConclusion> {
+    try {
+      for (let i = 0; i < 120; i++) {
+        const res = await fetch(`${backend.baseUrl}/export/${jobId}`, { credentials: 'include' });
+        const job = await res.json();
+        if (job.status === 'done') {
+          return { status: 'done', resultUrl: job.presentationUrl };
+        }
+        if (job.status === 'failed') {
+          // Priorité aux erreurs par slide (`batch.error`) : bien plus
+          // actionnables que le message générique de `job.error`, qui ne
+          // couvre que l'échec global (ex. la création de présentation
+          // elle-même a échoué, avant même le premier lot).
+          const batchErrors = (job.batches as { error?: string }[] | undefined)
+            ?.map((b) => b.error)
+            .filter((e): e is string => Boolean(e));
+          return {
+            status: 'failed',
+            error: batchErrors && batchErrors.length > 0 ? batchErrors.join(' · ') : (job.error ?? 'Unknown server-side failure.'),
+          };
+        }
+        await new Promise((r) => setTimeout(r, 1500));
       }
-      if (job.status === 'done') {
-        setExportState('done');
-        setExportProgress(100);
-        setExportCursor(undefined);
-        setResultUrl(job.presentationUrl);
-        return;
-      }
-      if (job.status === 'failed') {
-        setExportState('error');
-        setExportCursor(undefined);
-        // Priorité aux erreurs par slide (`batch.error`) : bien plus
-        // actionnables que le message générique de `job.error`, qui ne
-        // couvre que l'échec global (ex. la création de présentation
-        // elle-même a échoué, avant même le premier lot).
-        const batchErrors = (job.batches as { error?: string }[] | undefined)
-          ?.map((b) => b.error)
-          .filter((e): e is string => Boolean(e));
-        setExportError(
-          batchErrors && batchErrors.length > 0 ? batchErrors.join(' · ') : (job.error ?? 'Unknown server-side failure.'),
-        );
-        return;
-      }
-      await new Promise((r) => setTimeout(r, 1500));
+      return {
+        status: 'failed',
+        error: 'Export timed out after 3 minutes — the presentation may still be processing; check your Google Drive before retrying.',
+      };
+    } catch (err) {
+      return { status: 'failed', error: err instanceof Error ? err.message : String(err) };
     }
-    setExportState('error');
-    setExportCursor(undefined);
-    setExportError('Export timed out after 3 minutes — the presentation may still be processing; check your Google Drive before retrying.');
   }
 
   /**
@@ -706,10 +801,16 @@ function App() {
     setExportState('exporting');
     setExportProgress(0);
     setExportSource('deck');
-    // L'aperçu rétro démarre dès le clic, sur la première frame : la
-    // sérialisation puis l'upload des assets prennent déjà plusieurs
-    // secondes avant que le premier lot n'existe côté backend.
-    setExportCursor(order.length > 0 ? { frameId: order[0], index: 0, total: order.length } : undefined);
+    exportModeRef.current = 'deck';
+    // L'aperçu rétro démarre dès le clic et défile ensuite toutes les frames
+    // du deck à un rythme fixe (voir beginExportPacing) : la sérialisation
+    // puis l'upload des assets prennent déjà plusieurs secondes avant que le
+    // premier lot n'existe côté backend, et le job réel peut ensuite conclure
+    // bien plus vite que cette simulation (petit deck, ou lots tous appliqués
+    // entre deux pollings) — dans les deux cas l'utilisateur voit chaque
+    // slide "s'imprimer" au lieu de ne voir que la première suivie d'un saut
+    // direct au résultat.
+    beginExportPacing(order);
     const options: ExportOptions = {
       mode: 'new-presentation',
       rasterScale: 2,
@@ -733,9 +834,14 @@ function App() {
    * layout réutilisable — mêmes endpoints `/assets` + `/export`.
    */
   function startTemplateCreate() {
+    // Coupe une éventuelle simulation d'export deck encore en vol : sans ça,
+    // son timer en attente pourrait appliquer plus tard le résultat de
+    // L'ANCIEN job deck par-dessus l'état du nouvel export template.
+    stopExportPacing();
     setExportState('exporting');
     setExportProgress(0);
     setExportSource('template');
+    exportModeRef.current = 'template';
     setExportCursor(undefined);
     postToPlugin({
       type: 'request-template',

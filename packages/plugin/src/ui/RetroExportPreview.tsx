@@ -22,8 +22,11 @@ import { ditherToVgaPalette } from './retroDither.js';
  * côté backend).
  */
 
-/** Durée d'une "génération" complète, les deux passes comprises. */
-const REVEAL_MS = 2600;
+/** Durée d'une "génération" complète, les deux passes comprises — exportée
+ *  pour que ui.tsx cale dessus le rythme de sa simulation multi-frames
+ *  (beginExportPacing) : sans ce partage, les deux durées divergeraient au
+ *  premier ajustement de l'une des deux. */
+export const REVEAL_MS = 2600;
 /** Nombre de bandes visé — la hauteur d'une bande s'en déduit. */
 const TARGET_BANDS = 56;
 /** Entrelacement de la passe grossière : une bande dessinée sur quatre. */
