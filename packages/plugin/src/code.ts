@@ -38,11 +38,16 @@ const COPY_GAP_PX = 200;
 // présentation NEUVE côté backend (mode 'new-presentation') : réutiliser la
 // session Google ne peut donc jamais écraser un deck déjà envoyé.
 const SESSION_TOKEN_STORAGE_KEY = 'f2s:sessionToken';
-// Habillage visuel choisi dans l'UI ('win95' par défaut, 'modern' pour le
-// design system historique). Même raison que le jeton de session : l'iframe
-// UI est recréée à chaque ouverture et n'a aucun stockage durable, donc le
-// choix ne survit que s'il est gardé côté sandbox.
+// Les deux réglages de la modale, persistés pour la même raison que le jeton
+// de session : l'iframe UI est recréée à chaque ouverture et n'a aucun
+// stockage durable, donc un choix ne survit que s'il est gardé côté sandbox.
+//
+// Habillage visuel de l'UI ('win95' par défaut, 'modern' pour le design
+// system historique).
 const UI_SKIN_STORAGE_KEY = 'f2s:uiSkin';
+// Thème forcé depuis la modale de réglages ('light' | 'dark'). Absent =
+// l'UI suit le thème de Figma (`themeColors: true`).
+const THEME_STORAGE_KEY = 'f2s:theme';
 
 type ExportableNode = FrameNode | ComponentNode | InstanceNode;
 
@@ -715,8 +720,28 @@ async function main(): Promise<void> {
       } catch (err) {
         console.error(err);
       }
+      // Thème forcé lors d'une session précédente : envoyé avant les frames
+      // pour que l'UI ne s'affiche pas d'abord dans le thème de Figma avant de
+      // basculer sous les yeux de l'utilisateur.
+      try {
+        const storedTheme = await figma.clientStorage.getAsync(THEME_STORAGE_KEY);
+        if (storedTheme === 'light' || storedTheme === 'dark') {
+          figma.ui.postMessage({ type: 'theme-preference-restored', theme: storedTheme });
+        }
+      } catch (err) {
+        console.error(err);
+      }
       try {
         await loadTaggedFrames(pending, templatePending, idGen);
+      } catch (err) {
+        console.error(err);
+      }
+      return;
+    }
+
+    if (msg.type === 'save-theme-preference') {
+      try {
+        await figma.clientStorage.setAsync(THEME_STORAGE_KEY, msg.theme as string);
       } catch (err) {
         console.error(err);
       }
