@@ -295,7 +295,12 @@ a {
   border: 1px solid transparent;
   white-space: nowrap;
   text-decoration: none;
-  transition: background-color 0.15s ease, color 0.15s ease, outline-color 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease, outline-color 0.15s ease, transform 0.15s ease;
+}
+
+/* Transform translateY() uniquement en mode moderne/hybrid (Win95 gère le pressed via box-shadow) */
+html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
+  transform: translateY(0.5px);
 }
 
 /* Contour seul au repos (le noir plein pesait visuellement plus lourd que le
@@ -818,17 +823,22 @@ a {
   font-weight: 700;
   font-family: inherit;
   background: transparent;
-  border: 1px solid transparent;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 6px 10px;
   margin-left: -10px;
-  transition: color 0.15s ease, border-color 0.15s ease;
+  transition: color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
 }
 
-.f2s-footer-settings:hover,
+.f2s-footer-settings:hover:not(:disabled),
 .f2s-footer-settings[aria-expanded='true'] {
   color: var(--color-text);
-  border-color: var(--color-border);
+  background: var(--color-surface-muted);
+}
+
+/* Transform translateY() uniquement en mode moderne/hybrid */
+html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) {
+  transform: translateY(0.5px);
 }
 
 .f2s-footer-actions {
