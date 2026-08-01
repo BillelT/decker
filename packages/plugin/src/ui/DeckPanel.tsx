@@ -130,71 +130,77 @@ export function DeckPanel({ order, setOrder, frames, activeId, setActiveId, sele
     return () => cancelAnimationFrame(frame);
   }, [suppressShiftTransition]);
 
+  if (order.length === 0) {
+    return (
+      <div className="f2s-body">
+        <main className="f2s-canvas">
+          <p className="f2s-empty">
+            Use "Select frames to add", then select the frames
+            <br />
+            you want to export on the Figma canvas, and click the button again to add your selection.
+          </p>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="f2s-body">
       <aside className="f2s-sidebar">
-        {selecting && order.length > 0 && !hasCanvasSelection && (
+        {selecting && !hasCanvasSelection && (
           <p className="f2s-toolbar-muted">Select one or more frames on the Figma canvas, then click "Add selection".</p>
         )}
-        {order.length === 0 ? (
-          <p className="f2s-empty">
-            {selecting
-              ? 'Select one or more frames on the Figma canvas, then click "Add selection".'
-              : 'Click "Select frames to add" to choose what should be exported.'}
-          </p>
-        ) : (
-          order.map((id, index) => {
-            const f = frames[id];
-            if (!f) return null;
-            const isDragging = dragId === id && dragActive;
-            // Décalage "fantôme" des autres vignettes pour ouvrir/refermer la
-            // place, d'un cran entier, selon que l'index d'origine de CETTE
-            // vignette se trouve entre le départ et la cible du drag.
-            let ghostShift = 0;
-            if (dragId && dragActive && !isDragging) {
-              const start = dragStartIndexRef.current;
-              if (start < dragTargetIndex && index > start && index <= dragTargetIndex) {
-                ghostShift = -slotHeightRef.current;
-              } else if (start > dragTargetIndex && index >= dragTargetIndex && index < start) {
-                ghostShift = slotHeightRef.current;
-              }
+        {order.map((id, index) => {
+          const f = frames[id];
+          if (!f) return null;
+          const isDragging = dragId === id && dragActive;
+          // Décalage "fantôme" des autres vignettes pour ouvrir/refermer la
+          // place, d'un cran entier, selon que l'index d'origine de CETTE
+          // vignette se trouve entre le départ et la cible du drag.
+          let ghostShift = 0;
+          if (dragId && dragActive && !isDragging) {
+            const start = dragStartIndexRef.current;
+            if (start < dragTargetIndex && index > start && index <= dragTargetIndex) {
+              ghostShift = -slotHeightRef.current;
+            } else if (start > dragTargetIndex && index >= dragTargetIndex && index < start) {
+              ghostShift = slotHeightRef.current;
             }
-            return (
-              <div
-                key={id}
-                ref={(el) => {
-                  if (el) sidebarItemRefs.current.set(id, el);
-                  else sidebarItemRefs.current.delete(id);
-                }}
-                className={`f2s-sidebar-item${isDragging ? ' is-dragging' : ''}${suppressShiftTransition ? ' is-releasing' : ''}`}
-                style={
-                  isDragging
-                    ? { transform: `translateY(${dragOffsetY}px)` }
-                    : ghostShift !== 0
-                      ? { transform: `translateY(${ghostShift}px)` }
-                      : undefined
-                }
+          }
+          return (
+            <div
+              key={id}
+              ref={(el) => {
+                if (el) sidebarItemRefs.current.set(id, el);
+                else sidebarItemRefs.current.delete(id);
+              }}
+              className={`f2s-sidebar-item${isDragging ? ' is-dragging' : ''}${suppressShiftTransition ? ' is-releasing' : ''}`}
+              style={
+                isDragging
+                  ? { transform: `translateY(${dragOffsetY}px)` }
+                  : ghostShift !== 0
+                    ? { transform: `translateY(${ghostShift}px)` }
+                    : undefined
+              }
+            >
+              <button
+                type="button"
+                className={`f2s-frame-preview${activeId === id ? ' is-active' : ''}`}
+                onClick={() => selectFrame(id)}
+                onPointerDown={(e) => handleDragPointerDown(e, id)}
               >
-                <button
-                  type="button"
-                  className={`f2s-frame-preview${activeId === id ? ' is-active' : ''}`}
-                  onClick={() => selectFrame(id)}
-                  onPointerDown={(e) => handleDragPointerDown(e, id)}
-                >
-                  {f.previewDataUrl && <img src={f.previewDataUrl} alt={f.name} draggable={false} />}
-                </button>
-                <div className="f2s-frame-info">
-                  <span className="f2s-frame-text">{index + 1}</span>
-                  <div className="f2s-frame-controls">
-                    <button type="button" className="f2s-icon-btn" title="Remove" onClick={() => onRemove(id)}>
-                      ✕
-                    </button>
-                  </div>
+                {f.previewDataUrl && <img src={f.previewDataUrl} alt={f.name} draggable={false} />}
+              </button>
+              <div className="f2s-frame-info">
+                <span className="f2s-frame-text">{index + 1}</span>
+                <div className="f2s-frame-controls">
+                  <button type="button" className="f2s-icon-btn" title="Remove" onClick={() => onRemove(id)}>
+                    ✕
+                  </button>
                 </div>
               </div>
-            );
-          })
-        )}
+            </div>
+          );
+        })}
       </aside>
 
       <main className="f2s-canvas">

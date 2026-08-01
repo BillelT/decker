@@ -768,7 +768,7 @@ function App() {
           <div className="f2s-toolbar-group">
             <span className="f2s-toolbar-label">Fonts:</span>
             {(mode === 'deck' ? deckFontSubstitutions : templateFontSubstitutions).length === 0 ? (
-              <span className="f2s-toolbar-muted">No substitution</span>
+              <span className="f2s-toolbar-muted">All fonts will appear here and can be replaced automatically.</span>
             ) : (
               (mode === 'deck' ? deckFontSubstitutions : templateFontSubstitutions).map((s) => (
                 <label className="f2s-font-select" key={s.original} title={`"${s.original}" isn't available in Slides — pick the replacement to use.`}>
