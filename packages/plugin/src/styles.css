@@ -534,6 +534,17 @@ a {
   border-color: var(--color-orange);
 }
 
+/* Une seule ligne, tronquée : voir le commentaire sur `f2s-log-entry-text`
+   dans DeckPanel.tsx — un nom de calque texte peut être un paragraphe
+   entier, seul compte de pouvoir identifier l'élément et cliquer dessus. */
+.f2s-log-entry-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .f2s-log-entry--blocking {
   border-color: var(--color-error);
   color: var(--color-error);

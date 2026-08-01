@@ -72,6 +72,19 @@ export function DeckPanel({
   // décrire une autre frame que celle affichée.
   const exportingFrame = exportCursor ? frames[exportCursor.frameId] : undefined;
   const previewedFrame = exportingFrame ?? activeFrame;
+  // Le rail suit le même repère que le grand aperçu : pendant un export, la
+  // vignette "active" (bordure pleine) est celle en cours de traitement, pas
+  // la sélection d'avant l'export — sans quoi les deux surlignages (actif +
+  // pulsation d'export) pointent sur deux vignettes différentes.
+  const highlightedId = exportCursor?.frameId ?? activeId;
+
+  // Fait défiler le rail jusqu'à la vignette surlignée dès qu'elle change —
+  // utile en cours d'export sur un deck plus long que la hauteur visible du
+  // rail, où sinon la vignette en cours de traitement peut être hors champ.
+  useEffect(() => {
+    if (!highlightedId) return;
+    sidebarItemRefs.current.get(highlightedId)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [highlightedId]);
 
   function selectFrame(id: string) {
     setActiveId(id);
@@ -204,7 +217,7 @@ export function DeckPanel({
             >
               <button
                 type="button"
-                className={`f2s-frame-preview${activeId === id ? ' is-active' : ''}${exportCursor?.frameId === id ? ' is-exporting' : ''}`}
+                className={`f2s-frame-preview${highlightedId === id ? ' is-active' : ''}${exportCursor?.frameId === id ? ' is-exporting' : ''}`}
                 onClick={() => selectFrame(id)}
                 onPointerDown={(e) => handleDragPointerDown(e, id)}
               >
@@ -264,9 +277,16 @@ export function DeckPanel({
                       <button
                         type="button"
                         className={`f2s-log-entry${w.severity === 'blocking' ? ' f2s-log-entry--blocking' : ''}`}
+                        title={`${w.nodeName} — ${w.message}`}
                         onClick={() => selectSourceNodes([w.sourceNodeId])}
                       >
-                        <strong>{w.nodeName}</strong> — {w.message}
+                        {/* Le nom du calque (nodeName) vient de Figma, où le nom par défaut d'un
+                            calque texte est son contenu entier : sur un long paragraphe, ça
+                            déborde. Tronqué sur une ligne — le texte n'a qu'à identifier
+                            l'élément et rester cliquable, le libellé complet reste dans `title`. */}
+                        <span className="f2s-log-entry-text">
+                          <strong>{w.nodeName}</strong> — {w.message}
+                        </span>
                       </button>
                     </li>
                   ))}
