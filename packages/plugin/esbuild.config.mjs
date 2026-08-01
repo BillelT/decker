@@ -14,6 +14,9 @@ await build({
   format: 'iife',
 });
 
+// Logo SVG depuis la racine du projet
+const logoSvg = await readFile('../../assets/logo.svg', 'utf8');
+
 const uiResult = await build({
   entryPoints: ['src/ui.tsx'],
   bundle: true,
@@ -21,7 +24,7 @@ const uiResult = await build({
   target: 'es2020',
   format: 'iife',
   write: false,
-  define: { __BACKEND_URL__: JSON.stringify(BACKEND_URL) },
+  define: { __BACKEND_URL__: JSON.stringify(BACKEND_URL), __LOGO_SVG__: JSON.stringify(logoSvg) },
   jsx: 'automatic',
   jsxImportSource: 'preact',
 });
