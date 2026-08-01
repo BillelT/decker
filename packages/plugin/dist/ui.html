@@ -37,8 +37,13 @@
    plugin est ouvert avec `themeColors: true` (code.ts) — palette claire
    inversée, l'orange de marque reste identique. Le fallback
    prefers-color-scheme couvre le rendu hors Figma (dev navigateur), sans
-   jamais contredire une classe posée par Figma. */
-html.figma-dark {
+   jamais contredire une classe posée par Figma.
+
+   `f2s-theme-light`/`f2s-theme-dark` sont le choix EXPLICITE fait dans la
+   modale de réglages (ui/theme.ts) : il l'emporte sur le thème de Figma comme
+   sur la préférence système, d'où les `:not(.f2s-theme-light)` ci-dessous. */
+html.figma-dark:not(.f2s-theme-light),
+html.f2s-theme-dark {
   --color-bg: #171310;
   --color-text: #f2ece8;
   --color-black-70: rgba(242, 236, 232, 0.7);
@@ -49,7 +54,7 @@ html.figma-dark {
 }
 
 @media (prefers-color-scheme: dark) {
-  html:not(.figma-light) {
+  html:not(.figma-light):not(.f2s-theme-light) {
     --color-bg: #171310;
     --color-text: #f2ece8;
     --color-black-70: rgba(242, 236, 232, 0.7);
@@ -756,12 +761,172 @@ a {
   color: var(--color-black-70);
   font-size: 12px;
   font-weight: 700;
+  font-family: inherit;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin-left: -10px;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.f2s-footer-settings:hover,
+.f2s-footer-settings[aria-expanded='true'] {
+  color: var(--color-text);
+  border-color: var(--color-border);
 }
 
 .f2s-footer-actions {
   display: flex;
   align-items: center;
   gap: 16px;
+}
+
+/* ---- Modale de réglages ---- */
+
+:root {
+  /* Aligné sur TRANSITION_MS (ui/SettingsModal.tsx), qui pilote le démontage
+     du composant à la fin de l'animation de sortie. */
+  --f2s-modal-duration: 220ms;
+  --f2s-modal-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.f2s-modal-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(18, 15, 13, 0.45);
+  /* État de DÉPART de l'ouverture (et d'arrivée de la fermeture) : `.is-open`
+     est posée un frame après le montage pour que la transition ait deux états
+     distincts à interpoler. */
+  opacity: 0;
+  transition: opacity var(--f2s-modal-duration) var(--f2s-modal-ease);
+}
+
+.f2s-modal-overlay.is-open {
+  opacity: 1;
+}
+
+.f2s-modal {
+  width: 100%;
+  max-width: 420px;
+  /* Surface (et non --color-bg) : le panneau doit se détacher du fond de
+     l'app derrière l'overlay, y compris en thème sombre où bordure et ombre
+     seules suffisent à peine. */
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(18, 15, 13, 0.18);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(8px) scale(0.98);
+  transition: opacity var(--f2s-modal-duration) var(--f2s-modal-ease), transform var(--f2s-modal-duration) var(--f2s-modal-ease);
+}
+
+.f2s-modal:focus {
+  outline: none;
+}
+
+.f2s-modal-overlay.is-open .f2s-modal {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* Figma n'expose pas de réglage "réduire les animations" à l'iframe : on suit
+   la préférence système, la modale apparaît alors sans glissement. */
+@media (prefers-reduced-motion: reduce) {
+  .f2s-modal-overlay,
+  .f2s-modal {
+    transition-duration: 0.01ms;
+  }
+
+  .f2s-modal {
+    transform: none;
+  }
+}
+
+.f2s-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.f2s-modal-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.f2s-modal-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.f2s-setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.f2s-setting-text {
+  min-width: 0;
+}
+
+.f2s-setting-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.f2s-setting-desc {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--color-black-70);
+}
+
+/* ---- Tab menu (segmented control) ---- */
+
+.f2s-tabs {
+  display: inline-flex;
+  flex: none;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+  border-radius: 8px;
+}
+
+.f2s-tab {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-black-70);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 14px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.f2s-tab:hover:not(.is-active) {
+  color: var(--color-text);
+}
+
+.f2s-tab.is-active {
+  background: var(--color-orange);
+  color: var(--color-bg);
 }
 </style>
 </head>
@@ -1518,6 +1683,119 @@ a {
     ] });
   }
 
+  // src/ui/SettingsModal.tsx
+  var TRANSITION_MS = 220;
+  var THEME_TABS = [
+    { value: "light", label: "Light", hint: "Force the light palette, whatever theme Figma is using." },
+    { value: "dark", label: "Dark", hint: "Force the dark palette, whatever theme Figma is using." }
+  ];
+  function CloseIcon() {
+    return /* @__PURE__ */ u3("svg", { width: "14", height: "14", viewBox: "0 0 14 14", fill: "none", xmlns: "http://www.w3.org/2000/svg", "aria-hidden": "true", children: /* @__PURE__ */ u3("path", { d: "m3 3 8 8M11 3l-8 8", stroke: "currentColor", strokeWidth: "1.6", strokeLinecap: "round" }) });
+  }
+  function SettingsModal({ open, theme, onThemeChange, onClose }) {
+    const [mounted, setMounted] = d2(open);
+    const [entered, setEntered] = d2(false);
+    const dialogRef = A2(null);
+    h2(() => {
+      if (open) {
+        setMounted(true);
+        const raf = requestAnimationFrame(() => setEntered(true));
+        return () => cancelAnimationFrame(raf);
+      }
+      setEntered(false);
+      const timer = setTimeout(() => setMounted(false), TRANSITION_MS);
+      return () => clearTimeout(timer);
+    }, [open]);
+    h2(() => {
+      if (!open) return;
+      const onKeyDown = (event) => {
+        if (event.key === "Escape") onClose();
+      };
+      window.addEventListener("keydown", onKeyDown);
+      return () => window.removeEventListener("keydown", onKeyDown);
+    }, [open, onClose]);
+    h2(() => {
+      if (open && entered) dialogRef.current?.focus();
+    }, [open, entered]);
+    if (!mounted) return null;
+    return /* @__PURE__ */ u3(
+      "div",
+      {
+        className: `f2s-modal-overlay${entered ? " is-open" : ""}`,
+        onClick: (event) => {
+          if (event.target === event.currentTarget) onClose();
+        },
+        children: /* @__PURE__ */ u3(
+          "div",
+          {
+            className: "f2s-modal",
+            role: "dialog",
+            "aria-modal": "true",
+            "aria-label": "Settings",
+            tabIndex: -1,
+            ref: dialogRef,
+            children: [
+              /* @__PURE__ */ u3("header", { className: "f2s-modal-header", children: [
+                /* @__PURE__ */ u3("h2", { className: "f2s-modal-title", children: "Settings" }),
+                /* @__PURE__ */ u3("button", { type: "button", className: "f2s-icon-btn", title: "Close settings", "aria-label": "Close settings", onClick: onClose, children: /* @__PURE__ */ u3(CloseIcon, {}) })
+              ] }),
+              /* @__PURE__ */ u3("div", { className: "f2s-modal-body", children: /* @__PURE__ */ u3("section", { className: "f2s-setting", children: [
+                /* @__PURE__ */ u3("div", { className: "f2s-setting-text", children: [
+                  /* @__PURE__ */ u3("h3", { className: "f2s-setting-title", children: "Appearance" }),
+                  /* @__PURE__ */ u3("p", { className: "f2s-setting-desc", children: "Pick the palette used by the plugin panel." })
+                ] }),
+                /* @__PURE__ */ u3("div", { className: "f2s-tabs", role: "tablist", "aria-label": "Theme", children: THEME_TABS.map((tab) => /* @__PURE__ */ u3(
+                  "button",
+                  {
+                    type: "button",
+                    role: "tab",
+                    "aria-selected": theme === tab.value,
+                    title: tab.hint,
+                    className: `f2s-tab${theme === tab.value ? " is-active" : ""}`,
+                    onClick: () => onThemeChange(tab.value),
+                    children: tab.label
+                  },
+                  tab.value
+                )) })
+              ] }) })
+            ]
+          }
+        )
+      }
+    );
+  }
+
+  // src/ui/theme.ts
+  var OVERRIDE_CLASS = {
+    light: "f2s-theme-light",
+    dark: "f2s-theme-dark"
+  };
+  function isThemePreference(value) {
+    return value === "light" || value === "dark";
+  }
+  function readFigmaTheme() {
+    const root = document.documentElement;
+    if (root.classList.contains("figma-dark")) return "dark";
+    if (root.classList.contains("figma-light")) return "light";
+    return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }
+  function applyThemeOverride(theme) {
+    const root = document.documentElement;
+    root.classList.toggle(OVERRIDE_CLASS.light, theme === "light");
+    root.classList.toggle(OVERRIDE_CLASS.dark, theme === "dark");
+  }
+  function watchFigmaTheme(onChange) {
+    const observer = new MutationObserver(() => onChange(readFigmaTheme()));
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    const media = window.matchMedia?.("(prefers-color-scheme: dark)");
+    const onMediaChange = () => onChange(readFigmaTheme());
+    media?.addEventListener("change", onMediaChange);
+    return () => {
+      observer.disconnect();
+      media?.removeEventListener("change", onMediaChange);
+    };
+  }
+
   // src/ui.tsx
   var AuthExpiredError = class extends Error {
     constructor() {
@@ -1578,9 +1856,19 @@ a {
     const [sessionToken, setSessionToken] = d2();
     const [loginError, setLoginError] = d2();
     const [authUrl, setAuthUrl] = d2();
-    const [backend] = d2({ baseUrl: true ? "http://localhost:8787" : "https://figma-to-slide-backend.vercel.app" });
+    const [backend] = d2({ baseUrl: true ? "https://figma-to-slide-backend.vercel.app" : "https://figma-to-slide-backend.vercel.app" });
     const [deckTitle, setDeckTitle] = d2("");
     const [templateTitle, setTemplateTitle] = d2("");
+    const [settingsOpen, setSettingsOpen] = d2(false);
+    const [figmaTheme, setFigmaTheme] = d2(() => readFigmaTheme());
+    const [themeOverride, setThemeOverride] = d2();
+    const theme = themeOverride ?? figmaTheme;
+    h2(() => watchFigmaTheme(setFigmaTheme), []);
+    h2(() => applyThemeOverride(themeOverride), [themeOverride]);
+    function handleThemeChange(next) {
+      setThemeOverride(next);
+      postToPlugin({ type: "save-theme-preference", theme: next });
+    }
     h2(() => {
       if (!activeId && order.length > 0) setActiveId(order[0]);
     }, [order, activeId]);
@@ -1747,6 +2035,11 @@ a {
             setSessionToken(sanitizeSessionToken(msg.token));
             setAuthUrl(void 0);
             setLoginError(void 0);
+            break;
+          // Thème forcé depuis la modale de réglages lors d'une session
+          // précédente (clientStorage, cf. code.ts).
+          case "theme-preference-restored":
+            if (isThemePreference(msg.theme)) setThemeOverride(msg.theme);
             break;
           case "no-frames-selected":
             if (modeRef.current === "template") {
@@ -2147,15 +2440,26 @@ a {
         }
       ),
       /* @__PURE__ */ u3("footer", { className: "f2s-footer", children: [
-        /* @__PURE__ */ u3("div", { className: "f2s-footer-settings", children: [
-          /* @__PURE__ */ u3(GearIcon, {}),
-          /* @__PURE__ */ u3("span", { children: "Settings" })
-        ] }),
+        /* @__PURE__ */ u3(
+          "button",
+          {
+            type: "button",
+            className: "f2s-footer-settings",
+            "aria-haspopup": "dialog",
+            "aria-expanded": settingsOpen,
+            onClick: () => setSettingsOpen((open) => !open),
+            children: [
+              /* @__PURE__ */ u3(GearIcon, {}),
+              /* @__PURE__ */ u3("span", { children: "Settings" })
+            ]
+          }
+        ),
         /* @__PURE__ */ u3("div", { className: "f2s-footer-actions", children: [
           /* @__PURE__ */ u3("a", { href: "#", className: "f2s-btn f2s-btn--tertiary", children: "Support me with Ko-fi" }),
           exportState === "done" && exportSource === mode && resultUrl && /* @__PURE__ */ u3("a", { href: resultUrl, target: "_blank", rel: "noreferrer", className: "f2s-btn f2s-btn--primary", children: "Open presentation" })
         ] })
-      ] })
+      ] }),
+      /* @__PURE__ */ u3(SettingsModal, { open: settingsOpen, theme, onThemeChange: handleThemeChange, onClose: () => setSettingsOpen(false) })
     ] });
   }
   R(/* @__PURE__ */ u3(App, {}), document.getElementById("app"));

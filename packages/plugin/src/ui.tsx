@@ -18,6 +18,8 @@ import {
 } from './ui/types.js';
 import { DeckPanel } from './ui/DeckPanel';
 import { TemplatePanel } from './ui/TemplatePanel';
+import { SettingsModal } from './ui/SettingsModal';
+import { applyThemeOverride, isThemePreference, readFigmaTheme, watchFigmaTheme, type ThemePreference } from './ui/theme.js';
 
 type AuthPollResult = { status: 'pending' } | { status: 'ready'; sessionToken: string } | { status: 'error'; message: string };
 
@@ -54,7 +56,7 @@ function Logo() {
   );
 }
 
-/** Icône du bouton "Settings" du footer — pas encore de panneau de réglages derrière, juste le point d'entrée visuel (cf. demande audit). */
+/** Icône du bouton "Settings" du footer, qui ouvre la modale de réglages (ui/SettingsModal.tsx). */
 function GearIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -102,6 +104,24 @@ function App() {
   /** Titres saisis par l'utilisateur — deviennent le nom du fichier créé dans Drive (un titre figé rendait chaque export indistinguable du précédent). */
   const [deckTitle, setDeckTitle] = useState('');
   const [templateTitle, setTemplateTitle] = useState('');
+
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  // Deux niveaux : le thème de Figma (suivi tant que l'utilisateur n'a rien
+  // choisi) et l'override explicite posé depuis la modale de réglages. Le tab
+  // menu affiche l'override s'il existe, sinon le thème réellement rendu.
+  const [figmaTheme, setFigmaTheme] = useState<ThemePreference>(() => readFigmaTheme());
+  const [themeOverride, setThemeOverride] = useState<ThemePreference | undefined>();
+  const theme = themeOverride ?? figmaTheme;
+
+  useEffect(() => watchFigmaTheme(setFigmaTheme), []);
+  useEffect(() => applyThemeOverride(themeOverride), [themeOverride]);
+
+  function handleThemeChange(next: ThemePreference) {
+    setThemeOverride(next);
+    // Persisté côté sandbox (clientStorage) : l'iframe UI n'a aucun stockage
+    // durable, le choix serait perdu à chaque réouverture du plugin.
+    postToPlugin({ type: 'save-theme-preference', theme: next });
+  }
 
   useEffect(() => {
     if (!activeId && order.length > 0) setActiveId(order[0]);
@@ -295,6 +315,11 @@ function App() {
           setSessionToken(sanitizeSessionToken(msg.token as string));
           setAuthUrl(undefined);
           setLoginError(undefined);
+          break;
+        // Thème forcé depuis la modale de réglages lors d'une session
+        // précédente (clientStorage, cf. code.ts).
+        case 'theme-preference-restored':
+          if (isThemePreference(msg.theme)) setThemeOverride(msg.theme);
           break;
         case 'no-frames-selected':
           if (modeRef.current === 'template') {
@@ -827,10 +852,16 @@ function App() {
       )}
 
       <footer className="f2s-footer">
-        <div className="f2s-footer-settings">
+        <button
+          type="button"
+          className="f2s-footer-settings"
+          aria-haspopup="dialog"
+          aria-expanded={settingsOpen}
+          onClick={() => setSettingsOpen((open) => !open)}
+        >
           <GearIcon />
           <span>Settings</span>
-        </div>
+        </button>
         <div className="f2s-footer-actions">
           <a href="#" className="f2s-btn f2s-btn--tertiary">
             Support me with Ko-fi
@@ -842,6 +873,8 @@ function App() {
           )}
         </div>
       </footer>
+
+      <SettingsModal open={settingsOpen} theme={theme} onThemeChange={handleThemeChange} onClose={() => setSettingsOpen(false)} />
     </>
   );
 }
