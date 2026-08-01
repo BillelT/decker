@@ -1040,6 +1040,16 @@ function App() {
           <span>Settings</span>
         </button>
         <div className="f2s-footer-actions">
+          {/* Sans ce message, un export échoué (session expirée, 400 Slides
+              API, backend injoignable…) redevenait totalement silencieux :
+              l'aperçu rétro s'arrêtait, exportError était bien renseigné,
+              mais rien ne le lisait — l'utilisateur ne voyait ni lien ni
+              erreur. Voir TODO.md « Affichage des erreurs ». */}
+          {exportState === 'error' && exportSource === mode && exportError && (
+            <p className="f2s-error f2s-footer-error" title={exportError}>
+              {exportError}
+            </p>
+          )}
           <a href="#" className="f2s-btn f2s-btn--tertiary">
             Support me with Ko-fi
           </a>
