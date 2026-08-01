@@ -25,47 +25,51 @@ export function TemplatePanel({ order, layouts, activeId, setActiveId, selecting
     postToPlugin({ type: 'select-nodes', nodeIds: [id] });
   }
 
+  if (order.length === 0) {
+    return (
+      <div className="f2s-body">
+        <main className="f2s-canvas">
+          <p className="f2s-empty">
+            Click "Select layout to add" to choose the layouts that make up this template — e.g. a title slide, a content slide.
+          </p>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="f2s-body">
       <aside className="f2s-sidebar">
         {notice && <p className="f2s-error">{notice}</p>}
-        {selecting && order.length > 0 && !hasCanvasSelection && (
+        {selecting && !hasCanvasSelection && (
           <p className="f2s-toolbar-muted">Select one or more frames on the Figma canvas, then click "Add selection".</p>
         )}
-        {order.length === 0 ? (
-          <p className="f2s-empty">
-            {selecting
-              ? 'Select one or more frames on the Figma canvas, then click "Add selection".'
-              : 'Click "Select layout to add" to choose the layouts that make up this template — e.g. a title slide, a content slide.'}
-          </p>
-        ) : (
-          order.map((id, index) => {
-            const layout = layouts[id];
-            if (!layout) return null;
-            return (
-              <div key={id} className="f2s-sidebar-item">
-                <button
-                  type="button"
-                  className={`f2s-frame-preview${activeId === id ? ' is-active' : ''}${layout.blocking ? ' f2s-frame-preview--blocking' : ''}`}
-                  onClick={() => selectLayout(id)}
-                  title={layout.blocking ? 'Contains an element that would be rasterized — open it to see the details.' : undefined}
-                >
-                  {layout.previewDataUrl && <img src={layout.previewDataUrl} alt={layout.name} draggable={false} />}
-                </button>
-                <div className="f2s-frame-info">
-                  <span className="f2s-frame-text">
-                    {index + 1}. {layout.name}
-                  </span>
-                  <div className="f2s-frame-controls">
-                    <button type="button" className="f2s-icon-btn" title="Remove" onClick={() => onRemove(id)}>
-                      ✕
-                    </button>
-                  </div>
+        {order.map((id, index) => {
+          const layout = layouts[id];
+          if (!layout) return null;
+          return (
+            <div key={id} className="f2s-sidebar-item">
+              <button
+                type="button"
+                className={`f2s-frame-preview${activeId === id ? ' is-active' : ''}${layout.blocking ? ' f2s-frame-preview--blocking' : ''}`}
+                onClick={() => selectLayout(id)}
+                title={layout.blocking ? 'Contains an element that would be rasterized — open it to see the details.' : undefined}
+              >
+                {layout.previewDataUrl && <img src={layout.previewDataUrl} alt={layout.name} draggable={false} />}
+              </button>
+              <div className="f2s-frame-info">
+                <span className="f2s-frame-text">
+                  {index + 1}. {layout.name}
+                </span>
+                <div className="f2s-frame-controls">
+                  <button type="button" className="f2s-icon-btn" title="Remove" onClick={() => onRemove(id)}>
+                    ✕
+                  </button>
                 </div>
               </div>
-            );
-          })
-        )}
+            </div>
+          );
+        })}
       </aside>
 
       <main className="f2s-canvas f2s-canvas--template">
