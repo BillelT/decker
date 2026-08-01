@@ -25,14 +25,12 @@ restante précise.
   définitive en footer à côté de Ko-fi.
 - ~~**Emplacement des dimensions**~~ — fait : déplacé sous l'aperçu
   (`Dimensions : W × H px`), plus dans le header.
-- **Notice de sélection en mode deck** (`selectionNotice` :
-  "no-frames-selected" quand on clique "Add selection" sans rien avoir
-  sélectionné, "too-many-frames" au-delà de 20 frames ajoutées) — **bug**,
-  pas un manque de design : le getter du state est jeté à la
-  destructuration (`const [, setSelectionNotice] = useState(...)` dans
-  `ui.tsx`), donc rien ne s'affiche jamais côté deck. Le mode template a
-  le même besoin et lui l'affiche bien (`templateSelectionNotice` →
-  `TemplatePanel`) — porter la même correction côté deck.
+- ~~**Notice de sélection en mode deck**~~ — fait : affichée en toast
+  absolu auto-dismiss (`.f2s-toast`, `DeckPanel.tsx`) plutôt qu'en texte
+  inline (le rail de vignettes a une largeur fixe). Au passage, "Select
+  frames to add" et "Prepare for Slides" sont désormais désactivés
+  pendant qu'un export tourne, pour éviter de modifier `order`/`frames`
+  sous les pieds de l'aperçu rétro en train de dérouler le deck.
 - **Retour d'erreur sur une vignette de layout bloquante** (mode
   template) : rouge plein `--color-error` pour l'instant — concevoir un
   retour plus riche qu'une simple bordure.
