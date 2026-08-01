@@ -87,6 +87,28 @@ function GearIcon() {
   );
 }
 
+/** Trois pistes, chacune coupée par une poignée ronde à une position différente. */
+const SLIDER_ROWS = [
+  { y: 4, knobX: 6 },
+  { y: 8, knobX: 10 },
+  { y: 12, knobX: 5 },
+];
+
+/** Icône "settings adjust" (curseurs) — alternative à GearIcon, en comparaison le temps de choisir. */
+function SlidersIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      {SLIDER_ROWS.map(({ y, knobX }) => (
+        <g key={y}>
+          <line x1="1" y1={y} x2={knobX - 2} y2={y} stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+          <line x1={knobX + 2} y1={y} x2="15" y2={y} stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+          <circle cx={knobX} cy={y} r="1.8" fill="currentColor" />
+        </g>
+      ))}
+    </svg>
+  );
+}
+
 /** Barre de titre du skin Windows 95 : la fenêtre du plugin en devient une vraie fenêtre 95. */
 function TitleBar({ mode }: { mode: AppMode }) {
   return (
@@ -1040,6 +1062,17 @@ function App() {
         >
           <GearIcon />
           <span>Settings</span>
+        </button>
+        {/* TODO comparaison temporaire : à retirer une fois l'icône retenue entre GearIcon et SlidersIcon. */}
+        <button
+          type="button"
+          className="f2s-footer-settings"
+          aria-haspopup="dialog"
+          aria-expanded={settingsOpen}
+          onClick={() => setSettingsOpen((open) => !open)}
+        >
+          <SlidersIcon />
+          <span>Settings adjust</span>
         </button>
         <div className="f2s-footer-actions">
           {/* Sans ce message, un export échoué (session expirée, 400 Slides
