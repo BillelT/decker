@@ -25,6 +25,13 @@ export interface DeckPanelProps {
   onRemove: (id: string) => void;
   /** Frame dont le lot est en cours d'application côté backend, s'il y a un export en cours. */
   exportCursor?: ExportCursor;
+  /**
+   * Notice de sélection ("no-frames-selected" / "too-many-frames") pilotée
+   * par ui.tsx, auto-dismiss inclus. Affichée en toast absolu (voir `.f2s-toast`)
+   * plutôt qu'en texte inline dans le rail : ce dernier a une largeur fixe de
+   * 190px, un message un peu long y casserait la mise en page des vignettes.
+   */
+  notice: string | undefined;
 }
 
 /**
@@ -44,6 +51,7 @@ export function DeckPanel({
   hasCanvasSelection,
   onRemove,
   exportCursor,
+  notice,
 }: DeckPanelProps) {
   const [dragId, setDragId] = useState<string | undefined>();
   const [dragOffsetY, setDragOffsetY] = useState(0);
@@ -166,6 +174,11 @@ export function DeckPanel({
   if (order.length === 0) {
     return (
       <div className="f2s-body">
+        {notice && (
+          <div className="f2s-toast" role="status">
+            {notice}
+          </div>
+        )}
         <main className="f2s-canvas">
           <p className="f2s-empty">
             Use "Select frames to add", then select the frames
@@ -179,6 +192,11 @@ export function DeckPanel({
 
   return (
     <div className="f2s-body">
+      {notice && (
+        <div className="f2s-toast" role="status">
+          {notice}
+        </div>
+      )}
       <aside className="f2s-sidebar">
         {selecting && !hasCanvasSelection && (
           <p className="f2s-toolbar-muted">Select one or more frames on the Figma canvas, then click "Add selection".</p>

@@ -40,6 +40,9 @@ type JobConclusion = { status: 'done'; resultUrl: string } | { status: 'failed';
  */
 const MIN_SLIDE_VISIBLE_MS = REVEAL_MS + 400;
 
+/** Durée d'affichage d'une notice de sélection (toast deck) avant auto-dismiss. */
+const SELECTION_NOTICE_MS = 4000;
+
 // Injectés au build (voir esbuild.config.mjs).
 declare const __BACKEND_URL__: string;
 declare const __LOGO_SVG__: string;
@@ -176,9 +179,32 @@ function App() {
   const [templateSelecting, setTemplateSelecting] = useState(false);
   const [templateSelectionNotice, setTemplateSelectionNotice] = useState<string | undefined>();
   const [selecting, setSelecting] = useState(false);
-  // TODO.md — pas encore affiché en mode deck : la zone de feedback (notices,
-  // erreurs, progression) doit être designée avant d'être réintégrée.
-  const [, setSelectionNotice] = useState<string | undefined>();
+  // Notice de sélection du mode deck ("no-frames-selected" / "too-many-frames") :
+  // affichée en toast absolu par DeckPanel (pas de zone dédiée dans le layout
+  // du rail, contrairement au mode template) — auto-dismiss après SELECTION_NOTICE_MS.
+  const [selectionNotice, setSelectionNotice] = useState<string | undefined>();
+  const selectionNoticeTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>();
+
+  function showSelectionNotice(message: string) {
+    if (selectionNoticeTimerRef.current !== undefined) clearTimeout(selectionNoticeTimerRef.current);
+    setSelectionNotice(message);
+    selectionNoticeTimerRef.current = setTimeout(() => setSelectionNotice(undefined), SELECTION_NOTICE_MS);
+  }
+
+  function clearSelectionNotice() {
+    if (selectionNoticeTimerRef.current !== undefined) {
+      clearTimeout(selectionNoticeTimerRef.current);
+      selectionNoticeTimerRef.current = undefined;
+    }
+    setSelectionNotice(undefined);
+  }
+
+  useEffect(
+    () => () => {
+      if (selectionNoticeTimerRef.current !== undefined) clearTimeout(selectionNoticeTimerRef.current);
+    },
+    [],
+  );
   const [hasCanvasSelection, setHasCanvasSelection] = useState(false);
 
   const [sessionToken, setSessionToken] = useState<string | undefined>();
@@ -509,14 +535,14 @@ function App() {
           if (modeRef.current === 'template') {
             setTemplateSelectionNotice('Select at least one frame on the Figma canvas before clicking.');
           } else {
-            setSelectionNotice('Select at least one frame on the Figma canvas before clicking.');
+            showSelectionNotice('Select at least one frame on the Figma canvas before clicking.');
           }
           break;
         case 'too-many-frames':
           if (modeRef.current === 'template') {
             setTemplateSelectionNotice(`${msg.count} layouts selected — a template is capped at ${msg.max} to stay focused.`);
           } else {
-            setSelectionNotice(`${msg.count} frames selected — beyond ${msg.max}, export may become slow.`);
+            showSelectionNotice(`${msg.count} frames selected — beyond ${msg.max}, export may become slow.`);
           }
           break;
         case 'export-payload':
@@ -822,7 +848,7 @@ function App() {
   }
 
   function handleAddFramesClick() {
-    setSelectionNotice(undefined);
+    clearSelectionNotice();
     if (!selecting) {
       setSelecting(true);
       return;
@@ -976,14 +1002,24 @@ function App() {
 
         {mode === 'deck' ? (
           <div className="f2s-topbar-actions">
-            <button type="button" className="f2s-btn f2s-btn--tertiary" onClick={handleAddFramesClick}>
+            <button
+              type="button"
+              className="f2s-btn f2s-btn--tertiary"
+              disabled={exporting}
+              title={exporting ? 'An export is running — wait for it to finish before changing the deck.' : undefined}
+              onClick={handleAddFramesClick}
+            >
               {selecting ? 'Add selection' : 'Select frames to add'}
             </button>
             <button
               type="button"
               className="f2s-btn f2s-btn--secondary"
-              disabled={!hasCanvasSelection && order.length === 0}
-              title="Duplicate and reformat every frame already in the deck (plus any extra selection on the Figma canvas) for Slides, so you can refine them pixel-perfect natively."
+              disabled={exporting || (!hasCanvasSelection && order.length === 0)}
+              title={
+                exporting
+                  ? 'An export is running — wait for it to finish before changing the deck.'
+                  : 'Duplicate and reformat every frame already in the deck (plus any extra selection on the Figma canvas) for Slides, so you can refine them pixel-perfect natively.'
+              }
               onClick={handlePrepareForSlides}
             >
               Prepare for Slides
@@ -1077,6 +1113,7 @@ function App() {
           hasCanvasSelection={hasCanvasSelection}
           onRemove={removeFrame}
           exportCursor={exporting && exportSource === 'deck' ? exportCursor : undefined}
+          notice={selectionNotice}
         />
       ) : (
         <TemplatePanel
