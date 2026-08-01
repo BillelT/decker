@@ -4,7 +4,7 @@ import { decideRadius, type RadiusDecision } from './radius.js';
 import { extractTextRuns } from './textExtract.js';
 import { mapVerticalAlignment } from './textMapping.js';
 import { shouldRasterForStroke } from './stroke.js';
-import { parsePlaceholderTag } from './placeholder.js';
+import { findUnknownPlaceholderTag, KNOWN_ROLE_TAGS, parsePlaceholderTag } from './placeholder.js';
 import type { createIdGenerator } from './ids.js';
 
 export interface SerializeContext {
@@ -74,6 +74,21 @@ interface WalkState {
 }
 
 async function walk(node: SceneNode, state: WalkState): Promise<void> {
+  // Faute de frappe dans un tag de placeholder (`[[titel]]`…) : sans ce
+  // warning, le tag était ignoré en silence et le créateur du template ne
+  // découvrait le placeholder manquant qu'après livraison. Vérifié sur TOUT
+  // nœud (y compris un conteneur), avant même la décision natif/raster.
+  const unknownTag = findUnknownPlaceholderTag(node.name);
+  if (unknownTag) {
+    state.warnings.push({
+      code: 'PLACEHOLDER_TAG_UNKNOWN',
+      severity: 'warning',
+      sourceNodeId: node.id,
+      nodeName: node.name,
+      message: `Unknown placeholder tag "[[${unknownTag}]]" — use one of: ${KNOWN_ROLE_TAGS.map((r) => `[[${r}]]`).join(', ')}.`,
+    });
+  }
+
   const decision = classifyNode(toDecisionInput(node, state.maskedByAncestor ?? false));
 
   switch (decision.action) {
@@ -113,7 +128,7 @@ async function walk(node: SceneNode, state: WalkState): Promise<void> {
           severity: 'warning',
           sourceNodeId: node.id,
           nodeName: node.name,
-          message: extraction.rasterReason ?? 'Texte converti en image.',
+          message: extraction.rasterReason ?? 'Text converted to an image.',
         });
         return;
       }
@@ -124,7 +139,7 @@ async function walk(node: SceneNode, state: WalkState): Promise<void> {
             severity: 'info',
             sourceNodeId: node.id,
             nodeName: node.name,
-            message: `Police « ${w.original} » remplacée par « ${w.substitute} ».`,
+            message: `Font "${w.original}" replaced with "${w.substitute}".`,
           });
         }
       }
@@ -157,7 +172,7 @@ async function walk(node: SceneNode, state: WalkState): Promise<void> {
           severity: 'info',
           sourceNodeId: node.id,
           nodeName: node.name,
-          message: 'Le rayon de coin est approximé par Slides (valeur fixe non paramétrable).',
+          message: 'Corner radius is approximated by Slides (fixed, non-adjustable value).',
         });
       }
       return;

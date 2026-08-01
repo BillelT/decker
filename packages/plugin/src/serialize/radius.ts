@@ -24,7 +24,7 @@ export function decideRadius(radii: CornerRadii, w: number, h: number, tolerance
   if (allZero) return { kind: 'rectangle' };
 
   const uniform = topLeft === topRight && topRight === bottomLeft && bottomLeft === bottomRight;
-  if (!uniform) return { kind: 'raster', reason: 'Rayons de coin non uniformes — non représentable nativement.' };
+  if (!uniform) return { kind: 'raster', reason: 'Corner radii differ between corners — not representable natively.' };
 
   const minDim = Math.min(w, h);
   if (topLeft >= minDim / 2) {
@@ -36,5 +36,5 @@ export function decideRadius(radii: CornerRadii, w: number, h: number, tolerance
     return { kind: 'round-rectangle', approximated: true };
   }
 
-  return { kind: 'raster', reason: `Rapport rayon/min(w,h) = ${ratio.toFixed(3)}, hors tolérance [${tolerance.min}; ${tolerance.max}].` };
+  return { kind: 'raster', reason: `Corner radius ratio ${ratio.toFixed(3)} of min(w,h) is outside the supported range [${tolerance.min}; ${tolerance.max}].` };
 }

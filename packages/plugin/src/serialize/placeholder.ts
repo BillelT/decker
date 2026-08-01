@@ -58,3 +58,19 @@ export function parsePlaceholderTag(layerName: string): IRPlaceholder | undefine
   const label = match[2]?.trim();
   return { role, label: label && label.length > 0 ? label : defaultLabel(role) };
 }
+
+/**
+ * Un calque qui ARBORE la syntaxe de tag (`[[...]]`) mais dont le rôle n'est
+ * pas dans `ROLE_ALIASES` (faute de frappe : `[[titel]]`, `[[img]]`…) était
+ * ignoré en silence — le créateur du template croyait son placeholder posé,
+ * personne ne le voyait manquer avant la livraison. Détecté séparément pour
+ * produire un avertissement au lieu de rien.
+ */
+export function findUnknownPlaceholderTag(layerName: string): string | undefined {
+  const match = TAG_PATTERN.exec(layerName);
+  if (!match) return undefined;
+  return ROLE_ALIASES[match[1].toLowerCase()] ? undefined : match[1];
+}
+
+/** Rôles proposés dans les messages d'aide (UI + warning de tag inconnu). */
+export const KNOWN_ROLE_TAGS = ['title', 'subtitle', 'body', 'image', 'logo', 'custom'] as const;

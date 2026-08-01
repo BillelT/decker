@@ -26,6 +26,12 @@ const RASTER_WARNING_CODES = new Set<IRWarning['code']>([
   'LETTER_SPACING_LOST',
   'CORNER_RADIUS_RASTERIZED',
   'MULTIPLE_FILLS_RASTERIZED',
+  // Pas un raster, mais bloquant quand même en mode template : un tag de
+  // placeholder mal orthographié (`[[titel]]`…) signifie qu'un placeholder
+  // prévu MANQUERA dans le template livré — exactement le genre d'erreur qui
+  // retombe sur tous les futurs utilisateurs, donc à corriger avant création
+  // plutôt qu'à ignorer en silence.
+  'PLACEHOLDER_TAG_UNKNOWN',
 ]);
 
 export function enforceTemplateStrictness(warnings: IRWarning[]): IRWarning[] {

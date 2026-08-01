@@ -40,7 +40,7 @@ async function walk(node: SceneNode, warnings: LintWarning[], maskedByAncestor: 
           nodeId: node.id,
           nodeName: node.name,
           code: 'LETTER_SPACING_LOST',
-          message: extraction.rasterReason ?? 'Texte non représentable — sera converti en image.',
+          message: extraction.rasterReason ?? 'Text cannot be represented — it will be converted to an image.',
         });
       }
       return;

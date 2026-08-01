@@ -21,11 +21,23 @@ const PREVIEW_WIDTH = 960;
 // Brief "copie de vérification" — donnée stockée directement dans le
 // fichier Figma (survit à la fermeture du plugin/fichier, contrairement à
 // localStorage/sessionStorage dans l'iframe) pour retrouver les frames
-// prêtes à l'export sans dépendre de la sélection courante.
+// prêtes à l'export sans dépendre de la sélection courante. La VALEUR du
+// tag distingue une copie de deck ('true', valeur historique) d'une copie
+// de layout de template ('template') : à la réouverture du plugin, chacune
+// doit repeupler SA liste, jamais celle de l'autre mode.
 const SLIDES_READY_KEY = 'slidesExportReady';
+const DECK_TAG = 'true';
+const TEMPLATE_TAG = 'template';
 const LINT_GROUP_ID_KEY = 'slidesLintGroupId';
 const SLIDES_READY_PREFIX = '[Slides Ready] ';
+const TEMPLATE_READY_PREFIX = '[Template Ready] ';
 const COPY_GAP_PX = 200;
+// Jeton de session backend, persisté via clientStorage (survit à la
+// fermeture du plugin — l'iframe UI, elle, n'a aucun stockage durable) pour
+// ne pas refaire l'OAuth Google à chaque ouverture. Chaque export crée une
+// présentation NEUVE côté backend (mode 'new-presentation') : réutiliser la
+// session Google ne peut donc jamais écraser un deck déjà envoyé.
+const SESSION_TOKEN_STORAGE_KEY = 'f2s:sessionToken';
 
 type ExportableNode = FrameNode | ComponentNode | InstanceNode;
 
@@ -33,12 +45,22 @@ function isExportable(node: SceneNode): node is ExportableNode {
   return node.type === 'FRAME' || node.type === 'COMPONENT' || node.type === 'INSTANCE';
 }
 
+function readyTagOf(node: SceneNode): string {
+  return node.getPluginData(SLIDES_READY_KEY);
+}
+
 function isSlidesReady(node: SceneNode): boolean {
-  return node.getPluginData(SLIDES_READY_KEY) === 'true';
+  return readyTagOf(node) === DECK_TAG;
+}
+
+function isTemplateReady(node: SceneNode): boolean {
+  return readyTagOf(node) === TEMPLATE_TAG;
 }
 
 function stripReadyPrefix(name: string): string {
-  return name.startsWith(SLIDES_READY_PREFIX) ? name.slice(SLIDES_READY_PREFIX.length) : name;
+  if (name.startsWith(SLIDES_READY_PREFIX)) return name.slice(SLIDES_READY_PREFIX.length);
+  if (name.startsWith(TEMPLATE_READY_PREFIX)) return name.slice(TEMPLATE_READY_PREFIX.length);
+  return name;
 }
 
 function yieldToUi(): Promise<void> {
@@ -106,6 +128,37 @@ function postCandidateMessage(type: 'candidate-added' | 'candidate-updated', fra
 }
 
 /**
+ * Une présentation Slides n'a qu'UNE taille de page, fixée à la création
+ * (voir `computeSlideSizePt`) : mélanger des frames de ratios différents ne
+ * produirait que des slides déformées ou letterboxées à l'arrivée. Plutôt
+ * que de laisser faire et décevoir à l'export, les frames dont le ratio
+ * s'écarte de celui de la référence (la première frame de la liste) sont
+ * refusées à l'ajout, avec une notification qui explique pourquoi.
+ */
+const RATIO_TOLERANCE = 0.01;
+
+function sameAspectRatio(a: { width: number; height: number }, b: { width: number; height: number }): boolean {
+  if (a.height <= 0 || b.height <= 0) return false;
+  const ra = a.width / a.height;
+  const rb = b.width / b.height;
+  return Math.abs(ra - rb) / rb <= RATIO_TOLERANCE;
+}
+
+function filterMatchingRatio(nodes: ExportableNode[], reference: ExportableNode | undefined): ExportableNode[] {
+  const ref = reference ?? nodes[0];
+  if (!ref) return nodes;
+  const kept = nodes.filter((n) => sameAspectRatio(n, ref));
+  const rejected = nodes.length - kept.length;
+  if (rejected > 0) {
+    figma.notify(
+      `${rejected} frame(s) skipped: a Slides presentation has a single page size, so every frame must match the aspect ratio of "${stripReadyPrefix(ref.name)}".`,
+      { error: true, timeout: 6000 },
+    );
+  }
+  return kept;
+}
+
+/**
  * Ajoute au deck une liste de frames déjà résolues (pas de doublon avec ce
  * qui est déjà dans `pending`) — logique commune à l'ajout manuel (sélection
  * sur le canvas) et à la découverte automatique des frames taguées
@@ -114,7 +167,8 @@ function postCandidateMessage(type: 'candidate-added' | 'candidate-updated', fra
  */
 async function addFrames(nodes: ExportableNode[], pending: PendingSlide[], idGen: ReturnType<typeof createIdGenerator>): Promise<void> {
   const known = new Set(pending.map((p) => p.frame.id));
-  const toAdd = nodes.filter((n) => !known.has(n.id));
+  const candidates = nodes.filter((n) => !known.has(n.id));
+  const toAdd = filterMatchingRatio(candidates, pending[0]?.frame);
   if (toAdd.length === 0) return;
   if (toAdd.length > MAX_FRAMES_WARNING) {
     figma.ui.postMessage({ type: 'too-many-frames', count: toAdd.length, max: MAX_FRAMES_WARNING });
@@ -136,7 +190,7 @@ async function addFrames(nodes: ExportableNode[], pending: PendingSlide[], idGen
  * et remplace son entrée EN PLACE plutôt que d'en pousser une nouvelle —
  * utilisé à la fois par "Prepare for Slides" re-cliqué sur une copie déjà
  * taguée, et par le suivi live des frames `[Slides Ready]` (voir
- * `watchTaggedFramesForLiveRefresh` plus bas). Ne fait rien si la frame n'est pas (ou
+ * `watchFramesForLiveRefresh` plus bas). Ne fait rien si la frame n'est pas (ou
  * plus) suivie — évite de repêcher silencieusement une frame retirée du
  * panneau côté UI (`removeFrame`, purement local à l'UI).
  */
@@ -175,10 +229,14 @@ async function addSelectedFrames(pending: PendingSlide[], idGen: ReturnType<type
  * lors d'une session précédente (copie de vérification retravaillée sur le
  * canvas puis plugin fermé/rouvert).
  */
-async function loadTaggedFrames(pending: PendingSlide[], idGen: ReturnType<typeof createIdGenerator>): Promise<void> {
-  const tagged = figma.currentPage.findAll((n) => isExportable(n) && isSlidesReady(n)) as ExportableNode[];
-  if (tagged.length === 0) return;
-  await addFrames(tagged, pending, idGen);
+async function loadTaggedFrames(pending: PendingSlide[], templatePending: PendingSlide[], idGen: ReturnType<typeof createIdGenerator>): Promise<void> {
+  const deckTagged = figma.currentPage.findAll((n) => isExportable(n) && isSlidesReady(n)) as ExportableNode[];
+  if (deckTagged.length > 0) await addFrames(deckTagged, pending, idGen);
+
+  // Même reprise de session pour le mode template : les copies `[Template
+  // Ready]` d'une session précédente repeuplent la liste de layouts.
+  const templateTagged = figma.currentPage.findAll((n) => isExportable(n) && isTemplateReady(n)) as ExportableNode[];
+  if (templateTagged.length > 0) await addTemplateLayoutNodes(templateTagged, templatePending, idGen);
 }
 
 /**
@@ -249,9 +307,13 @@ async function addLintAnnotations(copy: ExportableNode, warnings: LintWarning[])
  * à côté de l'originale, taguée `slidesExportReady`, préfixée dans son nom,
  * auto-layout aplati, puis relintée pour poser les annotations à jour.
  */
-async function prepareFrameForSlides(source: ExportableNode, fontOverrides: Record<string, string>): Promise<{ copy: ExportableNode; warnings: LintWarning[] }> {
+async function prepareFrameForSlides(
+  source: ExportableNode,
+  fontOverrides: Record<string, string>,
+  tag: typeof DECK_TAG | typeof TEMPLATE_TAG = DECK_TAG,
+): Promise<{ copy: ExportableNode; warnings: LintWarning[] }> {
   let copy: ExportableNode;
-  if (isSlidesReady(source)) {
+  if (readyTagOf(source) === tag) {
     copy = source;
   } else {
     const clone = source.clone();
@@ -259,8 +321,8 @@ async function prepareFrameForSlides(source: ExportableNode, fontOverrides: Reco
     copy = clone;
     copy.x = source.x + source.width + COPY_GAP_PX;
     copy.y = source.y;
-    copy.name = SLIDES_READY_PREFIX + stripReadyPrefix(source.name);
-    copy.setPluginData(SLIDES_READY_KEY, 'true');
+    copy.name = (tag === TEMPLATE_TAG ? TEMPLATE_READY_PREFIX : SLIDES_READY_PREFIX) + stripReadyPrefix(source.name);
+    copy.setPluginData(SLIDES_READY_KEY, tag);
   }
 
   flattenAutoLayout(copy);
@@ -341,46 +403,155 @@ async function handlePrepareForSlides(
   await addFrames(newlyCreated, pending, idGen);
 }
 
+/** Pendant `template-candidate-added`/`-updated` : sérialisation + stricture template + résumés (couleurs/typos/placeholders), partagé entre ajout, refresh en place et live refresh. */
+function postTemplateCandidateMessage(type: 'template-candidate-added' | 'template-candidate-updated', frame: ExportableNode, previewDataUrl: string, slide: PendingSlide['slide']): void {
+  figma.ui.postMessage({
+    type,
+    frame: { id: frame.id, name: frame.name, width: frame.width, height: frame.height },
+    previewDataUrl,
+    warnings: slide.warnings,
+    blocking: hasBlockingWarnings(slide.warnings),
+    placeholders: summarizePlaceholders(slide.elements),
+    colors: summarizeColors(slide.elements),
+    fonts: summarizeFonts(slide.elements),
+    fontSubstitutions: collectFontSubstitutions(slide),
+  });
+}
+
 /**
- * Ajoute au template les frames actuellement sélectionnées (brief-creation-
- * template-google-slides.md) — un layout par frame, comme
- * `addSelectedFrames` pour un deck, mais avec deux différences :
+ * Ajoute au template une liste de frames déjà résolues (brief-creation-
+ * template-google-slides.md) — un layout par frame, comme `addFrames` pour
+ * un deck, mais avec trois différences :
  * 1. les avertissements de rasterisation sont reclassés en bloquants
  *    (`enforceTemplateStrictness`) : un template doit rester 100% natif ;
  * 2. l'UI reçoit en plus les placeholders/couleurs/typos détectés, pour le
- *    rapport de contenu communicable (couleurs, typos, layouts).
+ *    rapport de contenu communicable (couleurs, typos, layouts) ;
+ * 3. le plafond `TEMPLATE_MAX_LAYOUTS` est DUR (l'ajout au-delà est refusé,
+ *    pas juste signalé) : c'est une limite produit du plugin — un template
+ *    reste un petit jeu de layouts, comme les ~8 layouts prédéfinis d'une
+ *    présentation Slides neuve — pas une limite de l'API Slides.
  */
-async function addTemplateLayouts(pending: PendingSlide[], idGen: ReturnType<typeof createIdGenerator>): Promise<void> {
+async function addTemplateLayoutNodes(nodes: ExportableNode[], pending: PendingSlide[], idGen: ReturnType<typeof createIdGenerator>): Promise<void> {
   const known = new Set(pending.map((p) => p.frame.id));
-  const selected = figma.currentPage.selection.filter((n): n is ExportableNode => isExportable(n) && !known.has(n.id));
+  const candidates = filterMatchingRatio(nodes.filter((n) => !known.has(n.id)), pending[0]?.frame);
+  if (candidates.length === 0) return;
 
-  if (selected.length === 0) {
-    figma.ui.postMessage({ type: 'no-frames-selected' });
-    return;
-  }
-  if (pending.length + selected.length > TEMPLATE_MAX_LAYOUTS) {
-    figma.ui.postMessage({ type: 'too-many-frames', count: pending.length + selected.length, max: TEMPLATE_MAX_LAYOUTS });
+  const remaining = TEMPLATE_MAX_LAYOUTS - pending.length;
+  const toAdd = candidates.slice(0, Math.max(0, remaining));
+  if (toAdd.length < candidates.length) {
+    figma.ui.postMessage({ type: 'too-many-frames', count: pending.length + candidates.length, max: TEMPLATE_MAX_LAYOUTS });
+    figma.notify(
+      `A template is capped at ${TEMPLATE_MAX_LAYOUTS} layouts (plugin limit to keep templates focused) — ${candidates.length - toAdd.length} frame(s) not added.`,
+      { error: true, timeout: 6000 },
+    );
   }
 
-  for (const frame of selected) {
+  for (const frame of toAdd) {
     const previewDataUrl = await generatePreview(frame);
     const { slide, nodesToRaster } = await serializeFrame(frame, { nextId: idGen });
     slide.warnings = enforceTemplateStrictness(slide.warnings);
     pending.push({ frame, slide, nodesToRaster });
-
-    figma.ui.postMessage({
-      type: 'template-candidate-added',
-      frame: { id: frame.id, name: frame.name, width: frame.width, height: frame.height },
-      previewDataUrl,
-      warnings: slide.warnings,
-      blocking: hasBlockingWarnings(slide.warnings),
-      placeholders: summarizePlaceholders(slide.elements),
-      colors: summarizeColors(slide.elements),
-      fonts: summarizeFonts(slide.elements),
-      fontSubstitutions: collectFontSubstitutions(slide),
-    });
+    postTemplateCandidateMessage('template-candidate-added', frame, previewDataUrl, slide);
     await yieldToUi();
   }
+}
+
+/** Ajoute au template les frames actuellement sélectionnées sur le canvas (bouton « Select layout to add »). */
+async function addSelectedTemplateLayouts(pending: PendingSlide[], idGen: ReturnType<typeof createIdGenerator>): Promise<void> {
+  const selected = figma.currentPage.selection.filter(isExportable);
+  if (selected.length === 0) {
+    figma.ui.postMessage({ type: 'no-frames-selected' });
+    return;
+  }
+  await addTemplateLayoutNodes(selected, pending, idGen);
+}
+
+/**
+ * Pendant template de `refreshPendingEntry` — referme la boucle centrale du
+ * mode template : l'utilisateur corrige un problème bloquant dans Figma, le
+ * layout se re-valide TOUT SEUL dans le panneau (via le live refresh
+ * ci-dessous), sans supprimer/re-ajouter. Les annotations de lint sur le
+ * canvas ne sont posées que sur une copie `[Template Ready]` (jamais sur une
+ * frame source brute, que le plugin ne doit pas décorer sans opt-in).
+ */
+async function refreshTemplateEntry(frame: ExportableNode, pending: PendingSlide[], idGen: ReturnType<typeof createIdGenerator>): Promise<boolean> {
+  const idx = pending.findIndex((p) => p.frame.id === frame.id);
+  if (idx === -1) return false;
+
+  const previewDataUrl = await generatePreview(frame);
+  const { slide, nodesToRaster } = await serializeFrame(frame, { nextId: idGen });
+  slide.warnings = enforceTemplateStrictness(slide.warnings);
+  pending[idx] = { frame, slide, nodesToRaster };
+
+  if (isTemplateReady(frame)) {
+    const warnings = await lintFrame(frame);
+    await addLintAnnotations(frame, warnings);
+  }
+
+  postTemplateCandidateMessage('template-candidate-updated', frame, previewDataUrl, slide);
+  return true;
+}
+
+/**
+ * « Prepare for Slides » du mode template — même flow que le deck
+ * (`handlePrepareForSlides`), mais tague les copies `[Template Ready]` et
+ * alimente la liste de layouts : le reformatage automatique (dégradés
+ * aplatis en solide, ombres retirées, tracking remis à 0…) élimine
+ * mécaniquement la majorité des avertissements BLOQUANTS du mode template,
+ * là où il n'était qu'optionnel pour un deck.
+ */
+async function handlePrepareTemplateForSlides(
+  pending: PendingSlide[],
+  idGen: ReturnType<typeof createIdGenerator>,
+  fontOverrides: Record<string, string>,
+  layoutFrameIds: string[],
+): Promise<void> {
+  const listNodes = (await Promise.all(layoutFrameIds.map((id) => figma.getNodeByIdAsync(id))))
+    .filter((n): n is ExportableNode => n !== null && isExportable(n as SceneNode));
+  const canvasSelected = figma.currentPage.selection.filter(isExportable);
+
+  const targets = new Map<string, ExportableNode>();
+  for (const n of [...listNodes, ...canvasSelected]) targets.set(n.id, n);
+
+  if (targets.size === 0) {
+    figma.notify('Select at least one frame on the canvas, or add layouts to the template first.', { error: true });
+    return;
+  }
+
+  const copies: ExportableNode[] = [];
+  const newlyCreated: ExportableNode[] = [];
+  let totalWarnings = 0;
+
+  for (const frame of targets.values()) {
+    const wasAlreadyTagged = isTemplateReady(frame);
+    const { copy, warnings } = await prepareFrameForSlides(frame, fontOverrides, TEMPLATE_TAG);
+    copies.push(copy);
+    totalWarnings += warnings.length;
+
+    if (wasAlreadyTagged) {
+      await refreshTemplateEntry(copy, pending, idGen);
+    } else {
+      newlyCreated.push(copy);
+      const rawIdx = pending.findIndex((p) => p.frame.id === frame.id);
+      if (rawIdx !== -1) {
+        pending.splice(rawIdx, 1);
+        figma.ui.postMessage({ type: 'template-candidate-removed', id: frame.id });
+      }
+    }
+    await yieldToUi();
+  }
+
+  figma.currentPage.selection = copies;
+  figma.viewport.scrollAndZoomIntoView(copies);
+
+  const label = copies.length === 1 ? 'layout' : 'layouts';
+  figma.notify(
+    totalWarnings === 0
+      ? `Prepared ${copies.length} ${label} for Slides — no issues found.`
+      : `Prepared ${copies.length} ${label} for Slides — ${totalWarnings} issue(s) flagged on canvas (red markers).`,
+  );
+
+  await addTemplateLayoutNodes(newlyCreated, pending, idGen);
 }
 
 // Propriétés qu'une frame `[Slides Ready]` peut voir changer SANS que ce
@@ -396,11 +567,11 @@ function isOnlyIgnorableNodeChange(change: NodeChange): boolean {
   return change.type === 'PROPERTY_CHANGE' && change.properties.every((p) => LIVE_REFRESH_IGNORABLE_PROPERTIES.has(p));
 }
 
-/** Remonte l'arbre depuis le nœud modifié jusqu'à la première frame suivie ET taguée `[Slides Ready]` rencontrée, s'il y en a une. */
-function nearestTrackedTaggedAncestor(node: BaseNode, trackedIds: Set<string>): ExportableNode | undefined {
+/** Remonte l'arbre depuis le nœud modifié jusqu'à la première frame suivie (et acceptée par `accepts`) rencontrée, s'il y en a une. */
+function nearestTrackedAncestor(node: BaseNode, trackedIds: Set<string>, accepts: (node: SceneNode) => boolean): ExportableNode | undefined {
   let current: BaseNode | null = node;
   while (current) {
-    if (isExportable(current as SceneNode) && trackedIds.has(current.id) && isSlidesReady(current as SceneNode)) {
+    if (isExportable(current as SceneNode) && trackedIds.has(current.id) && accepts(current as SceneNode)) {
       return current as ExportableNode;
     }
     current = 'parent' in current ? current.parent : null;
@@ -416,12 +587,23 @@ const LIVE_REFRESH_DEBOUNCE_MS = 700;
  * SANS re-sélection manuelle. On écoute les changements du document (scopé à
  * la page courante via `PageNode.on('nodechange', …)` — pas besoin de
  * `loadAllPagesAsync`, contrairement à l'event global `documentchange`, cf.
- * doc Figma), on ne retient que les frames déjà suivies ET taguées, puis on
- * ne relance QUE la re-sérialisation + le relint (jamais `reformatForSlides`
- * : ce serait re-muter en continu des retouches volontaires de
- * l'utilisateur pendant qu'il travaille dessus).
+ * doc Figma), on ne retient que les frames déjà suivies (et acceptées par
+ * `accepts`), puis on ne relance QUE la re-sérialisation + le relint (jamais
+ * `reformatForSlides` : ce serait re-muter en continu des retouches
+ * volontaires de l'utilisateur pendant qu'il travaille dessus).
+ *
+ * Généralisé aux deux modes :
+ * - deck : uniquement les copies taguées `[Slides Ready]` (une frame brute
+ *   du panneau reste libre d'être retouchée sans re-analyse) ;
+ * - template : TOUTES les frames suivies, taguées ou non — c'est ce qui
+ *   referme la boucle « corrige l'erreur bloquante dans Figma → le layout
+ *   se re-valide dans le panneau » sans supprimer/re-ajouter.
  */
-function watchTaggedFramesForLiveRefresh(pending: PendingSlide[], idGen: ReturnType<typeof createIdGenerator>): void {
+function watchFramesForLiveRefresh(
+  pending: PendingSlide[],
+  accepts: (node: SceneNode) => boolean,
+  refresh: (frame: ExportableNode) => Promise<boolean>,
+): void {
   const dirtyIds = new Set<string>();
   let timer: ReturnType<typeof setTimeout> | undefined;
 
@@ -433,7 +615,7 @@ function watchTaggedFramesForLiveRefresh(pending: PendingSlide[], idGen: ReturnT
       try {
         const node = await figma.getNodeByIdAsync(id);
         if (!node || !isExportable(node as SceneNode)) continue;
-        await refreshPendingEntry(node as ExportableNode, pending, idGen);
+        await refresh(node as ExportableNode);
       } catch (err) {
         console.error(`[figma-to-slides] live refresh failed for ${id}`, err);
       }
@@ -450,7 +632,7 @@ function watchTaggedFramesForLiveRefresh(pending: PendingSlide[], idGen: ReturnT
       if (isOnlyIgnorableNodeChange(change)) continue;
       const node = change.node;
       if (!node || (node as RemovedNode).removed) continue;
-      const match = nearestTrackedTaggedAncestor(node as BaseNode, trackedIds);
+      const match = nearestTrackedAncestor(node as BaseNode, trackedIds, accepts);
       if (match) {
         dirtyIds.add(match.id);
         dirty = true;
@@ -464,8 +646,11 @@ function watchTaggedFramesForLiveRefresh(pending: PendingSlide[], idGen: ReturnT
 
 async function main(): Promise<void> {
   // Layout à deux colonnes (rail de miniatures + canvas) : plus large que
-  // l'ancien panneau vertical, pour laisser une vraie zone de prévisualisation.
-  figma.showUI(__html__, { width: 900, height: 600 });
+  // l'ancien panneau vertical, pour laisser une vraie zone de
+  // prévisualisation. `themeColors: true` fait poser par Figma la classe
+  // `figma-dark`/`figma-light` sur <html> — le CSS de l'UI s'en sert pour
+  // basculer sa palette (styles.css).
+  figma.showUI(__html__, { width: 960, height: 640, themeColors: true });
 
   const pending: PendingSlide[] = [];
   // Store distinct du deck : basculer entre "Export" et "Create a template"
@@ -484,7 +669,8 @@ async function main(): Promise<void> {
     });
   });
 
-  watchTaggedFramesForLiveRefresh(pending, idGen);
+  watchFramesForLiveRefresh(pending, isSlidesReady, (frame) => refreshPendingEntry(frame, pending, idGen));
+  watchFramesForLiveRefresh(templatePending, () => true, (frame) => refreshTemplateEntry(frame, templatePending, idGen));
 
   figma.ui.onmessage = async (msg: { type: string; [key: string]: unknown }) => {
     if (msg.type === 'ui-ready') {
@@ -502,8 +688,37 @@ async function main(): Promise<void> {
         type: 'canvas-selection-changed',
         hasSelection: figma.currentPage.selection.some(isExportable),
       });
+      // Session Google persistée (voir SESSION_TOKEN_STORAGE_KEY) : envoyée
+      // AVANT les frames taguées pour que l'UI sache tout de suite si le
+      // bouton Export/Create doit être actif ou proposer la connexion.
       try {
-        await loadTaggedFrames(pending, idGen);
+        const storedToken = await figma.clientStorage.getAsync(SESSION_TOKEN_STORAGE_KEY);
+        if (typeof storedToken === 'string' && storedToken.length > 0) {
+          figma.ui.postMessage({ type: 'session-token-restored', token: storedToken });
+        }
+      } catch (err) {
+        console.error(err);
+      }
+      try {
+        await loadTaggedFrames(pending, templatePending, idGen);
+      } catch (err) {
+        console.error(err);
+      }
+      return;
+    }
+
+    if (msg.type === 'save-session-token') {
+      try {
+        await figma.clientStorage.setAsync(SESSION_TOKEN_STORAGE_KEY, msg.token as string);
+      } catch (err) {
+        console.error(err);
+      }
+      return;
+    }
+
+    if (msg.type === 'clear-session-token') {
+      try {
+        await figma.clientStorage.deleteAsync(SESSION_TOKEN_STORAGE_KEY);
       } catch (err) {
         console.error(err);
       }
@@ -532,10 +747,25 @@ async function main(): Promise<void> {
 
     if (msg.type === 'add-template-layout') {
       try {
-        await addTemplateLayouts(templatePending, idGen);
+        await addSelectedTemplateLayouts(templatePending, idGen);
       } catch (err) {
         console.error(err);
         figma.ui.postMessage({ type: 'export-error', message: (err as Error).message });
+      }
+      return;
+    }
+
+    if (msg.type === 'prepare-template-for-slides') {
+      try {
+        await handlePrepareTemplateForSlides(
+          templatePending,
+          idGen,
+          (msg.fontOverrides as Record<string, string> | undefined) ?? {},
+          (msg.layoutFrameIds as string[] | undefined) ?? [],
+        );
+      } catch (err) {
+        console.error(err);
+        figma.notify(`Prepare for Slides failed: ${(err as Error).message}`, { error: true });
       }
       return;
     }
@@ -724,7 +954,7 @@ async function handleTemplateCreateRequest(
   if (blocked) {
     figma.ui.postMessage({
       type: 'export-error',
-      message: `"${blocked.frame.name}" contient encore des éléments qui seraient convertis en image — corrige-les dans Figma avant de créer le template.`,
+      message: `"${blocked.frame.name}" still contains elements that would be converted to images — fix them in Figma before creating the template.`,
     });
     return;
   }
@@ -744,5 +974,5 @@ async function handleTemplateCreateRequest(
 
 main().catch((err) => {
   console.error(err);
-  figma.notify(`Erreur d'export : ${(err as Error).message}`, { error: true });
+  figma.notify(`Plugin error: ${(err as Error).message}`, { error: true });
 });

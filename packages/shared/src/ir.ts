@@ -176,7 +176,8 @@ export interface IRWarning {
     | 'LETTER_SPACING_LOST'
     | 'RADIUS_APPROXIMATED'
     | 'CORNER_RADIUS_RASTERIZED'
-    | 'MULTIPLE_FILLS_RASTERIZED';
+    | 'MULTIPLE_FILLS_RASTERIZED'
+    | 'PLACEHOLDER_TAG_UNKNOWN';
   severity: 'info' | 'warning' | 'blocking';
   sourceNodeId: string;
   nodeName: string;

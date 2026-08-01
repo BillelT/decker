@@ -92,29 +92,29 @@ export function classifyNode(input: DecisionInput): Decision {
   // que les nœuds réellement dégénérés dans les DEUX axes.
   if (input.width < 0.5 && input.height < 0.5) return { action: 'ignore' };
   if (!BLEND_MODES_EQUIVALENT_TO_NORMAL.has(input.blendMode)) {
-    return { action: 'raster', warningCode: 'BLEND_MODE_RASTERIZED', message: `Mode de fusion « ${input.blendMode} » non supporté par Slides — converti en image.` };
+    return { action: 'raster', warningCode: 'BLEND_MODE_RASTERIZED', message: `Blend mode "${input.blendMode}" isn't supported by Slides — converted to an image.` };
   }
   if (input.hasVisibleShadowOrBlur) {
-    return { action: 'raster', warningCode: 'EFFECT_RASTERIZED', message: "Ombre portée ou flou non supporté nativement par Slides — converti en image." };
+    return { action: 'raster', warningCode: 'EFFECT_RASTERIZED', message: 'Drop shadow or blur has no native Slides equivalent — converted to an image.' };
   }
   if (input.isMasked) {
-    return { action: 'raster', warningCode: 'MASK_RASTERIZED', message: 'Masque de calque non supporté nativement — le groupe masqué est aplati en image.' };
+    return { action: 'raster', warningCode: 'MASK_RASTERIZED', message: 'Layer masks have no native Slides equivalent — the masked group is flattened into an image.' };
   }
 
   if (input.kind === 'LINE') {
     const l = input.line;
     if (!l || l.visibleStrokeCount === 0) return { action: 'ignore' }; // pas de contour visible = ligne invisible
     if (l.visibleStrokeCount > 1) {
-      return { action: 'raster', warningCode: 'LINE_RASTERIZED', message: 'Plusieurs contours sur une ligne — Slides n\'en supporte qu\'un seul, convertie en image.' };
+      return { action: 'raster', warningCode: 'LINE_RASTERIZED', message: 'Multiple strokes on a line — Slides supports only one, converted to an image.' };
     }
     if (l.strokeIsGradient) {
-      return { action: 'raster', warningCode: 'GRADIENT_RASTERIZED', message: 'Dégradé sur une ligne non supporté par Slides — convertie en image.' };
+      return { action: 'raster', warningCode: 'GRADIENT_RASTERIZED', message: 'Gradient stroke on a line is not supported by Slides — converted to an image.' };
     }
     if (l.strokeWeightIsMixed) {
-      return { action: 'raster', warningCode: 'LINE_RASTERIZED', message: 'Épaisseur de contour non uniforme sur cette ligne — convertie en image.' };
+      return { action: 'raster', warningCode: 'LINE_RASTERIZED', message: 'Non-uniform stroke weight on this line — converted to an image.' };
     }
     if (l.hasUnsupportedCap) {
-      return { action: 'raster', warningCode: 'LINE_RASTERIZED', message: 'Terminaison de ligne (flèche, losange, cercle…) non supportée nativement — convertie en image.' };
+      return { action: 'raster', warningCode: 'LINE_RASTERIZED', message: 'Decorative line cap (arrow, diamond, circle…) has no native Slides equivalent — converted to an image.' };
     }
     return { action: 'native-line' };
   }
@@ -122,13 +122,13 @@ export function classifyNode(input: DecisionInput): Decision {
   if (input.kind === 'TEXT') {
     const t = input.text;
     if (t?.fontUnavailable) {
-      return { action: 'raster', warningCode: 'FONT_MISSING', message: 'Police introuvable et non substituable — texte converti en image.' };
+      return { action: 'raster', warningCode: 'FONT_MISSING', message: 'Font not found and no substitute available — text converted to an image.' };
     }
     if (t?.letterSpacingExceedsThreshold) {
-      return { action: 'raster', warningCode: 'LETTER_SPACING_LOST', message: "L'espacement des lettres modifie la largeur du texte de plus de 2 % — converti en image." };
+      return { action: 'raster', warningCode: 'LETTER_SPACING_LOST', message: 'Letter spacing changes the text width by more than 2% — converted to an image.' };
     }
     if (t?.hasUnrepresentableMixedStyle) {
-      return { action: 'raster', warningCode: 'EFFECT_RASTERIZED', message: 'Style de texte mixte non représentable — converti en image.' };
+      return { action: 'raster', warningCode: 'EFFECT_RASTERIZED', message: 'Mixed text styling cannot be represented — converted to an image.' };
     }
     return { action: 'native-text' };
   }
@@ -136,16 +136,16 @@ export function classifyNode(input: DecisionInput): Decision {
   if (input.kind === 'RECTANGLE' || input.kind === 'ELLIPSE' || input.kind === 'POLYGON' || input.kind === 'STAR') {
     const s = input.shape;
     if (s && s.visibleFillCount > 1) {
-      return { action: 'raster', warningCode: 'MULTIPLE_FILLS_RASTERIZED', message: 'Plusieurs remplissages visibles — Slides ne supporte qu\'un seul fill, converti en image.' };
+      return { action: 'raster', warningCode: 'MULTIPLE_FILLS_RASTERIZED', message: 'Multiple visible fills — Slides supports only one, converted to an image.' };
     }
     if (s?.fillIsGradient) {
-      return { action: 'raster', warningCode: 'GRADIENT_RASTERIZED', message: 'Dégradé non supporté par Slides — converti en image.' };
+      return { action: 'raster', warningCode: 'GRADIENT_RASTERIZED', message: 'Gradients are not supported by Slides — converted to an image.' };
     }
     if (s?.fillIsImage) {
       return { action: 'image' };
     }
     if (s?.hasMultipleOrOffCenterStroke) {
-      return { action: 'raster', warningCode: 'EFFECT_RASTERIZED', message: 'Contour multiple ou non centré au-delà de la tolérance — converti en image.' };
+      return { action: 'raster', warningCode: 'EFFECT_RASTERIZED', message: 'Multiple or off-center stroke beyond tolerance — converted to an image.' };
     }
     if (input.kind === 'RECTANGLE' && s?.radiusDecision) {
       const rd = s.radiusDecision;
@@ -161,12 +161,12 @@ export function classifyNode(input: DecisionInput): Decision {
   }
 
   if (input.kind === 'VECTOR_LIKE') {
-    return { action: 'raster', warningCode: 'VECTOR_RASTERIZED', message: 'Forme vectorielle custom (icône, opération booléenne, tracé) — convertie en image.' };
+    return { action: 'raster', warningCode: 'VECTOR_RASTERIZED', message: 'Custom vector shape (icon, boolean operation, path) — converted to an image.' };
   }
 
   if (input.kind === 'GROUP_LIKE') {
     if (input.container?.clipsContentWithOverflow) {
-      return { action: 'raster', warningCode: 'EFFECT_RASTERIZED', message: 'Groupe avec recadrage et enfants débordants — aplati en image.' };
+      return { action: 'raster', warningCode: 'EFFECT_RASTERIZED', message: 'Group clips overflowing children — flattened into an image.' };
     }
     return { action: 'descend' };
   }

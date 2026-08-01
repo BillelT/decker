@@ -26,6 +26,11 @@ describe('enforceTemplateStrictness', () => {
     const [result] = enforceTemplateStrictness([warning('FONT_MISSING', 'blocking')]);
     expect(result.severity).toBe('blocking');
   });
+
+  it('upgrades an unknown placeholder tag to blocking (a typo means a missing placeholder in the delivered template)', () => {
+    const [result] = enforceTemplateStrictness([warning('PLACEHOLDER_TAG_UNKNOWN', 'warning')]);
+    expect(result.severity).toBe('blocking');
+  });
 });
 
 describe('hasBlockingWarnings', () => {

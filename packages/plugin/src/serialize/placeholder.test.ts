@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parsePlaceholderTag } from './placeholder.js';
+import { findUnknownPlaceholderTag, parsePlaceholderTag } from './placeholder.js';
 
 describe('parsePlaceholderTag', () => {
   it('returns undefined for a layer name without a tag', () => {
@@ -33,5 +33,25 @@ describe('parsePlaceholderTag', () => {
 
   it('ignores a tag that does not appear at the start of the name', () => {
     expect(parsePlaceholderTag('Header [[title]]')).toBeUndefined();
+  });
+});
+
+describe('findUnknownPlaceholderTag', () => {
+  it('returns undefined for a layer name without a tag', () => {
+    expect(findUnknownPlaceholderTag('Rectangle 12')).toBeUndefined();
+  });
+
+  it('returns undefined for a recognized role tag', () => {
+    expect(findUnknownPlaceholderTag('[[title]] Main heading')).toBeUndefined();
+    expect(findUnknownPlaceholderTag('[[image:Hero]] Photo')).toBeUndefined();
+  });
+
+  it('returns the raw role for a misspelled tag', () => {
+    expect(findUnknownPlaceholderTag('[[titel]] Main heading')).toBe('titel');
+    expect(findUnknownPlaceholderTag('[[img]] Photo')).toBe('img');
+  });
+
+  it('ignores tag-like syntax that does not appear at the start of the name', () => {
+    expect(findUnknownPlaceholderTag('Header [[wat]]')).toBeUndefined();
   });
 });
