@@ -76,9 +76,9 @@ async function runRectsFixture(accessToken: string): Promise<FixtureResult> {
   const renderedPng = Buffer.from(await (await fetch(thumb.contentUrl)).arrayBuffer());
 
   const presentation = (await getPresentation(accessToken, presentationId)) as {
-    pages: { objectId: string; pageElements: { objectId: string; transform: { translateX: number; translateY: number } }[] }[];
+    slides: { objectId: string; pageElements: { objectId: string; transform: { translateX: number; translateY: number } }[] }[];
   };
-  const page = presentation.pages.find((p) => p.objectId === pageObjectId);
+  const page = presentation.slides.find((p) => p.objectId === pageObjectId);
 
   const { scale, offsetXPt, offsetYPt } = computeScale(doc.slides[0].frameSize, doc.slideSize);
   const bboxDeviations: BboxDeviation[] = doc.slides[0].elements.map((el) => {
