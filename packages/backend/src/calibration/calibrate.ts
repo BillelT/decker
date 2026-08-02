@@ -2,14 +2,24 @@
 import 'dotenv/config';
 import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { PNG } from 'pngjs';
 import type { CalibrationData } from '@figma-to-slides/shared';
 import { UNCALIBRATED_DEFAULTS } from '@figma-to-slides/shared';
 import { computeScale } from '../mapper/transform.js';
 import { mapDocumentToBatches } from '../mapper/index.js';
 import { applyBatch, createPresentation, getPageThumbnail, getPresentation } from '../slides/client.js';
 import { buildRectsFixtureDocument, renderRectsReferencePng } from './fixtures/rects.js';
+import {
+  BOTTOM_RIGHT_BOX,
+  buildTextInsetProbeRequests,
+  PAGE_OBJECT_ID as TEXT_INSET_PAGE_ID,
+  SLIDE_SIZE as TEXT_INSET_SLIDE_SIZE,
+  TEXT_COLOR,
+  TOP_LEFT_BOX,
+} from './fixtures/textInsetProbe.js';
 import { compareSsim } from './ssim.js';
-import { writeCalibrationReport, type BboxDeviation, type FixtureResult } from './report.js';
+import { firstColWithColor, firstRowWithColor } from './pixelMeasure.js';
+import { writeCalibrationReport, type BboxDeviation, type FixtureResult, type MeasurementResult } from './report.js';
 
 const SSIM_THRESHOLD_RECTS = 0.99;
 const BBOX_THRESHOLD_PT_RECTS = 0.5;
@@ -48,11 +58,14 @@ async function main(): Promise<void> {
   const rectsResult = await runRectsFixture(accessToken);
   results.push(rectsResult);
 
+  const textInsetMeasurement = await measureTextInset(accessToken);
+
   const outDir = process.cwd();
-  await writeCalibrationReport(path.join(outDir, 'calibration-report.html'), results);
+  await writeCalibrationReport(path.join(outDir, 'calibration-report.html'), results, [textInsetMeasurement.report]);
 
   const calibration: CalibrationData = {
     ...UNCALIBRATED_DEFAULTS,
+    textInset: textInsetMeasurement.textInset,
     measuredAt: new Date().toISOString(),
   };
   await writeFile(path.join(outDir, 'calibration.json'), JSON.stringify(calibration, null, 2), 'utf8');
@@ -60,9 +73,12 @@ async function main(): Promise<void> {
   // eslint-disable-next-line no-console
   console.log(
     `\ncalibration-report.html écrit. SSIM(01-rects) = ${rectsResult.ssimScore.toFixed(4)} ` +
-      `(seuil ${SSIM_THRESHOLD_RECTS}). NOTE : textInset / roundRectRadiusRatio / lineSpacingBaseline ` +
-      `ne sont PAS mesurés par ce run — calibration.json contient encore UNCALIBRATED_DEFAULTS pour ces champs. ` +
-      `Voir LIMITATIONS.md.`,
+      `(seuil ${SSIM_THRESHOLD_RECTS}). textInset mesuré : ` +
+      `left=${textInsetMeasurement.textInset.left.toFixed(2)}pt right=${textInsetMeasurement.textInset.right.toFixed(2)}pt ` +
+      `top=${textInsetMeasurement.textInset.top.toFixed(2)}pt bottom=${textInsetMeasurement.textInset.bottom.toFixed(2)}pt ` +
+      `— écrit dans calibration.json. NOTE : roundRectRadiusRatio / defaultOutlineWeightPt / lineSpacingBaseline ` +
+      `restent des valeurs par défaut non mesurées ET actuellement non consommées par le mapper (champs morts, voir ` +
+      `LIMITATIONS.md) — ne pas prioriser leur calibration tant qu'ils ne sont branchés nulle part.`,
   );
 
   const passed = rectsResult.ssimScore >= SSIM_THRESHOLD_RECTS && rectsResult.bboxDeviations.every((d) => d.deviationPt <= BBOX_THRESHOLD_PT_RECTS);
@@ -72,6 +88,79 @@ async function main(): Promise<void> {
   } else {
     console.log('✅ Critère de sortie de Phase 0 atteint (SSIM ≥ 0.99, écart ≤ 0.5pt).');
   }
+}
+
+/**
+ * Fixture `03-text-inset` — mesure la vraie marge interne des TEXT_BOX
+ * Slides par balayage de pixels (voir fixtures/textInsetProbe.ts pour le
+ * détail de la géométrie et du choix des couleurs de contraste).
+ */
+async function measureTextInset(accessToken: string): Promise<{ textInset: CalibrationData['textInset']; report: MeasurementResult }> {
+  const { presentationId, firstSlideObjectId } = await createPresentation(
+    accessToken,
+    'f2s-calibration-03-text-inset',
+    TEXT_INSET_SLIDE_SIZE,
+  );
+  await applyBatch(accessToken, presentationId, { sourceSlideId: '__text_inset__', requests: buildTextInsetProbeRequests() });
+  await applyBatch(accessToken, presentationId, {
+    sourceSlideId: '__default__',
+    requests: [{ deleteObject: { objectId: firstSlideObjectId } }],
+  }).catch(() => undefined);
+
+  const thumb = await getPageThumbnail(accessToken, presentationId, TEXT_INSET_PAGE_ID);
+  const renderedPng = Buffer.from(await (await fetch(thumb.contentUrl)).arrayBuffer());
+  const img = PNG.sync.read(renderedPng);
+
+  const pxPerPtX = img.width / TEXT_INSET_SLIDE_SIZE.widthPt;
+  const pxPerPtY = img.height / TEXT_INSET_SLIDE_SIZE.heightPt;
+  const textRgb255 = {
+    r: Math.round(TEXT_COLOR.red * 255),
+    g: Math.round(TEXT_COLOR.green * 255),
+    b: Math.round(TEXT_COLOR.blue * 255),
+  };
+  // Généreuse : on veut détecter jusqu'au pixel anti-aliasé le plus léger du
+  // bord du glyphe (distance max possible face au gris de fond ≈ 300).
+  const COLOR_TOLERANCE = 150;
+
+  const tl = TOP_LEFT_BOX.rect;
+  const tlPx = { x: tl.x * pxPerPtX, y: tl.y * pxPerPtY, w: tl.w * pxPerPtX, h: tl.h * pxPerPtY };
+  const topRow = firstRowWithColor(img, Math.floor(tlPx.y), Math.ceil(tlPx.y + tlPx.h), Math.floor(tlPx.x), Math.ceil(tlPx.x + tlPx.w), textRgb255, COLOR_TOLERANCE);
+  const leftCol = firstColWithColor(img, Math.floor(tlPx.x), Math.ceil(tlPx.x + tlPx.w), Math.floor(tlPx.y), Math.ceil(tlPx.y + tlPx.h), textRgb255, COLOR_TOLERANCE);
+
+  const br = BOTTOM_RIGHT_BOX.rect;
+  const brPx = { x: br.x * pxPerPtX, y: br.y * pxPerPtY, w: br.w * pxPerPtX, h: br.h * pxPerPtY };
+  const bottomRow = firstRowWithColor(img, Math.ceil(brPx.y + brPx.h), Math.floor(brPx.y), Math.floor(brPx.x), Math.ceil(brPx.x + brPx.w), textRgb255, COLOR_TOLERANCE);
+  const rightCol = firstColWithColor(img, Math.ceil(brPx.x + brPx.w), Math.floor(brPx.x), Math.floor(brPx.y), Math.ceil(brPx.y + brPx.h), textRgb255, COLOR_TOLERANCE);
+
+  if (topRow === undefined || leftCol === undefined || bottomRow === undefined || rightCol === undefined) {
+    throw new Error(
+      "measureTextInset : le glyphe de test (\"H\" rouge) n'a pas été détecté dans le rendu Slides — vérifier " +
+        'calibration-report.html (image "Rendu Slides" de la section 03-text-inset) et ajuster COLOR_TOLERANCE ou la géométrie des boîtes si besoin.',
+    );
+  }
+
+  const textInset = {
+    top: Math.max(0, (topRow - tlPx.y) / pxPerPtY),
+    left: Math.max(0, (leftCol - tlPx.x) / pxPerPtX),
+    bottom: Math.max(0, (brPx.y + brPx.h - bottomRow) / pxPerPtY),
+    right: Math.max(0, (brPx.x + brPx.w - rightCol) / pxPerPtX),
+  };
+
+  return {
+    textInset,
+    report: {
+      name: '03-text-inset',
+      description:
+        'Marge interne réelle des TEXT_BOX Slides (spec §4), mesurée par balayage de pixels sur un glyphe "H" rouge gras dans deux boîtes à fond gris (ancrage haut-gauche pour left/top, bas-droite pour right/bottom) plutôt que comparée à une image de référence synthétique.',
+      renderedPng,
+      rows: [
+        { label: 'left', valuePt: textInset.left },
+        { label: 'right', valuePt: textInset.right },
+        { label: 'top', valuePt: textInset.top },
+        { label: 'bottom', valuePt: textInset.bottom },
+      ],
+    },
+  };
 }
 
 async function runRectsFixture(accessToken: string): Promise<FixtureResult> {

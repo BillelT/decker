@@ -20,9 +20,27 @@ export interface FixtureResult {
   bboxThresholdPt: number;
 }
 
+/**
+ * Fixture de MESURE plutôt que de comparaison (pas de SSIM/référence
+ * synthétique à comparer — la valeur mesurée EST le résultat, ex. la marge
+ * interne réelle d'une text box). `rows` liste les valeurs extraites du
+ * rendu, `renderedPng` permet une vérification visuelle.
+ */
+export interface MeasurementResult {
+  name: string;
+  description: string;
+  renderedPng: Buffer;
+  rows: { label: string; valuePt: number }[];
+}
+
 /** Spec §4.5 — calibration-report.html : 3 images côte à côte + tableau des écarts. */
-export async function writeCalibrationReport(outPath: string, results: FixtureResult[]): Promise<void> {
+export async function writeCalibrationReport(
+  outPath: string,
+  results: FixtureResult[],
+  measurements: MeasurementResult[] = [],
+): Promise<void> {
   const sections = results.map(renderFixtureSection).join('\n');
+  const measurementSections = measurements.map(renderMeasurementSection).join('\n');
   const html = `<!doctype html>
 <html lang="fr">
 <head>
@@ -47,9 +65,25 @@ export async function writeCalibrationReport(outPath: string, results: FixtureRe
 <h1>Rapport de calibration — figma-to-slides (spec §4)</h1>
 <p>Généré le ${new Date().toISOString()}</p>
 ${sections}
+${measurementSections}
 </body>
 </html>`;
   await writeFile(outPath, html, 'utf8');
+}
+
+function renderMeasurementSection(m: MeasurementResult): string {
+  const rows = m.rows.map((r) => `<tr><td>${r.label}</td><td>${r.valuePt.toFixed(3)}</td></tr>`).join('\n');
+  return `<section>
+  <h2>${m.name}</h2>
+  <p>${m.description}</p>
+  <div class="images">
+    <figure><img src="data:image/png;base64,${m.renderedPng.toString('base64')}" /><figcaption>Rendu Slides</figcaption></figure>
+  </div>
+  <table>
+    <thead><tr><th>Mesure</th><th>Valeur (pt)</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+</section>`;
 }
 
 function renderFixtureSection(r: FixtureResult): string {
