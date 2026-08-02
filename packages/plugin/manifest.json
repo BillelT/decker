@@ -7,7 +7,7 @@
   "editorType": ["figma"],
   "documentAccess": "dynamic-page",
   "networkAccess": {
-    "allowedDomains": ["http://localhost:8787","https://figma-to-slide-backend.vercel.app"],
-    "reasoning": "L'iframe de l'UI communique avec le backend figma-to-slides (OAuth Google, upload d'assets, déclenchement de l'export). Remplacer localhost par le domaine de production avant publication (spec §5, §11.12)."
+    "allowedDomains": ["https://figma-to-slide-backend.vercel.app"],
+    "reasoning": "L'iframe de l'UI communique avec le backend figma-to-slides en production (OAuth Google, upload d'assets, déclenchement de l'export)."
   }
 }
