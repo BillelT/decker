@@ -98,21 +98,32 @@ les suivants) :
    en pratique** : rien ne construit `doc.theme` ni n'assigne `themeRole`
    côté plugin faute d'UI — c'est le point 2 (l'onglet "Style") qui
    consommera cette capacité.
-2. **Onglet "Style" au niveau du template entier**, en plus du rapport par
-   layout actuel (`templateSummary.ts` n'agrège aujourd'hui que couleurs/
-   polices d'UN layout à la fois). Agrégerait couleurs + polices de TOUS
-   les layouts, avec assignation d'un rôle sémantique à chaque couleur
-   détectée (Primary/Secondary/Accent1-6/Text/Background — mappable
-   directement sur les 12 `ThemeColorType`), polices présentées par rôle
-   (Heading/Body) plutôt qu'en liste plate. Rôles pré-suggérés à partir du
-   **nom du style de couleur Figma** (`fillStyleId`/variable liée) quand
-   il existe, plutôt que d'un hex brut sans contexte — non lu du tout
-   aujourd'hui (`serializeFrame.ts` ne capture que la couleur résolue,
-   jamais le style/la variable dont elle vient).
-   - Optionnel, en plus : bouton "Harmoniser" qui réécrit les calques
-     Figma utilisant une couleur quasi-identique (ex. `#3366FE` vs
-     `#3467FF`) vers le hex canonique choisi pour le rôle — une vraie
-     édition Figma, pas juste un rapport en lecture seule.
+2. ~~**Onglet "Style" au niveau du template entier**~~ — fait pour la
+   partie couleurs (l'essentiel, ce qui alimente le mapper). Nouvel onglet
+   "View: Layouts / Style" dans le toolbar du mode template
+   (`ui/TemplateStylePanel.tsx`) : agrège couleurs + polices de TOUS les
+   layouts (`aggregateColorSwatches`/`aggregateFontUsages`,
+   `serialize/templateSummary.ts`) plutôt que par layout, avec un
+   `<select>` par couleur pour lui assigner un rôle parmi les 12
+   `ThemeColorType` (empêche d'assigner deux fois le même rôle). À
+   l'export, `code.ts::handleTemplateCreateRequest` lie ces couleurs aux
+   éléments via `themeRole` et construit `IRDocument.theme`
+   (`serialize/templateTheme.ts` : `applyThemeRolesToElements` +
+   `buildTemplateTheme`, avec repli sur une palette par défaut pour les
+   rôles non assignés — l'API exige les 12 d'un coup). Strictement
+   additif : un template dont le créateur ne touche pas l'onglet Style
+   s'exporte à l'identique d'avant.
+   **Pas fait dans cette passe** (gardé simple pour livrer la partie
+   fonctionnelle d'abord) :
+   - Rôles pré-suggérés à partir du **nom du style de couleur Figma**
+     (`fillStyleId`/variable liée) — toujours non lu par
+     `serializeFrame.ts`, qui ne capture que la couleur résolue.
+   - Regroupement des polices par rôle (Heading/Body) — l'onglet Style
+     affiche la liste agrégée mais sans cette étiquette.
+   - Bouton "Harmoniser" (réécrire les calques Figma d'une couleur
+     quasi-identique vers le hex canonique du rôle) — resté un rapport en
+     lecture seule pour les polices, l'assignation de rôle couleur ne
+     modifie aucun calque Figma en retour.
 3. **Chrome de master (logo/footer/watermark) posé une seule fois.** UI
    pour désigner un ou plusieurs éléments Figma comme "chrome récurrent"
    (plutôt que de les dupliquer manuellement sur chaque layout comme

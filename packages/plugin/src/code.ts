@@ -1,10 +1,11 @@
-import type { ExportOptions, IRDocument, IRSlide } from '@figma-to-slides/shared';
+import type { ExportOptions, IRDocument, IRSlide, ThemeColorRole } from '@figma-to-slides/shared';
 import { createIdGenerator } from './serialize/ids.js';
 import { serializeFrame } from './serialize/serializeFrame.js';
 import { lintFrame, type LintWarning } from './serialize/lintFrame.js';
 import { reformatForSlides } from './serialize/reformatForSlides.js';
 import { enforceTemplateStrictness, hasBlockingWarnings } from './serialize/templateValidation.js';
-import { summarizeColors, summarizeFonts, summarizePlaceholders } from './serialize/templateSummary.js';
+import { aggregateColorSwatches, summarizeColors, summarizeFonts, summarizePlaceholders } from './serialize/templateSummary.js';
+import { applyThemeRolesToElements, buildTemplateTheme } from './serialize/templateTheme.js';
 
 const MAX_FRAMES_WARNING = 20;
 /**
@@ -870,6 +871,7 @@ async function main(): Promise<void> {
             order: string[];
             presentationTitle: string;
             fontOverrides?: Record<string, string>;
+            colorRoles?: Record<string, ThemeColorRole>;
           },
           templatePending,
         );
@@ -1003,6 +1005,8 @@ async function handleTemplateCreateRequest(
     order: string[];
     presentationTitle: string;
     fontOverrides?: Record<string, string>;
+    /** Onglet "Style" (audit 2026-08, mode template point 2) : clé de couleur (`colorKey`) → rôle assigné. */
+    colorRoles?: Record<string, ThemeColorRole>;
   },
   pending: PendingSlide[],
 ): Promise<void> {
@@ -1020,12 +1024,24 @@ async function handleTemplateCreateRequest(
 
   const { slides, assets } = await collectSlidesAndAssets(pending, orderedIds, msg.fontOverrides ?? {}, 2);
 
+  // Onglet "Style" : lie les couleurs assignées à un rôle à leur slot de
+  // thème (themeRole) plutôt qu'un rgbColor figé, et construit la palette
+  // à écrire sur le Master à partir de ces MÊMES couleurs (garantit que
+  // `theme` et les éléments recolorés restent cohérents entre eux).
+  const colorRoles = msg.colorRoles ?? {};
+  const allColors = aggregateColorSwatches(slides.map((s) => summarizeColors(s.elements)));
+  const theme = buildTemplateTheme(colorRoles, allColors);
+  for (const slide of slides) {
+    slide.elements = applyThemeRolesToElements(slide.elements, colorRoles);
+  }
+
   const doc: IRDocument = {
     version: 1,
     presentationTitle: msg.presentationTitle,
     slideSize: computeSlideSizePt(slides[0]?.frameSize),
     slides,
     options: { mode: 'new-presentation', rasterScale: 2, includeUnderlay: false, underlayOpacity: 0.3, strictMode: true },
+    theme,
   };
 
   postExportPayload(doc, assets);

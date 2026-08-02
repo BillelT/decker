@@ -1,9 +1,10 @@
 import { render } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
-import type { ExportOptions, IRDocument } from '@figma-to-slides/shared';
+import type { ExportOptions, IRDocument, ThemeColorRole } from '@figma-to-slides/shared';
 import { sanitizeSessionToken } from './ui/sanitizeSessionToken.js';
 import { exportCursorFromBatches, type ExportBatch, type ExportCursor } from './ui/exportCursor.js';
 import { AVAILABLE_SLIDES_FONTS } from './serialize/fonts.js';
+import { aggregateColorSwatches, aggregateFontUsages } from './serialize/templateSummary.js';
 import {
   DEFAULT_UI_SKIN,
   postToPlugin,
@@ -22,6 +23,7 @@ import {
 } from './ui/types.js';
 import { DeckPanel } from './ui/DeckPanel';
 import { TemplatePanel } from './ui/TemplatePanel';
+import { TemplateStylePanel } from './ui/TemplateStylePanel';
 import { SettingsModal } from './ui/SettingsModal';
 import { applyThemeOverride, isThemePreference, readFigmaTheme, watchFigmaTheme, type ThemePreference } from './ui/theme.js';
 
@@ -252,6 +254,23 @@ function App() {
 
   /** Un template ne peut être créé que si plus aucun layout n'a d'élément qui serait rasterisé. */
   const templateHasBlockingLayout = templateOrder.some((id) => templateLayouts[id]?.blocking);
+
+  // Onglet "Style" du mode template (audit 2026-08, point 2 — TODO.md §
+  // Mode template) : vue agrégée sur TOUT le template plutôt que par
+  // layout, avec assignation d'un rôle de thème Slides réel à chaque
+  // couleur détectée (voir mapper/theme.ts côté backend). Strictement
+  // additif — un template sans aucune assignation s'exporte exactement
+  // comme avant (aplats RGB statiques).
+  const [templateSubView, setTemplateSubView] = useState<'layouts' | 'style'>('layouts');
+  const [colorRoles, setColorRoles] = useState<Record<string, ThemeColorRole>>({});
+  const templateColors = useMemo(
+    () => aggregateColorSwatches(templateOrder.map((id) => templateLayouts[id]?.colors ?? [])),
+    [templateOrder, templateLayouts],
+  );
+  const templateFonts = useMemo(
+    () => aggregateFontUsages(templateOrder.map((id) => templateLayouts[id]?.fonts ?? [])),
+    [templateOrder, templateLayouts],
+  );
 
   /** Choix manuel de l'utilisateur (police originale → police Slides), envoyé à l'export pour remplacer la résolution par défaut. */
   const [fontOverrides, setFontOverrides] = useState<Record<string, string>>({});
@@ -908,6 +927,7 @@ function App() {
       order: templateOrder,
       presentationTitle: templateTitle.trim() || 'Figma template',
       fontOverrides,
+      colorRoles,
     });
   }
 
@@ -1088,6 +1108,32 @@ function App() {
               ))
             )}
           </div>
+          {mode === 'template' && (
+            <div className="f2s-toolbar-group">
+              <span className="f2s-toolbar-label">View:</span>
+              <div className="f2s-tabs" role="tablist" aria-label="Template view">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={templateSubView === 'layouts'}
+                  className={`f2s-tab${templateSubView === 'layouts' ? ' is-active' : ''}`}
+                  onClick={() => setTemplateSubView('layouts')}
+                >
+                  Layouts
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={templateSubView === 'style'}
+                  title="Assign a Slides theme color role to colors used across the whole template."
+                  className={`f2s-tab${templateSubView === 'style' ? ' is-active' : ''}`}
+                  onClick={() => setTemplateSubView('style')}
+                >
+                  Style
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1104,7 +1150,7 @@ function App() {
           exportCursor={exporting && exportSource === 'deck' ? exportCursor : undefined}
           notice={selectionNotice}
         />
-      ) : (
+      ) : templateSubView === 'layouts' ? (
         <TemplatePanel
           order={templateOrder}
           layouts={templateLayouts}
@@ -1115,6 +1161,8 @@ function App() {
           notice={templateSelectionNotice}
           onRemove={removeTemplateLayout}
         />
+      ) : (
+        <TemplateStylePanel colors={templateColors} fonts={templateFonts} colorRoles={colorRoles} setColorRoles={setColorRoles} />
       )}
 
       <footer className="f2s-footer">
