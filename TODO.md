@@ -34,14 +34,13 @@ restante précise.
 - **Retour d'erreur sur une vignette de layout bloquante** (mode
   template) : rouge plein `--color-error` pour l'instant — concevoir un
   retour plus riche qu'une simple bordure.
-- **Indicateur de chargement du bouton "Sign in with Google".** Deux
-  moments d'attente distincts, aucun des deux visible aujourd'hui :
-  (a) juste après montage, pendant l'appel au backend qui récupère l'URL
-  Google (bouton grisé, pas de texte) ; (b) après clic sur le lien, tout
-  le temps du polling (`pollAuthSession`, jusqu'à 10 min) en attendant que
-  l'utilisateur finisse l'auth dans son navigateur — le bouton reste
-  affiché "Sign in with Google" sans dire qu'il attend une réponse. Le
-  (b) est le plus gênant en pratique.
+- ~~**Indicateur de chargement du bouton "Sign in with Google".**~~ — fait :
+  spinner + libellé dédié aux deux moments d'attente (`.f2s-spinner`,
+  `.f2s-btn-loading`, déjà présents en CSS mais jamais câblés) — "Preparing
+  sign-in…" pendant l'appel au backend qui récupère l'URL Google au
+  montage, puis "Waiting for Google sign-in…" après clic sur le lien, tout
+  le temps du polling (`pollAuthSession`, jusqu'à 10 min), piloté par le
+  nouveau state `authLinkClicked` (`ui.tsx`).
 - **Avertissements non bloquants dans le rapport template** (police
   substituée automatiquement, rayon d'angle approximé…) : n'empêchent pas
   la création du template (l'élément reste éditable), mais ne s'affichent

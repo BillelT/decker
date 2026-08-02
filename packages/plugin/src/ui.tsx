@@ -183,6 +183,11 @@ function App() {
   const [sessionToken, setSessionToken] = useState<string | undefined>();
   const [loginError, setLoginError] = useState<string | undefined>();
   const [authUrl, setAuthUrl] = useState<string | undefined>();
+  // A cliqué le lien "Sign in with Google" : distingue "prêt à cliquer" de
+  // "en train d'attendre que l'utilisateur finisse dans le navigateur"
+  // (jusqu'à 10 min de polling, pollAuthSession) — sans ça le bouton reste
+  // muet sur ces deux moments d'attente très différents.
+  const [authLinkClicked, setAuthLinkClicked] = useState(false);
   const [backend] = useState<BackendConfig>({ baseUrl: typeof __BACKEND_URL__ === 'string' ? __BACKEND_URL__ : 'https://figma-to-slide-backend.vercel.app' });
 
   /** Titres saisis par l'utilisateur — deviennent le nom du fichier créé dans Drive (un titre figé rendait chaque export indistinguable du précédent). */
@@ -755,6 +760,7 @@ function App() {
   function startLogin() {
     setLoginError(undefined);
     setAuthUrl(undefined);
+    setAuthLinkClicked(false);
     // Ni fetch()-puis-window.open() ni window.open() synchrone ne
     // marchent depuis l'iframe d'un plugin Figma Desktop : Figma essaie
     // de rendre la popup DANS un cadre soumis à la CSP restrictive du
@@ -923,10 +929,27 @@ function App() {
     }
     if (authUrl) {
       // Un vrai <a target="_blank"> cliqué par l'utilisateur : voir le
-      // commentaire de startLogin sur la CSP du plugin Figma.
+      // commentaire de startLogin sur la CSP du plugin Figma. Reste
+      // cliquable même après le premier clic (authLinkClicked) : au cas où
+      // l'utilisateur a fermé l'onglet Google par erreur, il peut le
+      // rouvrir sans repartir de zéro (pollAuthSession tourne déjà).
       return (
-        <a href={authUrl} target="_blank" rel="noreferrer" className="f2s-btn f2s-btn--primary" title={`Connect your Google account to enable "${label}".`}>
-          Sign in with Google
+        <a
+          href={authUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="f2s-btn f2s-btn--primary"
+          title={authLinkClicked ? 'Finish signing in with Google in the browser tab — click again to reopen it if you closed it.' : `Connect your Google account to enable "${label}".`}
+          onClick={() => setAuthLinkClicked(true)}
+        >
+          {authLinkClicked ? (
+            <span className="f2s-btn-loading">
+              <span className="f2s-spinner" aria-hidden="true" />
+              Waiting for Google sign-in…
+            </span>
+          ) : (
+            'Sign in with Google'
+          )}
         </a>
       );
     }
@@ -937,11 +960,14 @@ function App() {
         </button>
       );
     }
-    // TODO(TODO.md) : état de chargement pendant qu'on attend le lien
-    // Google — pour l'instant juste désactivé, sans feedback visuel.
+    // Chargement initial : l'URL Google n'a pas encore été récupérée auprès
+    // du backend (fetch lancé au montage, voir l'effet plus bas).
     return (
       <button type="button" className="f2s-btn f2s-btn--primary" disabled>
-        Sign in with Google
+        <span className="f2s-btn-loading">
+          <span className="f2s-spinner" aria-hidden="true" />
+          Preparing sign-in…
+        </span>
       </button>
     );
   }
