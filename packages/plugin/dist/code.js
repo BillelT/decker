@@ -1129,6 +1129,7 @@
   var DECK_TAG = "true";
   var TEMPLATE_TAG = "template";
   var LINT_GROUP_ID_KEY = "slidesLintGroupId";
+  var LINT_STROKE_WEIGHT = 8;
   var SLIDES_READY_PREFIX = "[Slides Ready] ";
   var TEMPLATE_READY_PREFIX = "[Template Ready] ";
   var COPY_GAP_PX = 200;
@@ -1281,13 +1282,17 @@
       const node = await figma.getNodeByIdAsync(w.nodeId);
       if (!node || !("absoluteBoundingBox" in node) || !node.absoluteBoundingBox) continue;
       const box = node.absoluteBoundingBox;
-      const badge = figma.createEllipse();
-      badge.resize(10, 10);
-      badge.x = box.x + box.width - 5;
-      badge.y = box.y - 5;
-      badge.fills = [{ type: "SOLID", color: { r: 0.94, g: 0.23, b: 0.18 } }];
-      badge.strokes = [{ type: "SOLID", color: { r: 1, g: 1, b: 1 } }];
-      badge.strokeWeight = 1;
+      const badge = figma.createRectangle();
+      badge.resize(Math.max(box.width, 1), Math.max(box.height, 1));
+      badge.x = box.x;
+      badge.y = box.y;
+      badge.fills = [];
+      badge.strokes = [{ type: "SOLID", color: { r: 0.94, g: 0.23, b: 0.18 } }];
+      badge.strokeWeight = LINT_STROKE_WEIGHT;
+      badge.strokeAlign = "OUTSIDE";
+      if ("cornerRadius" in node && typeof node.cornerRadius === "number") {
+        badge.cornerRadius = node.cornerRadius;
+      }
       badge.name = `\u26A0 ${w.nodeName} \u2014 ${w.message}`;
       badges.push(badge);
     }

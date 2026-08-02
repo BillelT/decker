@@ -8,6 +8,37 @@ import { postToPlugin, selectSourceNodes, type FrameState } from './types.js';
 const DRAG_THRESHOLD_PX = 3;
 
 /**
+ * Repère à mettre en avant dans les Logs : un calque rasterisé quitte
+ * l'édition native (police, interligne, espacement des lettres figés en
+ * pixels au moment de l'export) ; un calque gardé natif mais listé ici
+ * (police substituée, radius approximé) peut malgré tout rendre différemment
+ * de l'original faute d'équivalent exact côté Slides. Les deux catégories
+ * méritent de sauter aux yeux plutôt que de se fondre avec le reste des
+ * entrées (ex. tag de placeholder inconnu, qui est un souci de config, pas
+ * de fidélité visuelle).
+ */
+const RASTERIZED_WARNING_CODES = new Set([
+  'FONT_MISSING',
+  'GRADIENT_RASTERIZED',
+  'EFFECT_RASTERIZED',
+  'BLEND_MODE_RASTERIZED',
+  'MASK_RASTERIZED',
+  'VECTOR_RASTERIZED',
+  'LINE_RASTERIZED',
+  'LETTER_SPACING_LOST',
+  'CORNER_RADIUS_RASTERIZED',
+  'MULTIPLE_FILLS_RASTERIZED',
+]);
+
+const VISUAL_DIFF_WARNING_CODES = new Set(['FONT_SUBSTITUTED', 'RADIUS_APPROXIMATED']);
+
+function logEntryFlag(code: string): 'rasterized' | 'visual-diff' | undefined {
+  if (RASTERIZED_WARNING_CODES.has(code)) return 'rasterized';
+  if (VISUAL_DIFF_WARNING_CODES.has(code)) return 'visual-diff';
+  return undefined;
+}
+
+/**
  * Fraction (0–1) d'un slot qu'il reste à parcourir, avant un recouvrement
  * complet avec la vignette voisine, pour que le réordonnancement se
  * déclenche déjà — plutôt que d'attendre d'être quasiment empilé dessus.
@@ -290,25 +321,33 @@ export function DeckPanel({
               </div>
               {previewedFrame.warnings && previewedFrame.warnings.length > 0 ? (
                 <ul className="f2s-tmpl-list">
-                  {previewedFrame.warnings.map((w, i) => (
-                    <li key={i}>
-                      <button
-                        type="button"
-                        className={`f2s-log-entry${w.severity === 'blocking' ? ' f2s-log-entry--blocking' : ''}`}
-                        title={`${w.nodeName} — ${w.message}`}
-                        onClick={() => selectSourceNodes([w.sourceNodeId])}
-                      >
-                        {/* Le nom du calque (nodeName) vient de Figma, où le nom par défaut d'un
-                            calque texte est son contenu entier : sur un long paragraphe, ça
-                            déborde. Tronqué en priorité sur une ligne — le message (ce qui a
-                            été fait) reste lisible, le libellé complet reste dans `title`. */}
-                        <span className="f2s-log-entry-text">
-                          <strong className="f2s-log-entry-name">{w.nodeName}</strong>
-                          <span className="f2s-log-entry-message">— {w.message}</span>
-                        </span>
-                      </button>
-                    </li>
-                  ))}
+                  {previewedFrame.warnings.map((w, i) => {
+                    const flag = logEntryFlag(w.code);
+                    return (
+                      <li key={i}>
+                        <button
+                          type="button"
+                          className={`f2s-log-entry${w.severity === 'blocking' ? ' f2s-log-entry--blocking' : ''}${flag ? ` f2s-log-entry--${flag}` : ''}`}
+                          title={`${w.nodeName} — ${w.message}`}
+                          onClick={() => selectSourceNodes([w.sourceNodeId])}
+                        >
+                          {flag && (
+                            <span className={`f2s-log-entry-flag f2s-log-entry-flag--${flag}`}>
+                              {flag === 'rasterized' ? 'Rasterized' : 'May look different'}
+                            </span>
+                          )}
+                          {/* Le nom du calque (nodeName) vient de Figma, où le nom par défaut d'un
+                              calque texte est son contenu entier : sur un long paragraphe, ça
+                              déborde. Tronqué en priorité sur une ligne — le message (ce qui a
+                              été fait) reste lisible, le libellé complet reste dans `title`. */}
+                          <span className="f2s-log-entry-text">
+                            <strong className="f2s-log-entry-name">{w.nodeName}</strong>
+                            <span className="f2s-log-entry-message">— {w.message}</span>
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
                 </ul>
               ) : (
                 <p className="f2s-toolbar-muted">No issues detected on this frame.</p>

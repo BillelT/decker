@@ -384,6 +384,10 @@ html.f2s-skin--win95 .f2s-tmpl-warning {
   color: var(--color-error);
 }
 
+html.f2s-skin--win95 .f2s-log-entry-flag {
+  border-radius: 0;
+}
+
 html.f2s-skin--win95 .f2s-tmpl-role {
   color: #000;
 }

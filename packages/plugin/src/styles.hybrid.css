@@ -134,6 +134,10 @@ html.f2s-skin--hybrid .f2s-tmpl-warning {
   border-color: transparent;
 }
 
+html.f2s-skin--hybrid .f2s-log-entry-flag {
+  border-radius: 0;
+}
+
 html.f2s-skin--hybrid .f2s-tmpl-swatch {
   border: none;
   border-radius: 0;
