@@ -887,49 +887,68 @@ html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) {
 /* Micro-interactions des icônes settings (comparaison gear vs sliders) —
    comme le translateY() ci-dessus, désactivées en win95 (esprit rétro,
    pas d'animation). */
-html:not(.f2s-skin--win95) .f2s-icon-gear,
-html:not(.f2s-skin--win95) .f2s-icon-sliders,
-html:not(.f2s-skin--win95) .f2s-slider-knob {
-  transition: transform 0.15s ease;
+html:not(.f2s-skin--win95) .f2s-icon-gear {
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* 60° = un sixième de tour, l'esprit d'un décalage d'une dent pour un
+   engrenage à 6 dents — mais ce tracé IBM est dessiné à la main, pas un
+   hexagone mathématiquement régulier : un calque superposé à 0°/60°
+   montre que les dents ne retombent pas exactement les unes sur les
+   autres. À la taille réelle de l'icône (16px) ça ne se voit pas, mais
+   ce n'est pas un alignement pixel-perfect. cubic-bezier(0.34,1.56,0.64,1)
+   = "easeOutBack" (léger rebond), scale volontairement plus discret que
+   1.08 pour rester minimaliste. */
 html:not(.f2s-skin--win95) .f2s-footer-settings:hover:not(:disabled) .f2s-icon-gear {
-  transform: rotate(4deg) scale(1.035);
+  transform: rotate(60deg) scale(1.04);
 }
 
+/* Continue le tour amorcé au hover (même sens, pas d'inversion) au lieu
+   de s'arrêter pile à 60° — et compresse légèrement pour le ressenti
+   d'enfoncement. Transition plus courte et sans rebond : l'appui doit
+   être net, le rebond est réservé à l'arrivée en hover. */
 html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-icon-gear {
-  transform: rotate(-6deg) scale(0.975);
+  transform: rotate(68deg) scale(0.95);
+  transition-duration: 0.12s;
+  transition-timing-function: ease-out;
+}
+
+/* Poignées des sliders : transform-box/origin en fill-box pour que leur
+   scale (pressed) reste centré sur le cercle lui-même, pas sur l'origine
+   du viewBox — sans ça translateX resterait correct mais scale() ferait
+   dériver visiblement le cercle. */
+html:not(.f2s-skin--win95) .f2s-slider-knob {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 0.15s ease;
 }
 
 /* Le trait de chaque piste est plein d'un bout à l'autre (voir GearIcon/
    SlidersIcon dans ui.tsx) : la poignée glisse dessus et le masque sous
-   elle grâce à son fond opaque, donc plus besoin de faire suivre un
-   segment de piste pour éviter un chevauchement ou un vide. */
-html:not(.f2s-skin--win95) .f2s-footer-settings:hover:not(:disabled) .f2s-icon-sliders {
-  transform: scale(1.01);
-}
+   elle grâce à son fond opaque, donc aucun risque de chevauchement ou de
+   vide quels que soient le sens/l'amplitude du déplacement.
 
+   Au hover les poignées s'écartent légèrement (au lieu de converger) ;
+   au clic elles se resserrent plus franchement en rétrécissant un peu —
+   le clic "serre" la commande. */
 html:not(.f2s-skin--win95) .f2s-footer-settings:hover:not(:disabled) .f2s-slider-knob--top {
-  transform: translateX(-2px);
+  transform: translateX(1.2px);
 }
 
 html:not(.f2s-skin--win95) .f2s-footer-settings:hover:not(:disabled) .f2s-slider-knob--bottom {
-  transform: translateX(2.25px);
-}
-
-/* 0.88 rendait le pressed trop brutal ; poignées repoussées en sens
-   inverse du hover (au lieu de converger encore plus) pour un vrai effet
-   de "relâchement" plutôt qu'un simple hover accentué. */
-html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-icon-sliders {
-  transform: scale(0.94);
+  transform: translateX(-1.2px);
 }
 
 html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-slider-knob--top {
-  transform: translateX(1px);
+  transform: translateX(-2px) scale(0.92);
+  transition-duration: 0.12s;
+  transition-timing-function: ease-out;
 }
 
 html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-slider-knob--bottom {
-  transform: translateX(-1px);
+  transform: translateX(2px) scale(0.92);
+  transition-duration: 0.12s;
+  transition-timing-function: ease-out;
 }
 
 /* Le fond de la poignée (qui masque le trait plein sous elle) doit suivre
