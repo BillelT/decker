@@ -111,21 +111,38 @@ avec les couches suivantes **testées et fonctionnelles hors ligne** :
   l'API Google réelle dans cet environnement (pas d'identifiants OAuth ni
   de session utilisateur disponibles ici).
 - Harnais de calibration (`npm run calibrate`) : le calcul SSIM et la
-  génération du rapport sont testés (comparaison d'images synthétiques),
-  mais **le pipeline complet nécessite un compte Google authentifié** pour
-  créer une vraie présentation et mesurer le rendu réel de l'API Slides.
-  Sans ça, le script s'arrête proprement avec des instructions plutôt que
-  de produire un faux rapport.
+  génération du rapport sont testés (comparaison d'images synthétiques), et
+  **le pipeline complet a maintenant tourné avec succès contre un vrai
+  compte Google** (audit 2026-08) : critère de sortie de Phase 0 atteint
+  sur la fixture `01-rects` — SSIM = 0.9973 (seuil ≥ 0.99), écart de
+  position nul sur les 5 rectangles (0.000pt, seuil ≤ 0.5pt). Deux bugs
+  réels ont été trouvés et corrigés à cette occasion, invisibles tant que
+  ce script n'avait jamais tourné pour de vrai :
+  - `presentations.get` renvoie les positions en **EMU**, pas en points,
+    même quand les requêtes d'écriture précisent `unit: 'PT'` — le calcul
+    d'écart comparait donc deux unités différentes et rapportait des
+    écarts de centaines de milliers de points sur une géométrie en réalité
+    parfaite (`calibrate.ts`, conversion `EMU_PER_PT = 12700` ajoutée).
+  - La miniature réelle (`pages.getThumbnail`, `thumbnailSize=LARGE`) n'a
+    pas forcément la même résolution que l'image de référence générée en
+    interne — comparer les deux en **rognant** au plus petit dénominateur
+    commun faussait le SSIM sur un contenu par ailleurs identique (visible
+    en diff sous forme de liseré dédoublé autour de chaque forme).
+    `ssim.ts` **redimensionne** désormais l'image la plus grande avant
+    comparaison (plus proche voisin, testé par régression).
 
 ### Ce qui reste explicitement non calibré / non fait
 
-- `calibration.json` contient des **valeurs par défaut prudentes, non
-  mesurées** (`textInset`, `roundRectRadiusRatio`, `lineSpacingBaseline`,
-  `textWidthSafetyMarginEm`). Il faut lancer `npm run calibrate` avec un
-  vrai compte Google pour les fixer (spec §4) — `textWidthSafetyMarginEm`
-  n'est de toute façon pas mesuré par ce harnais actuellement (voir
-  `calibrate.ts`), sa valeur par défaut reste une marge de sécurité
-  raisonnable plutôt qu'une mesure empirique.
+- Le critère de Phase 0 validé ci-dessus ne couvre que la chaîne
+  coordonnées/échelle/z-order (fixture `01-rects`, rectangles unis sans
+  texte). `calibration.json` contient toujours des **valeurs par défaut
+  prudentes, non mesurées** pour tout ce que cette fixture ne teste pas
+  (`textInset`, `roundRectRadiusRatio`, `lineSpacingBaseline`,
+  `textWidthSafetyMarginEm`) — il faudra les fixtures `02`-`13` (spec §9,
+  texte/formes arrondies/etc., voir plus bas) pour les mesurer à leur tour.
+  `textWidthSafetyMarginEm` n'est de toute façon pas mesuré par ce harnais
+  actuellement (voir `calibrate.ts`), sa valeur par défaut reste une marge
+  de sécurité raisonnable plutôt qu'une mesure empirique.
 - Le jeu de fixtures complet (spec §9, `01-rects` à `13-batch`) n'existe
   que pour `01-rects` (généré en code, sans fichier Figma réel). Les
   fixtures `02` à `13` nécessitent un fichier Figma dédié à créer.
