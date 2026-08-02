@@ -106,10 +106,14 @@ a {
   color: var(--color-orange);
 }
 
-/* Scrollbar (WebKit) — flèches/piste/poignée en #CCCCCC (spec DS) */
+/* Scrollbar (WebKit) — flèches/piste/poignée en #CCCCCC (spec DS). 6px
+   (au lieu de 10px) pour que toutes les scrollbars restent fines, en
+   cohérence avec scrollbar-width: thin ci-dessous pour Firefox — sauf en
+   win95 (styles.win95.css), qui garde volontairement l'ascenseur
+   16px/motif tramé d'origine. */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
@@ -120,8 +124,8 @@ a {
 }
 ::-webkit-scrollbar-button {
   background: var(--color-scrollbar);
-  height: 10px;
-  width: 10px;
+  height: 6px;
+  width: 6px;
 }
 * {
   scrollbar-color: var(--color-scrollbar) transparent;
@@ -278,13 +282,6 @@ a {
   border-color: var(--color-orange-40);
 }
 
-/* Le menu déroulant natif hérite du scrollbar de la page (Chromium) — trop
-   épais (10px, pensé pour les panneaux) pour une petite liste d'options. */
-.f2s-font-dropdown::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
 /* ---- Buttons ---- */
 
 .f2s-btn {
@@ -399,6 +396,10 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   flex: none;
   width: 190px;
   overflow-y: auto;
+  /* Réserve la place de la scrollbar même quand le contenu ne déborde pas
+     encore : sans ça, les vignettes gagnent/perdent quelques px de large
+     pile au moment où une frame de plus fait apparaître l'ascenseur. */
+  scrollbar-gutter: stable;
   padding: 8px 16px 16px;
   display: flex;
   flex-direction: column;
