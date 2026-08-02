@@ -826,6 +826,16 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   flex: none;
 }
 
+/* Spinner + libellé à l'intérieur d'un `.f2s-btn` (ex. "Sign in with
+   Google" pendant les deux temps d'attente réseau) — un `<button>`/`<a>`
+   ne peut pas être lui-même flex sans perturber son padding/alignement
+   existant, ce wrapper interne s'en charge à la place. */
+.f2s-btn-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 @keyframes f2s-spin {
   to {
     transform: rotate(360deg);
@@ -3241,6 +3251,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
     const [sessionToken, setSessionToken] = d2();
     const [loginError, setLoginError] = d2();
     const [authUrl, setAuthUrl] = d2();
+    const [authLinkClicked, setAuthLinkClicked] = d2(false);
     const [backend] = d2({ baseUrl: true ? "https://figma-to-slide-backend.vercel.app" : "https://figma-to-slide-backend.vercel.app" });
     const [deckTitle, setDeckTitle] = d2("");
     const [templateTitle, setTemplateTitle] = d2("");
@@ -3688,6 +3699,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
     function startLogin() {
       setLoginError(void 0);
       setAuthUrl(void 0);
+      setAuthLinkClicked(false);
       fetch(`${backend.baseUrl}/auth/google`, { method: "POST" }).then(async (res) => {
         if (!res.ok) {
           const body = await res.json().catch(() => void 0);
@@ -3800,12 +3812,29 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
         return /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--primary", disabled, title: disabledTitle, onClick, children: label });
       }
       if (authUrl) {
-        return /* @__PURE__ */ u3("a", { href: authUrl, target: "_blank", rel: "noreferrer", className: "f2s-btn f2s-btn--primary", title: `Connect your Google account to enable "${label}".`, children: "Sign in with Google" });
+        return /* @__PURE__ */ u3(
+          "a",
+          {
+            href: authUrl,
+            target: "_blank",
+            rel: "noreferrer",
+            className: "f2s-btn f2s-btn--primary",
+            title: authLinkClicked ? "Finish signing in with Google in the browser tab \u2014 click again to reopen it if you closed it." : `Connect your Google account to enable "${label}".`,
+            onClick: () => setAuthLinkClicked(true),
+            children: authLinkClicked ? /* @__PURE__ */ u3("span", { className: "f2s-btn-loading", children: [
+              /* @__PURE__ */ u3("span", { className: "f2s-spinner", "aria-hidden": "true" }),
+              "Waiting for Google sign-in\u2026"
+            ] }) : "Sign in with Google"
+          }
+        );
       }
       if (loginError) {
         return /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--primary", title: loginError, onClick: startLogin, children: "Retry Google sign-in" });
       }
-      return /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--primary", disabled: true, children: "Sign in with Google" });
+      return /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--primary", disabled: true, children: /* @__PURE__ */ u3("span", { className: "f2s-btn-loading", children: [
+        /* @__PURE__ */ u3("span", { className: "f2s-spinner", "aria-hidden": "true" }),
+        "Preparing sign-in\u2026"
+      ] }) });
     }
     return /* @__PURE__ */ u3(S, { children: [
       skin === "win95" && /* @__PURE__ */ u3(TitleBar, { mode }),

@@ -821,6 +821,16 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   flex: none;
 }
 
+/* Spinner + libellé à l'intérieur d'un `.f2s-btn` (ex. "Sign in with
+   Google" pendant les deux temps d'attente réseau) — un `<button>`/`<a>`
+   ne peut pas être lui-même flex sans perturber son padding/alignement
+   existant, ce wrapper interne s'en charge à la place. */
+.f2s-btn-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 @keyframes f2s-spin {
   to {
     transform: rotate(360deg);
