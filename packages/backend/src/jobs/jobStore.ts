@@ -16,6 +16,13 @@ export interface JobRecord {
   error?: string;
   presentationId?: string;
   presentationUrl?: string;
+  /**
+   * objectId de la page Master de la présentation créée — connu seulement
+   * au moment de `createPresentation` (`slides/client.ts`), persisté ici
+   * pour que `retryExportJob` puisse reconstruire le lot d'écriture du
+   * thème (`mapper/theme.ts`) si celui-ci doit être rejoué.
+   */
+  masterObjectId?: string;
   batches: BatchState[];
   createdAt: number;
   updatedAt: number;

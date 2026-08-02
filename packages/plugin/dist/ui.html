@@ -2948,12 +2948,93 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
   }
 
   // src/ui/TemplatePanel.tsx
-  function TemplatePanel({ order, layouts, activeId, setActiveId, selecting, hasCanvasSelection, notice, onRemove }) {
+  var DRAG_THRESHOLD_PX2 = 3;
+  var DRAG_SWAP_MARGIN2 = 0.32;
+  function TemplatePanel({
+    order,
+    setOrder,
+    layouts,
+    activeId,
+    setActiveId,
+    selecting,
+    hasCanvasSelection,
+    notice,
+    onRemove,
+    exportCursor
+  }) {
+    const [dragId, setDragId] = d2();
+    const [dragOffsetY, setDragOffsetY] = d2(0);
+    const [dragActive, setDragActive] = d2(false);
+    const [dragTargetIndex, setDragTargetIndex] = d2(0);
+    const [suppressShiftTransition, setSuppressShiftTransition] = d2(false);
+    const dragStartYRef = A2(0);
+    const dragStartIndexRef = A2(0);
+    const slotHeightRef = A2(0);
+    const sidebarItemRefs = A2(/* @__PURE__ */ new Map());
     const activeLayout = activeId ? layouts[activeId] : void 0;
+    const exportingLayout = exportCursor ? layouts[exportCursor.frameId] : void 0;
+    const previewedLayout = exportingLayout ?? activeLayout;
+    const highlightedId = exportCursor?.frameId ?? activeId;
+    h2(() => {
+      if (!highlightedId) return;
+      sidebarItemRefs.current.get(highlightedId)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }, [highlightedId]);
     function selectLayout(id) {
       setActiveId(id);
       postToPlugin({ type: "select-nodes", nodeIds: [id] });
     }
+    function targetIndexFromOffset(offsetY) {
+      const slotHeight = slotHeightRef.current;
+      const lastIndex = order.length - 1;
+      if (slotHeight <= 0) return dragStartIndexRef.current;
+      const steps = Math.sign(offsetY) * Math.floor(Math.abs(offsetY) / slotHeight + DRAG_SWAP_MARGIN2);
+      return Math.max(0, Math.min(lastIndex, dragStartIndexRef.current + steps));
+    }
+    function handleDragPointerDown(e3, id) {
+      dragStartYRef.current = e3.clientY;
+      setDragOffsetY(0);
+      setDragActive(false);
+      setDragId(id);
+      const currentOrder = order;
+      const startIndex = currentOrder.indexOf(id);
+      dragStartIndexRef.current = startIndex;
+      setDragTargetIndex(startIndex);
+      const firstTop = sidebarItemRefs.current.get(currentOrder[0])?.getBoundingClientRect().top;
+      const secondTop = currentOrder.length > 1 ? sidebarItemRefs.current.get(currentOrder[1])?.getBoundingClientRect().top : void 0;
+      slotHeightRef.current = firstTop !== void 0 && secondTop !== void 0 ? secondTop - firstTop : sidebarItemRefs.current.get(id)?.getBoundingClientRect().height ?? 0;
+    }
+    h2(() => {
+      if (!dragId) return;
+      const draggedId = dragId;
+      function onPointerMove(e3) {
+        const offset = e3.clientY - dragStartYRef.current;
+        setDragOffsetY(offset);
+        const active = Math.abs(offset) > DRAG_THRESHOLD_PX2;
+        setDragActive((prev) => prev || active);
+        if (active) setDragTargetIndex(targetIndexFromOffset(offset));
+      }
+      function onPointerUp(e3) {
+        const finalIndex = targetIndexFromOffset(e3.clientY - dragStartYRef.current);
+        setSuppressShiftTransition(true);
+        setOrder((prev) => moveToIndex(prev, draggedId, finalIndex));
+        setDragId(void 0);
+        setDragOffsetY(0);
+        setDragActive(false);
+      }
+      window.addEventListener("pointermove", onPointerMove);
+      window.addEventListener("pointerup", onPointerUp);
+      return () => {
+        window.removeEventListener("pointermove", onPointerMove);
+        window.removeEventListener("pointerup", onPointerUp);
+      };
+    }, [dragId]);
+    h2(() => {
+      if (!suppressShiftTransition) return;
+      const frame = requestAnimationFrame(() => {
+        requestAnimationFrame(() => setSuppressShiftTransition(false));
+      });
+      return () => cancelAnimationFrame(frame);
+    }, [suppressShiftTransition]);
     if (order.length === 0) {
       return /* @__PURE__ */ u3("div", { className: "f2s-body", children: /* @__PURE__ */ u3("main", { className: "f2s-canvas", children: /* @__PURE__ */ u3("p", { className: "f2s-empty", children: 'Click "Select layout to add" to choose the layouts that make up this template \u2014 e.g. a title slide, a content slide.' }) }) });
     }
@@ -2964,36 +3045,68 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
         order.map((id, index) => {
           const layout = layouts[id];
           if (!layout) return null;
-          return /* @__PURE__ */ u3("div", { className: "f2s-sidebar-item", children: [
-            /* @__PURE__ */ u3(
-              "button",
-              {
-                type: "button",
-                className: `f2s-frame-preview${activeId === id ? " is-active" : ""}${layout.blocking ? " f2s-frame-preview--blocking" : ""}`,
-                onClick: () => selectLayout(id),
-                title: layout.blocking ? "Contains an element that would be rasterized \u2014 open it to see the details." : void 0,
-                children: layout.previewDataUrl && /* @__PURE__ */ u3("img", { src: layout.previewDataUrl, alt: layout.name, draggable: false })
-              }
-            ),
-            /* @__PURE__ */ u3("div", { className: "f2s-frame-info", children: [
-              /* @__PURE__ */ u3("span", { className: "f2s-frame-text", children: [
-                index + 1,
-                ". ",
-                layout.name
-              ] }),
-              /* @__PURE__ */ u3("div", { className: "f2s-frame-controls", children: /* @__PURE__ */ u3("button", { type: "button", className: "f2s-icon-btn", title: "Remove", onClick: () => onRemove(id), children: "\u2715" }) })
-            ] })
-          ] }, id);
+          const isDragging = dragId === id && dragActive;
+          let ghostShift = 0;
+          if (dragId && dragActive && !isDragging) {
+            const start = dragStartIndexRef.current;
+            if (start < dragTargetIndex && index > start && index <= dragTargetIndex) {
+              ghostShift = -slotHeightRef.current;
+            } else if (start > dragTargetIndex && index >= dragTargetIndex && index < start) {
+              ghostShift = slotHeightRef.current;
+            }
+          }
+          return /* @__PURE__ */ u3(
+            "div",
+            {
+              ref: (el) => {
+                if (el) sidebarItemRefs.current.set(id, el);
+                else sidebarItemRefs.current.delete(id);
+              },
+              className: `f2s-sidebar-item${isDragging ? " is-dragging" : ""}${suppressShiftTransition ? " is-releasing" : ""}`,
+              style: isDragging ? { transform: `translateY(${dragOffsetY}px)` } : ghostShift !== 0 ? { transform: `translateY(${ghostShift}px)` } : void 0,
+              children: [
+                /* @__PURE__ */ u3(
+                  "button",
+                  {
+                    type: "button",
+                    className: `f2s-frame-preview${highlightedId === id ? " is-active" : ""}${layout.blocking ? " f2s-frame-preview--blocking" : ""}${exportCursor?.frameId === id ? " is-exporting" : ""}`,
+                    onClick: () => selectLayout(id),
+                    onPointerDown: (e3) => handleDragPointerDown(e3, id),
+                    title: layout.blocking ? "Contains an element that would be rasterized \u2014 open it to see the details." : void 0,
+                    children: layout.previewDataUrl && /* @__PURE__ */ u3("img", { src: layout.previewDataUrl, alt: layout.name, draggable: false })
+                  }
+                ),
+                /* @__PURE__ */ u3("div", { className: "f2s-frame-info", children: [
+                  /* @__PURE__ */ u3("span", { className: "f2s-frame-text", children: [
+                    index + 1,
+                    ". ",
+                    layout.name
+                  ] }),
+                  /* @__PURE__ */ u3("div", { className: "f2s-frame-controls", children: /* @__PURE__ */ u3("button", { type: "button", className: "f2s-icon-btn", title: "Remove", onClick: () => onRemove(id), children: "\u2715" }) })
+                ] })
+              ]
+            },
+            id
+          );
         })
       ] }),
       /* @__PURE__ */ u3("main", { className: "f2s-canvas f2s-canvas--template", children: [
         /* @__PURE__ */ u3("p", { className: "f2s-tmpl-note", children: "A template is a reusable Slides deck (like a Slides theme): each layout becomes a slide your team duplicates and fills. The Slides API can't create native masters/layouts, so the result is a regular presentation to copy from." }),
-        activeLayout ? /* @__PURE__ */ u3("div", { className: "f2s-tmpl-report", children: [
-          /* @__PURE__ */ u3("div", { className: "f2s-canvas-preview f2s-tmpl-preview", children: activeLayout.previewDataUrl && /* @__PURE__ */ u3("img", { src: activeLayout.previewDataUrl, alt: activeLayout.name }) }),
+        previewedLayout ? /* @__PURE__ */ u3("div", { className: "f2s-tmpl-report", children: [
+          exportingLayout && exportCursor ? /* @__PURE__ */ u3("div", { className: "f2s-tmpl-preview", children: /* @__PURE__ */ u3(
+            RetroExportPreview,
+            {
+              src: exportingLayout.previewDataUrl,
+              frameName: exportingLayout.name,
+              index: exportCursor.index,
+              total: exportCursor.total
+            },
+            exportCursor.frameId
+          ) }) : /* @__PURE__ */ u3("div", { className: "f2s-canvas-preview f2s-tmpl-preview", children: previewedLayout.previewDataUrl && /* @__PURE__ */ u3("img", { src: previewedLayout.previewDataUrl, alt: previewedLayout.name }) }),
           /* @__PURE__ */ u3("div", { className: "f2s-tmpl-panel", children: [
-            activeLayout.warnings.filter((w3) => w3.severity === "blocking").length > 0 && /* @__PURE__ */ u3("section", { className: "f2s-tmpl-section f2s-tmpl-section--blocking", children: [
+            previewedLayout.warnings.filter((w3) => w3.severity === "blocking").length > 0 && /* @__PURE__ */ u3("section", { className: "f2s-tmpl-section f2s-tmpl-section--blocking", children: [
               /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Fix before creating the template" }),
-              /* @__PURE__ */ u3("ul", { className: "f2s-tmpl-list", children: activeLayout.warnings.filter((w3) => w3.severity === "blocking").map((w3, i3) => /* @__PURE__ */ u3("li", { children: /* @__PURE__ */ u3("button", { type: "button", className: "f2s-tmpl-warning", onClick: () => selectSourceNodes([w3.sourceNodeId]), children: [
+              /* @__PURE__ */ u3("ul", { className: "f2s-tmpl-list", children: previewedLayout.warnings.filter((w3) => w3.severity === "blocking").map((w3, i3) => /* @__PURE__ */ u3("li", { children: /* @__PURE__ */ u3("button", { type: "button", className: "f2s-tmpl-warning", onClick: () => selectSourceNodes([w3.sourceNodeId]), children: [
                 /* @__PURE__ */ u3("strong", { children: w3.nodeName }),
                 " \u2014 ",
                 w3.message
@@ -3001,7 +3114,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
             ] }),
             /* @__PURE__ */ u3("section", { className: "f2s-tmpl-section", children: [
               /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Placeholders" }),
-              activeLayout.placeholders.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: [
+              previewedLayout.placeholders.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: [
                 "No tagged placeholder yet \u2014 prefix a layer name in Figma with ",
                 /* @__PURE__ */ u3("code", { children: "[[title]]" }),
                 ", ",
@@ -3014,14 +3127,14 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
                 " or ",
                 /* @__PURE__ */ u3("code", { children: "[[logo]]" }),
                 " to mark it."
-              ] }) : /* @__PURE__ */ u3("ul", { className: "f2s-tmpl-list", children: activeLayout.placeholders.map((p3) => /* @__PURE__ */ u3("li", { children: /* @__PURE__ */ u3("button", { type: "button", className: "f2s-tmpl-chip", onClick: () => selectSourceNodes([p3.sourceNodeId]), children: [
+              ] }) : /* @__PURE__ */ u3("ul", { className: "f2s-tmpl-list", children: previewedLayout.placeholders.map((p3) => /* @__PURE__ */ u3("li", { children: /* @__PURE__ */ u3("button", { type: "button", className: "f2s-tmpl-chip", onClick: () => selectSourceNodes([p3.sourceNodeId]), children: [
                 /* @__PURE__ */ u3("span", { className: "f2s-tmpl-role", children: p3.role }),
                 p3.label
               ] }) }, p3.id)) })
             ] }),
             /* @__PURE__ */ u3("section", { className: "f2s-tmpl-section", children: [
               /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Colors" }),
-              activeLayout.colors.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: "No solid color detected." }) : /* @__PURE__ */ u3("ul", { className: "f2s-tmpl-swatches", children: activeLayout.colors.map((c3, i3) => /* @__PURE__ */ u3("li", { className: "f2s-tmpl-swatch-item", children: [
+              previewedLayout.colors.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: "No solid color detected." }) : /* @__PURE__ */ u3("ul", { className: "f2s-tmpl-swatches", children: previewedLayout.colors.map((c3, i3) => /* @__PURE__ */ u3("li", { className: "f2s-tmpl-swatch-item", children: [
                 /* @__PURE__ */ u3("span", { className: "f2s-tmpl-swatch", children: /* @__PURE__ */ u3(
                   "span",
                   {
@@ -3042,7 +3155,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
             ] }),
             /* @__PURE__ */ u3("section", { className: "f2s-tmpl-section", children: [
               /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Typography" }),
-              activeLayout.fonts.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: "No text detected." }) : /* @__PURE__ */ u3("ul", { className: "f2s-tmpl-list", children: activeLayout.fonts.map((f4) => /* @__PURE__ */ u3("li", { children: [
+              previewedLayout.fonts.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: "No text detected." }) : /* @__PURE__ */ u3("ul", { className: "f2s-tmpl-list", children: previewedLayout.fonts.map((f4) => /* @__PURE__ */ u3("li", { children: [
                 /* @__PURE__ */ u3("span", { className: "f2s-tmpl-font-family", children: f4.family }),
                 " ",
                 /* @__PURE__ */ u3("span", { className: "f2s-toolbar-muted", children: [
@@ -3450,7 +3563,6 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
     const [retryable, setRetryable] = d2(false);
     const [retrying, setRetrying] = d2(false);
     const pendingAssets = T2(() => /* @__PURE__ */ new Map(), []);
-    const exportModeRef = A2();
     function applyConclusion(concluded) {
       setExportCursor(void 0);
       if (concluded.status === "done") {
@@ -3473,13 +3585,14 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
       return Math.round(settled / batches.length * 100);
     }
     function applyLiveBatches(batches) {
-      if (exportModeRef.current === "deck") setExportCursor(exportCursorFromBatches(batches));
+      setExportCursor(exportCursorFromBatches(batches));
       setExportProgress(progressFromBatches(batches));
     }
     const sessionTokenRef = A2(sessionToken);
     h2(() => {
       sessionTokenRef.current = sessionToken;
     }, [sessionToken]);
+    const authHandshakeDoneRef = A2(false);
     h2(() => {
       const onMessage = (event) => {
         const msg = event.data.pluginMessage;
@@ -3604,11 +3717,18 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
           // l'ouverture pour ne pas refaire l'OAuth à chaque session. Sans
           // risque pour les decks déjà envoyés : chaque export crée une
           // présentation NEUVE (mode 'new-presentation').
-          case "session-token-restored":
-            setSessionToken(sanitizeSessionToken(msg.token));
-            setAuthUrl(void 0);
-            setLoginError(void 0);
+          case "session-token-restored": {
+            authHandshakeDoneRef.current = true;
+            const restored = sanitizeSessionToken(msg.token);
+            if (restored) {
+              setSessionToken(restored);
+              setAuthUrl(void 0);
+              setLoginError(void 0);
+            } else {
+              startLogin();
+            }
             break;
+          }
           // Thème forcé depuis la modale de réglages lors d'une session
           // précédente (clientStorage, cf. code.ts).
           case "theme-preference-restored":
@@ -3855,7 +3975,12 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
       });
     }
     h2(() => {
-      if (!sessionToken) startLogin();
+      const timer = setTimeout(() => {
+        if (authHandshakeDoneRef.current) return;
+        authHandshakeDoneRef.current = true;
+        startLogin();
+      }, 2e3);
+      return () => clearTimeout(timer);
     }, []);
     h2(() => {
       postToPlugin({ type: "ui-ready" });
@@ -3906,7 +4031,6 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
       setExportState("exporting");
       setExportProgress(0);
       setExportSource("deck");
-      exportModeRef.current = "deck";
       setExportCursor(void 0);
       setExportJobId(void 0);
       setFailedFrameIds([]);
@@ -3931,7 +4055,6 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
       setExportState("exporting");
       setExportProgress(0);
       setExportSource("template");
-      exportModeRef.current = "template";
       setExportCursor(void 0);
       setExportJobId(void 0);
       setFailedFrameIds([]);
@@ -3987,8 +4110,9 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
             {
               type: "button",
               className: "f2s-btn f2s-btn--secondary",
+              disabled: exporting,
               onClick: () => setMode((m3) => m3 === "deck" ? "template" : "deck"),
-              title: mode === "deck" ? "Build a reusable Slides template with tagged placeholders." : "Back to exporting a one-off deck.",
+              title: exporting ? "An export is running \u2014 wait for it to finish before switching modes." : mode === "deck" ? "Build a reusable Slides template with tagged placeholders." : "Back to exporting a one-off deck.",
               children: mode === "deck" ? "Create a template" : "Back to deck export"
             }
           )
@@ -4018,14 +4142,24 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
           ),
           renderPrimaryAction("Export", exporting || order.length === 0, busyFromOtherMode ? busyTitle : void 0, startExport)
         ] }) : /* @__PURE__ */ u3("div", { className: "f2s-topbar-actions", children: [
-          /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--tertiary", onClick: handleAddTemplateLayoutClick, children: templateSelecting ? "Add selection" : "Select layout to add" }),
+          /* @__PURE__ */ u3(
+            "button",
+            {
+              type: "button",
+              className: "f2s-btn f2s-btn--tertiary",
+              disabled: exporting,
+              title: exporting ? "A template creation is running \u2014 wait for it to finish before changing the layouts." : void 0,
+              onClick: handleAddTemplateLayoutClick,
+              children: templateSelecting ? "Add selection" : "Select layout to add"
+            }
+          ),
           /* @__PURE__ */ u3(
             "button",
             {
               type: "button",
               className: "f2s-btn f2s-btn--secondary",
-              disabled: !hasCanvasSelection && templateOrder.length === 0,
-              title: "Duplicate and reformat every layout for Slides \u2014 clears most blocking issues (gradients, shadows, letter spacing\u2026) automatically.",
+              disabled: exporting || !hasCanvasSelection && templateOrder.length === 0,
+              title: exporting ? "A template creation is running \u2014 wait for it to finish before changing the layouts." : "Duplicate and reformat every layout for Slides \u2014 clears most blocking issues (gradients, shadows, letter spacing\u2026) automatically.",
               onClick: handlePrepareTemplateForSlides,
               children: "Prepare for Slides"
             }
@@ -4127,13 +4261,15 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
         TemplatePanel,
         {
           order: templateOrder,
+          setOrder: setTemplateOrder,
           layouts: templateLayouts,
           activeId: activeTemplateId,
           setActiveId: setActiveTemplateId,
           selecting: templateSelecting,
           hasCanvasSelection,
           notice: templateSelectionNotice,
-          onRemove: removeTemplateLayout
+          onRemove: removeTemplateLayout,
+          exportCursor: exporting && exportSource === "template" ? exportCursor : void 0
         }
       ) : /* @__PURE__ */ u3(TemplateStylePanel, { colors: templateColors, fonts: templateFonts, colorRoles, setColorRoles }),
       /* @__PURE__ */ u3("footer", { className: "f2s-footer", children: [

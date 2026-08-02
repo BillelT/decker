@@ -303,12 +303,6 @@ function App() {
   const [retrying, setRetrying] = useState(false);
   const pendingAssets = useMemo(() => new Map<string, ArrayBuffer>(), []);
 
-  // Quel mode a démarré l'export en cours, lu depuis `handleExportPayload` —
-  // qui vit dans le handler `onMessage` ci-dessous, monté une seule fois
-  // (deps: []) et donc figé sur un `exportSource` toujours `undefined` s'il
-  // lisait le state directement (même piège que `sessionTokenRef`).
-  const exportModeRef = useRef<AppMode | undefined>();
-
   /** Applique une conclusion de job (réelle) à l'état visible : fin d'export, réussie ou non. */
   function applyConclusion(concluded: JobConclusion) {
     setExportCursor(undefined);
@@ -334,9 +328,14 @@ function App() {
     return Math.round((settled / batches.length) * 100);
   }
 
-  /** Reflète un poll `/export/:jobId` en cours dans l'UI : cursor (mode deck) + barre de progression, toujours en direct. */
+  /**
+   * Reflète un poll `/export/:jobId` en cours dans l'UI : cursor (deck ET
+   * template — `exportCursorFromBatches` est générique, indexé sur
+   * `sourceSlideId`, peu importe que ce soit une frame de deck ou un layout
+   * de template) + barre de progression, toujours en direct.
+   */
   function applyLiveBatches(batches: ExportBatch[] | undefined) {
-    if (exportModeRef.current === 'deck') setExportCursor(exportCursorFromBatches(batches));
+    setExportCursor(exportCursorFromBatches(batches));
     setExportProgress(progressFromBatches(batches));
   }
 
@@ -349,6 +348,15 @@ function App() {
   useEffect(() => {
     sessionTokenRef.current = sessionToken;
   }, [sessionToken]);
+
+  // `code.ts` répond toujours à `ui-ready` par un `session-token-restored`
+  // (avec un token vide si `clientStorage` n'en a aucun, cf. code.ts) — on
+  // attend cette réponse avant de décider s'il faut appeler `startLogin()`,
+  // pour éviter un `POST /auth/google` systématique et inutile à chaque
+  // ouverture du plugin le temps que la session persistée soit restaurée
+  // (audit 2026-08). Le timeout est un filet de sécurité si ce message ne
+  // revient jamais (ex. iframe testée hors du sandbox Figma).
+  const authHandshakeDoneRef = useRef(false);
 
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
@@ -479,11 +487,21 @@ function App() {
         // l'ouverture pour ne pas refaire l'OAuth à chaque session. Sans
         // risque pour les decks déjà envoyés : chaque export crée une
         // présentation NEUVE (mode 'new-presentation').
-        case 'session-token-restored':
-          setSessionToken(sanitizeSessionToken(msg.token as string));
-          setAuthUrl(undefined);
-          setLoginError(undefined);
+        case 'session-token-restored': {
+          authHandshakeDoneRef.current = true;
+          const restored = sanitizeSessionToken(msg.token as string);
+          if (restored) {
+            setSessionToken(restored);
+            setAuthUrl(undefined);
+            setLoginError(undefined);
+          } else {
+            // Aucune session persistée (token vide) : c'est seulement
+            // maintenant qu'on sait qu'il faut démarrer l'OAuth, pas
+            // aveuglément au montage.
+            startLogin();
+          }
           break;
+        }
         // Thème forcé depuis la modale de réglages lors d'une session
         // précédente (clientStorage, cf. code.ts).
         case 'theme-preference-restored':
@@ -813,7 +831,12 @@ function App() {
   }
 
   useEffect(() => {
-    if (!sessionToken) startLogin();
+    const timer = setTimeout(() => {
+      if (authHandshakeDoneRef.current) return;
+      authHandshakeDoneRef.current = true;
+      startLogin();
+    }, 2000);
+    return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -885,7 +908,6 @@ function App() {
     setExportState('exporting');
     setExportProgress(0);
     setExportSource('deck');
-    exportModeRef.current = 'deck';
     setExportCursor(undefined);
     setExportJobId(undefined);
     setFailedFrameIds([]);
@@ -916,7 +938,6 @@ function App() {
     setExportState('exporting');
     setExportProgress(0);
     setExportSource('template');
-    exportModeRef.current = 'template';
     setExportCursor(undefined);
     setExportJobId(undefined);
     setFailedFrameIds([]);
@@ -1002,8 +1023,15 @@ function App() {
           <button
             type="button"
             className="f2s-btn f2s-btn--secondary"
+            disabled={exporting}
             onClick={() => setMode((m) => (m === 'deck' ? 'template' : 'deck'))}
-            title={mode === 'deck' ? 'Build a reusable Slides template with tagged placeholders.' : 'Back to exporting a one-off deck.'}
+            title={
+              exporting
+                ? 'An export is running — wait for it to finish before switching modes.'
+                : mode === 'deck'
+                  ? 'Build a reusable Slides template with tagged placeholders.'
+                  : 'Back to exporting a one-off deck.'
+            }
           >
             {mode === 'deck' ? 'Create a template' : 'Back to deck export'}
           </button>
@@ -1037,14 +1065,24 @@ function App() {
           </div>
         ) : (
           <div className="f2s-topbar-actions">
-            <button type="button" className="f2s-btn f2s-btn--tertiary" onClick={handleAddTemplateLayoutClick}>
+            <button
+              type="button"
+              className="f2s-btn f2s-btn--tertiary"
+              disabled={exporting}
+              title={exporting ? 'A template creation is running — wait for it to finish before changing the layouts.' : undefined}
+              onClick={handleAddTemplateLayoutClick}
+            >
               {templateSelecting ? 'Add selection' : 'Select layout to add'}
             </button>
             <button
               type="button"
               className="f2s-btn f2s-btn--secondary"
-              disabled={!hasCanvasSelection && templateOrder.length === 0}
-              title="Duplicate and reformat every layout for Slides — clears most blocking issues (gradients, shadows, letter spacing…) automatically."
+              disabled={exporting || (!hasCanvasSelection && templateOrder.length === 0)}
+              title={
+                exporting
+                  ? 'A template creation is running — wait for it to finish before changing the layouts.'
+                  : 'Duplicate and reformat every layout for Slides — clears most blocking issues (gradients, shadows, letter spacing…) automatically.'
+              }
               onClick={handlePrepareTemplateForSlides}
             >
               Prepare for Slides
@@ -1153,6 +1191,7 @@ function App() {
       ) : templateSubView === 'layouts' ? (
         <TemplatePanel
           order={templateOrder}
+          setOrder={setTemplateOrder}
           layouts={templateLayouts}
           activeId={activeTemplateId}
           setActiveId={setActiveTemplateId}
@@ -1160,6 +1199,7 @@ function App() {
           hasCanvasSelection={hasCanvasSelection}
           notice={templateSelectionNotice}
           onRemove={removeTemplateLayout}
+          exportCursor={exporting && exportSource === 'template' ? exportCursor : undefined}
         />
       ) : (
         <TemplateStylePanel colors={templateColors} fonts={templateFonts} colorRoles={colorRoles} setColorRoles={setColorRoles} />

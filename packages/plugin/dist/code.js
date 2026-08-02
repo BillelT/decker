@@ -1530,11 +1530,13 @@
         }
         try {
           const storedToken = await figma.clientStorage.getAsync(SESSION_TOKEN_STORAGE_KEY);
-          if (typeof storedToken === "string" && storedToken.length > 0) {
-            figma.ui.postMessage({ type: "session-token-restored", token: storedToken });
-          }
+          figma.ui.postMessage({
+            type: "session-token-restored",
+            token: typeof storedToken === "string" ? storedToken : ""
+          });
         } catch (err) {
           console.error(err);
+          figma.ui.postMessage({ type: "session-token-restored", token: "" });
         }
         try {
           const storedTheme = await figma.clientStorage.getAsync(THEME_STORAGE_KEY);

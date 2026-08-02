@@ -10,6 +10,7 @@ import { getAssetStore } from '../storage/index.js';
 import type { AssetStore } from '../storage/assetStore.js';
 import { createJob, getJob, pendingBatchIds } from '../jobs/jobStore.js';
 import { runExportJob, retryExportJob } from '../jobs/runner.js';
+import { THEME_BATCH_SOURCE_ID } from '../mapper/index.js';
 import { loadCalibration } from '../calibration/loadCalibration.js';
 
 export const exportRouter = Router();
@@ -125,12 +126,15 @@ exportRouter.post('/export', upload.any(), async (req, res) => {
 
   const jobId = randomUUID();
   // `doc` est conservé sur le job : nécessaire pour reconstruire les lots à
-  // la reprise ciblée (voir `/export/:jobId/retry` plus bas).
-  const job = await createJob(
-    jobId,
-    doc.slides.map((s) => s.sourceNodeId),
-    doc,
-  );
+  // la reprise ciblée (voir `/export/:jobId/retry` plus bas). Le lot spécial
+  // d'écriture du thème (sentinelle `THEME_BATCH_SOURCE_ID`, pas une vraie
+  // slide) doit être inclus dans `job.batches` dès la création si `doc.theme`
+  // est présent : sinon `updateBatchStatus`/`pendingBatchIds` ne le voient
+  // jamais et un échec de ce lot devient irréparable (ni suivi, ni rejouable
+  // par `/retry`).
+  const sourceSlideIds = doc.slides.map((s) => s.sourceNodeId);
+  if (doc.theme) sourceSlideIds.unshift(THEME_BATCH_SOURCE_ID);
+  const job = await createJob(jobId, sourceSlideIds, doc);
   const calibration = await loadCalibration();
 
   // Traitement asynchrone : le plugin poll GET /export/:jobId (spec §5).
