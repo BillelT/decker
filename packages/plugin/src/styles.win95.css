@@ -64,9 +64,14 @@ html.f2s-skin--win95 body {
   background: var(--w95-face);
 }
 
-/* Le panneau entier devient LA fenêtre : cadre en relief autour de tout. */
+/* Le panneau entier devient LA fenêtre : cadre en relief autour de tout.
+   Le padding-bottom (57px en base, pour son footer plus haut) doit rester
+   réservé au footer, plus court ici (~35px) mais toujours `position: fixed` :
+   sans son propre padding-bottom, le raccourci `padding: 3px` l'écrasait à
+   3px et le footer chevauchait le bas du canvas (rail + logs), masquant la
+   fin de la liste de logs même une fois le scroll interne remonté au max. */
 html.f2s-skin--win95 #app {
-  padding: 3px;
+  padding: 3px 3px 38px;
   background: var(--w95-face);
   box-shadow: var(--w95-out);
 }
