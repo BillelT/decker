@@ -91,38 +91,6 @@ function GearIcon() {
   );
 }
 
-/** Version "settings--adjust" d'IBM Carbon, mais recomposée en éléments
- *  <line>/<circle> distincts (au lieu du path plein unique) pour que
- *  chaque poignée puisse être animée indépendamment au hover/pressed —
- *  viewBox 0 0 16 16 (1 unité = 1px rendu) pour que les translateX en px
- *  ci-dessous en styles.css produisent un déplacement exact, sans le
- *  facteur d'échelle qu'aurait introduit le viewBox 32×32 d'origine.
- *
- *  Essayer de faire suivre juste le segment de piste voisin (au lieu de
- *  garder un trait plein) laissait un vide visible du côté qui s'éloigne
- *  — la poignée découvrait un espace sans ligne ni cercle. Plus simple et
- *  robuste : un trait plein d'un bout à l'autre par ligne, et la poignée
- *  (peinte après, donc au-dessus) a un fond opaque de la couleur du
- *  bouton pour masquer le trait sous elle, où qu'elle glisse. */
-function SlidersIcon() {
-  return (
-    <svg
-      className="f2s-icon-sliders"
-      width="16"
-      height="16"
-      viewBox="0 0 16 16"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-    >
-      <line x1="1" y1="4.5" x2="15" y2="4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-      <circle className="f2s-slider-knob f2s-slider-knob--top" cx="10.5" cy="4.5" r="1.5" fill="var(--color-bg)" stroke="currentColor" strokeWidth="1.3" />
-      <line x1="1" y1="11.5" x2="15" y2="11.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-      <circle className="f2s-slider-knob f2s-slider-knob--bottom" cx="5.5" cy="11.5" r="1.5" fill="var(--color-bg)" stroke="currentColor" strokeWidth="1.3" />
-    </svg>
-  );
-}
-
 /** Barre de titre du skin Windows 95 : la fenêtre du plugin en devient une vraie fenêtre 95. */
 function TitleBar({ mode }: { mode: AppMode }) {
   return (
@@ -1132,17 +1100,6 @@ function App() {
           onClick={() => setSettingsOpen((open) => !open)}
         >
           <GearIcon />
-          <span>Settings</span>
-        </button>
-        {/* TODO comparaison temporaire : à retirer une fois l'icône retenue entre GearIcon et SlidersIcon. */}
-        <button
-          type="button"
-          className="f2s-footer-settings"
-          aria-haspopup="dialog"
-          aria-expanded={settingsOpen}
-          onClick={() => setSettingsOpen((open) => !open)}
-        >
-          <SlidersIcon />
           <span>Settings</span>
         </button>
         <div className="f2s-footer-actions">
