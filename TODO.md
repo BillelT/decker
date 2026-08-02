@@ -11,13 +11,16 @@ restante précise.
 - ~~**Affichage des erreurs**~~ — fait (footer, par mode) : le backend
   renvoie des messages détaillés par slide (`Slide "Nom": Slides API 400
   — …`) et l'UI les affiche désormais (`ui.tsx`, corrigé dans `d271152`).
-- ~~**Progression pendant l'export**~~ — fait en mode deck : l'aperçu
-  affiche la frame dont le lot est en cours d'application, "générée" bande
-  par bande façon Windows 95, avec "Generating slide N of M" et une barre
-  de progression (`ui/RetroExportPreview.tsx`, `ui/exportCursor.ts`).
-  **Reste à faire pour le mode template** : `TemplatePanel` ne reçoit pas
-  d'`exportCursor` (contrairement à `DeckPanel`), l'écran ne bouge pas
-  pendant toute la création du template.
+- ~~**Progression pendant l'export**~~ — fait, deck ET template : l'aperçu
+  affiche la frame/le layout dont le lot est en cours d'application,
+  "générée" bande par bande façon Windows 95, avec "Generating slide N of
+  M" et une barre de progression (`ui/RetroExportPreview.tsx`,
+  `ui/exportCursor.ts`). `TemplatePanel` reçoit désormais `exportCursor`
+  comme `DeckPanel` (audit 2026-08) — il fallait aussi retirer la garde
+  `exportModeRef.current === 'deck'` dans `applyLiveBatches` (`ui.tsx`),
+  qui empêchait le cursor de se mettre à jour en mode template alors que
+  `exportCursorFromBatches` est générique (indexé sur `sourceSlideId`,
+  peu importe frame de deck ou layout de template).
 - ~~**Rapport de fidélité du deck**~~ — fait : badge "N natifs · M
   rasterisés" + liste de warnings cliquable qui sélectionne l'élément dans
   Figma (`DeckPanel.tsx`).
@@ -50,20 +53,49 @@ restante précise.
 
 ## Divers
 
-- **Interaction retry × lot thème (bug potentiel repéré en rebasant sur la
-  reprise ciblée désormais fonctionnelle, `jobs/runner.ts::retryExportJob`).**
-  Si le lot spécial d'écriture du thème (`THEME_BATCH_SOURCE_ID`,
-  `mapper/theme.ts`) échoue au premier essai, `retryExportJob` ne peut pas
-  le rejouer : il appelle `mapDocumentToBatches(doc, resolveAssetUrl,
-  calibration)` **sans** `masterObjectId` (jamais stocké sur le
-  `JobRecord`, seulement connu au moment de `createPresentation`), donc ce
-  lot n'est jamais reconstruit et reste indéfiniment `pending` dans le job
-  store même si le retry se conclut `done`. Cas limite (le thème doit
-  échouer spécifiquement, pas une slide), mais réel — nécessite de
-  persister `masterObjectId` sur le `JobRecord` pour le corriger proprement.
-- **"Buy me a coffee".** Le bouton "Support me with Ko-fi" est déjà posé
-  dans le footer (`href="#"`) — en attente du vrai lien avant de le
-  finaliser, pas une tâche de conception restante.
+- ~~**`POST /auth/google` systématique et inutile à chaque ouverture du
+  plugin.**~~ — fait (audit 2026-08) : `useEffect(() => { if
+  (!sessionToken) startLogin() }, [])` (`ui.tsx`) se déclenchait au montage
+  AVANT que `code.ts` ait pu répondre à `ui-ready` par
+  `session-token-restored` (lecture asynchrone de `clientStorage`) — donc
+  un appel réseau partait même quand une session persistée allait être
+  restaurée l'instant d'après. Corrigé : `code.ts` envoie désormais
+  toujours ce message (token vide si rien n'est stocké), et l'UI attend
+  cette réponse explicite avant de décider de démarrer l'OAuth
+  (`authHandshakeDoneRef`), avec un timeout de 2 s en filet de sécurité si
+  le message n'arrive jamais.
+- ~~**Cookie de session potentiellement non fonctionnel en prod
+  (`trust proxy`).**~~ — fait : `routes/auth.ts` pose le cookie avec
+  `secure: req.secure`, mais `index.ts` n'appelait jamais `app.set('trust
+  proxy', …)` — derrière le proxy Vercel, Express ne peut détecter le
+  HTTPS d'origine que via `X-Forwarded-Proto`, qui n'est lu que si `trust
+  proxy` est activé. Sans ce réglage, `req.secure` valait probablement
+  `false` en prod HTTPS, et un cookie `SameSite=None; Secure:false` est
+  silencieusement rejeté par le navigateur — le fallback cookie (censé
+  compenser un polling défaillant en iframe sandboxée) risquait de ne
+  jamais fonctionner en prod. `app.set('trust proxy', 1)` ajouté.
+- ~~**Mode template : rien n'empêchait de modifier les layouts pendant un
+  export/une création de template en cours.**~~ — fait : "Select layout to
+  add", "Prepare for Slides" (template) et le bouton de bascule
+  deck/template sont désormais désactivés pendant `exporting`, symétrique
+  à la protection déjà en place côté deck.
+- ~~**Interaction retry × lot thème.**~~ — fait, et plus grave que ce que
+  cette note décrivait initialement : le lot thème (`THEME_BATCH_SOURCE_ID`,
+  `mapper/theme.ts`) n'était en réalité jamais inclus dans `job.batches`
+  dès la création du job (`routes/export.ts::createJob` ne listait que les
+  `sourceNodeId` des slides), pas seulement à la reprise — un échec du lot
+  thème dès le PREMIER essai était donc avalé silencieusement
+  (`updateBatchStatus` ne trouvait rien à mettre à jour) et
+  `POST /export/:jobId/retry` répondait `200 {pendingSlideIds: []}` sans
+  rien rejouer, laissant le job `failed` sans aucun moyen de réparation.
+  Corrigé (audit 2026-08) : la sentinelle thème est ajoutée à
+  `job.batches` si `doc.theme` est présent, `masterObjectId` est persisté
+  sur le `JobRecord` dès la création de la présentation
+  (`jobs/runner.ts::runExportJob`), et `retryExportJob` le réutilise pour
+  reconstruire le lot thème. Test dédié dans `jobs/runner.test.ts`.
+- ~~**"Buy me a coffee".**~~ — fait : lien réel
+  ([ko-fi.com/billelt](https://ko-fi.com/billelt)), ouverture dans un
+  nouvel onglet.
 
 ## Mode template — refonte interface & flow (audit 2026-08, benchmark workflow expert Slides / limites API)
 
@@ -168,11 +200,10 @@ les suivants) :
    TEXTE (reste du texte côté Slides mais étiqueté "image", trompeur pour
    l'utilisateur final). Commencer par des warnings informatifs non
    bloquants, durcir ensuite si l'usage le confirme.
-8. **Réordonnancement par glisser-déposer des layouts de template** — même
-   besoin que le deck (juste réarranger l'ordre des slides), qui a déjà
-   toute la mécanique (`DeckPanel.tsx` + `ui/reorderFrames.ts`) ; à porter
-   telle quelle sur `TemplatePanel.tsx`, qui n'a aujourd'hui aucune logique
-   de drag.
+8. ~~**Réordonnancement par glisser-déposer des layouts de template.**~~ —
+   fait (audit 2026-08) : même mécanique de drag au pointeur que
+   `DeckPanel.tsx` (`ui/reorderFrames.ts`), portée telle quelle sur
+   `TemplatePanel.tsx` (nouvelle prop `setOrder`).
 9. **Remplacer la convention de nom de calque `[[role]]`** par un contrôle
    actif dans l'éditeur Figma (property/plugin data assignée depuis un
    panneau du plugin), pour guider la création sans devoir renommer les

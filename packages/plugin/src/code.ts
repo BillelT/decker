@@ -713,13 +713,20 @@ async function main(): Promise<void> {
       // Session Google persistée (voir SESSION_TOKEN_STORAGE_KEY) : envoyée
       // AVANT les frames taguées pour que l'UI sache tout de suite si le
       // bouton Export/Create doit être actif ou proposer la connexion.
+      // Toujours envoyé, même quand aucun token n'est stocké (`token: ''`) :
+      // l'UI attend explicitement ce message avant de décider de démarrer
+      // l'OAuth (`startLogin`), pour ne pas déclencher un `POST
+      // /auth/google` inutile pendant que cette lecture est en cours
+      // (audit 2026-08).
       try {
         const storedToken = await figma.clientStorage.getAsync(SESSION_TOKEN_STORAGE_KEY);
-        if (typeof storedToken === 'string' && storedToken.length > 0) {
-          figma.ui.postMessage({ type: 'session-token-restored', token: storedToken });
-        }
+        figma.ui.postMessage({
+          type: 'session-token-restored',
+          token: typeof storedToken === 'string' ? storedToken : '',
+        });
       } catch (err) {
         console.error(err);
+        figma.ui.postMessage({ type: 'session-token-restored', token: '' });
       }
       // Thème forcé lors d'une session précédente : envoyé avant les frames
       // pour que l'UI ne s'affiche pas d'abord dans le thème de Figma avant de

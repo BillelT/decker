@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import type { IRDocument } from '@figma-to-slides/shared';
+import type { IRDocument, ThemeColorRole } from '@figma-to-slides/shared';
 import { UNCALIBRATED_DEFAULTS } from '@figma-to-slides/shared';
+import { THEME_BATCH_SOURCE_ID } from '../mapper/index.js';
 import { createJob, getJob } from './jobStore.js';
 import { runExportJob, retryExportJob } from './runner.js';
 
@@ -122,6 +123,61 @@ describe('runExportJob / retryExportJob', () => {
     expect(mockedApplyBatch).toHaveBeenCalledTimes(1);
     expect(mockedApplyBatch).toHaveBeenCalledWith('token', 'pres-3', expect.objectContaining({ sourceSlideId: 'slideB' }));
     expect(mockedCreatePresentation).toHaveBeenCalledTimes(1);
+  });
+
+  it('includes the theme batch in job.batches from creation, so a first-attempt failure is retryable (audit 2026-08 fix)', async () => {
+    const THEME: Record<ThemeColorRole, { r: number; g: number; b: number }> = {
+      DARK1: { r: 0, g: 0, b: 0 },
+      LIGHT1: { r: 1, g: 1, b: 1 },
+      DARK2: { r: 0.1, g: 0.1, b: 0.1 },
+      LIGHT2: { r: 0.9, g: 0.9, b: 0.9 },
+      ACCENT1: { r: 1, g: 0, b: 0 },
+      ACCENT2: { r: 0, g: 1, b: 0 },
+      ACCENT3: { r: 0, g: 0, b: 1 },
+      ACCENT4: { r: 1, g: 1, b: 0 },
+      ACCENT5: { r: 1, g: 0, b: 1 },
+      ACCENT6: { r: 0, g: 1, b: 1 },
+      HYPERLINK: { r: 0.2, g: 0.2, b: 0.8 },
+      FOLLOWED_HYPERLINK: { r: 0.5, g: 0.2, b: 0.8 },
+    };
+    const doc: IRDocument = { ...buildDoc(['slideA']), theme: THEME };
+
+    mockedCreatePresentation.mockResolvedValue({ presentationId: 'pres-theme', firstSlideObjectId: 'default-slide', masterObjectId: 'master-1' });
+    mockedApplyBatch.mockImplementation(async (_token, _presId, batch) => {
+      if (batch.sourceSlideId === THEME_BATCH_SOURCE_ID) throw new Error('Slides API 500 — transient');
+      return {};
+    });
+
+    // Reproduit ce que `routes/export.ts` fait désormais : la sentinelle
+    // thème doit figurer dans `job.batches` dès la création si `doc.theme`
+    // est présent, sinon son échec n'est jamais suivi ni rejouable.
+    const sourceSlideIds = [THEME_BATCH_SOURCE_ID, ...doc.slides.map((s) => s.sourceNodeId)];
+    const job = await createJob('theme-retry', sourceSlideIds, doc);
+
+    await runExportJob(job, doc, 'token', () => '', UNCALIBRATED_DEFAULTS);
+
+    const failedJob = await getJob('theme-retry');
+    expect(failedJob?.status).toBe('failed');
+    expect(failedJob?.masterObjectId).toBe('master-1');
+    expect(failedJob?.batches).toEqual([
+      { sourceSlideId: THEME_BATCH_SOURCE_ID, status: 'failed', error: expect.stringContaining('Theme (Master colors)') },
+      { sourceSlideId: 'slideA', status: 'applied', error: undefined },
+    ]);
+
+    mockedApplyBatch.mockReset();
+    mockedApplyBatch.mockResolvedValue({});
+
+    await retryExportJob(failedJob!, doc, 'token', () => '', UNCALIBRATED_DEFAULTS);
+
+    const result = await getJob('theme-retry');
+    expect(result?.status).toBe('done');
+    expect(result?.batches).toEqual([
+      { sourceSlideId: THEME_BATCH_SOURCE_ID, status: 'applied', error: undefined },
+      { sourceSlideId: 'slideA', status: 'applied', error: undefined },
+    ]);
+    // Seul le lot thème est rejoué — slideA était déjà `applied`.
+    expect(mockedApplyBatch).toHaveBeenCalledTimes(1);
+    expect(mockedApplyBatch).toHaveBeenCalledWith('token', 'pres-theme', expect.objectContaining({ sourceSlideId: THEME_BATCH_SOURCE_ID }));
   });
 
   it('retryExportJob throws without touching the job when there is no presentationId to retry against', async () => {

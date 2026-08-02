@@ -63,6 +63,18 @@ warnIfBackendUrlIsLocal();
 
 const app = express();
 
+// Nécessaire pour que `req.secure` (utilisé par `routes/auth.ts` pour poser
+// le cookie de session avec `Secure: true` uniquement en HTTPS) reflète la
+// réalité derrière le proxy Vercel : Express ne voit par défaut que la
+// connexion TCP interne (HTTP en clair entre le proxy et la fonction
+// serverless) et ignore l'en-tête `X-Forwarded-Proto` tant que `trust proxy`
+// n'est pas activé — sans ce réglage, `req.secure` vaut `false` même en
+// prod HTTPS, et un cookie `SameSite=None; Secure:false` est silencieusement
+// rejeté par le navigateur (audit 2026-08). `1` fait confiance au premier
+// hop devant l'app (le proxy Vercel), pas à un `X-Forwarded-Proto` arbitraire
+// envoyé par le client lui-même.
+app.set('trust proxy', 1);
+
 // Chrome (donc le Chromium embarqué par Figma Desktop) applique Private
 // Network Access : l'iframe du plugin tourne dans un espace d'adresses
 // "public", et une requête vers localhost (espace "local") déclenche un

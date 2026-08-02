@@ -60,7 +60,10 @@ export async function runExportJob(
       presentationId = created.presentationId;
       defaultSlideObjectId = created.firstSlideObjectId;
       masterObjectId = created.masterObjectId;
-      await updateJob(job.id, { presentationId, presentationUrl: presentationUrl(presentationId) });
+      // Persisté sur le job (pas seulement gardé en variable locale) : sans
+      // ça, `retryExportJob` n'a aucun moyen de reconstruire le lot thème
+      // via `mapDocumentToBatches` en cas de reprise (audit 2026-08).
+      await updateJob(job.id, { presentationId, presentationUrl: presentationUrl(presentationId), masterObjectId });
     }
 
     const batches = mapDocumentToBatches(doc, resolveAssetUrl, calibration, masterObjectId);
@@ -131,8 +134,14 @@ export async function retryExportJob(
       await updateBatchStatus(job.id, id, 'pending');
     }
     const pendingIdSet = new Set(pendingIds);
-    const batches = mapDocumentToBatches(doc, resolveAssetUrl, calibration).filter((b) => pendingIdSet.has(b.sourceSlideId));
+    // `job.masterObjectId` (persisté par `runExportJob` au moment de la
+    // création de la présentation) est nécessaire pour que le lot thème
+    // soit reconstruit ici — sans lui, `mapDocumentToBatches` l'omet
+    // silencieusement et un lot thème `failed`/`pending` ne serait jamais
+    // rejoué (audit 2026-08).
+    const batches = mapDocumentToBatches(doc, resolveAssetUrl, calibration, job.masterObjectId).filter((b) => pendingIdSet.has(b.sourceSlideId));
     const frameNameBySlideId = new Map(doc.slides.map((s) => [s.sourceNodeId, s.frameName]));
+    frameNameBySlideId.set(THEME_BATCH_SOURCE_ID, 'Theme (Master colors)');
     const failedSlideNames = await applyBatches(job.id, presentationId, batches, accessToken, frameNameBySlideId);
     const stillFailed = failedSlideNames.length > 0;
 
