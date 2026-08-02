@@ -1187,7 +1187,7 @@ function App() {
               {exportError}
             </p>
           )}
-          <a href="#" className="f2s-btn f2s-btn--tertiary">
+          <a href="https://ko-fi.com/billelt" target="_blank" rel="noreferrer" className="f2s-btn f2s-btn--tertiary">
             Support me with Ko-fi
           </a>
           {/* Reprise ciblée (backend jobs/runner.ts `retryExportJob`) : ne
