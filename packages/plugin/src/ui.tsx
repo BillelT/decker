@@ -1334,6 +1334,7 @@ function App() {
         skin={skin}
         onSkinChange={changeSkin}
         onClose={() => setSettingsOpen(false)}
+        signedIn={Boolean(sessionToken)}
         accountEmail={accountEmail}
         onSignOut={handleSignOut}
       />
