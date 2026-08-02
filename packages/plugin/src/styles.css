@@ -652,21 +652,21 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   letter-spacing: 0.03em;
   padding: 2px 6px;
   border-radius: 4px;
+  color: #fff;
   white-space: nowrap;
 }
 
 .f2s-log-entry-flag--rasterized {
   background: var(--color-error);
-  color: #fff;
 }
 
 /* Repère plus discret que "Rasterized" : l'élément reste natif et éditable,
    juste pas garanti identique au pixel près — un aplat orange plein
    pèserait visuellement autant qu'un vrai raster. Même teinte de marque,
-   posée en tapis clair (opacité) plutôt qu'en plein. */
+   posée en tapis clair (opacité) plutôt qu'en plein — texte blanc comme
+   "Rasterized" (orange sur orange-40 était illisible, faute de contraste). */
 .f2s-log-entry-flag--visual-diff {
   background: var(--color-orange-40);
-  color: var(--color-orange);
 }
 
 /* ---- Création de template : rapport de contenu communicable ----
