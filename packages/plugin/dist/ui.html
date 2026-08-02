@@ -2459,6 +2459,79 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
     return trimmed.replace(/^["']|["']$/g, "");
   }
 
+  // src/ui/exportCursor.ts
+  function exportCursorFromBatches(batches) {
+    if (!batches || batches.length === 0) return void 0;
+    const index = batches.findIndex((b2) => b2.status === "pending");
+    if (index === -1) return void 0;
+    return { frameId: batches[index].sourceSlideId, index, total: batches.length };
+  }
+
+  // src/serialize/fonts.ts
+  var GOOGLE_FONTS_SAMPLE = /* @__PURE__ */ new Set([
+    "Roboto",
+    "Open Sans",
+    "Inter",
+    "Lato",
+    "Montserrat",
+    "Poppins",
+    "Nunito",
+    "Nunito Sans",
+    "Source Sans Pro",
+    "Raleway",
+    "Ubuntu",
+    "Merriweather",
+    "Playfair Display",
+    "PT Sans",
+    "Noto Sans",
+    "Work Sans",
+    "Rubik",
+    "Mulish",
+    "Karla",
+    "Fira Sans",
+    "DM Sans",
+    "Manrope",
+    "Barlow",
+    "IBM Plex Sans",
+    "Space Grotesk",
+    "Oswald",
+    "Josefin Sans"
+  ]);
+  var SLIDES_SYSTEM_FONTS = /* @__PURE__ */ new Set([
+    "Arial",
+    "Times New Roman",
+    "Verdana",
+    "Georgia",
+    "Courier New",
+    "Trebuchet MS",
+    "Impact",
+    "Comic Sans MS"
+  ]);
+  var AVAILABLE_SLIDES_FONTS = [...GOOGLE_FONTS_SAMPLE, ...SLIDES_SYSTEM_FONTS].sort((a3, b2) => a3.localeCompare(b2));
+  var AVAILABLE_FAMILIES = [...GOOGLE_FONTS_SAMPLE, ...SLIDES_SYSTEM_FONTS].sort((a3, b2) => b2.length - a3.length);
+
+  // src/ui/types.ts
+  var DEFAULT_UI_SKIN = "win95";
+  function skinClassName(skin) {
+    return `f2s-skin--${skin}`;
+  }
+  function postToPlugin(message) {
+    parent.postMessage({ pluginMessage: message }, "*");
+  }
+  function selectSourceNodes(sourceNodeIds) {
+    postToPlugin({ type: "select-nodes", nodeIds: sourceNodeIds });
+  }
+
+  // src/ui/reorderFrames.ts
+  function moveToIndex(order, id, targetIndex) {
+    const idx = order.indexOf(id);
+    if (idx === -1 || targetIndex < 0 || targetIndex >= order.length || idx === targetIndex) return order;
+    const next = [...order];
+    next.splice(idx, 1);
+    next.splice(targetIndex, 0, id);
+    return next;
+  }
+
   // src/ui/retroDither.ts
   var VGA_PALETTE = [
     [0, 0, 0],
@@ -2649,71 +2722,6 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
         /* @__PURE__ */ u3("div", { className: "f2s-retro-bar", children: /* @__PURE__ */ u3("div", { className: "f2s-retro-bar-fill", style: { width: `${Math.round(deckProgress * 100)}%` } }) })
       ] })
     ] });
-  }
-
-  // src/serialize/fonts.ts
-  var GOOGLE_FONTS_SAMPLE = /* @__PURE__ */ new Set([
-    "Roboto",
-    "Open Sans",
-    "Inter",
-    "Lato",
-    "Montserrat",
-    "Poppins",
-    "Nunito",
-    "Nunito Sans",
-    "Source Sans Pro",
-    "Raleway",
-    "Ubuntu",
-    "Merriweather",
-    "Playfair Display",
-    "PT Sans",
-    "Noto Sans",
-    "Work Sans",
-    "Rubik",
-    "Mulish",
-    "Karla",
-    "Fira Sans",
-    "DM Sans",
-    "Manrope",
-    "Barlow",
-    "IBM Plex Sans",
-    "Space Grotesk",
-    "Oswald",
-    "Josefin Sans"
-  ]);
-  var SLIDES_SYSTEM_FONTS = /* @__PURE__ */ new Set([
-    "Arial",
-    "Times New Roman",
-    "Verdana",
-    "Georgia",
-    "Courier New",
-    "Trebuchet MS",
-    "Impact",
-    "Comic Sans MS"
-  ]);
-  var AVAILABLE_SLIDES_FONTS = [...GOOGLE_FONTS_SAMPLE, ...SLIDES_SYSTEM_FONTS].sort((a3, b2) => a3.localeCompare(b2));
-  var AVAILABLE_FAMILIES = [...GOOGLE_FONTS_SAMPLE, ...SLIDES_SYSTEM_FONTS].sort((a3, b2) => b2.length - a3.length);
-
-  // src/ui/types.ts
-  var DEFAULT_UI_SKIN = "win95";
-  function skinClassName(skin) {
-    return `f2s-skin--${skin}`;
-  }
-  function postToPlugin(message) {
-    parent.postMessage({ pluginMessage: message }, "*");
-  }
-  function selectSourceNodes(sourceNodeIds) {
-    postToPlugin({ type: "select-nodes", nodeIds: sourceNodeIds });
-  }
-
-  // src/ui/reorderFrames.ts
-  function moveToIndex(order, id, targetIndex) {
-    const idx = order.indexOf(id);
-    if (idx === -1 || targetIndex < 0 || targetIndex >= order.length || idx === targetIndex) return order;
-    const next = [...order];
-    next.splice(idx, 1);
-    next.splice(targetIndex, 0, id);
-    return next;
   }
 
   // src/ui/DeckPanel.tsx
@@ -3162,7 +3170,8 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
   }
 
   // src/ui.tsx
-  var MIN_SLIDE_VISIBLE_MS = REVEAL_MS + 400;
+  var POLL_INTERVAL_MS = 1e3;
+  var POLL_TIMEOUT_MS = 3 * 60 * 1e3;
   var SELECTION_NOTICE_MS = 4e3;
   var AuthExpiredError = class extends Error {
     constructor() {
@@ -3332,57 +3341,36 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
     const [exportError, setExportError] = d2();
     const [exportSource, setExportSource] = d2();
     const [exportCursor, setExportCursor] = d2();
+    const [exportJobId, setExportJobId] = d2();
+    const [failedFrameIds, setFailedFrameIds] = d2([]);
+    const [retryable, setRetryable] = d2(false);
+    const [retrying, setRetrying] = d2(false);
     const pendingAssets = T2(() => /* @__PURE__ */ new Map(), []);
     const exportModeRef = A2();
-    const jobConclusionRef = A2();
-    const exportPacingTimerRef = A2();
-    function stopExportPacing() {
-      if (exportPacingTimerRef.current !== void 0) {
-        clearTimeout(exportPacingTimerRef.current);
-        exportPacingTimerRef.current = void 0;
-      }
-    }
-    h2(() => () => stopExportPacing(), []);
     function applyConclusion(concluded) {
       setExportCursor(void 0);
       if (concluded.status === "done") {
         setExportState("done");
         setExportProgress(100);
         setResultUrl(concluded.resultUrl);
+        setFailedFrameIds([]);
+        setRetryable(false);
       } else {
         setExportState("error");
         setExportError(concluded.error);
+        setResultUrl(concluded.resultUrl);
+        setFailedFrameIds(concluded.failedFrameIds);
+        setRetryable(concluded.retryable);
       }
     }
-    function beginExportPacing(frameIds) {
-      stopExportPacing();
-      jobConclusionRef.current = void 0;
-      const total = frameIds.length;
-      if (total === 0) return;
-      const step = (index) => {
-        setExportCursor({ frameId: frameIds[index], index, total });
-        setExportProgress(Math.round((index + 1) / total * 100));
-        const wait = () => {
-          exportPacingTimerRef.current = setTimeout(() => {
-            const concluded = jobConclusionRef.current;
-            if (concluded?.status === "failed") {
-              applyConclusion(concluded);
-              return;
-            }
-            if (index < total - 1) {
-              step(index + 1);
-              return;
-            }
-            if (concluded) {
-              applyConclusion(concluded);
-            } else {
-              wait();
-            }
-          }, MIN_SLIDE_VISIBLE_MS);
-        };
-        wait();
-      };
-      step(0);
+    function progressFromBatches(batches) {
+      if (!batches || batches.length === 0) return 0;
+      const settled = batches.filter((b2) => b2.status !== "pending").length;
+      return Math.round(settled / batches.length * 100);
+    }
+    function applyLiveBatches(batches) {
+      if (exportModeRef.current === "deck") setExportCursor(exportCursorFromBatches(batches));
+      setExportProgress(progressFromBatches(batches));
     }
     const sessionTokenRef = A2(sessionToken);
     h2(() => {
@@ -3625,14 +3613,10 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
           throw new Error(body?.error ? `${body.error} (${res.status})` : `Export rejected (${res.status})`);
         }
         const { jobId } = await res.json();
-        const concluded = await pollJob(jobId);
-        if (exportModeRef.current === "deck") {
-          jobConclusionRef.current = concluded;
-        } else {
-          applyConclusion(concluded);
-        }
+        setExportJobId(jobId);
+        const concluded = await pollJob(jobId, applyLiveBatches);
+        applyConclusion(concluded);
       } catch (err) {
-        stopExportPacing();
         setExportState("error");
         setExportCursor(void 0);
         setExportError(err instanceof Error ? err.message : String(err));
@@ -3644,29 +3628,83 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
         console.error(err);
       }
     }
-    async function pollJob(jobId) {
+    function failedIdsFrom(batches) {
+      return (batches ?? []).filter((b2) => b2.status === "failed").map((b2) => b2.sourceSlideId);
+    }
+    async function pollJob(jobId, onUpdate) {
+      let lastPresentationUrl;
+      let lastPresentationId;
       try {
-        for (let i3 = 0; i3 < 120; i3++) {
+        for (let i3 = 0; i3 < Math.ceil(POLL_TIMEOUT_MS / POLL_INTERVAL_MS); i3++) {
           const res = await fetch(`${backend.baseUrl}/export/${jobId}`, { credentials: "include" });
           const job = await res.json();
+          const batches = job.batches;
+          lastPresentationUrl = job.presentationUrl ?? lastPresentationUrl;
+          lastPresentationId = job.presentationId ?? lastPresentationId;
+          onUpdate(batches);
           if (job.status === "done") {
             return { status: "done", resultUrl: job.presentationUrl };
           }
           if (job.status === "failed") {
-            const batchErrors = job.batches?.map((b2) => b2.error).filter((e3) => Boolean(e3));
+            const batchErrors = batches?.map((b2) => b2.error).filter((e3) => Boolean(e3));
+            const failedFrameIds2 = failedIdsFrom(batches);
             return {
               status: "failed",
-              error: batchErrors && batchErrors.length > 0 ? batchErrors.join(" \xB7 ") : job.error ?? "Unknown server-side failure."
+              error: batchErrors && batchErrors.length > 0 ? batchErrors.join(" \xB7 ") : job.error ?? "Unknown server-side failure.",
+              resultUrl: job.presentationUrl,
+              failedFrameIds: failedFrameIds2,
+              retryable: Boolean(job.presentationId) && failedFrameIds2.length > 0
             };
           }
-          await new Promise((r3) => setTimeout(r3, 1500));
+          await new Promise((r3) => setTimeout(r3, POLL_INTERVAL_MS));
         }
         return {
           status: "failed",
-          error: "Export timed out after 3 minutes \u2014 the presentation may still be processing; check your Google Drive before retrying."
+          error: "Export timed out after 3 minutes \u2014 the presentation may still be processing; check your Google Drive, or retry once it settles.",
+          resultUrl: lastPresentationUrl,
+          failedFrameIds: [],
+          retryable: Boolean(lastPresentationId)
         };
       } catch (err) {
-        return { status: "failed", error: err instanceof Error ? err.message : String(err) };
+        return {
+          status: "failed",
+          error: err instanceof Error ? err.message : String(err),
+          resultUrl: lastPresentationUrl,
+          failedFrameIds: [],
+          retryable: Boolean(lastPresentationId)
+        };
+      }
+    }
+    async function handleRetryFailedSlides() {
+      if (!exportJobId) return;
+      setRetrying(true);
+      setExportState("exporting");
+      setExportError(void 0);
+      try {
+        const res = await fetch(`${backend.baseUrl}/export/${exportJobId}/retry`, {
+          method: "POST",
+          headers: sessionTokenRef.current ? { Authorization: `Bearer ${sessionTokenRef.current}` } : void 0,
+          credentials: "include"
+        });
+        if (res.status === 401) throw new AuthExpiredError();
+        if (!res.ok) {
+          const body = await res.json().catch(() => void 0);
+          throw new Error(body?.error ? `${body.error} (${res.status})` : `Retry rejected (${res.status})`);
+        }
+        const concluded = await pollJob(exportJobId, applyLiveBatches);
+        applyConclusion(concluded);
+      } catch (err) {
+        setExportState("error");
+        setExportCursor(void 0);
+        setExportError(err instanceof Error ? err.message : String(err));
+        if (err instanceof AuthExpiredError) {
+          setSessionToken(void 0);
+          postToPlugin({ type: "clear-session-token" });
+          startLogin();
+        }
+        console.error(err);
+      } finally {
+        setRetrying(false);
       }
     }
     async function pollAuthSession(pollId) {
@@ -3764,7 +3802,10 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
       setExportProgress(0);
       setExportSource("deck");
       exportModeRef.current = "deck";
-      beginExportPacing(order);
+      setExportCursor(void 0);
+      setExportJobId(void 0);
+      setFailedFrameIds([]);
+      setRetryable(false);
       const options = {
         mode: "new-presentation",
         rasterScale: 2,
@@ -3782,12 +3823,14 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
       });
     }
     function startTemplateCreate() {
-      stopExportPacing();
       setExportState("exporting");
       setExportProgress(0);
       setExportSource("template");
       exportModeRef.current = "template";
       setExportCursor(void 0);
+      setExportJobId(void 0);
+      setFailedFrameIds([]);
+      setRetryable(false);
       postToPlugin({
         type: "request-template",
         includedFrameIds: templateOrder,
@@ -3974,7 +4017,8 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
         /* @__PURE__ */ u3("div", { className: "f2s-footer-actions", children: [
           exportState === "error" && exportSource === mode && exportError && /* @__PURE__ */ u3("p", { className: "f2s-error f2s-footer-error", title: exportError, children: exportError }),
           /* @__PURE__ */ u3("a", { href: "#", className: "f2s-btn f2s-btn--tertiary", children: "Support me with Ko-fi" }),
-          exportState === "done" && exportSource === mode && resultUrl && /* @__PURE__ */ u3("a", { href: resultUrl, target: "_blank", rel: "noreferrer", className: "f2s-btn f2s-btn--primary", children: "Open presentation" })
+          exportState === "error" && exportSource === mode && retryable && /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--secondary", disabled: retrying, onClick: handleRetryFailedSlides, children: retrying ? "Retrying\u2026" : `Retry ${failedFrameIds.length} failed slide${failedFrameIds.length === 1 ? "" : "s"}` }),
+          (exportState === "done" || exportState === "error") && exportSource === mode && resultUrl && /* @__PURE__ */ u3("a", { href: resultUrl, target: "_blank", rel: "noreferrer", className: "f2s-btn f2s-btn--primary", children: "Open presentation" })
         ] })
       ] }),
       /* @__PURE__ */ u3(

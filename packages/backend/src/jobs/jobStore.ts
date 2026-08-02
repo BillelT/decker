@@ -1,3 +1,4 @@
+import type { IRDocument } from '@figma-to-slides/shared';
 import { getRedis } from '../kv.js';
 
 export type BatchStatus = 'pending' | 'applied' | 'failed';
@@ -18,6 +19,14 @@ export interface JobRecord {
   batches: BatchState[];
   createdAt: number;
   updatedAt: number;
+  /**
+   * IRDocument original, conservé pour permettre une reprise ciblée des
+   * lots échoués (spec §7.0.6, POST /export/:jobId/retry) : rejouer un lot
+   * exige de reconstruire son `RequestBatch` via `mapDocumentToBatches`,
+   * qui a besoin du document complet. Absent si le job a été créé sans
+   * (voir tests) — dans ce cas la reprise n'est simplement pas possible.
+   */
+  doc?: IRDocument;
 }
 
 /**
@@ -31,11 +40,12 @@ export interface JobRecord {
 const JOB_TTL_SEC = 24 * 3600;
 const jobKey = (id: string) => `f2s:job:${id}`;
 
-export async function createJob(id: string, sourceSlideIds: string[]): Promise<JobRecord> {
+export async function createJob(id: string, sourceSlideIds: string[], doc?: IRDocument): Promise<JobRecord> {
   const job: JobRecord = {
     id,
     status: 'pending',
     batches: sourceSlideIds.map((sourceSlideId) => ({ sourceSlideId, status: 'pending' })),
+    doc,
     createdAt: Date.now(),
     updatedAt: Date.now(),
   };
