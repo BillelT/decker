@@ -281,6 +281,8 @@ function App() {
   // comme avant (aplats RGB statiques).
   const [templateSubView, setTemplateSubView] = useState<'layouts' | 'style'>('layouts');
   const [colorRoles, setColorRoles] = useState<Record<string, ThemeColorRole>>({});
+  /** Hex tapé à la main pour un rôle dans l'onglet Style, prioritaire sur la couleur détectée assignée via `colorRoles` (voir `serialize/templateTheme.ts::resolveThemeRoleHexes`). */
+  const [roleColorOverrides, setRoleColorOverrides] = useState<Partial<Record<ThemeColorRole, string>>>({});
   const templateColors = useMemo(
     () => aggregateColorSwatches(templateOrder.map((id) => templateLayouts[id]?.colors ?? [])),
     [templateOrder, templateLayouts],
@@ -1027,6 +1029,7 @@ function App() {
       presentationTitle: templateTitle.trim() || 'Figma template',
       fontOverrides,
       colorRoles,
+      roleColorOverrides,
     });
   }
 
@@ -1278,7 +1281,14 @@ function App() {
           exportCursor={exporting && exportSource === 'template' ? exportCursor : undefined}
         />
       ) : (
-        <TemplateStylePanel colors={templateColors} fonts={templateFonts} colorRoles={colorRoles} setColorRoles={setColorRoles} />
+        <TemplateStylePanel
+          colors={templateColors}
+          fonts={templateFonts}
+          colorRoles={colorRoles}
+          setColorRoles={setColorRoles}
+          roleColorOverrides={roleColorOverrides}
+          setRoleColorOverrides={setRoleColorOverrides}
+        />
       )}
 
       <footer className="f2s-footer">
