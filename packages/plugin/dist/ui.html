@@ -53,6 +53,12 @@ html.f2s-theme-dark {
   --color-border: #332c26;
   --color-surface: #211c17;
   --color-surface-muted: #2a231d;
+  /* Non redéfini jusqu'ici : .f2s-log-entry (background: var(--color-gray-light))
+     restait un gris clair fixe même en thème sombre — illisible et
+     incohérent posé sur --color-bg (audit). Même teinte que --color-border
+     ci-dessus : c'est déjà l'équivalent sombre établi de ce gris clair
+     (--color-border = var(--color-gray-light) en thème clair, cf. :root). */
+  --color-gray-light: #332c26;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -64,6 +70,7 @@ html.f2s-theme-dark {
     --color-border: #332c26;
     --color-surface: #211c17;
     --color-surface-muted: #2a231d;
+    --color-gray-light: #332c26;
   }
 }
 
@@ -549,7 +556,12 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
 
 .f2s-canvas-preview {
   max-width: 640px;
-  max-height: 100%;
+  /* Moins que 100% : sur une frame haute, la preview seule remplissait tout
+     le canvas visible et les Dimensions/Logs disparaissaient entièrement
+     sous le pli, sans le moindre indice qu'il y avait plus à voir en
+     scrollant. Un plafond plus bas garantit qu'un aperçu du bloc Logs reste
+     toujours visible (audit) — .f2s-canvas reste scrollable pour le reste. */
+  max-height: 65%;
   flex: none;
   border: 1px solid var(--color-scrollbar);
 }
