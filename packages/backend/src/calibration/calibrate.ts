@@ -14,6 +14,21 @@ import { writeCalibrationReport, type BboxDeviation, type FixtureResult } from '
 const SSIM_THRESHOLD_RECTS = 0.99;
 const BBOX_THRESHOLD_PT_RECTS = 0.5;
 
+/**
+ * 1pt = 1/72 inch = 12700 EMU (English Metric Units) — même si nos requêtes
+ * `batchUpdate` écrivent le `transform` en `unit: 'PT'` (mapper/transform.ts),
+ * `presentations.get` renvoie les positions en EMU (confirmé en conditions
+ * réelles, audit 2026-08 : écart mesuré = position attendue × 12700 pile,
+ * ex. 20pt attendu → 254000 EMU réel). Sans cette conversion, le calcul
+ * d'écart en points comparait des unités différentes et rapportait un écart
+ * de plusieurs centaines de milliers de points sur une position en réalité
+ * parfaite.
+ */
+const EMU_PER_PT = 12700;
+function toPt(magnitude: number, unit: 'PT' | 'EMU' | undefined): number {
+  return unit === 'PT' ? magnitude : magnitude / EMU_PER_PT;
+}
+
 async function main(): Promise<void> {
   const sessionToken = process.env.F2S_SESSION_TOKEN;
   if (!sessionToken) {
@@ -76,7 +91,10 @@ async function runRectsFixture(accessToken: string): Promise<FixtureResult> {
   const renderedPng = Buffer.from(await (await fetch(thumb.contentUrl)).arrayBuffer());
 
   const presentation = (await getPresentation(accessToken, presentationId)) as {
-    slides: { objectId: string; pageElements: { objectId: string; transform: { translateX: number; translateY: number } }[] }[];
+    slides: {
+      objectId: string;
+      pageElements: { objectId: string; transform: { translateX: number; translateY: number; unit?: 'PT' | 'EMU' } }[];
+    }[];
   };
   const page = presentation.slides.find((p) => p.objectId === pageObjectId);
 
@@ -85,8 +103,8 @@ async function runRectsFixture(accessToken: string): Promise<FixtureResult> {
     const expectedXPt = el.rect.x * scale + offsetXPt;
     const expectedYPt = el.rect.y * scale + offsetYPt;
     const actual = page?.pageElements.find((pe) => pe.objectId === el.id);
-    const actualXPt = actual?.transform.translateX ?? NaN;
-    const actualYPt = actual?.transform.translateY ?? NaN;
+    const actualXPt = actual ? toPt(actual.transform.translateX, actual.transform.unit) : NaN;
+    const actualYPt = actual ? toPt(actual.transform.translateY, actual.transform.unit) : NaN;
     const deviationPt = Math.hypot(actualXPt - expectedXPt, actualYPt - expectedYPt);
     return { objectId: el.id, expectedXPt, expectedYPt, actualXPt, actualYPt, deviationPt };
   });
