@@ -30,6 +30,20 @@ export function readFigmaTheme(): ThemePreference {
   return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
+/**
+ * Override réellement affiché au tout premier rendu : comme pour le skin
+ * (voir `readInitialSkin`), code.ts injecte déjà la classe `f2s-theme-*`
+ * persistée dans le HTML avant de créer l'iframe, donc <html> la porte dès
+ * le montage. Partir d'ici plutôt que de `undefined` évite qu'un thème
+ * forcé ne s'affiche d'abord dans le thème de Figma avant de basculer.
+ */
+export function readInitialThemeOverride(): ThemePreference | undefined {
+  const root = document.documentElement;
+  if (root.classList.contains(OVERRIDE_CLASS.light)) return 'light';
+  if (root.classList.contains(OVERRIDE_CLASS.dark)) return 'dark';
+  return undefined;
+}
+
 /** Applique (ou retire, si `undefined`) le thème forcé par l'utilisateur. */
 export function applyThemeOverride(theme: ThemePreference | undefined): void {
   const root = document.documentElement;
