@@ -448,6 +448,42 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   color: var(--color-black-70);
 }
 
+.f2s-frame-index {
+  font-size: 12px;
+  color: var(--color-black-70);
+  flex: none;
+}
+
+/* Nom de la vignette (mode template) : visuellement du texte au repos, se
+   révèle comme un champ éditable au survol de `.f2s-frame-info` ou au focus
+   — le libellé se tronque avec ellipsis plutôt que de pousser l'index ou le
+   bouton de suppression hors de leur place. */
+.f2s-frame-name-input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 12px;
+  color: var(--color-black-70);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 2px 4px;
+  margin: -2px -4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: text;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.f2s-frame-info:hover .f2s-frame-name-input,
+.f2s-frame-name-input:focus {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
+  outline: none;
+}
+
 .f2s-frame-controls {
   display: flex;
   gap: 4px;
@@ -1158,8 +1194,9 @@ html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-icon-
 }
 
 .f2s-tab.is-active {
-  background: var(--color-orange);
-  color: var(--color-bg);
+  background: #ffffff;
+  color: var(--color-orange);
+  box-shadow: 0 1px 2px rgba(18, 15, 13, 0.16);
 }
 
 /* ---- Aperçu d'export "Windows 95" ----
@@ -1522,6 +1559,8 @@ html.f2s-skin--win95 .f2s-toolbar-label {
 
 html.f2s-skin--win95 .f2s-toolbar-muted,
 html.f2s-skin--win95 .f2s-frame-text,
+html.f2s-skin--win95 .f2s-frame-index,
+html.f2s-skin--win95 .f2s-frame-name-input,
 html.f2s-skin--win95 .f2s-dim-unit,
 html.f2s-skin--win95 .f2s-dim-sep,
 html.f2s-skin--win95 .f2s-font-original,
@@ -1622,6 +1661,13 @@ html.f2s-skin--win95 .f2s-font-dropdown:focus {
 html.f2s-skin--win95 .f2s-title-input::placeholder {
   color: var(--w95-shadow);
   opacity: 1;
+}
+
+html.f2s-skin--win95 .f2s-frame-info:hover .f2s-frame-name-input,
+html.f2s-skin--win95 .f2s-frame-name-input:focus {
+  border-radius: 0;
+  background: var(--w95-white);
+  box-shadow: var(--w95-in);
 }
 
 /* ---- Rail de vignettes + zone principale : deux zones creusées ---- */
@@ -3082,6 +3128,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
     hasCanvasSelection,
     notice,
     onRemove,
+    onRename,
     exportCursor
   }) {
     const [dragId, setDragId] = d2();
@@ -3199,11 +3246,21 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
                   }
                 ),
                 /* @__PURE__ */ u3("div", { className: "f2s-frame-info", children: [
-                  /* @__PURE__ */ u3("span", { className: "f2s-frame-text", children: [
+                  /* @__PURE__ */ u3("span", { className: "f2s-frame-index", children: [
                     index + 1,
-                    ". ",
-                    layout.name
+                    "."
                   ] }),
+                  /* @__PURE__ */ u3(
+                    "input",
+                    {
+                      type: "text",
+                      className: "f2s-frame-name-input",
+                      value: layout.name,
+                      title: layout.name,
+                      "aria-label": "Layout name",
+                      onInput: (e3) => onRename(id, e3.target.value)
+                    }
+                  ),
                   /* @__PURE__ */ u3("div", { className: "f2s-frame-controls", children: /* @__PURE__ */ u3("button", { type: "button", className: "f2s-icon-btn", title: "Remove", onClick: () => onRemove(id), children: "\u2715" }) })
                 ] })
               ]
@@ -4157,6 +4214,13 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
       });
       setActiveTemplateId((prev) => prev === id ? void 0 : prev);
     }
+    function renameTemplateLayout(id, name) {
+      setTemplateLayouts((prev) => {
+        const layout = prev[id];
+        if (!layout) return prev;
+        return { ...prev, [id]: { ...layout, name } };
+      });
+    }
     function startExport() {
       setExportState("exporting");
       setExportProgress(0);
@@ -4245,7 +4309,32 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
               title: exporting ? "An export is running \u2014 wait for it to finish before switching modes." : mode === "deck" ? "Build a reusable Slides template with tagged placeholders." : "Back to exporting a one-off deck.",
               children: mode === "deck" ? "Create a template" : "Back to deck export"
             }
-          )
+          ),
+          mode === "template" && /* @__PURE__ */ u3("div", { className: "f2s-tabs", role: "tablist", "aria-label": "Template view", children: [
+            /* @__PURE__ */ u3(
+              "button",
+              {
+                type: "button",
+                role: "tab",
+                "aria-selected": templateSubView === "layouts",
+                className: `f2s-tab${templateSubView === "layouts" ? " is-active" : ""}`,
+                onClick: () => setTemplateSubView("layouts"),
+                children: "Layouts"
+              }
+            ),
+            /* @__PURE__ */ u3(
+              "button",
+              {
+                type: "button",
+                role: "tab",
+                "aria-selected": templateSubView === "style",
+                title: "Assign a Slides theme color role to colors used across the whole template.",
+                className: `f2s-tab${templateSubView === "style" ? " is-active" : ""}`,
+                onClick: () => setTemplateSubView("style"),
+                children: "Style"
+              }
+            )
+          ] })
         ] }),
         mode === "deck" ? /* @__PURE__ */ u3("div", { className: "f2s-topbar-actions", children: [
           /* @__PURE__ */ u3(
@@ -4343,34 +4432,6 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
               }
             )
           ] }, s3.original))
-        ] }),
-        mode === "template" && /* @__PURE__ */ u3("div", { className: "f2s-toolbar-group", children: [
-          /* @__PURE__ */ u3("span", { className: "f2s-toolbar-label", children: "View:" }),
-          /* @__PURE__ */ u3("div", { className: "f2s-tabs", role: "tablist", "aria-label": "Template view", children: [
-            /* @__PURE__ */ u3(
-              "button",
-              {
-                type: "button",
-                role: "tab",
-                "aria-selected": templateSubView === "layouts",
-                className: `f2s-tab${templateSubView === "layouts" ? " is-active" : ""}`,
-                onClick: () => setTemplateSubView("layouts"),
-                children: "Layouts"
-              }
-            ),
-            /* @__PURE__ */ u3(
-              "button",
-              {
-                type: "button",
-                role: "tab",
-                "aria-selected": templateSubView === "style",
-                title: "Assign a Slides theme color role to colors used across the whole template.",
-                className: `f2s-tab${templateSubView === "style" ? " is-active" : ""}`,
-                onClick: () => setTemplateSubView("style"),
-                children: "Style"
-              }
-            )
-          ] })
         ] })
       ] }) }),
       mode === "deck" ? /* @__PURE__ */ u3(
@@ -4399,6 +4460,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
           hasCanvasSelection,
           notice: templateSelectionNotice,
           onRemove: removeTemplateLayout,
+          onRename: renameTemplateLayout,
           exportCursor: exporting && exportSource === "template" ? exportCursor : void 0
         }
       ) : /* @__PURE__ */ u3(TemplateStylePanel, { colors: templateColors, fonts: templateFonts, colorRoles, setColorRoles }),

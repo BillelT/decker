@@ -24,6 +24,7 @@ export interface TemplatePanelProps {
   hasCanvasSelection: boolean;
   notice: string | undefined;
   onRemove: (id: string) => void;
+  onRename: (id: string, name: string) => void;
   /** Layout dont le lot est en cours d'application côté backend, s'il y a une création de template en cours. */
   exportCursor?: ExportCursor;
 }
@@ -44,6 +45,7 @@ export function TemplatePanel({
   hasCanvasSelection,
   notice,
   onRemove,
+  onRename,
   exportCursor,
 }: TemplatePanelProps) {
   const [dragId, setDragId] = useState<string | undefined>();
@@ -220,9 +222,15 @@ export function TemplatePanel({
                 {layout.previewDataUrl && <img src={layout.previewDataUrl} alt={layout.name} draggable={false} />}
               </button>
               <div className="f2s-frame-info">
-                <span className="f2s-frame-text">
-                  {index + 1}. {layout.name}
-                </span>
+                <span className="f2s-frame-index">{index + 1}.</span>
+                <input
+                  type="text"
+                  className="f2s-frame-name-input"
+                  value={layout.name}
+                  title={layout.name}
+                  aria-label="Layout name"
+                  onInput={(e) => onRename(id, (e.target as HTMLInputElement).value)}
+                />
                 <div className="f2s-frame-controls">
                   <button type="button" className="f2s-icon-btn" title="Remove" onClick={() => onRemove(id)}>
                     ✕

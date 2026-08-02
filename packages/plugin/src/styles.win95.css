@@ -171,6 +171,8 @@ html.f2s-skin--win95 .f2s-toolbar-label {
 
 html.f2s-skin--win95 .f2s-toolbar-muted,
 html.f2s-skin--win95 .f2s-frame-text,
+html.f2s-skin--win95 .f2s-frame-index,
+html.f2s-skin--win95 .f2s-frame-name-input,
 html.f2s-skin--win95 .f2s-dim-unit,
 html.f2s-skin--win95 .f2s-dim-sep,
 html.f2s-skin--win95 .f2s-font-original,
@@ -271,6 +273,13 @@ html.f2s-skin--win95 .f2s-font-dropdown:focus {
 html.f2s-skin--win95 .f2s-title-input::placeholder {
   color: var(--w95-shadow);
   opacity: 1;
+}
+
+html.f2s-skin--win95 .f2s-frame-info:hover .f2s-frame-name-input,
+html.f2s-skin--win95 .f2s-frame-name-input:focus {
+  border-radius: 0;
+  background: var(--w95-white);
+  box-shadow: var(--w95-in);
 }
 
 /* ---- Rail de vignettes + zone principale : deux zones creusées ---- */
