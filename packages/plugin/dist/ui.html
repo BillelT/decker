@@ -3462,7 +3462,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
   function CloseIcon() {
     return /* @__PURE__ */ u3("svg", { width: "14", height: "14", viewBox: "0 0 14 14", fill: "none", xmlns: "http://www.w3.org/2000/svg", "aria-hidden": "true", children: /* @__PURE__ */ u3("path", { d: "m3 3 8 8M11 3l-8 8", stroke: "currentColor", strokeWidth: "1.6", strokeLinecap: "round" }) });
   }
-  function SettingsModal({ open, theme, onThemeChange, skin, onSkinChange, onClose, accountEmail, onSignOut }) {
+  function SettingsModal({ open, theme, onThemeChange, skin, onSkinChange, onClose, signedIn, accountEmail, onSignOut }) {
     const [mounted, setMounted] = d2(open);
     const [entered, setEntered] = d2(false);
     const dialogRef = A2(null);
@@ -3517,9 +3517,9 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
                       "Signed in as ",
                       /* @__PURE__ */ u3("strong", { children: accountEmail }),
                       "."
-                    ] }) : "Not signed in." })
+                    ] }) : signedIn ? "Signed in (email unavailable \u2014 sign out and back in to see it)." : "Not signed in." })
                   ] }),
-                  accountEmail && /* @__PURE__ */ u3(
+                  signedIn && /* @__PURE__ */ u3(
                     "button",
                     {
                       type: "button",
@@ -4562,6 +4562,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
           skin,
           onSkinChange: changeSkin,
           onClose: () => setSettingsOpen(false),
+          signedIn: Boolean(sessionToken),
           accountEmail,
           onSignOut: handleSignOut
         }

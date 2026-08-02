@@ -28,7 +28,9 @@ interface SettingsModalProps {
   skin: UiSkin;
   onSkinChange: (skin: UiSkin) => void;
   onClose: () => void;
-  /** Email du compte Google connecté (GET /auth/me) — undefined tant qu'il n'est pas encore connu ou que la session n'existe pas. */
+  /** Une session Google existe (sessionToken non vide) — indépendant de accountEmail : une session créée avant l'ajout du scope `userinfo.email` reste valide (export fonctionnel) mais n'a pas d'email connu. */
+  signedIn: boolean;
+  /** Email du compte Google connecté (GET /auth/me) — undefined si inconnu (session plus ancienne que le scope email) ou pas encore chargé. */
   accountEmail: string | undefined;
   onSignOut: () => void;
 }
@@ -52,7 +54,7 @@ function CloseIcon() {
   );
 }
 
-export function SettingsModal({ open, theme, onThemeChange, skin, onSkinChange, onClose, accountEmail, onSignOut }: SettingsModalProps) {
+export function SettingsModal({ open, theme, onThemeChange, skin, onSkinChange, onClose, signedIn, accountEmail, onSignOut }: SettingsModalProps) {
   // La modale reste montée le temps de l'animation de sortie : la démonter dès
   // `open === false` couperait la transition net (rien à animer une fois le
   // nœud retiré du DOM).
@@ -127,12 +129,14 @@ export function SettingsModal({ open, theme, onThemeChange, skin, onSkinChange, 
                   <>
                     Signed in as <strong>{accountEmail}</strong>.
                   </>
+                ) : signedIn ? (
+                  'Signed in (email unavailable — sign out and back in to see it).'
                 ) : (
                   'Not signed in.'
                 )}
               </p>
             </div>
-            {accountEmail && (
+            {signedIn && (
               <button
                 type="button"
                 className="f2s-btn f2s-btn--secondary"
