@@ -670,12 +670,35 @@ function watchFramesForLiveRefresh(
 }
 
 async function main(): Promise<void> {
+  // Skin et thème forcé lus AVANT de créer l'iframe (plutôt qu'après, via le
+  // round-trip `ui-ready` → `skin-restored`/`theme-preference-restored`) :
+  // sinon l'UI monte d'abord avec le skin/thème par défaut, le temps que ce
+  // round-trip aboutisse, puis bascule sous les yeux de l'utilisateur — flash
+  // très visible quand le choix persisté n'est pas win95/le thème système.
+  // En les injectant directement dans les classes de `<html>` avant le tout
+  // premier rendu, il n'y a plus rien à corriger après coup.
+  let storedSkin: unknown;
+  let storedTheme: unknown;
+  try {
+    [storedSkin, storedTheme] = await Promise.all([
+      figma.clientStorage.getAsync(UI_SKIN_STORAGE_KEY),
+      figma.clientStorage.getAsync(THEME_STORAGE_KEY),
+    ]);
+  } catch (err) {
+    console.error(err);
+  }
+  const initialSkin = storedSkin === 'win95' || storedSkin === 'modern' || storedSkin === 'hybrid' ? storedSkin : 'win95';
+  const initialThemeClass = storedTheme === 'light' ? 'f2s-theme-light' : storedTheme === 'dark' ? 'f2s-theme-dark' : '';
+  const html = __html__
+    .replace('__F2S_INITIAL_SKIN__', `f2s-skin--${initialSkin}`)
+    .replace('__F2S_INITIAL_THEME__', initialThemeClass);
+
   // Layout à deux colonnes (rail de miniatures + canvas) : plus large que
   // l'ancien panneau vertical, pour laisser une vraie zone de
   // prévisualisation. `themeColors: true` fait poser par Figma la classe
   // `figma-dark`/`figma-light` sur <html> — le CSS de l'UI s'en sert pour
   // basculer sa palette (styles.css).
-  figma.showUI(__html__, { width: 960, height: 640, themeColors: true });
+  figma.showUI(html, { width: 960, height: 640, themeColors: true });
 
   const pending: PendingSlide[] = [];
   // Store distinct du deck : basculer entre "Export" et "Create a template"
@@ -713,17 +736,12 @@ async function main(): Promise<void> {
         type: 'canvas-selection-changed',
         hasSelection: figma.currentPage.selection.some(isExportable),
       });
-      // Skin persisté : envoyé en tout premier pour que l'UI repeigne son
-      // premier rendu avant d'afficher quoi que ce soit d'autre (sinon on
-      // verrait le skin par défaut clignoter vers celui choisi).
-      try {
-        const storedSkin = await figma.clientStorage.getAsync(UI_SKIN_STORAGE_KEY);
-        if (storedSkin === 'win95' || storedSkin === 'modern' || storedSkin === 'hybrid') {
-          figma.ui.postMessage({ type: 'skin-restored', skin: storedSkin });
-        }
-      } catch (err) {
-        console.error(err);
-      }
+      // Skin persisté : déjà lu plus haut (avant `showUI`, pour poser la
+      // bonne classe dès le premier rendu de `<html>`) — on ne relit pas
+      // `clientStorage`, on synchronise juste l'état React avec la même
+      // valeur pour que les prochains re-renders (changement de skin, etc.)
+      // partent d'un état cohérent.
+      figma.ui.postMessage({ type: 'skin-restored', skin: initialSkin });
       // Session Google persistée (voir SESSION_TOKEN_STORAGE_KEY) : envoyée
       // AVANT les frames taguées pour que l'UI sache tout de suite si le
       // bouton Export/Create doit être actif ou proposer la connexion.
@@ -742,16 +760,10 @@ async function main(): Promise<void> {
         console.error(err);
         figma.ui.postMessage({ type: 'session-token-restored', token: '' });
       }
-      // Thème forcé lors d'une session précédente : envoyé avant les frames
-      // pour que l'UI ne s'affiche pas d'abord dans le thème de Figma avant de
-      // basculer sous les yeux de l'utilisateur.
-      try {
-        const storedTheme = await figma.clientStorage.getAsync(THEME_STORAGE_KEY);
-        if (storedTheme === 'light' || storedTheme === 'dark') {
-          figma.ui.postMessage({ type: 'theme-preference-restored', theme: storedTheme });
-        }
-      } catch (err) {
-        console.error(err);
+      // Thème forcé lors d'une session précédente : même chose que le skin
+      // ci-dessus, déjà lu avant `showUI` — on resynchronise juste l'état React.
+      if (storedTheme === 'light' || storedTheme === 'dark') {
+        figma.ui.postMessage({ type: 'theme-preference-restored', theme: storedTheme });
       }
       try {
         await loadTaggedFrames(pending, templatePending, idGen);

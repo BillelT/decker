@@ -6,8 +6,8 @@ import { exportCursorFromBatches, type ExportBatch, type ExportCursor } from './
 import { AVAILABLE_SLIDES_FONTS } from './serialize/fonts.js';
 import { aggregateColorSwatches, aggregateFontUsages } from './serialize/templateSummary.js';
 import {
-  DEFAULT_UI_SKIN,
   postToPlugin,
+  readInitialSkin,
   skinClassName,
   type AppMode,
   type FontSubstitution,
@@ -25,7 +25,14 @@ import { DeckPanel } from './ui/DeckPanel';
 import { TemplatePanel } from './ui/TemplatePanel';
 import { TemplateStylePanel } from './ui/TemplateStylePanel';
 import { SettingsModal } from './ui/SettingsModal';
-import { applyThemeOverride, isThemePreference, readFigmaTheme, watchFigmaTheme, type ThemePreference } from './ui/theme.js';
+import {
+  applyThemeOverride,
+  isThemePreference,
+  readFigmaTheme,
+  readInitialThemeOverride,
+  watchFigmaTheme,
+  type ThemePreference,
+} from './ui/theme.js';
 
 type AuthPollResult = { status: 'pending' } | { status: 'ready'; sessionToken: string } | { status: 'error'; message: string };
 
@@ -118,8 +125,11 @@ function App() {
 
   // Habillage de l'UI — Windows 95 par défaut, l'habillage du design system
   // ("modern") restant accessible depuis le footer. Le choix est persisté
-  // côté sandbox (clientStorage) et restauré au montage via `skin-restored`.
-  const [skin, setSkin] = useState<UiSkin>(DEFAULT_UI_SKIN);
+  // côté sandbox (clientStorage) : code.ts pose déjà la bonne classe sur
+  // <html> avant même le montage de React (voir `readInitialSkin`), donc
+  // c'est de là que part l'état initial — pas de `DEFAULT_UI_SKIN` qu'un
+  // premier rendu afficherait avant que `skin-restored` n'arrive.
+  const [skin, setSkin] = useState<UiSkin>(() => readInitialSkin());
 
   // Les deux feuilles de style scopent leurs règles sur cette classe : elle
   // vit sur <html> plutôt que sur #app pour pouvoir aussi repeindre le fond
@@ -200,8 +210,12 @@ function App() {
   // Deux niveaux : le thème de Figma (suivi tant que l'utilisateur n'a rien
   // choisi) et l'override explicite posé depuis la modale de réglages. Le tab
   // menu affiche l'override s'il existe, sinon le thème réellement rendu.
+  // `themeOverride` part de la classe déjà posée par code.ts sur <html>
+  // avant le montage (voir `readInitialThemeOverride`), pas de `undefined` —
+  // sinon un thème forcé s'afficherait d'abord dans le thème de Figma avant
+  // de basculer une fois `theme-preference-restored` reçu.
   const [figmaTheme, setFigmaTheme] = useState<ThemePreference>(() => readFigmaTheme());
-  const [themeOverride, setThemeOverride] = useState<ThemePreference | undefined>();
+  const [themeOverride, setThemeOverride] = useState<ThemePreference | undefined>(() => readInitialThemeOverride());
   const theme = themeOverride ?? figmaTheme;
 
   useEffect(() => watchFigmaTheme(setFigmaTheme), []);

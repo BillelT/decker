@@ -1522,7 +1522,20 @@
     });
   }
   async function main() {
-    figma.showUI(__html__, { width: 960, height: 640, themeColors: true });
+    let storedSkin;
+    let storedTheme;
+    try {
+      [storedSkin, storedTheme] = await Promise.all([
+        figma.clientStorage.getAsync(UI_SKIN_STORAGE_KEY),
+        figma.clientStorage.getAsync(THEME_STORAGE_KEY)
+      ]);
+    } catch (err) {
+      console.error(err);
+    }
+    const initialSkin = storedSkin === "win95" || storedSkin === "modern" || storedSkin === "hybrid" ? storedSkin : "win95";
+    const initialThemeClass = storedTheme === "light" ? "f2s-theme-light" : storedTheme === "dark" ? "f2s-theme-dark" : "";
+    const html = __html__.replace("__F2S_INITIAL_SKIN__", `f2s-skin--${initialSkin}`).replace("__F2S_INITIAL_THEME__", initialThemeClass);
+    figma.showUI(html, { width: 960, height: 640, themeColors: true });
     const pending = [];
     const templatePending = [];
     const idGen = createIdGenerator(figma.root.id.slice(0, 8));
@@ -1540,14 +1553,7 @@
           type: "canvas-selection-changed",
           hasSelection: figma.currentPage.selection.some(isExportable)
         });
-        try {
-          const storedSkin = await figma.clientStorage.getAsync(UI_SKIN_STORAGE_KEY);
-          if (storedSkin === "win95" || storedSkin === "modern" || storedSkin === "hybrid") {
-            figma.ui.postMessage({ type: "skin-restored", skin: storedSkin });
-          }
-        } catch (err) {
-          console.error(err);
-        }
+        figma.ui.postMessage({ type: "skin-restored", skin: initialSkin });
         try {
           const storedToken = await figma.clientStorage.getAsync(SESSION_TOKEN_STORAGE_KEY);
           figma.ui.postMessage({
@@ -1558,13 +1564,8 @@
           console.error(err);
           figma.ui.postMessage({ type: "session-token-restored", token: "" });
         }
-        try {
-          const storedTheme = await figma.clientStorage.getAsync(THEME_STORAGE_KEY);
-          if (storedTheme === "light" || storedTheme === "dark") {
-            figma.ui.postMessage({ type: "theme-preference-restored", theme: storedTheme });
-          }
-        } catch (err) {
-          console.error(err);
+        if (storedTheme === "light" || storedTheme === "dark") {
+          figma.ui.postMessage({ type: "theme-preference-restored", theme: storedTheme });
         }
         try {
           await loadTaggedFrames(pending, templatePending, idGen);
