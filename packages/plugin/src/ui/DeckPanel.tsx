@@ -321,7 +321,13 @@ export function DeckPanel({
               </div>
               {previewedFrame.warnings && previewedFrame.warnings.length > 0 ? (
                 <ul className="f2s-tmpl-list">
-                  {previewedFrame.warnings.map((w, i) => {
+                  {/* Les éléments rasterisés (perte d'édition native) passent en
+                      tête de liste — le repère le plus important, celui qu'on
+                      veut voir sans avoir à parcourir toute la liste. Tri stable :
+                      l'ordre relatif au sein de chaque groupe ne bouge pas. */}
+                  {[...previewedFrame.warnings]
+                    .sort((a, b) => (logEntryFlag(a.code) === 'rasterized' ? 0 : 1) - (logEntryFlag(b.code) === 'rasterized' ? 0 : 1))
+                    .map((w, i) => {
                     const flag = logEntryFlag(w.code);
                     return (
                       <li key={i}>

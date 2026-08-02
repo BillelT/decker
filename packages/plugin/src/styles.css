@@ -592,7 +592,7 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   font-family: inherit;
   font-size: 12px;
   color: var(--color-text);
-  background: var(--color-surface-muted);
+  background: var(--color-gray-light);
   border: 1px solid var(--color-border);
   border-radius: 6px;
   padding: 6px 10px;
@@ -631,17 +631,17 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   white-space: nowrap;
 }
 
+/* Seuls les éléments RASTERISÉS (perte d'édition native) méritent une
+   bordure rouge qui attire l'œil sur toute la liste — un warning "blocking"
+   (mode template) ou "may look different" (police substituée, radius
+   approximé…) reste un élément natif éditable, la bordure colorée serait
+   trompeuse à côté d'un vrai raster (audit). */
 .f2s-log-entry--blocking {
-  border-color: var(--color-error);
   color: var(--color-error);
 }
 
 .f2s-log-entry--rasterized {
   border-color: var(--color-error);
-}
-
-.f2s-log-entry--visual-diff {
-  border-color: var(--color-orange);
 }
 
 .f2s-log-entry-flag {
@@ -652,16 +652,21 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   letter-spacing: 0.03em;
   padding: 2px 6px;
   border-radius: 4px;
-  color: #fff;
   white-space: nowrap;
 }
 
 .f2s-log-entry-flag--rasterized {
   background: var(--color-error);
+  color: #fff;
 }
 
+/* Repère plus discret que "Rasterized" : l'élément reste natif et éditable,
+   juste pas garanti identique au pixel près — un aplat orange plein
+   pèserait visuellement autant qu'un vrai raster. Même teinte de marque,
+   posée en tapis clair (opacité) plutôt qu'en plein. */
 .f2s-log-entry-flag--visual-diff {
-  background: var(--color-orange);
+  background: var(--color-orange-40);
+  color: var(--color-orange);
 }
 
 /* ---- Création de template : rapport de contenu communicable ----
