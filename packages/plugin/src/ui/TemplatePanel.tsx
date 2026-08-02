@@ -243,18 +243,6 @@ export function TemplatePanel({
       </aside>
 
       <main className="f2s-canvas f2s-canvas--template">
-        {/*
-          Attentes de fin de parcours (audit template) : l'API Slides ne
-          permettant pas de créer un vrai Master/Layout, le livrable est une
-          présentation normale à dupliquer — l'équivalent pratique d'un
-          "thème" Slides. Dit ICI, dans l'UI, plutôt que découvert après
-          création.
-        */}
-        <p className="f2s-tmpl-note">
-          A template is a reusable Slides deck (like a Slides theme): each layout becomes a slide your team duplicates and fills.
-          The Slides API can't create native masters/layouts, so the result is a regular presentation to copy from.
-        </p>
-
         {previewedLayout ? (
           <div className="f2s-tmpl-report">
             {exportingLayout && exportCursor ? (

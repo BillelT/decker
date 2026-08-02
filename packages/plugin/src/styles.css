@@ -869,6 +869,78 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   font-weight: 700;
 }
 
+/* ---- Onglet Style : rôles de thème (12) ---- */
+
+.f2s-tmpl-role-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.f2s-tmpl-role-row .f2s-tmpl-role {
+  flex: none;
+  width: 128px;
+}
+
+.f2s-tmpl-hex-input {
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-radius: 4px;
+  padding: 3px 8px;
+  width: 84px;
+  flex: none;
+}
+
+.f2s-tmpl-hex-input:focus {
+  outline: none;
+  border-color: var(--color-orange-40);
+}
+
+/* Couleurs détectées dans le template, proposées comme remplacement en un
+   clic pour le rôle de la ligne — plus rapide que taper le hex à la main
+   quand la couleur voulue existe déjà dans le deck importé. */
+.f2s-tmpl-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.f2s-tmpl-suggestion {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  overflow: hidden;
+  flex: none;
+  background-image: linear-gradient(45deg, rgba(127, 127, 127, 0.25) 25%, transparent 25%, transparent 75%, rgba(127, 127, 127, 0.25) 75%),
+    linear-gradient(45deg, rgba(127, 127, 127, 0.25) 25%, transparent 25%, transparent 75%, rgba(127, 127, 127, 0.25) 75%);
+  background-size: 8px 8px;
+  background-position: 0 0, 4px 4px;
+}
+
+.f2s-tmpl-suggestion span {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.f2s-tmpl-suggestion:hover {
+  border-color: var(--color-orange);
+}
+
+.f2s-tmpl-suggestion.is-selected {
+  border-color: var(--color-orange);
+  box-shadow: 0 0 0 1px var(--color-orange);
+}
+
 /* Rouge plein, distinct de la bordure de sélection active (orange-red).
    La bordure seule se remarquait mal quand la vignette est déjà bordée par
    du contenu clair/coloré au raz du cadre — un badge explicite en plus,
@@ -1189,7 +1261,7 @@ html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-icon-
 }
 
 .f2s-tab.is-active {
-  background: #ffffff;
+  background: var(--color-surface);
   color: var(--color-text);
   box-shadow: 0 1px 2px rgba(18, 15, 13, 0.16);
 }

@@ -1076,18 +1076,42 @@
     HYPERLINK: { r: 0.06, g: 0.4, b: 0.84 },
     FOLLOWED_HYPERLINK: { r: 0.4, g: 0.24, b: 0.6 }
   };
+  var THEME_ROLES = [
+    "DARK1",
+    "LIGHT1",
+    "DARK2",
+    "LIGHT2",
+    "ACCENT1",
+    "ACCENT2",
+    "ACCENT3",
+    "ACCENT4",
+    "ACCENT5",
+    "ACCENT6",
+    "HYPERLINK",
+    "FOLLOWED_HYPERLINK"
+  ];
   function hexToRgb(hex) {
     const n = parseInt(hex.slice(1), 16);
     return { r: (n >> 16 & 255) / 255, g: (n >> 8 & 255) / 255, b: (n & 255) / 255 };
   }
-  function buildTemplateTheme(colorRoles, colors) {
-    const assignments = Object.entries(colorRoles);
-    if (assignments.length === 0) return void 0;
+  function rgbToHex({ r, g, b }) {
+    const channel = (v) => Math.round(Math.min(1, Math.max(0, v)) * 255).toString(16).padStart(2, "0").toUpperCase();
+    return `#${channel(r)}${channel(g)}${channel(b)}`;
+  }
+  var DEFAULT_THEME_ROLE_HEX = THEME_ROLES.reduce(
+    (acc, role) => ({ ...acc, [role]: rgbToHex(DEFAULT_THEME_ROLE_COLORS[role]) }),
+    {}
+  );
+  function buildTemplateTheme(colorRoles, colors, roleColorOverrides = {}) {
+    if (Object.keys(colorRoles).length === 0 && Object.keys(roleColorOverrides).length === 0) return void 0;
     const byKey = new Map(colors.map((c) => [colorKey(c.hex, c.alpha), c]));
     const theme = { ...DEFAULT_THEME_ROLE_COLORS };
-    for (const [key, role] of assignments) {
+    for (const [key, role] of Object.entries(colorRoles)) {
       const swatch = byKey.get(key);
       if (swatch) theme[role] = hexToRgb(swatch.hex);
+    }
+    for (const [role, hex] of Object.entries(roleColorOverrides)) {
+      theme[role] = hexToRgb(hex);
     }
     return theme;
   }
@@ -1751,7 +1775,7 @@
     const { slides, assets } = await collectSlidesAndAssets(pending, orderedIds, msg.fontOverrides ?? {}, 2);
     const colorRoles = msg.colorRoles ?? {};
     const allColors = aggregateColorSwatches(slides.map((s) => summarizeColors(s.elements)));
-    const theme = buildTemplateTheme(colorRoles, allColors);
+    const theme = buildTemplateTheme(colorRoles, allColors, msg.roleColorOverrides ?? {});
     for (const slide of slides) {
       slide.elements = applyThemeRolesToElements(slide.elements, colorRoles);
       slide.elements = applyPlaceholderText(slide.elements);
