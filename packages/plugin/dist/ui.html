@@ -3456,7 +3456,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
   function CloseIcon() {
     return /* @__PURE__ */ u3("svg", { width: "14", height: "14", viewBox: "0 0 14 14", fill: "none", xmlns: "http://www.w3.org/2000/svg", "aria-hidden": "true", children: /* @__PURE__ */ u3("path", { d: "m3 3 8 8M11 3l-8 8", stroke: "currentColor", strokeWidth: "1.6", strokeLinecap: "round" }) });
   }
-  function SettingsModal({ open, theme, onThemeChange, skin, onSkinChange, onClose }) {
+  function SettingsModal({ open, theme, onThemeChange, skin, onSkinChange, onClose, accountEmail, onSignOut }) {
     const [mounted, setMounted] = d2(open);
     const [entered, setEntered] = d2(false);
     const dialogRef = A2(null);
@@ -3504,6 +3504,26 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
                 /* @__PURE__ */ u3("button", { type: "button", className: "f2s-icon-btn", title: "Close settings", "aria-label": "Close settings", onClick: onClose, children: /* @__PURE__ */ u3(CloseIcon, {}) })
               ] }),
               /* @__PURE__ */ u3("div", { className: "f2s-modal-body", children: [
+                /* @__PURE__ */ u3("section", { className: "f2s-setting", children: [
+                  /* @__PURE__ */ u3("div", { className: "f2s-setting-text", children: [
+                    /* @__PURE__ */ u3("h3", { className: "f2s-setting-title", children: "Account" }),
+                    /* @__PURE__ */ u3("p", { className: "f2s-setting-desc", children: accountEmail ? /* @__PURE__ */ u3(S, { children: [
+                      "Signed in as ",
+                      /* @__PURE__ */ u3("strong", { children: accountEmail }),
+                      "."
+                    ] }) : "Not signed in." })
+                  ] }),
+                  accountEmail && /* @__PURE__ */ u3(
+                    "button",
+                    {
+                      type: "button",
+                      className: "f2s-btn f2s-btn--secondary",
+                      title: "Sign out \u2014 you'll be asked to pick a Google account next time you sign in.",
+                      onClick: onSignOut,
+                      children: "Sign out"
+                    }
+                  )
+                ] }),
                 /* @__PURE__ */ u3("section", { className: "f2s-setting", children: [
                   /* @__PURE__ */ u3("div", { className: "f2s-setting-text", children: [
                     /* @__PURE__ */ u3("h3", { className: "f2s-setting-title", children: "Interface" }),
@@ -3679,6 +3699,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
     );
     const [hasCanvasSelection, setHasCanvasSelection] = d2(false);
     const [sessionToken, setSessionToken] = d2();
+    const [accountEmail, setAccountEmail] = d2();
     const [loginError, setLoginError] = d2();
     const [authUrl, setAuthUrl] = d2();
     const [authLinkClicked, setAuthLinkClicked] = d2(false);
@@ -4170,6 +4191,40 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
       return () => clearTimeout(timer);
     }, []);
     h2(() => {
+      if (!sessionToken) {
+        setAccountEmail(void 0);
+        return;
+      }
+      let cancelled = false;
+      fetch(`${backend.baseUrl}/auth/me`, {
+        headers: { Authorization: `Bearer ${sessionToken}` },
+        credentials: "include"
+      }).then((res) => res.ok ? res.json() : void 0).then((body) => {
+        if (!cancelled) setAccountEmail(body?.email ?? void 0);
+      }).catch(() => {
+        if (!cancelled) setAccountEmail(void 0);
+      });
+      return () => {
+        cancelled = true;
+      };
+    }, [sessionToken, backend.baseUrl]);
+    function handleSignOut() {
+      const token = sessionTokenRef.current;
+      setSessionToken(void 0);
+      setAccountEmail(void 0);
+      postToPlugin({ type: "clear-session-token" });
+      setSettingsOpen(false);
+      if (token) {
+        fetch(`${backend.baseUrl}/auth/logout`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          credentials: "include"
+        }).catch(() => {
+        });
+      }
+      startLogin();
+    }
+    h2(() => {
       postToPlugin({ type: "ui-ready" });
     }, []);
     function handlePrepareForSlides() {
@@ -4494,7 +4549,9 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
           onThemeChange: handleThemeChange,
           skin,
           onSkinChange: changeSkin,
-          onClose: () => setSettingsOpen(false)
+          onClose: () => setSettingsOpen(false),
+          accountEmail,
+          onSignOut: handleSignOut
         }
       )
     ] });

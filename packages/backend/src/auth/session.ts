@@ -7,6 +7,8 @@ interface StoredSession {
   encryptedRefreshToken: string;
   accessToken?: string;
   accessTokenExpiresAt?: number;
+  /** Adresse email du compte Google connecté — affichée dans la modale Settings du plugin. Non chiffré : non sensible (scope `userinfo.email`). */
+  email?: string;
 }
 
 /**
@@ -19,11 +21,16 @@ interface StoredSession {
 const SESSION_TTL_SEC = 90 * 24 * 3600;
 const sessionKey = (token: string) => `f2s:session:${token}`;
 
-export async function createSession(refreshToken: string): Promise<string> {
+export async function createSession(refreshToken: string, email?: string): Promise<string> {
   const sessionToken = randomUUID();
-  const stored: StoredSession = { encryptedRefreshToken: encryptSecret(refreshToken, env.sessionEncryptionKey) };
+  const stored: StoredSession = { encryptedRefreshToken: encryptSecret(refreshToken, env.sessionEncryptionKey), email };
   await getRedis().set(sessionKey(sessionToken), stored, { ex: SESSION_TTL_SEC });
   return sessionToken;
+}
+
+export async function getEmail(sessionToken: string): Promise<string | undefined> {
+  const s = await getRedis().get<StoredSession>(sessionKey(sessionToken));
+  return s?.email;
 }
 
 export async function getRefreshToken(sessionToken: string): Promise<string | undefined> {

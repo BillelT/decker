@@ -26,7 +26,14 @@ export const env = {
       return required('GOOGLE_REDIRECT_URI');
     },
     // Spec §5.2 — scopes minimaux. N'ajoute jamais `drive` / `drive.readonly` ici.
-    scopes: ['https://www.googleapis.com/auth/presentations', 'https://www.googleapis.com/auth/drive.file'],
+    // `userinfo.email` est un scope non sensible (pas de revue Google
+    // requise) : sert uniquement à afficher le compte connecté dans la
+    // modale Settings du plugin (audit 2026-08, section Compte).
+    scopes: [
+      'https://www.googleapis.com/auth/presentations',
+      'https://www.googleapis.com/auth/drive.file',
+      'https://www.googleapis.com/auth/userinfo.email',
+    ],
   },
 
   get sessionEncryptionKey() {

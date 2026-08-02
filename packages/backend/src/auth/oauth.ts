@@ -5,16 +5,32 @@ export function createOAuthClient(): OAuth2Client {
   return new OAuth2Client(env.google.clientId, env.google.clientSecret, env.google.redirectUri);
 }
 
-/** Spec §5.2 — access_type=offline, prompt=consent au premier passage. */
+/**
+ * Spec §5.2 — access_type=offline, prompt=consent au premier passage.
+ * `select_account` en plus (audit 2026-08) : sans lui, Google saute
+ * directement à l'écran de consentement dès qu'un seul compte est connecté
+ * dans le navigateur, sans jamais proposer le sélecteur de compte — donc
+ * aucun moyen de se connecter avec un autre compte Google que le premier.
+ */
 export function buildAuthUrl(client: OAuth2Client, codeChallenge: string, state: string): string {
   return client.generateAuthUrl({
     access_type: 'offline',
-    prompt: 'consent',
+    prompt: 'select_account consent',
     scope: env.google.scopes,
     code_challenge_method: 'S256' as any,
     code_challenge: codeChallenge,
     state,
   });
+}
+
+/** Adresse email du compte Google connecté — scope non sensible `userinfo.email` (voir env.ts). */
+export async function fetchUserEmail(accessToken: string): Promise<string | undefined> {
+  const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!res.ok) return undefined;
+  const body = (await res.json()) as { email?: string };
+  return body.email;
 }
 
 export async function exchangeCodeForTokens(

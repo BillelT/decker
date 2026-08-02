@@ -28,6 +28,9 @@ interface SettingsModalProps {
   skin: UiSkin;
   onSkinChange: (skin: UiSkin) => void;
   onClose: () => void;
+  /** Email du compte Google connecté (GET /auth/me) — undefined tant qu'il n'est pas encore connu ou que la session n'existe pas. */
+  accountEmail: string | undefined;
+  onSignOut: () => void;
 }
 
 const THEME_TABS: { value: ThemePreference; label: string; hint: string }[] = [
@@ -49,7 +52,7 @@ function CloseIcon() {
   );
 }
 
-export function SettingsModal({ open, theme, onThemeChange, skin, onSkinChange, onClose }: SettingsModalProps) {
+export function SettingsModal({ open, theme, onThemeChange, skin, onSkinChange, onClose, accountEmail, onSignOut }: SettingsModalProps) {
   // La modale reste montée le temps de l'animation de sortie : la démonter dès
   // `open === false` couperait la transition net (rien à animer une fois le
   // nœud retiré du DOM).
@@ -116,6 +119,31 @@ export function SettingsModal({ open, theme, onThemeChange, skin, onSkinChange, 
         </header>
 
         <div className="f2s-modal-body">
+          <section className="f2s-setting">
+            <div className="f2s-setting-text">
+              <h3 className="f2s-setting-title">Account</h3>
+              <p className="f2s-setting-desc">
+                {accountEmail ? (
+                  <>
+                    Signed in as <strong>{accountEmail}</strong>.
+                  </>
+                ) : (
+                  'Not signed in.'
+                )}
+              </p>
+            </div>
+            {accountEmail && (
+              <button
+                type="button"
+                className="f2s-btn f2s-btn--secondary"
+                title="Sign out — you'll be asked to pick a Google account next time you sign in."
+                onClick={onSignOut}
+              >
+                Sign out
+              </button>
+            )}
+          </section>
+
           <section className="f2s-setting">
             <div className="f2s-setting-text">
               <h3 className="f2s-setting-title">Interface</h3>
