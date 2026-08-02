@@ -50,6 +50,17 @@ restante précise.
 
 ## Divers
 
+- **Interaction retry × lot thème (bug potentiel repéré en rebasant sur la
+  reprise ciblée désormais fonctionnelle, `jobs/runner.ts::retryExportJob`).**
+  Si le lot spécial d'écriture du thème (`THEME_BATCH_SOURCE_ID`,
+  `mapper/theme.ts`) échoue au premier essai, `retryExportJob` ne peut pas
+  le rejouer : il appelle `mapDocumentToBatches(doc, resolveAssetUrl,
+  calibration)` **sans** `masterObjectId` (jamais stocké sur le
+  `JobRecord`, seulement connu au moment de `createPresentation`), donc ce
+  lot n'est jamais reconstruit et reste indéfiniment `pending` dans le job
+  store même si le retry se conclut `done`. Cas limite (le thème doit
+  échouer spécifiquement, pas une slide), mais réel — nécessite de
+  persister `masterObjectId` sur le `JobRecord` pour le corriger proprement.
 - **"Buy me a coffee".** Le bouton "Support me with Ko-fi" est déjà posé
   dans le footer (`href="#"`) — en attente du vrai lien avant de le
   finaliser, pas une tâche de conception restante.
