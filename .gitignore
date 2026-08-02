@@ -1,0 +1,13 @@
+node_modules/
+dist/
+build/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+coverage/
+calibration-report.html
+fixtures/*.png
+!fixtures/.gitkeep
+.DS_Store
+*.log
