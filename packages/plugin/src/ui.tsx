@@ -554,6 +554,22 @@ function App() {
           setExportState('error');
           setExportError(msg.message as string);
           break;
+        // Modale Settings, section Developer : dump de l'IRDocument courant
+        // en JSON téléchargeable, pour construire les fixtures de
+        // calibration `fixtures/<nom>.json` (voir LIMITATIONS.md, spec §9) —
+        // ne passe jamais par /assets ni /export, juste un téléchargement
+        // local du document tel qu'il serait envoyé.
+        case 'export-debug-payload': {
+          const doc = msg.document as IRDocument;
+          const blob = new Blob([JSON.stringify(doc, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const anchor = document.createElement('a');
+          anchor.href = url;
+          anchor.download = `${(doc.presentationTitle || 'fixture').replace(/[^a-z0-9-_]+/gi, '_')}.json`;
+          anchor.click();
+          URL.revokeObjectURL(url);
+          break;
+        }
         default:
           break;
       }
@@ -920,6 +936,11 @@ function App() {
   useEffect(() => {
     postToPlugin({ type: 'ui-ready' });
   }, []);
+
+  /** Section Developer de la modale Settings — voir le commentaire de `request-export-debug` côté code.ts. */
+  function handleExportDebugIr() {
+    postToPlugin({ type: 'request-export-debug', includedFrameIds: order, order, presentationTitle: deckTitle.trim() || 'fixture', fontOverrides });
+  }
 
   function handlePrepareForSlides() {
     // `order` (tout le deck déjà dans le panneau) part avec le message : le
@@ -1347,6 +1368,8 @@ function App() {
         signedIn={Boolean(sessionToken)}
         accountEmail={accountEmail}
         onSignOut={handleSignOut}
+        showDebugExport={mode === 'deck' && order.length > 0}
+        onExportDebugIr={handleExportDebugIr}
       />
     </>
   );

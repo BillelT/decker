@@ -896,6 +896,38 @@ async function main(): Promise<void> {
       return;
     }
 
+    // Modale Settings, section Developer (audit 2026-08) : dump l'IRDocument
+    // du deck courant en JSON téléchargeable, SANS toucher au pipeline
+    // d'export réel (pas d'upload, pas d'appel backend) — sert à construire
+    // les fixtures de calibration `fixtures/<nom>.json` (spec §9) à partir
+    // d'un vrai frame Figma plutôt qu'un générateur en code comme
+    // `01-rects`/`03-text-inset`. Le PNG de référence s'exporte séparément
+    // via l'export natif Figma (Export panel), pas par ce chemin.
+    if (msg.type === 'request-export-debug') {
+      try {
+        const m = msg as unknown as {
+          includedFrameIds: string[];
+          order: string[];
+          presentationTitle: string;
+          fontOverrides?: Record<string, string>;
+        };
+        const orderedIds = m.order.filter((id) => m.includedFrameIds.includes(id));
+        const { slides } = await collectSlidesAndAssets(pending, orderedIds, m.fontOverrides ?? {}, 2);
+        const doc: IRDocument = {
+          version: 1,
+          presentationTitle: m.presentationTitle,
+          slideSize: computeSlideSizePt(slides[0]?.frameSize),
+          slides,
+          options: { mode: 'new-presentation', rasterScale: 2, includeUnderlay: false, underlayOpacity: 0.3, strictMode: false },
+        };
+        figma.ui.postMessage({ type: 'export-debug-payload', document: doc });
+      } catch (err) {
+        console.error(err);
+        figma.ui.postMessage({ type: 'export-error', message: (err as Error).message });
+      }
+      return;
+    }
+
     if (msg.type === 'request-template') {
       try {
         await handleTemplateCreateRequest(
