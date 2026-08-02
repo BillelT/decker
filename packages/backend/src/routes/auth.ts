@@ -49,7 +49,7 @@ authRouter.get('/auth/callback', async (req, res) => {
       sameSite: 'none',
       maxAge: 90 * 24 * 3600 * 1000,
     });
-    res.type('html').send(renderSuccessPage());
+    res.type('html').send(renderSuccessPage(accessToken, expiresInSec));
   } catch (err) {
     const message = (err as Error).message;
     await stashAuthResult(state, { status: 'error', message });
@@ -65,16 +65,27 @@ authRouter.get('/auth/session/:pollId', async (req, res) => {
 
 /**
  * L'iframe du plugin récupère le jeton toute seule par polling (voir
- * /auth/session/:pollId) : cette page n'a plus besoin de faire copier-coller
- * quoi que ce soit, juste confirmer que l'utilisateur peut revenir à Figma.
+ * /auth/session/:pollId) — le copier-coller ci-dessous n'est là que pour
+ * `npm run calibrate` (spec §4), qui a besoin d'un access token Google brut
+ * en variable d'env et n'a pas d'autre moyen d'en obtenir un dans ce dépôt.
+ * Google expire ce token après `expiresInSec` (~1h) : largement suffisant
+ * pour lancer le script juste après, mais il faudra se reconnecter pour un
+ * nouveau run plus tard.
  */
-function renderSuccessPage(): string {
+function renderSuccessPage(accessToken: string, expiresInSec: number): string {
+  const escapedToken = accessToken.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  const expiresMin = Math.round(expiresInSec / 60);
   return `<!doctype html>
 <html lang="en">
 <head><meta charset="utf-8" /><title>Signed in</title></head>
-<body style="font-family: system-ui, sans-serif; max-width: 480px; margin: 3rem auto; padding: 0 1rem;">
+<body style="font-family: system-ui, sans-serif; max-width: 640px; margin: 3rem auto; padding: 0 1rem;">
   <h2>✅ Signed in with Google</h2>
   <p>You're all set — you can close this tab and go back to Figma. The plugin will pick this up automatically.</p>
+  <details style="margin-top: 2rem;">
+    <summary style="cursor: pointer; color: #555;">Access token for <code>npm run calibrate</code> (dev only)</summary>
+    <p style="color: #555; font-size: 0.9em;">Expires in ~${expiresMin} min. Do not share this — treat it like a password.</p>
+    <textarea readonly rows="4" style="width: 100%; font-family: monospace; font-size: 0.85em; padding: 0.5rem;" onclick="this.select()">${escapedToken}</textarea>
+  </details>
 </body>
 </html>`;
 }
