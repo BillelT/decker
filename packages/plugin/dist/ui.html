@@ -933,25 +933,31 @@ html:not(.f2s-skin--win95) .f2s-slider-knob {
    elle grâce à son fond opaque, donc aucun risque de chevauchement ou de
    vide quels que soient le sens/l'amplitude du déplacement.
 
-   Au hover les poignées s'écartent légèrement (au lieu de converger) ;
-   au clic elles se resserrent plus franchement en rétrécissant un peu —
-   le clic "serre" la commande. */
+   Les poignées reposent déjà décentrées (10.5 et 5.5 sur un trait 1-15,
+   donc ~65%/35%) : les écarter encore au hover accentuait ce déséquilibre
+   et les rapprocher au clic les faisait se sentir "collées" l'une à
+   l'autre — même si les deux lignes ne se touchent jamais vraiment,
+   visuellement ça lisait comme trop serré. Direction inversée : au hover
+   elles se rapprochent légèrement du centre (plus équilibré, s'éloigne
+   des bords) ; au clic elles repartent plus franchement vers l'extérieur
+   avec un léger retrait — un mouvement de "relâchement" plutôt que
+   d'"écrasement", qui donne plus d'air aux deux poignées entre elles. */
 html:not(.f2s-skin--win95) .f2s-footer-settings:hover:not(:disabled) .f2s-slider-knob--top {
-  transform: translateX(1.2px);
+  transform: translateX(-1.5px);
 }
 
 html:not(.f2s-skin--win95) .f2s-footer-settings:hover:not(:disabled) .f2s-slider-knob--bottom {
-  transform: translateX(-1.2px);
+  transform: translateX(1.5px);
 }
 
 html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-slider-knob--top {
-  transform: translateX(-2px) scale(0.92);
+  transform: translateX(2px) scale(0.95);
   transition-duration: 0.12s;
   transition-timing-function: ease-out;
 }
 
 html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-slider-knob--bottom {
-  transform: translateX(2px) scale(0.92);
+  transform: translateX(-2px) scale(0.95);
   transition-duration: 0.12s;
   transition-timing-function: ease-out;
 }
