@@ -904,6 +904,14 @@ function App() {
     setActiveTemplateId((prev) => (prev === id ? undefined : prev));
   }
 
+  function renameTemplateLayout(id: string, name: string) {
+    setTemplateLayouts((prev) => {
+      const layout = prev[id];
+      if (!layout) return prev;
+      return { ...prev, [id]: { ...layout, name } };
+    });
+  }
+
   function startExport() {
     setExportState('exporting');
     setExportProgress(0);
@@ -1035,6 +1043,29 @@ function App() {
           >
             {mode === 'deck' ? 'Create a template' : 'Back to deck export'}
           </button>
+          {mode === 'template' && (
+            <div className="f2s-tabs" role="tablist" aria-label="Template view">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={templateSubView === 'layouts'}
+                className={`f2s-tab${templateSubView === 'layouts' ? ' is-active' : ''}`}
+                onClick={() => setTemplateSubView('layouts')}
+              >
+                Layouts
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={templateSubView === 'style'}
+                title="Assign a Slides theme color role to colors used across the whole template."
+                className={`f2s-tab${templateSubView === 'style' ? ' is-active' : ''}`}
+                onClick={() => setTemplateSubView('style')}
+              >
+                Style
+              </button>
+            </div>
+          )}
         </div>
 
         {mode === 'deck' ? (
@@ -1146,32 +1177,6 @@ function App() {
               ))
             )}
           </div>
-          {mode === 'template' && (
-            <div className="f2s-toolbar-group">
-              <span className="f2s-toolbar-label">View:</span>
-              <div className="f2s-tabs" role="tablist" aria-label="Template view">
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={templateSubView === 'layouts'}
-                  className={`f2s-tab${templateSubView === 'layouts' ? ' is-active' : ''}`}
-                  onClick={() => setTemplateSubView('layouts')}
-                >
-                  Layouts
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={templateSubView === 'style'}
-                  title="Assign a Slides theme color role to colors used across the whole template."
-                  className={`f2s-tab${templateSubView === 'style' ? ' is-active' : ''}`}
-                  onClick={() => setTemplateSubView('style')}
-                >
-                  Style
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
@@ -1199,6 +1204,7 @@ function App() {
           hasCanvasSelection={hasCanvasSelection}
           notice={templateSelectionNotice}
           onRemove={removeTemplateLayout}
+          onRename={renameTemplateLayout}
           exportCursor={exporting && exportSource === 'template' ? exportCursor : undefined}
         />
       ) : (

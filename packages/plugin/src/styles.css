@@ -443,6 +443,42 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   color: var(--color-black-70);
 }
 
+.f2s-frame-index {
+  font-size: 12px;
+  color: var(--color-black-70);
+  flex: none;
+}
+
+/* Nom de la vignette (mode template) : visuellement du texte au repos, se
+   révèle comme un champ éditable au survol de `.f2s-frame-info` ou au focus
+   — le libellé se tronque avec ellipsis plutôt que de pousser l'index ou le
+   bouton de suppression hors de leur place. */
+.f2s-frame-name-input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 12px;
+  color: var(--color-black-70);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 2px 4px;
+  margin: -2px -4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: text;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.f2s-frame-info:hover .f2s-frame-name-input,
+.f2s-frame-name-input:focus {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
+  outline: none;
+}
+
 .f2s-frame-controls {
   display: flex;
   gap: 4px;
@@ -1153,8 +1189,9 @@ html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-icon-
 }
 
 .f2s-tab.is-active {
-  background: var(--color-orange);
-  color: var(--color-bg);
+  background: #ffffff;
+  color: var(--color-orange);
+  box-shadow: 0 1px 2px rgba(18, 15, 13, 0.16);
 }
 
 /* ---- Aperçu d'export "Windows 95" ----
