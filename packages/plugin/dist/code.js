@@ -1121,6 +1121,21 @@
     });
   }
 
+  // src/serialize/templatePlaceholderText.ts
+  function applyPlaceholderText(elements) {
+    return elements.map((el) => {
+      if (el.kind !== "text" || !el.placeholder) return el;
+      const text = el;
+      const placeholder = text.placeholder;
+      const content = `[${placeholder.label}]`;
+      const baseRun = text.runs[0];
+      const runs = baseRun ? [{ ...baseRun, start: 0, end: content.length }] : [];
+      const baseParagraph = text.paragraphs[0];
+      const paragraphs = baseParagraph ? [{ ...baseParagraph, start: 0, end: content.length }] : [];
+      return { ...text, content, runs, paragraphs };
+    });
+  }
+
   // src/code.ts
   var MAX_FRAMES_WARNING = 20;
   var TEMPLATE_MAX_LAYOUTS = 10;
@@ -1738,6 +1753,7 @@
     const theme = buildTemplateTheme(colorRoles, allColors);
     for (const slide of slides) {
       slide.elements = applyThemeRolesToElements(slide.elements, colorRoles);
+      slide.elements = applyPlaceholderText(slide.elements);
     }
     const doc = {
       version: 1,

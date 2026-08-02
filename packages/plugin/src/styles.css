@@ -731,7 +731,8 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
 }
 
 .f2s-tmpl-warning,
-.f2s-tmpl-chip {
+.f2s-tmpl-chip,
+.f2s-tmpl-note-item {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -752,7 +753,8 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
 }
 
 .f2s-tmpl-warning:hover,
-.f2s-tmpl-chip:hover {
+.f2s-tmpl-chip:hover,
+.f2s-tmpl-note-item:hover {
   border-color: var(--color-orange);
 }
 
@@ -814,10 +816,31 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   font-weight: 700;
 }
 
-/* Rouge plein, distinct de la bordure de sélection active (orange-red) —
-   TODO.md : affordance d'erreur plus riche à designer. */
+/* Rouge plein, distinct de la bordure de sélection active (orange-red).
+   La bordure seule se remarquait mal quand la vignette est déjà bordée par
+   du contenu clair/coloré au raz du cadre — un badge explicite en plus,
+   lisible même en un coup d'œil sur tout le rail (audit template, TODO.md
+   point "retour d'erreur sur une vignette bloquante"). */
 .f2s-frame-preview--blocking {
   border-color: var(--color-error);
+  position: relative;
+}
+
+.f2s-frame-preview--blocking::after {
+  content: '!';
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-error);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  pointer-events: none;
 }
 
 /* ---- Barre de statut (login / progression / erreurs) ---- */
