@@ -146,10 +146,21 @@ avec les couches suivantes **testées et fonctionnelles hors ligne** :
   l'export échoue avec « Localhost image URLs are invalid ». Pour tester
   ce cas en local, exposer le backend via un tunnel public (ex. `ngrok
   http 8787`) et pointer `PUBLIC_BACKEND_URL` dessus.
-- La reprise ciblée après échec partiel (spec §7.0.6, §8 Phase 3) est
+- ~~La reprise ciblée après échec partiel (spec §7.0.6, §8 Phase 3) est
   amorcée (état par lot en mémoire) mais l'endpoint `/export/:jobId/retry`
   ne rejoue pas encore automatiquement les lots échoués — il ne fait que
-  les lister.
+  les lister.~~ — fait : `POST /export/:jobId/retry` rejoue réellement les
+  lots encore `failed` sur la présentation déjà créée (`retryExportJob`,
+  `jobs/runner.ts`), sans recréer de présentation ni retoucher les slides
+  déjà réussies. Le job persiste désormais l'`IRDocument` original
+  (`JobRecord.doc`) pour pouvoir reconstruire ces lots, et les assets
+  d'une slide en échec ne sont plus supprimés tant qu'elle n'a pas
+  réussi — mais restent soumis au TTL d'1h de l'URL signée
+  (`VercelBlobAssetStore`) : passé ce délai, une image référencée par une
+  slide encore en échec redevient introuvable et la reprise échoue sur
+  cette slide avec un message Slides API explicite plutôt que de planter.
+  Non testé contre l'API Slides réelle (comme le reste du backend, voir
+  § état du projet plus bas).
 - §7.1 (underlay de contrôle) et §7.2 (drag & drop) sont **volontairement
   non implémentés** : la spec les marque optionnels, à faire après
   validation des phases 0 à 3.
