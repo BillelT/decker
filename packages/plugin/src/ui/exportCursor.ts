@@ -14,6 +14,8 @@ export type ExportBatchStatus = 'pending' | 'applied' | 'failed';
 export interface ExportBatch {
   sourceSlideId: string;
   status: ExportBatchStatus;
+  /** Message d'erreur du lot (backend jobs/runner.ts) — présent seulement si `status === 'failed'`. */
+  error?: string;
 }
 
 export interface ExportCursor {

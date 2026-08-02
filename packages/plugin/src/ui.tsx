@@ -2,8 +2,7 @@ import { render } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { ExportOptions, IRDocument } from '@figma-to-slides/shared';
 import { sanitizeSessionToken } from './ui/sanitizeSessionToken.js';
-import type { ExportCursor } from './ui/exportCursor.js';
-import { REVEAL_MS } from './ui/RetroExportPreview.js';
+import { exportCursorFromBatches, type ExportBatch, type ExportCursor } from './ui/exportCursor.js';
 import { AVAILABLE_SLIDES_FONTS } from './serialize/fonts.js';
 import {
   DEFAULT_UI_SKIN,
@@ -30,15 +29,23 @@ type AuthPollResult = { status: 'pending' } | { status: 'ready'; sessionToken: s
 
 type BackendConfig = { baseUrl: string };
 type ExportState = 'idle' | 'exporting' | 'done' | 'error';
-type JobConclusion = { status: 'done'; resultUrl: string } | { status: 'failed'; error: string };
+type JobConclusion =
+  | { status: 'done'; resultUrl: string }
+  | {
+      status: 'failed';
+      error: string;
+      /** Présente dès que la présentation a été créée, même en cas d'échec partiel — la présentation existe déjà côté Drive. */
+      resultUrl: string | undefined;
+      /** id (`sourceNodeId`, == id du nœud Figma) des slides dont le lot a échoué — pour le bouton "Retry" ciblé. */
+      failedFrameIds: string[];
+      /** Un job avec une présentation créée et au moins un lot encore non appliqué peut être repris via POST /export/:jobId/retry. */
+      retryable: boolean;
+    };
 
-/**
- * Temps minimum d'affichage de chaque frame pendant la simulation d'export
- * (beginExportPacing) — calé sur la durée de la révélation rétro
- * (RetroExportPreview) plus une courte pause sur l'image complète, pour
- * qu'on la voie "posée" avant d'enchaîner sur la suivante.
- */
-const MIN_SLIDE_VISIBLE_MS = REVEAL_MS + 400;
+/** Cadence de polling `/export/:jobId` pendant un export — pilote directement la progression affichée, plus de simulation temporelle. */
+const POLL_INTERVAL_MS = 1000;
+/** Abandon du polling au-delà de cette durée totale (la présentation peut malgré tout avoir été créée — voir `pollJob`). */
+const POLL_TIMEOUT_MS = 3 * 60 * 1000;
 
 /** Durée d'affichage d'une notice de sélection (toast deck) avant auto-dismiss. */
 const SELECTION_NOTICE_MS = 4000;
@@ -285,11 +292,23 @@ function App() {
   // un export de deck laissait un "Open presentation" trompeur dans le
   // panneau template (et inversement).
   const [exportSource, setExportSource] = useState<AppMode | undefined>();
-  // Frame dont le lot est en cours d'application côté backend : c'est elle
-  // que le grand aperçu du deck "génère" bande par bande pendant l'export
-  // (DeckPanel → RetroExportPreview). Défini dès le clic sur Export, sur la
-  // première frame du deck, puis suivi via les lots renvoyés par le polling.
+  // Frame dont le lot est en cours d'application côté backend, DÉDUITE des
+  // lots renvoyés par chaque poll `/export/:jobId` (exportCursorFromBatches) —
+  // c'est elle que le grand aperçu du deck "génère" bande par bande pendant
+  // l'export (DeckPanel → RetroExportPreview). Reflète la vitesse RÉELLE du
+  // backend (plus de rythme simulé) : un export plus rapide que l'animation
+  // de révélation avance simplement plus vite d'une slide à l'autre.
   const [exportCursor, setExportCursor] = useState<ExportCursor | undefined>();
+  // id du job en cours/dernier terminé — nécessaire pour POST /export/:jobId/retry.
+  const [exportJobId, setExportJobId] = useState<string | undefined>();
+  // Slides dont le dernier lot a échoué (sourceNodeId == id du nœud Figma) —
+  // pour lister/surligner précisément lesquelles côté rapport, et cibler le retry.
+  const [failedFrameIds, setFailedFrameIds] = useState<string[]>([]);
+  // Le job a une présentation créée et au moins un lot encore non appliqué :
+  // POST /export/:jobId/retry peut rejouer UNIQUEMENT ces lots-là plutôt que
+  // de forcer à ressoumettre tout le deck.
+  const [retryable, setRetryable] = useState(false);
+  const [retrying, setRetrying] = useState(false);
   const pendingAssets = useMemo(() => new Map<string, ArrayBuffer>(), []);
 
   // Quel mode a démarré l'export en cours, lu depuis `handleExportPayload` —
@@ -297,23 +316,6 @@ function App() {
   // (deps: []) et donc figé sur un `exportSource` toujours `undefined` s'il
   // lisait le state directement (même piège que `sessionTokenRef`).
   const exportModeRef = useRef<AppMode | undefined>();
-  // Résultat RÉEL du job (done/failed), écrit par `handleExportPayload` une
-  // fois le polling conclu. En mode deck, il n'est PAS appliqué directement :
-  // la simulation visuelle (beginExportPacing) le lit et ne bascule dessus
-  // qu'une fois qu'elle a fini de dérouler toutes les frames — sinon un
-  // export plus rapide que l'animation (petit deck, ou lots tous appliqués
-  // entre deux pollings) ferait sauter l'aperçu de la 1ère frame directement
-  // au résultat, sans jamais montrer les suivantes.
-  const jobConclusionRef = useRef<JobConclusion | undefined>();
-  const exportPacingTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>();
-
-  function stopExportPacing() {
-    if (exportPacingTimerRef.current !== undefined) {
-      clearTimeout(exportPacingTimerRef.current);
-      exportPacingTimerRef.current = undefined;
-    }
-  }
-  useEffect(() => () => stopExportPacing(), []);
 
   /** Applique une conclusion de job (réelle) à l'état visible : fin d'export, réussie ou non. */
   function applyConclusion(concluded: JobConclusion) {
@@ -322,53 +324,28 @@ function App() {
       setExportState('done');
       setExportProgress(100);
       setResultUrl(concluded.resultUrl);
+      setFailedFrameIds([]);
+      setRetryable(false);
     } else {
       setExportState('error');
       setExportError(concluded.error);
+      setResultUrl(concluded.resultUrl);
+      setFailedFrameIds(concluded.failedFrameIds);
+      setRetryable(concluded.retryable);
     }
   }
 
-  /**
-   * Fait défiler `frameIds` dans le grand aperçu (donc dans le rail via
-   * `exportCursor`), une frame à la fois et à un rythme fixe
-   * (`MIN_SLIDE_VISIBLE_MS`) — indépendant de la vitesse réelle du backend.
-   * Ne bascule sur le résultat réel (`jobConclusionRef`) qu'une fois la
-   * dernière frame simulée montrée le temps voulu, sauf échec : celui-ci
-   * interrompt la simulation tout de suite, inutile de continuer à "faire
-   * semblant" de générer les slides restantes.
-   */
-  function beginExportPacing(frameIds: string[]) {
-    stopExportPacing();
-    jobConclusionRef.current = undefined;
-    const total = frameIds.length;
-    if (total === 0) return;
+  /** Progression (0–100) déduite du nombre de lots réellement conclus (`applied`/`failed`) sur le total — jamais simulée. */
+  function progressFromBatches(batches: ExportBatch[] | undefined): number {
+    if (!batches || batches.length === 0) return 0;
+    const settled = batches.filter((b) => b.status !== 'pending').length;
+    return Math.round((settled / batches.length) * 100);
+  }
 
-    const step = (index: number) => {
-      setExportCursor({ frameId: frameIds[index], index, total });
-      setExportProgress(Math.round(((index + 1) / total) * 100));
-
-      const wait = () => {
-        exportPacingTimerRef.current = setTimeout(() => {
-          const concluded = jobConclusionRef.current;
-          if (concluded?.status === 'failed') {
-            applyConclusion(concluded);
-            return;
-          }
-          if (index < total - 1) {
-            step(index + 1);
-            return;
-          }
-          if (concluded) {
-            applyConclusion(concluded);
-          } else {
-            wait();
-          }
-        }, MIN_SLIDE_VISIBLE_MS);
-      };
-      wait();
-    };
-
-    step(0);
+  /** Reflète un poll `/export/:jobId` en cours dans l'UI : cursor (mode deck) + barre de progression, toujours en direct. */
+  function applyLiveBatches(batches: ExportBatch[] | undefined) {
+    if (exportModeRef.current === 'deck') setExportCursor(exportCursorFromBatches(batches));
+    setExportProgress(progressFromBatches(batches));
   }
 
   // Le handler `onMessage` ci-dessous n'est branché qu'une fois (deps: []) ;
@@ -649,17 +626,10 @@ function App() {
         throw new Error(body?.error ? `${body.error} (${res.status})` : `Export rejected (${res.status})`);
       }
       const { jobId } = await res.json();
-      const concluded = await pollJob(jobId);
-      if (exportModeRef.current === 'deck') {
-        // Voir jobConclusionRef : la simulation en cours (démarrée dans
-        // startExport) applique elle-même ce résultat une fois qu'elle a
-        // fini de dérouler toutes les frames.
-        jobConclusionRef.current = concluded;
-      } else {
-        applyConclusion(concluded);
-      }
+      setExportJobId(jobId);
+      const concluded = await pollJob(jobId, applyLiveBatches);
+      applyConclusion(concluded);
     } catch (err) {
-      stopExportPacing();
       setExportState('error');
       setExportCursor(undefined);
       setExportError(err instanceof Error ? err.message : String(err));
@@ -676,17 +646,29 @@ function App() {
     }
   }
 
+  /** Lots `failed` d'un poll `/export/:jobId`, sous la forme utilisée par `JobConclusion`. */
+  function failedIdsFrom(batches: ExportBatch[] | undefined): string[] {
+    return (batches ?? []).filter((b) => b.status === 'failed').map((b) => b.sourceSlideId);
+  }
+
   /**
-   * Sonde `/export/:jobId` jusqu'à conclusion (réussie ou non) et la
-   * RENVOIE, sans toucher au state directement : selon le mode (deck ou
-   * template), c'est `handleExportPayload` qui décide de l'appliquer tout de
-   * suite ou de la confier à la simulation visuelle (voir plus haut).
+   * Sonde `/export/:jobId` à `POLL_INTERVAL_MS` jusqu'à conclusion (réussie
+   * ou non), en appelant `onUpdate` à CHAQUE poll (mode deck : fait avancer
+   * `exportCursor` en direct ; barre de progression toujours à jour, quelle
+   * que soit la vitesse réelle du backend) — puis la RENVOIE sans toucher au
+   * state directement, c'est `applyConclusion` qui s'en charge.
    */
-  async function pollJob(jobId: string): Promise<JobConclusion> {
+  async function pollJob(jobId: string, onUpdate: (batches: ExportBatch[] | undefined) => void): Promise<JobConclusion> {
+    let lastPresentationUrl: string | undefined;
+    let lastPresentationId: string | undefined;
     try {
-      for (let i = 0; i < 120; i++) {
+      for (let i = 0; i < Math.ceil(POLL_TIMEOUT_MS / POLL_INTERVAL_MS); i++) {
         const res = await fetch(`${backend.baseUrl}/export/${jobId}`, { credentials: 'include' });
         const job = await res.json();
+        const batches = job.batches as ExportBatch[] | undefined;
+        lastPresentationUrl = job.presentationUrl ?? lastPresentationUrl;
+        lastPresentationId = job.presentationId ?? lastPresentationId;
+        onUpdate(batches);
         if (job.status === 'done') {
           return { status: 'done', resultUrl: job.presentationUrl };
         }
@@ -695,22 +677,76 @@ function App() {
           // actionnables que le message générique de `job.error`, qui ne
           // couvre que l'échec global (ex. la création de présentation
           // elle-même a échoué, avant même le premier lot).
-          const batchErrors = (job.batches as { error?: string }[] | undefined)
-            ?.map((b) => b.error)
-            .filter((e): e is string => Boolean(e));
+          const batchErrors = batches?.map((b) => b.error).filter((e): e is string => Boolean(e));
+          const failedFrameIds = failedIdsFrom(batches);
           return {
             status: 'failed',
             error: batchErrors && batchErrors.length > 0 ? batchErrors.join(' · ') : (job.error ?? 'Unknown server-side failure.'),
+            resultUrl: job.presentationUrl,
+            failedFrameIds,
+            retryable: Boolean(job.presentationId) && failedFrameIds.length > 0,
           };
         }
-        await new Promise((r) => setTimeout(r, 1500));
+        await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
       }
+      // Le job continue peut-être de tourner côté serveur au-delà de ce délai
+      // (waitUntil n'a pas de limite propre) : si une présentation a déjà été
+      // créée, on la propose quand même plutôt que de ne rien montrer.
       return {
         status: 'failed',
-        error: 'Export timed out after 3 minutes — the presentation may still be processing; check your Google Drive before retrying.',
+        error: 'Export timed out after 3 minutes — the presentation may still be processing; check your Google Drive, or retry once it settles.',
+        resultUrl: lastPresentationUrl,
+        failedFrameIds: [],
+        retryable: Boolean(lastPresentationId),
       };
     } catch (err) {
-      return { status: 'failed', error: err instanceof Error ? err.message : String(err) };
+      return {
+        status: 'failed',
+        error: err instanceof Error ? err.message : String(err),
+        resultUrl: lastPresentationUrl,
+        failedFrameIds: [],
+        retryable: Boolean(lastPresentationId),
+      };
+    }
+  }
+
+  /**
+   * Rejoue UNIQUEMENT les lots encore en échec du dernier job (POST
+   * /export/:jobId/retry, backend jobs/runner.ts `retryExportJob`) — jamais
+   * une nouvelle présentation, jamais les slides déjà réussies. Même job
+   * (même `exportJobId`), donc même polling ensuite.
+   */
+  async function handleRetryFailedSlides() {
+    if (!exportJobId) return;
+    setRetrying(true);
+    setExportState('exporting');
+    setExportError(undefined);
+    try {
+      const res = await fetch(`${backend.baseUrl}/export/${exportJobId}/retry`, {
+        method: 'POST',
+        headers: sessionTokenRef.current ? { Authorization: `Bearer ${sessionTokenRef.current}` } : undefined,
+        credentials: 'include',
+      });
+      if (res.status === 401) throw new AuthExpiredError();
+      if (!res.ok) {
+        const body = await res.json().catch(() => undefined);
+        throw new Error(body?.error ? `${body.error} (${res.status})` : `Retry rejected (${res.status})`);
+      }
+      const concluded = await pollJob(exportJobId, applyLiveBatches);
+      applyConclusion(concluded);
+    } catch (err) {
+      setExportState('error');
+      setExportCursor(undefined);
+      setExportError(err instanceof Error ? err.message : String(err));
+      if (err instanceof AuthExpiredError) {
+        setSessionToken(undefined);
+        postToPlugin({ type: 'clear-session-token' });
+        startLogin();
+      }
+      // eslint-disable-next-line no-console
+      console.error(err);
+    } finally {
+      setRetrying(false);
     }
   }
 
@@ -857,15 +893,10 @@ function App() {
     setExportProgress(0);
     setExportSource('deck');
     exportModeRef.current = 'deck';
-    // L'aperçu rétro démarre dès le clic et défile ensuite toutes les frames
-    // du deck à un rythme fixe (voir beginExportPacing) : la sérialisation
-    // puis l'upload des assets prennent déjà plusieurs secondes avant que le
-    // premier lot n'existe côté backend, et le job réel peut ensuite conclure
-    // bien plus vite que cette simulation (petit deck, ou lots tous appliqués
-    // entre deux pollings) — dans les deux cas l'utilisateur voit chaque
-    // slide "s'imprimer" au lieu de ne voir que la première suivie d'un saut
-    // direct au résultat.
-    beginExportPacing(order);
+    setExportCursor(undefined);
+    setExportJobId(undefined);
+    setFailedFrameIds([]);
+    setRetryable(false);
     const options: ExportOptions = {
       mode: 'new-presentation',
       rasterScale: 2,
@@ -889,15 +920,14 @@ function App() {
    * layout réutilisable — mêmes endpoints `/assets` + `/export`.
    */
   function startTemplateCreate() {
-    // Coupe une éventuelle simulation d'export deck encore en vol : sans ça,
-    // son timer en attente pourrait appliquer plus tard le résultat de
-    // L'ANCIEN job deck par-dessus l'état du nouvel export template.
-    stopExportPacing();
     setExportState('exporting');
     setExportProgress(0);
     setExportSource('template');
     exportModeRef.current = 'template';
     setExportCursor(undefined);
+    setExportJobId(undefined);
+    setFailedFrameIds([]);
+    setRetryable(false);
     postToPlugin({
       type: 'request-template',
       includedFrameIds: templateOrder,
@@ -1129,7 +1159,20 @@ function App() {
           <a href="#" className="f2s-btn f2s-btn--tertiary">
             Support me with Ko-fi
           </a>
-          {exportState === 'done' && exportSource === mode && resultUrl && (
+          {/* Reprise ciblée (backend jobs/runner.ts `retryExportJob`) : ne
+              rejoue QUE les slides encore en échec, jamais tout le deck — la
+              présentation déjà créée (et les slides déjà réussies) reste
+              intacte pendant l'attente. */}
+          {exportState === 'error' && exportSource === mode && retryable && (
+            <button type="button" className="f2s-btn f2s-btn--secondary" disabled={retrying} onClick={handleRetryFailedSlides}>
+              {retrying ? 'Retrying…' : `Retry ${failedFrameIds.length} failed slide${failedFrameIds.length === 1 ? '' : 's'}`}
+            </button>
+          )}
+          {/* La présentation existe dès qu'elle a été créée, même en cas
+              d'échec partiel (certains lots appliqués, d'autres non) — un
+              lien vers un travail déjà là vaut mieux qu'un simple message
+              d'erreur qui le cache. */}
+          {(exportState === 'done' || exportState === 'error') && exportSource === mode && resultUrl && (
             <a href={resultUrl} target="_blank" rel="noreferrer" className="f2s-btn f2s-btn--primary">
               Open presentation
             </a>
