@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import { deriveCodeChallenge, generateCodeVerifier } from '../auth/pkce.js';
-import { buildAuthUrl, createOAuthClient, exchangeCodeForTokens } from '../auth/oauth.js';
+import { buildAuthUrl, createOAuthClient, exchangeCodeForTokens, fetchUserEmail } from '../auth/oauth.js';
 import { popAuthResult, popCodeVerifier, stashAuthResult, stashCodeVerifier } from '../auth/pendingAuth.js';
-import { cacheAccessToken, createSession, destroySession } from '../auth/session.js';
+import { cacheAccessToken, createSession, destroySession, getEmail, getRefreshToken } from '../auth/session.js';
 
 export const authRouter = Router();
 
@@ -33,7 +33,11 @@ authRouter.get('/auth/callback', async (req, res) => {
   try {
     const client = createOAuthClient();
     const { refreshToken, accessToken, expiresInSec } = await exchangeCodeForTokens(client, code, codeVerifier);
-    const sessionToken = await createSession(refreshToken);
+    // Best-effort : un email introuvable (scope refusé, erreur transitoire
+    // Google) ne doit jamais bloquer la connexion elle-même, juste laisser
+    // la modale Settings du plugin sans email à afficher.
+    const email = await fetchUserEmail(accessToken).catch(() => undefined);
+    const sessionToken = await createSession(refreshToken, email);
     await cacheAccessToken(sessionToken, accessToken, expiresInSec);
     await stashAuthResult(state, { status: 'ready', sessionToken });
 
@@ -101,6 +105,22 @@ function renderErrorPage(message: string): string {
 </body>
 </html>`;
 }
+
+/** GET /auth/me → email du compte connecté, pour la section Compte de la modale Settings du plugin. */
+authRouter.get('/auth/me', async (req, res) => {
+  const sessionToken = extractSessionToken(req);
+  if (!sessionToken) {
+    res.status(401).json({ error: 'Not signed in.' });
+    return;
+  }
+  const refreshToken = await getRefreshToken(sessionToken);
+  if (!refreshToken) {
+    res.status(401).json({ error: 'Session expired.' });
+    return;
+  }
+  const email = await getEmail(sessionToken);
+  res.json({ email: email ?? null });
+});
 
 authRouter.post('/auth/logout', async (req, res) => {
   const sessionToken = extractSessionToken(req);

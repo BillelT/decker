@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createSession, getRefreshToken, cacheAccessToken, getCachedAccessToken, destroySession } from './session.js';
+import { createSession, getRefreshToken, cacheAccessToken, getCachedAccessToken, destroySession, getEmail } from './session.js';
 
 // Pas de credentials Redis dans l'environnement de test → `kv.ts` retombe
 // sur son store en mémoire (voir kv.test.ts pour la logique de dispatch
@@ -33,5 +33,15 @@ describe('session store', () => {
     const sessionToken = await createSession('refresh');
     await destroySession(sessionToken);
     expect(await getRefreshToken(sessionToken)).toBeUndefined();
+  });
+
+  it('stores and returns the account email', async () => {
+    const sessionToken = await createSession('refresh', 'user@example.com');
+    expect(await getEmail(sessionToken)).toBe('user@example.com');
+  });
+
+  it('returns undefined email when none was provided at creation', async () => {
+    const sessionToken = await createSession('refresh');
+    expect(await getEmail(sessionToken)).toBeUndefined();
   });
 });

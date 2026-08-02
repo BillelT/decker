@@ -183,6 +183,10 @@ function App() {
   const [hasCanvasSelection, setHasCanvasSelection] = useState(false);
 
   const [sessionToken, setSessionToken] = useState<string | undefined>();
+  // Email du compte Google connecté (GET /auth/me) — affiché dans la modale
+  // Settings, section Compte (audit 2026-08 : pas de moyen de voir quel
+  // compte est connecté ni de s'en déconnecter avant ce point).
+  const [accountEmail, setAccountEmail] = useState<string | undefined>();
   const [loginError, setLoginError] = useState<string | undefined>();
   const [authUrl, setAuthUrl] = useState<string | undefined>();
   // A cliqué le lien "Sign in with Google" : distingue "prêt à cliquer" de
@@ -840,6 +844,58 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Récupère l'email du compte connecté dès qu'une session existe (connexion
+  // fraîche ou restaurée depuis clientStorage) — purement informatif pour la
+  // modale Settings, une 401 ici n'est pas traitée comme une session expirée
+  // (le reste de l'app le fera bien assez tôt au prochain appel qui compte).
+  useEffect(() => {
+    if (!sessionToken) {
+      setAccountEmail(undefined);
+      return;
+    }
+    let cancelled = false;
+    fetch(`${backend.baseUrl}/auth/me`, {
+      headers: { Authorization: `Bearer ${sessionToken}` },
+      credentials: 'include',
+    })
+      .then((res) => (res.ok ? res.json() : undefined))
+      .then((body: { email?: string | null } | undefined) => {
+        if (!cancelled) setAccountEmail(body?.email ?? undefined);
+      })
+      .catch(() => {
+        if (!cancelled) setAccountEmail(undefined);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionToken, backend.baseUrl]);
+
+  /**
+   * Section Compte de la modale Settings (audit 2026-08) : purge la session
+   * locale et côté backend, puis relance le flow de connexion — le lien
+   * "Sign in with Google" qui réapparaît proposera le sélecteur de compte
+   * Google (prompt=select_account, voir oauth.ts) plutôt que de resigner
+   * automatiquement le même compte, donc sert aussi à "changer de compte".
+   */
+  function handleSignOut() {
+    const token = sessionTokenRef.current;
+    setSessionToken(undefined);
+    setAccountEmail(undefined);
+    postToPlugin({ type: 'clear-session-token' });
+    setSettingsOpen(false);
+    if (token) {
+      fetch(`${backend.baseUrl}/auth/logout`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
+      }).catch(() => {
+        // Best-effort : la session locale est déjà purgée, un backend
+        // injoignable ne doit pas empêcher l'utilisateur de se reconnecter.
+      });
+    }
+    startLogin();
+  }
+
   // Signale à code.ts que l'iframe a fini de monter : un `figma.ui.postMessage`
   // envoyé avant ce point (ex. la découverte des frames déjà taguées
   // `slidesExportReady` à la réouverture du plugin, ou la session Google
@@ -1264,6 +1320,8 @@ function App() {
         skin={skin}
         onSkinChange={changeSkin}
         onClose={() => setSettingsOpen(false)}
+        accountEmail={accountEmail}
+        onSignOut={handleSignOut}
       />
     </>
   );
