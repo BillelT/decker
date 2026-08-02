@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { IRElement, IRShape, IRText } from '@figma-to-slides/shared';
-import { summarizeColors, summarizeFonts, summarizePlaceholders } from './templateSummary.js';
+import { aggregateColorSwatches, aggregateFontUsages, summarizeColors, summarizeFonts, summarizePlaceholders } from './templateSummary.js';
 
 function baseShape(overrides: Partial<IRShape> = {}): IRShape {
   return {
@@ -80,6 +80,47 @@ describe('summarizeFonts', () => {
 
   it('ignores non-text elements', () => {
     expect(summarizeFonts([baseShape()])).toEqual([]);
+  });
+});
+
+describe('aggregateColorSwatches', () => {
+  it('sums usage counts for the same color across layouts (audit 2026-08, onglet Style)', () => {
+    const layoutA = [{ hex: '#FF6B00', alpha: 1, usageCount: 2 }];
+    const layoutB = [{ hex: '#FF6B00', alpha: 1, usageCount: 3 }];
+    expect(aggregateColorSwatches([layoutA, layoutB])).toEqual([{ hex: '#FF6B00', alpha: 1, usageCount: 5 }]);
+  });
+
+  it('keeps distinct hex+alpha swatches separate, in first-seen order', () => {
+    const layoutA = [{ hex: '#000000', alpha: 1, usageCount: 1 }];
+    const layoutB = [
+      { hex: '#FFFFFF', alpha: 1, usageCount: 1 },
+      { hex: '#000000', alpha: 1, usageCount: 4 },
+    ];
+    expect(aggregateColorSwatches([layoutA, layoutB])).toEqual([
+      { hex: '#000000', alpha: 1, usageCount: 5 },
+      { hex: '#FFFFFF', alpha: 1, usageCount: 1 },
+    ]);
+  });
+
+  it('returns an empty list for an empty template', () => {
+    expect(aggregateColorSwatches([])).toEqual([]);
+  });
+});
+
+describe('aggregateFontUsages', () => {
+  it('merges weights for the same family across layouts', () => {
+    const layoutA = [{ family: 'Inter', weights: [400] }];
+    const layoutB = [{ family: 'Inter', weights: [700] }];
+    expect(aggregateFontUsages([layoutA, layoutB])).toEqual([{ family: 'Inter', weights: [400, 700] }]);
+  });
+
+  it('keeps distinct families separate', () => {
+    const layoutA = [{ family: 'Inter', weights: [400] }];
+    const layoutB = [{ family: 'Cabinet Grotesk', weights: [700] }];
+    expect(aggregateFontUsages([layoutA, layoutB])).toEqual([
+      { family: 'Inter', weights: [400] },
+      { family: 'Cabinet Grotesk', weights: [700] },
+    ]);
   });
 });
 

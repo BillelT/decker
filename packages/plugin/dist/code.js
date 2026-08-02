@@ -992,11 +992,14 @@
     const channel = (v) => Math.round(Math.min(1, Math.max(0, v)) * 255).toString(16).padStart(2, "0").toUpperCase();
     return `#${channel(color.r)}${channel(color.g)}${channel(color.b)}`;
   }
+  function colorKey(hex, alpha) {
+    return `${hex}:${alpha.toFixed(2)}`;
+  }
   function summarizeColors(elements) {
     const byKey = /* @__PURE__ */ new Map();
     const record = (color) => {
       const hex = toHex(color);
-      const key = `${hex}:${color.a.toFixed(2)}`;
+      const key = colorKey(hex, color.a);
       const existing = byKey.get(key);
       if (existing) {
         existing.usageCount++;
@@ -1041,6 +1044,81 @@
       result.push({ id: el.id, sourceNodeId: el.sourceNodeId, role: el.placeholder.role, label: el.placeholder.label });
     }
     return result;
+  }
+  function aggregateColorSwatches(perLayoutColors) {
+    const byKey = /* @__PURE__ */ new Map();
+    for (const colors of perLayoutColors) {
+      for (const c of colors) {
+        const key = colorKey(c.hex, c.alpha);
+        const existing = byKey.get(key);
+        if (existing) {
+          existing.usageCount += c.usageCount;
+        } else {
+          byKey.set(key, { ...c });
+        }
+      }
+    }
+    return [...byKey.values()];
+  }
+
+  // src/serialize/templateTheme.ts
+  var DEFAULT_THEME_ROLE_COLORS = {
+    DARK1: { r: 0, g: 0, b: 0 },
+    LIGHT1: { r: 1, g: 1, b: 1 },
+    DARK2: { r: 0.26, g: 0.26, b: 0.26 },
+    LIGHT2: { r: 0.94, g: 0.94, b: 0.94 },
+    ACCENT1: { r: 0.26, g: 0.52, b: 0.96 },
+    ACCENT2: { r: 0.86, g: 0.2, b: 0.18 },
+    ACCENT3: { r: 0.98, g: 0.74, b: 0.02 },
+    ACCENT4: { r: 0.06, g: 0.62, b: 0.35 },
+    ACCENT5: { r: 1, g: 0.6, b: 0 },
+    ACCENT6: { r: 0.4, g: 0.4, b: 0.4 },
+    HYPERLINK: { r: 0.06, g: 0.4, b: 0.84 },
+    FOLLOWED_HYPERLINK: { r: 0.4, g: 0.24, b: 0.6 }
+  };
+  function hexToRgb(hex) {
+    const n = parseInt(hex.slice(1), 16);
+    return { r: (n >> 16 & 255) / 255, g: (n >> 8 & 255) / 255, b: (n & 255) / 255 };
+  }
+  function buildTemplateTheme(colorRoles, colors) {
+    const assignments = Object.entries(colorRoles);
+    if (assignments.length === 0) return void 0;
+    const byKey = new Map(colors.map((c) => [colorKey(c.hex, c.alpha), c]));
+    const theme = { ...DEFAULT_THEME_ROLE_COLORS };
+    for (const [key, role] of assignments) {
+      const swatch = byKey.get(key);
+      if (swatch) theme[role] = hexToRgb(swatch.hex);
+    }
+    return theme;
+  }
+  function recolor(color, colorRoles) {
+    const role = colorRoles[colorKey(toHex(color), color.a)];
+    return role ? { ...color, themeRole: role } : color;
+  }
+  function applyThemeRolesToElements(elements, colorRoles) {
+    if (Object.keys(colorRoles).length === 0) return elements;
+    return elements.map((el) => {
+      switch (el.kind) {
+        case "shape": {
+          const shape = el;
+          return {
+            ...shape,
+            fill: shape.fill ? { ...shape.fill, color: recolor(shape.fill.color, colorRoles) } : shape.fill,
+            stroke: shape.stroke ? { ...shape.stroke, color: recolor(shape.stroke.color, colorRoles) } : shape.stroke
+          };
+        }
+        case "line": {
+          const line = el;
+          return { ...line, stroke: { ...line.stroke, color: recolor(line.stroke.color, colorRoles) } };
+        }
+        case "text": {
+          const text = el;
+          return { ...text, runs: text.runs.map((run) => ({ ...run, color: recolor(run.color, colorRoles) })) };
+        }
+        case "image":
+          return el;
+      }
+    });
   }
 
   // src/code.ts
@@ -1648,12 +1726,19 @@
       return;
     }
     const { slides, assets } = await collectSlidesAndAssets(pending, orderedIds, msg.fontOverrides ?? {}, 2);
+    const colorRoles = msg.colorRoles ?? {};
+    const allColors = aggregateColorSwatches(slides.map((s) => summarizeColors(s.elements)));
+    const theme = buildTemplateTheme(colorRoles, allColors);
+    for (const slide of slides) {
+      slide.elements = applyThemeRolesToElements(slide.elements, colorRoles);
+    }
     const doc = {
       version: 1,
       presentationTitle: msg.presentationTitle,
       slideSize: computeSlideSizePt(slides[0]?.frameSize),
       slides,
-      options: { mode: "new-presentation", rasterScale: 2, includeUnderlay: false, underlayOpacity: 0.3, strictMode: true }
+      options: { mode: "new-presentation", rasterScale: 2, includeUnderlay: false, underlayOpacity: 0.3, strictMode: true },
+      theme
     };
     postExportPayload(doc, assets);
   }

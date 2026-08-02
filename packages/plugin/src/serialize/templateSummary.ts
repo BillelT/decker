@@ -27,7 +27,7 @@ export interface TemplatePlaceholderSummary {
   label: string;
 }
 
-function toHex(color: IRColor): string {
+export function toHex(color: IRColor): string {
   const channel = (v: number) =>
     Math.round(Math.min(1, Math.max(0, v)) * 255)
       .toString(16)
@@ -36,13 +36,23 @@ function toHex(color: IRColor): string {
   return `#${channel(color.r)}${channel(color.g)}${channel(color.b)}`;
 }
 
+/**
+ * Identifiant stable d'une couleur (hex + alpha) — même format utilisé pour
+ * dédupliquer les couleurs ci-dessous ET pour référencer une couleur depuis
+ * l'assignation de rôle de thème (`templateTheme.ts`, onglet "Style" —
+ * audit 2026-08, mode template, point 2).
+ */
+export function colorKey(hex: string, alpha: number): string {
+  return `${hex}:${alpha.toFixed(2)}`;
+}
+
 /** Couleurs distinctes utilisées par la frame (fills et contours de forme, contours de ligne, texte), dans l'ordre d'apparition. */
 export function summarizeColors(elements: IRElement[]): TemplateColorSwatch[] {
   const byKey = new Map<string, TemplateColorSwatch>();
 
   const record = (color: IRColor) => {
     const hex = toHex(color);
-    const key = `${hex}:${color.a.toFixed(2)}`;
+    const key = colorKey(hex, color.a);
     const existing = byKey.get(key);
     if (existing) {
       existing.usageCount++;
@@ -95,4 +105,40 @@ export function summarizePlaceholders(elements: IRElement[]): TemplatePlaceholde
     result.push({ id: el.id, sourceNodeId: el.sourceNodeId, role: el.placeholder.role, label: el.placeholder.label });
   }
   return result;
+}
+
+/**
+ * Fusionne les rapports par layout (`summarizeColors`) en une seule vue
+ * pour TOUT le template (onglet "Style" — audit 2026-08, mode template,
+ * point 2) : le rapport par layout existant ne montrait qu'un layout à la
+ * fois, alors que l'assignation de rôle de thème (Primary/Accent 1…) doit
+ * porter sur les couleurs de TOUT le template, pas frame par frame.
+ */
+export function aggregateColorSwatches(perLayoutColors: TemplateColorSwatch[][]): TemplateColorSwatch[] {
+  const byKey = new Map<string, TemplateColorSwatch>();
+  for (const colors of perLayoutColors) {
+    for (const c of colors) {
+      const key = colorKey(c.hex, c.alpha);
+      const existing = byKey.get(key);
+      if (existing) {
+        existing.usageCount += c.usageCount;
+      } else {
+        byKey.set(key, { ...c });
+      }
+    }
+  }
+  return [...byKey.values()];
+}
+
+/** Même principe que `aggregateColorSwatches`, pour les polices. */
+export function aggregateFontUsages(perLayoutFonts: TemplateFontUsage[][]): TemplateFontUsage[] {
+  const byFamily = new Map<string, Set<number>>();
+  for (const fonts of perLayoutFonts) {
+    for (const f of fonts) {
+      const weights = byFamily.get(f.family) ?? new Set<number>();
+      for (const w of f.weights) weights.add(w);
+      byFamily.set(f.family, weights);
+    }
+  }
+  return [...byFamily.entries()].map(([family, weights]) => ({ family, weights: [...weights].sort((a, b) => a - b) }));
 }
