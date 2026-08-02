@@ -27,9 +27,81 @@ export const DEFAULT_THEME_ROLE_COLORS: Record<ThemeColorRole, { r: number; g: n
   FOLLOWED_HYPERLINK: { r: 0.4, g: 0.24, b: 0.6 },
 };
 
+/** Ordre d'affichage des 12 rôles dans l'onglet Style — même liste que celle exigée par l'API (mapper/theme.ts::ALL_THEME_ROLES). */
+export const THEME_ROLES: ThemeColorRole[] = [
+  'DARK1',
+  'LIGHT1',
+  'DARK2',
+  'LIGHT2',
+  'ACCENT1',
+  'ACCENT2',
+  'ACCENT3',
+  'ACCENT4',
+  'ACCENT5',
+  'ACCENT6',
+  'HYPERLINK',
+  'FOLLOWED_HYPERLINK',
+];
+
+export const THEME_ROLE_LABELS: Record<ThemeColorRole, string> = {
+  DARK1: 'Dark 1',
+  LIGHT1: 'Light 1',
+  DARK2: 'Dark 2',
+  LIGHT2: 'Light 2',
+  ACCENT1: 'Accent 1',
+  ACCENT2: 'Accent 2',
+  ACCENT3: 'Accent 3',
+  ACCENT4: 'Accent 4',
+  ACCENT5: 'Accent 5',
+  ACCENT6: 'Accent 6',
+  HYPERLINK: 'Hyperlink',
+  FOLLOWED_HYPERLINK: 'Followed hyperlink',
+};
+
 function hexToRgb(hex: string): { r: number; g: number; b: number } {
   const n = parseInt(hex.slice(1), 16);
   return { r: ((n >> 16) & 255) / 255, g: ((n >> 8) & 255) / 255, b: (n & 255) / 255 };
+}
+
+function rgbToHex({ r, g, b }: { r: number; g: number; b: number }): string {
+  const channel = (v: number) =>
+    Math.round(Math.min(1, Math.max(0, v)) * 255)
+      .toString(16)
+      .padStart(2, '0')
+      .toUpperCase();
+  return `#${channel(r)}${channel(g)}${channel(b)}`;
+}
+
+/** Valeur hex de repli des 12 rôles (voir `DEFAULT_THEME_ROLE_COLORS`) — ce que l'onglet Style propose par défaut avant toute assignation. */
+export const DEFAULT_THEME_ROLE_HEX: Record<ThemeColorRole, string> = THEME_ROLES.reduce(
+  (acc, role) => ({ ...acc, [role]: rgbToHex(DEFAULT_THEME_ROLE_COLORS[role]) }),
+  {} as Record<ThemeColorRole, string>,
+);
+
+/**
+ * Hex effectif de chacun des 12 rôles, dans l'ordre de priorité :
+ * 1. `roleColorOverrides[role]` — hex tapé à la main dans l'onglet Style ;
+ * 2. la couleur détectée assignée à ce rôle via `colorRoles` (clic sur une
+ *    suggestion) ;
+ * 3. `DEFAULT_THEME_ROLE_HEX[role]`.
+ * Utilisé à la fois par l'UI (aperçu des pastilles/champs hex) et par
+ * `buildTemplateTheme` ci-dessous, pour ne jamais faire diverger les deux.
+ */
+export function resolveThemeRoleHexes(
+  colorRoles: Record<string, ThemeColorRole>,
+  colors: TemplateColorSwatch[],
+  roleColorOverrides: Partial<Record<ThemeColorRole, string>> = {},
+): Record<ThemeColorRole, string> {
+  const byKey = new Map(colors.map((c) => [colorKey(c.hex, c.alpha), c]));
+  const assignedHexByRole = new Map<ThemeColorRole, string>();
+  for (const [key, role] of Object.entries(colorRoles)) {
+    const swatch = byKey.get(key);
+    if (swatch) assignedHexByRole.set(role, swatch.hex);
+  }
+  return THEME_ROLES.reduce(
+    (acc, role) => ({ ...acc, [role]: roleColorOverrides[role] ?? assignedHexByRole.get(role) ?? DEFAULT_THEME_ROLE_HEX[role] }),
+    {} as Record<ThemeColorRole, string>,
+  );
 }
 
 /**
@@ -42,15 +114,22 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } {
 export function buildTemplateTheme(
   colorRoles: Record<string, ThemeColorRole>,
   colors: TemplateColorSwatch[],
+  roleColorOverrides: Partial<Record<ThemeColorRole, string>> = {},
 ): Record<ThemeColorRole, { r: number; g: number; b: number }> | undefined {
-  const assignments = Object.entries(colorRoles);
-  if (assignments.length === 0) return undefined;
+  if (Object.keys(colorRoles).length === 0 && Object.keys(roleColorOverrides).length === 0) return undefined;
 
+  // Repli direct sur DEFAULT_THEME_ROLE_COLORS (pas un aller-retour par le
+  // hex, cf. resolveThemeRoleHexes) pour un rôle non touché : évite une
+  // dérive d'arrondi (0.86 -> "#DB" -> 0.8588…) sur une valeur que le
+  // créateur n'a jamais choisie.
   const byKey = new Map(colors.map((c) => [colorKey(c.hex, c.alpha), c]));
   const theme = { ...DEFAULT_THEME_ROLE_COLORS };
-  for (const [key, role] of assignments) {
+  for (const [key, role] of Object.entries(colorRoles)) {
     const swatch = byKey.get(key);
     if (swatch) theme[role] = hexToRgb(swatch.hex);
+  }
+  for (const [role, hex] of Object.entries(roleColorOverrides) as [ThemeColorRole, string][]) {
+    theme[role] = hexToRgb(hex);
   }
   return theme;
 }
