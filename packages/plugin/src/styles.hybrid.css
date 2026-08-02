@@ -89,6 +89,11 @@ html.f2s-skin--hybrid .f2s-frame-preview {
   box-shadow: var(--hyb-in);
 }
 
+/* Badge carré (angles droits), cohérent avec le reste du skin. */
+html.f2s-skin--hybrid .f2s-frame-preview--blocking::after {
+  border-radius: 0;
+}
+
 /* ---- Petit bouton carré (croix de suppression) : chrome seulement au
    survol/appui, pour rester discret dans le rail de vignettes. ---- */
 
@@ -117,7 +122,8 @@ html.f2s-skin--hybrid .f2s-tmpl-section {
    arrondies, l'accent orange au survol reste celui du skin moderne. */
 html.f2s-skin--hybrid .f2s-log-entry,
 html.f2s-skin--hybrid .f2s-tmpl-warning,
-html.f2s-skin--hybrid .f2s-tmpl-chip {
+html.f2s-skin--hybrid .f2s-tmpl-chip,
+html.f2s-skin--hybrid .f2s-tmpl-note-item {
   border-radius: 0;
   border-color: transparent;
   box-shadow: var(--hyb-out);
@@ -125,7 +131,8 @@ html.f2s-skin--hybrid .f2s-tmpl-chip {
 
 html.f2s-skin--hybrid .f2s-log-entry:active,
 html.f2s-skin--hybrid .f2s-tmpl-warning:active,
-html.f2s-skin--hybrid .f2s-tmpl-chip:active {
+html.f2s-skin--hybrid .f2s-tmpl-chip:active,
+html.f2s-skin--hybrid .f2s-tmpl-note-item:active {
   box-shadow: var(--hyb-pressed);
 }
 

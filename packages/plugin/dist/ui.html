@@ -736,7 +736,8 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
 }
 
 .f2s-tmpl-warning,
-.f2s-tmpl-chip {
+.f2s-tmpl-chip,
+.f2s-tmpl-note-item {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -757,7 +758,8 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
 }
 
 .f2s-tmpl-warning:hover,
-.f2s-tmpl-chip:hover {
+.f2s-tmpl-chip:hover,
+.f2s-tmpl-note-item:hover {
   border-color: var(--color-orange);
 }
 
@@ -819,10 +821,31 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   font-weight: 700;
 }
 
-/* Rouge plein, distinct de la bordure de sélection active (orange-red) —
-   TODO.md : affordance d'erreur plus riche à designer. */
+/* Rouge plein, distinct de la bordure de sélection active (orange-red).
+   La bordure seule se remarquait mal quand la vignette est déjà bordée par
+   du contenu clair/coloré au raz du cadre — un badge explicite en plus,
+   lisible même en un coup d'œil sur tout le rail (audit template, TODO.md
+   point "retour d'erreur sur une vignette bloquante"). */
 .f2s-frame-preview--blocking {
   border-color: var(--color-error);
+  position: relative;
+}
+
+.f2s-frame-preview--blocking::after {
+  content: '!';
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-error);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  pointer-events: none;
 }
 
 /* ---- Barre de statut (login / progression / erreurs) ---- */
@@ -1618,6 +1641,13 @@ html.f2s-skin--win95 .f2s-frame-preview--blocking {
   border-color: var(--color-error);
 }
 
+/* Badge carré (pas de coin arrondi en Windows 95) — même principe que le
+   skin moderne (styles.css), juste la géométrie qui change. */
+html.f2s-skin--win95 .f2s-frame-preview--blocking::after {
+  border-radius: 0;
+  box-shadow: var(--w95-out);
+}
+
 html.f2s-skin--win95 .f2s-canvas-preview {
   border: none;
   background: var(--w95-white);
@@ -1668,7 +1698,8 @@ html.f2s-skin--win95 .f2s-tmpl-section--blocking .f2s-tmpl-heading {
    arrondi qui changent de couleur au survol. */
 html.f2s-skin--win95 .f2s-log-entry,
 html.f2s-skin--win95 .f2s-tmpl-warning,
-html.f2s-skin--win95 .f2s-tmpl-chip {
+html.f2s-skin--win95 .f2s-tmpl-chip,
+html.f2s-skin--win95 .f2s-tmpl-note-item {
   font-size: 11px;
   border: none;
   border-radius: 0;
@@ -1680,13 +1711,15 @@ html.f2s-skin--win95 .f2s-tmpl-chip {
 
 html.f2s-skin--win95 .f2s-log-entry:hover,
 html.f2s-skin--win95 .f2s-tmpl-warning:hover,
-html.f2s-skin--win95 .f2s-tmpl-chip:hover {
+html.f2s-skin--win95 .f2s-tmpl-chip:hover,
+html.f2s-skin--win95 .f2s-tmpl-note-item:hover {
   border-color: transparent;
 }
 
 html.f2s-skin--win95 .f2s-log-entry:active,
 html.f2s-skin--win95 .f2s-tmpl-warning:active,
-html.f2s-skin--win95 .f2s-tmpl-chip:active {
+html.f2s-skin--win95 .f2s-tmpl-chip:active,
+html.f2s-skin--win95 .f2s-tmpl-note-item:active {
   box-shadow: var(--w95-pressed);
 }
 
@@ -1982,6 +2015,11 @@ html.f2s-skin--hybrid .f2s-frame-preview {
   box-shadow: var(--hyb-in);
 }
 
+/* Badge carré (angles droits), cohérent avec le reste du skin. */
+html.f2s-skin--hybrid .f2s-frame-preview--blocking::after {
+  border-radius: 0;
+}
+
 /* ---- Petit bouton carré (croix de suppression) : chrome seulement au
    survol/appui, pour rester discret dans le rail de vignettes. ---- */
 
@@ -2010,7 +2048,8 @@ html.f2s-skin--hybrid .f2s-tmpl-section {
    arrondies, l'accent orange au survol reste celui du skin moderne. */
 html.f2s-skin--hybrid .f2s-log-entry,
 html.f2s-skin--hybrid .f2s-tmpl-warning,
-html.f2s-skin--hybrid .f2s-tmpl-chip {
+html.f2s-skin--hybrid .f2s-tmpl-chip,
+html.f2s-skin--hybrid .f2s-tmpl-note-item {
   border-radius: 0;
   border-color: transparent;
   box-shadow: var(--hyb-out);
@@ -2018,7 +2057,8 @@ html.f2s-skin--hybrid .f2s-tmpl-chip {
 
 html.f2s-skin--hybrid .f2s-log-entry:active,
 html.f2s-skin--hybrid .f2s-tmpl-warning:active,
-html.f2s-skin--hybrid .f2s-tmpl-chip:active {
+html.f2s-skin--hybrid .f2s-tmpl-chip:active,
+html.f2s-skin--hybrid .f2s-tmpl-note-item:active {
   box-shadow: var(--hyb-pressed);
 }
 
@@ -3172,6 +3212,14 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
             previewedLayout.warnings.filter((w3) => w3.severity === "blocking").length > 0 && /* @__PURE__ */ u3("section", { className: "f2s-tmpl-section f2s-tmpl-section--blocking", children: [
               /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Fix before creating the template" }),
               /* @__PURE__ */ u3("ul", { className: "f2s-tmpl-list", children: previewedLayout.warnings.filter((w3) => w3.severity === "blocking").map((w3, i3) => /* @__PURE__ */ u3("li", { children: /* @__PURE__ */ u3("button", { type: "button", className: "f2s-tmpl-warning", onClick: () => selectSourceNodes([w3.sourceNodeId]), children: [
+                /* @__PURE__ */ u3("strong", { children: w3.nodeName }),
+                " \u2014 ",
+                w3.message
+              ] }) }, i3)) })
+            ] }),
+            previewedLayout.warnings.filter((w3) => w3.severity !== "blocking").length > 0 && /* @__PURE__ */ u3("section", { className: "f2s-tmpl-section", children: [
+              /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Notes" }),
+              /* @__PURE__ */ u3("ul", { className: "f2s-tmpl-list", children: previewedLayout.warnings.filter((w3) => w3.severity !== "blocking").map((w3, i3) => /* @__PURE__ */ u3("li", { children: /* @__PURE__ */ u3("button", { type: "button", className: "f2s-tmpl-note-item", onClick: () => selectSourceNodes([w3.sourceNodeId]), children: [
                 /* @__PURE__ */ u3("strong", { children: w3.nodeName }),
                 " \u2014 ",
                 w3.message

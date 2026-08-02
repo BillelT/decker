@@ -307,6 +307,13 @@ html.f2s-skin--win95 .f2s-frame-preview--blocking {
   border-color: var(--color-error);
 }
 
+/* Badge carré (pas de coin arrondi en Windows 95) — même principe que le
+   skin moderne (styles.css), juste la géométrie qui change. */
+html.f2s-skin--win95 .f2s-frame-preview--blocking::after {
+  border-radius: 0;
+  box-shadow: var(--w95-out);
+}
+
 html.f2s-skin--win95 .f2s-canvas-preview {
   border: none;
   background: var(--w95-white);
@@ -357,7 +364,8 @@ html.f2s-skin--win95 .f2s-tmpl-section--blocking .f2s-tmpl-heading {
    arrondi qui changent de couleur au survol. */
 html.f2s-skin--win95 .f2s-log-entry,
 html.f2s-skin--win95 .f2s-tmpl-warning,
-html.f2s-skin--win95 .f2s-tmpl-chip {
+html.f2s-skin--win95 .f2s-tmpl-chip,
+html.f2s-skin--win95 .f2s-tmpl-note-item {
   font-size: 11px;
   border: none;
   border-radius: 0;
@@ -369,13 +377,15 @@ html.f2s-skin--win95 .f2s-tmpl-chip {
 
 html.f2s-skin--win95 .f2s-log-entry:hover,
 html.f2s-skin--win95 .f2s-tmpl-warning:hover,
-html.f2s-skin--win95 .f2s-tmpl-chip:hover {
+html.f2s-skin--win95 .f2s-tmpl-chip:hover,
+html.f2s-skin--win95 .f2s-tmpl-note-item:hover {
   border-color: transparent;
 }
 
 html.f2s-skin--win95 .f2s-log-entry:active,
 html.f2s-skin--win95 .f2s-tmpl-warning:active,
-html.f2s-skin--win95 .f2s-tmpl-chip:active {
+html.f2s-skin--win95 .f2s-tmpl-chip:active,
+html.f2s-skin--win95 .f2s-tmpl-note-item:active {
   box-shadow: var(--w95-pressed);
 }
 

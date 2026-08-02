@@ -34,9 +34,13 @@ restante précise.
   frames to add" et "Prepare for Slides" sont désormais désactivés
   pendant qu'un export tourne, pour éviter de modifier `order`/`frames`
   sous les pieds de l'aperçu rétro en train de dérouler le deck.
-- **Retour d'erreur sur une vignette de layout bloquante** (mode
-  template) : rouge plein `--color-error` pour l'instant — concevoir un
-  retour plus riche qu'une simple bordure.
+- ~~**Retour d'erreur sur une vignette de layout bloquante**~~ — fait
+  (audit 2026-08) : badge rond rouge "!" en surimpression (coin
+  haut-droit de la vignette, `.f2s-frame-preview--blocking::after`) en
+  plus de la bordure pleine `--color-error` — se remarque même quand la
+  bordure seule se distingue mal sur un contenu déjà coloré. Angles droits
+  en win95/hybrid, cohérent avec chaque skin ; le `title` explicatif au
+  survol reste inchangé.
 - ~~**Indicateur de chargement du bouton "Sign in with Google".**~~ — fait :
   spinner + libellé dédié aux deux moments d'attente (`.f2s-spinner`,
   `.f2s-btn-loading`, déjà présents en CSS mais jamais câblés) — "Preparing
@@ -44,12 +48,12 @@ restante précise.
   montage, puis "Waiting for Google sign-in…" après clic sur le lien, tout
   le temps du polling (`pollAuthSession`, jusqu'à 10 min), piloté par le
   nouveau state `authLinkClicked` (`ui.tsx`).
-- **Avertissements non bloquants dans le rapport template** (police
-  substituée automatiquement, rayon d'angle approximé…) : n'empêchent pas
-  la création du template (l'élément reste éditable), mais ne s'affichent
-  nulle part dans le rapport — seuls les warnings *bloquants* y figurent.
-  Utile pour que le créateur sache qu'une police n'est pas garantie
-  identique dans Slides avant de diffuser son template.
+- ~~**Avertissements non bloquants dans le rapport template**~~ — fait
+  (audit 2026-08) : nouvelle section "Notes" dans `TemplatePanel.tsx`
+  (entre "Fix before creating the template" et "Placeholders"), liste les
+  warnings `info`/`warning` (police substituée, rayon approximé…) en style
+  neutre — cliquable, sélectionne l'élément dans Figma comme les autres
+  entrées du rapport.
 
 ## Divers
 
@@ -182,16 +186,18 @@ les suivants) :
    de layouts — distincte du chrome réellement écrit sur le Master (point
    3), juste pour que le rail se lise comme un vrai jeu de layouts
    (Cover → Section → Content).
-6. **Texte de placeholder visuellement explicite** : un calque tagué
-   `[[title]]` envoie aujourd'hui à Slides le texte BRUT du calque Figma
-   (`placeholder: parsePlaceholderTag(node.name)` ne touche que les
-   métadonnées, jamais le contenu texte réel extrait à côté). Remplacer ce
-   texte par un indicateur lisible type `[Title]` rendrait évident, pour
-   quiconque duplique la slide à la main (même sans outil compagnon), qu'il
-   faut le remplacer — et prépare le terrain pour un futur `replaceAllText`
-   automatisé (technique du doc API qu'on n'utilise pas du tout aujourd'hui :
-   on ne pose que l'alt text `f2s-placeholder:<RÔLE>`, jamais de token
-   `{{title}}` dans le texte lui-même).
+6. ~~**Texte de placeholder visuellement explicite.**~~ — fait (audit
+   2026-08) : `serialize/templatePlaceholderText.ts::applyPlaceholderText`
+   remplace, uniquement au moment de la création du TEMPLATE (jamais un
+   export de deck), le contenu réel d'un élément texte tagué par
+   `[Title]`/`[Body text]`/… — style (police, taille, couleur, alignement)
+   du run/paragraphe d'origine conservé, juste réappliqué au texte plus
+   court. L'aperçu du plugin (capture Figma) continue de montrer le VRAI
+   contenu, seul l'IRDocument envoyé au backend change. Prépare toujours le
+   terrain pour un futur `replaceAllText` automatisé (technique du doc API
+   qu'on n'utilise pas du tout aujourd'hui : on ne pose que l'alt text
+   `f2s-placeholder:<RÔLE>`, jamais de token `{{title}}` dans le texte
+   lui-même).
 7. **Validation de composition des templates** (approche à définir).
    Exemples concrets à couvrir : deux calques tagués `[[title]]` dans le
    même layout (ambigu : lequel est LE titre ?) ; layout sans aucun

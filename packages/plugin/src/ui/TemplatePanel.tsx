@@ -283,6 +283,23 @@ export function TemplatePanel({
                 </section>
               )}
 
+              {previewedLayout.warnings.filter((w) => w.severity !== 'blocking').length > 0 && (
+                <section className="f2s-tmpl-section">
+                  <h3 className="f2s-tmpl-heading">Notes</h3>
+                  <ul className="f2s-tmpl-list">
+                    {previewedLayout.warnings
+                      .filter((w) => w.severity !== 'blocking')
+                      .map((w, i) => (
+                        <li key={i}>
+                          <button type="button" className="f2s-tmpl-note-item" onClick={() => selectSourceNodes([w.sourceNodeId])}>
+                            <strong>{w.nodeName}</strong> — {w.message}
+                          </button>
+                        </li>
+                      ))}
+                  </ul>
+                </section>
+              )}
+
               <section className="f2s-tmpl-section">
                 <h3 className="f2s-tmpl-heading">Placeholders</h3>
                 {previewedLayout.placeholders.length === 0 ? (

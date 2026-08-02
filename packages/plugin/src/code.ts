@@ -6,6 +6,7 @@ import { reformatForSlides } from './serialize/reformatForSlides.js';
 import { enforceTemplateStrictness, hasBlockingWarnings } from './serialize/templateValidation.js';
 import { aggregateColorSwatches, summarizeColors, summarizeFonts, summarizePlaceholders } from './serialize/templateSummary.js';
 import { applyThemeRolesToElements, buildTemplateTheme } from './serialize/templateTheme.js';
+import { applyPlaceholderText } from './serialize/templatePlaceholderText.js';
 
 const MAX_FRAMES_WARNING = 20;
 /**
@@ -1053,6 +1054,10 @@ async function handleTemplateCreateRequest(
   const theme = buildTemplateTheme(colorRoles, allColors);
   for (const slide of slides) {
     slide.elements = applyThemeRolesToElements(slide.elements, colorRoles);
+    // Le texte réel d'un calque tagué [[role]] cède la place à un
+    // indicateur lisible ([Title], [Body text]…) — seulement pour un
+    // template, jamais un deck ponctuel (TODO.md § Mode template, point 6).
+    slide.elements = applyPlaceholderText(slide.elements);
   }
 
   const doc: IRDocument = {
