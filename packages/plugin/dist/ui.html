@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr">
+<html lang="fr" class="__F2S_INITIAL_SKIN__ __F2S_INITIAL_THEME__">
 <head>
 <meta charset="utf-8" />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'><rect width='80' height='80' rx='40' fill='%23F06800'/><path d='M48.6887 47.1716C50.2508 48.7337 50.2508 51.2664 48.6887 52.8285L44.2034 57.3138C41.6836 59.8336 37.375 58.049 37.375 54.4854L37.375 45.5148C37.375 41.9512 41.6836 40.1665 44.2034 42.6864L48.6887 47.1716Z' fill='%23F2ECE8'/><path d='M48.6887 27.1715C50.2508 28.7335 50.2508 31.2662 48.6887 32.8283L44.2034 37.3136C41.6836 39.8334 37.375 38.0488 37.375 34.4852L37.375 25.5146C37.375 21.951 41.6836 20.1663 44.2034 22.6862L48.6887 27.1715Z' fill='%23F2ECE8'/><rect x='30.6235' y='21.0001' width='3' height='37' rx='1.5' fill='%23F2ECE8'/></svg>" />
@@ -2688,6 +2688,12 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
   function skinClassName(skin) {
     return `f2s-skin--${skin}`;
   }
+  function readInitialSkin() {
+    const root = document.documentElement;
+    if (root.classList.contains(skinClassName("modern"))) return "modern";
+    if (root.classList.contains(skinClassName("hybrid"))) return "hybrid";
+    return DEFAULT_UI_SKIN;
+  }
   function postToPlugin(message) {
     parent.postMessage({ pluginMessage: message }, "*");
   }
@@ -3585,6 +3591,12 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
     if (root.classList.contains("figma-light")) return "light";
     return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   }
+  function readInitialThemeOverride() {
+    const root = document.documentElement;
+    if (root.classList.contains(OVERRIDE_CLASS.light)) return "light";
+    if (root.classList.contains(OVERRIDE_CLASS.dark)) return "dark";
+    return void 0;
+  }
   function applyThemeOverride(theme) {
     const root = document.documentElement;
     root.classList.toggle(OVERRIDE_CLASS.light, theme === "light");
@@ -3653,7 +3665,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
   }
   function App() {
     const [mode, setMode] = d2("deck");
-    const [skin, setSkin] = d2(DEFAULT_UI_SKIN);
+    const [skin, setSkin] = d2(() => readInitialSkin());
     h2(() => {
       const root = document.documentElement;
       root.classList.toggle(skinClassName("win95"), skin === "win95");
@@ -3708,7 +3720,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
     const [templateTitle, setTemplateTitle] = d2("");
     const [settingsOpen, setSettingsOpen] = d2(false);
     const [figmaTheme, setFigmaTheme] = d2(() => readFigmaTheme());
-    const [themeOverride, setThemeOverride] = d2();
+    const [themeOverride, setThemeOverride] = d2(() => readInitialThemeOverride());
     const theme = themeOverride ?? figmaTheme;
     h2(() => watchFigmaTheme(setFigmaTheme), []);
     h2(() => applyThemeOverride(themeOverride), [themeOverride]);
