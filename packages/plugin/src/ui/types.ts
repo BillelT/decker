@@ -101,6 +101,22 @@ export function skinClassName(skin: UiSkin): string {
   return `f2s-skin--${skin}`;
 }
 
+/**
+ * Skin réellement affiché au tout premier rendu : code.ts injecte la classe
+ * du skin persisté directement dans le HTML servi à `figma.showUI` (avant
+ * même la création de l'iframe — voir commentaire dans `main()`), donc
+ * `<html>` porte déjà la bonne classe dès le montage de React. Partir d'ici
+ * plutôt que de `DEFAULT_UI_SKIN` évite qu'un premier `useEffect` ne
+ * réécrase cette classe par le skin par défaut avant que le message
+ * `skin-restored` n'arrive.
+ */
+export function readInitialSkin(): UiSkin {
+  const root = document.documentElement;
+  if (root.classList.contains(skinClassName('modern'))) return 'modern';
+  if (root.classList.contains(skinClassName('hybrid'))) return 'hybrid';
+  return DEFAULT_UI_SKIN;
+}
+
 export function postToPlugin(message: Record<string, unknown>): void {
   parent.postMessage({ pluginMessage: message }, '*');
 }
