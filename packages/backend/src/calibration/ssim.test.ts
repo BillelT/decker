@@ -19,4 +19,16 @@ describe('compareSsim', () => {
     const { score } = compareSsim(rects, PNG.sync.write(blank));
     expect(score).toBeLessThan(0.95);
   });
+
+  // Régression (audit 2026-08) : la miniature réelle renvoyée par l'API
+  // Slides n'a pas forcément la même résolution que l'image de référence
+  // (voir commentaire d'alignImages) — même contenu, échelle différente, ne
+  // doit pas être pénalisé par un simple rognage au plus petit dénominateur.
+  it('scores highly comparing the same content rendered at a different resolution', () => {
+    const small = renderRectsReferencePng(1); // 720x405
+    const large = renderRectsReferencePng(2); // 1440x810 — mêmes proportions, contenu identique
+
+    const { score } = compareSsim(small, large);
+    expect(score).toBeGreaterThan(0.99);
+  });
 });
