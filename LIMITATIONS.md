@@ -133,19 +133,52 @@ avec les couches suivantes **testées et fonctionnelles hors ligne** :
 
 ### Ce qui reste explicitement non calibré / non fait
 
-- Le critère de Phase 0 validé ci-dessus ne couvre que la chaîne
-  coordonnées/échelle/z-order (fixture `01-rects`, rectangles unis sans
-  texte). `calibration.json` contient toujours des **valeurs par défaut
-  prudentes, non mesurées** pour tout ce que cette fixture ne teste pas
-  (`textInset`, `roundRectRadiusRatio`, `lineSpacingBaseline`,
-  `textWidthSafetyMarginEm`) — il faudra les fixtures `02`-`13` (spec §9,
-  texte/formes arrondies/etc., voir plus bas) pour les mesurer à leur tour.
-  `textWidthSafetyMarginEm` n'est de toute façon pas mesuré par ce harnais
-  actuellement (voir `calibrate.ts`), sa valeur par défaut reste une marge
-  de sécurité raisonnable plutôt qu'une mesure empirique.
-- Le jeu de fixtures complet (spec §9, `01-rects` à `13-batch`) n'existe
-  que pour `01-rects` (généré en code, sans fichier Figma réel). Les
-  fixtures `02` à `13` nécessitent un fichier Figma dédié à créer.
+- **`textInset` est désormais mesuré pour de vrai** (fixture `03-text-inset`,
+  audit 2026-08, code-générée comme `01-rects` — deux `TEXT_BOX` à fond
+  gris avec un glyphe "H" rouge gras ancré haut-gauche / bas-droite,
+  requêtes construites à la main plutôt que via `mapText` pour ne PAS
+  appliquer la compensation qu'on cherche justement à calibrer). Mesure par
+  balayage de pixels (`calibration/pixelMeasure.ts`) sur la miniature
+  réelle, écrite dans `calibration.json` à chaque run. Voir
+  `calibration-report.html` section "03-text-inset" pour la valeur mesurée
+  et une vérification visuelle.
+- **Trois champs de `CalibrationData` sont des valeurs par défaut non
+  mesurées ET ne sont consommés par AUCUN code du mapper ni du plugin**
+  (vérifié par recherche exhaustive, audit 2026-08) :
+  `roundRectRadiusRatio`, `defaultOutlineWeightPt`, `lineSpacingBaseline`.
+  Les calibrer sans d'abord les brancher quelque part ne changerait rien au
+  comportement réel — pas de fixture construite pour eux tant que ce
+  branchement n'existe pas (voir aussi `radiusNativeTolerance`, qui EXISTE
+  dans `CalibrationData` mais dont le plugin utilise en réalité sa propre
+  copie codée en dur, `serialize/radius.ts::RADIUS_NATIVE_TOLERANCE` — le
+  fichier `calibration.json` produit par le backend n'est de toute façon
+  jamais lu côté plugin, seulement côté mapper backend).
+  `textWidthSafetyMarginEm` (et ses variantes substituée/tightFit) restent
+  aussi non mesurées, mais POUR une raison différente : ce sont des marges
+  de sécurité empiriques contre un écart de rendu de police qui varie par
+  police/taille, pas une constante unique mesurable par une seule fixture
+  géométrique — leur valeur par défaut reste un choix raisonnable plutôt
+  qu'une mesure.
+- Le jeu de fixtures complet listé au spec §9 (`01-rects` à `13-batch`)
+  n'a que `01-rects` et `03-text-inset` en version code-générée (sans
+  fichier Figma réel — voir plus bas pourquoi les autres n'ont pas été
+  construites de la même façon) :
+  - `02-rotation`, `06-shapes`, `10-images` testeraient surtout la même
+    chaîne coordonnées/échelle déjà validée par `01-rects` (juste avec plus
+    de variété de formes) — valeur ajoutée réelle mais secondaire.
+  - `04-text-multi-style`, `05-text-edge`, `07-gradients`, `08-effects`,
+    `09-vectors`, `11-autolayout` testent la logique de décision native/
+    raster et l'extraction Figma **côté plugin** (`packages/plugin/src/serialize`),
+    pas ce harnais de calibration backend qui part d'un `IRDocument` déjà
+    produit — déjà couverts par les tests unitaires du plugin (mocks de
+    nœuds Figma), et une fixture "de référence" en pur code pour un
+    dégradé/vecteur/effet n'apporterait rien puisqu'on n'a justement pas de
+    moteur de rendu Figma ici pour produire une image de référence fidèle.
+  - `12-realistic` et `13-batch` sont des scènes composites de bout en
+    bout — utiles surtout une fois qu'un vrai fichier Figma existe pour
+    les produire fidèlement, pas en équivalent code.
+  Un vrai fichier Figma dédié (spec §9) reste donc la voie normale pour
+  ces fixtures-là quand l'équipe voudra les couvrir.
 - Le stockage d'assets utilisé en production est **Vercel Blob**
   (`ASSET_STORAGE_DRIVER=vercel-blob`, `src/storage/vercelBlobAssetStore.ts`
   — voir README §8.2), pas juste un stockage disque local : ça couvre déjà
