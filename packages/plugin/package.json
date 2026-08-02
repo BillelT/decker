@@ -1,0 +1,23 @@
+{
+  "name": "@figma-to-slides/plugin",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "prebuild": "npm --prefix ../shared run build",
+    "build": "npm run typecheck && node esbuild.config.mjs",
+    "pretest": "npm --prefix ../shared run build",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "lint": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@figma-to-slides/shared": "0.1.0",
+    "preact": "^10.24.3"
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.104.0",
+    "esbuild": "^0.28.1",
+    "typescript": "^5.6.3",
+    "vitest": "^4.1.10"
+  }
+}

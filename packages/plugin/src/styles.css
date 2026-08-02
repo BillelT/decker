@@ -1,0 +1,1277 @@
+/* Design system (voir /root/.claude/uploads/.../designsystem.md) */
+
+@font-face {
+  font-family: 'Cabinet Grotesk';
+  src: url(__FONT_DATA_URI__) format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --color-orange: #f06800;
+  --color-orange-20: rgba(240, 104, 0, 0.2);
+  --color-orange-40: rgba(240, 104, 0, 0.4);
+  --color-orange-red: #f04000;
+  /* Rouge PLEIN réservé aux états d'erreur/bloquants — distinct de
+     --color-orange-red, qui marque la sélection active : les deux étaient
+     identiques et une vignette bloquante était indiscernable d'une vignette
+     sélectionnée (audit template). */
+  --color-error: #e00000;
+  --color-bg: #fff9f5;
+  --color-text: #120f0d;
+  --color-black-70: rgba(18, 15, 13, 0.7);
+  --color-scrollbar: #cccccc;
+  --color-gray-light: #eeeeee;
+  --color-border: var(--color-gray-light);
+  /* Surfaces additionnelles pour le layout à deux colonnes — même famille
+     que le monogramme (#F2ECE8) plutôt que des gris neutres génériques. */
+  --color-surface: #ffffff;
+  --color-surface-muted: #f2ece8;
+}
+
+/* Thème sombre : Figma pose `figma-dark`/`figma-light` sur <html> quand le
+   plugin est ouvert avec `themeColors: true` (code.ts) — palette claire
+   inversée, l'orange de marque reste identique. Le fallback
+   prefers-color-scheme couvre le rendu hors Figma (dev navigateur), sans
+   jamais contredire une classe posée par Figma.
+
+   `f2s-theme-light`/`f2s-theme-dark` sont le choix EXPLICITE fait dans la
+   modale de réglages (ui/theme.ts) : il l'emporte sur le thème de Figma comme
+   sur la préférence système, d'où les `:not(.f2s-theme-light)` ci-dessous. */
+html.figma-dark:not(.f2s-theme-light),
+html.f2s-theme-dark {
+  --color-bg: #171310;
+  --color-text: #f2ece8;
+  --color-black-70: rgba(242, 236, 232, 0.7);
+  --color-scrollbar: #4d453e;
+  --color-border: #332c26;
+  --color-surface: #211c17;
+  --color-surface-muted: #2a231d;
+}
+
+@media (prefers-color-scheme: dark) {
+  html:not(.figma-light):not(.f2s-theme-light) {
+    --color-bg: #171310;
+    --color-text: #f2ece8;
+    --color-black-70: rgba(242, 236, 232, 0.7);
+    --color-scrollbar: #4d453e;
+    --color-border: #332c26;
+    --color-surface: #211c17;
+    --color-surface-muted: #2a231d;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: var(--color-orange-20);
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: 'Cabinet Grotesk', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+#app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding-bottom: 57px;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+a {
+  color: var(--color-orange);
+}
+
+/* Scrollbar (WebKit) — flèches/piste/poignée en #CCCCCC (spec DS). 6px
+   (au lieu de 10px) pour que toutes les scrollbars restent fines, en
+   cohérence avec scrollbar-width: thin ci-dessous pour Firefox — sauf en
+   win95 (styles.win95.css), qui garde volontairement l'ascenseur
+   16px/motif tramé d'origine. */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-scrollbar);
+  border-radius: 8px;
+}
+::-webkit-scrollbar-button {
+  background: var(--color-scrollbar);
+  height: 6px;
+  width: 6px;
+}
+* {
+  scrollbar-color: var(--color-scrollbar) transparent;
+  scrollbar-width: thin;
+}
+
+/* ---- Top bar ---- */
+
+.f2s-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 16px 0;
+  flex: none;
+}
+
+.f2s-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.f2s-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.f2s-logo {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: 8px;
+  display: block;
+}
+
+.f2s-logo svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ---- Toolbar (polices) ---- */
+
+.f2s-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 12px 16px;
+  flex: none;
+}
+
+.f2s-toolbar-row {
+  display: flex;
+  /* Le nom du deck et la liste de polices restent sur une seule ligne : si
+     la liste de polices est trop longue pour tenir, la ligne défile
+     horizontalement plutôt que de retomber le nom du deck dessous. */
+  flex-wrap: nowrap;
+  gap: 24px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.f2s-toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  flex-wrap: nowrap;
+}
+
+.f2s-toolbar-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-black-70);
+}
+
+.f2s-toolbar-muted {
+  font-size: 12px;
+  color: var(--color-black-70);
+}
+
+.f2s-dim-box {
+  font-size: 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: 6px;
+  padding: 2px 10px;
+  min-width: 24px;
+  text-align: center;
+}
+
+.f2s-dim-sep {
+  color: var(--color-black-70);
+}
+
+.f2s-dim-unit {
+  font-size: 11px;
+  color: var(--color-black-70);
+}
+
+/* Champ de nommage du deck/template (toolbar) — même gabarit que le select
+   de polices, un peu plus large pour un vrai titre. */
+.f2s-title-input {
+  font-family: inherit;
+  font-size: 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-radius: 4px;
+  padding: 3px 8px;
+  width: 220px;
+}
+
+.f2s-title-input:focus {
+  outline: none;
+  border-color: var(--color-orange-40);
+}
+
+.f2s-title-input::placeholder {
+  color: var(--color-black-70);
+  opacity: 0.7;
+}
+
+.f2s-font-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.f2s-font-original {
+  color: var(--color-black-70);
+}
+
+.f2s-font-arrow {
+  color: var(--color-black-70);
+}
+
+.f2s-font-dropdown {
+  font-family: inherit;
+  font-size: 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-radius: 4px;
+  padding: 3px 8px;
+}
+
+.f2s-font-dropdown:focus {
+  outline: none;
+  border-color: var(--color-orange-40);
+}
+
+/* ---- Buttons ---- */
+
+.f2s-btn {
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 8px;
+  padding: 8px 16px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: background-color 0.15s ease, color 0.15s ease, outline-color 0.15s ease, transform 0.15s ease;
+}
+
+/* Transform translateY() uniquement en mode moderne/hybrid (Win95 gère le pressed via box-shadow) */
+html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
+  transform: translateY(0.5px);
+}
+
+/* Contour seul au repos (le noir plein pesait visuellement plus lourd que le
+   bouton primaire orange — hiérarchie inversée, cf. audit) ; le fond
+   n'apparaît qu'au hover. */
+.f2s-btn--tertiary {
+  background: transparent;
+  color: var(--color-text);
+  border-color: var(--color-text);
+}
+
+.f2s-btn--tertiary:hover:not(:disabled) {
+  background: var(--color-text);
+  color: var(--color-bg);
+}
+
+.f2s-btn--secondary {
+  background: transparent;
+  border-color: var(--color-orange);
+  color: var(--color-orange);
+  display: inline-flex;
+  align-items: center;
+  outline: 1px solid transparent;
+  outline-offset: -2px;
+}
+
+.f2s-btn--secondary:hover:not(:disabled) {
+  background: var(--color-orange);
+  color: var(--color-bg);
+  outline-color: var(--color-orange);
+}
+
+.f2s-btn--primary {
+  background: var(--color-orange);
+  color: var(--color-bg);
+}
+
+.f2s-btn--primary:hover:not(:disabled) {
+  background: var(--color-orange-red);
+}
+
+/* ---- Body : rail de miniatures + canvas ---- */
+
+.f2s-body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: stretch;
+  border-top: 1px solid var(--color-border);
+}
+
+/* ---- Toast temporaire ----
+   Pour les messages sans place dédiée dans le layout (ex. notices de
+   sélection du mode deck) : un overlay auto-dismiss (délai piloté par
+   ui.tsx) plutôt qu'un texte inline qui pousserait le contenu autour de lui. */
+
+.f2s-toast {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  max-width: calc(100% - 32px);
+  padding: 8px 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(18, 15, 13, 0.18);
+  color: var(--color-error);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  pointer-events: none;
+  animation: f2s-toast-in 160ms var(--f2s-modal-ease);
+}
+
+@keyframes f2s-toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -6px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .f2s-toast {
+    animation-duration: 0.01ms;
+  }
+}
+
+.f2s-sidebar {
+  flex: none;
+  width: 190px;
+  overflow-y: auto;
+  /* Réserve la place de la scrollbar même quand le contenu ne déborde pas
+     encore : sans ça, les vignettes gagnent/perdent quelques px de large
+     pile au moment où une frame de plus fait apparaître l'ascenseur. */
+  scrollbar-gutter: stable;
+  padding: 8px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border-right: 1px solid var(--color-border);
+}
+
+.f2s-sidebar-item {
+  /* Décalage "fantôme" pendant un drag (voir ui.tsx) : anime le retour à un
+     cran entier plutôt qu'un saut instantané. La vignette activement
+     déplacée désactive cette transition (elle doit suivre le curseur au
+     pixel près, sans lag). */
+  transition: transform 180ms ease;
+}
+
+.f2s-empty {
+  color: var(--color-black-70);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 24px 0;
+  text-align: center;
+}
+
+.f2s-frame-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.f2s-frame-text {
+  font-size: 12px;
+  color: var(--color-black-70);
+}
+
+.f2s-frame-controls {
+  display: flex;
+  gap: 4px;
+  flex: none;
+}
+
+.f2s-icon-btn {
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--color-text);
+}
+
+.f2s-icon-btn:hover:not(:disabled) {
+  background: var(--color-orange-40);
+}
+
+.f2s-frame-preview {
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background: var(--color-surface-muted);
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  display: block;
+  overflow: hidden;
+  cursor: pointer;
+  padding: 0;
+  touch-action: none;
+}
+
+/* Retour hover = sélection (pas le drag, qui reste discret tant qu'aucun
+   mouvement n'est détecté — voir .is-dragging plus bas). */
+.f2s-frame-preview:hover:not(.is-active) {
+  border-color: var(--color-scrollbar);
+}
+
+.f2s-frame-preview.is-active {
+  border-color: var(--color-orange-red);
+}
+
+.f2s-frame-preview img {
+  width: 100%;
+  height: 100%;
+  /* `contain` plutôt que `cover` : les slots restent tous au même format
+     16:9 (rail cohérent), mais une frame portrait/carrée est montrée en
+     entier sur le fond de surface au lieu d'être tronquée par un cadrage
+     qui ne correspond ni à la frame ni au rendu Slides. */
+  object-fit: contain;
+  display: block;
+  pointer-events: none;
+}
+
+/* Drag au pointeur (voir ui.tsx) : la vignette suit le curseur via
+   `transform`, sans ombre ni ghost natif — suivi immédiat, donc pas de
+   transition sur cette vignette précise (seules les autres, décalées pour
+   ouvrir la place, en gardent une). */
+.f2s-sidebar-item.is-dragging {
+  position: relative;
+  z-index: 10;
+  transition: none;
+}
+
+/* Relâchement du drag : `order` se réorganise et les transforms de
+   drag/ghost repassent à zéro dans le même rendu (voir ui.tsx) — sans
+   ceci, la transition animerait ce retour à zéro par-dessus une position
+   de flux déjà réorganisée, ce qui fait déraper la vignette d'un cran
+   avant qu'elle ne revienne à sa place. */
+.f2s-sidebar-item.is-releasing {
+  transition: none;
+}
+
+.f2s-sidebar-item.is-dragging .f2s-frame-preview {
+  cursor: grabbing;
+}
+
+/* ---- Canvas principal ---- */
+
+.f2s-canvas {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* `safe center` : centre le contenu quand il tient dans le panneau, mais
+     revient à un alignement de départ dès qu'il déborde — sinon un
+     `justify-content: center` classique sur un conteneur scrollable rogne le
+     bord de tête du contenu hors de portée du scroll (on ne peut jamais
+     remonter jusqu'au haut réel de la preview). */
+  justify-content: safe center;
+  gap: 24px;
+}
+
+.f2s-canvas-empty {
+  color: var(--color-black-70);
+  font-size: 12px;
+  text-align: center;
+}
+
+.f2s-canvas-preview {
+  max-width: 640px;
+  max-height: 100%;
+  flex: none;
+  border: 1px solid var(--color-scrollbar);
+}
+
+.f2s-canvas-preview img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+}
+
+/* ---- Logs (rapport de fidélité) : sous la preview + dimensions du deck ----
+   Les données (nativeCount/rasterCount/warnings) arrivent déjà avec
+   `candidate-added`/`candidate-updated` (code.ts) mais étaient ignorées côté
+   UI (TODO.md) — même wording et même geste "cliquer pour sélectionner le
+   nœud source" que le rapport de template. */
+
+.f2s-logs {
+  width: 100%;
+  max-width: 640px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+.f2s-logs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.f2s-log-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--color-text);
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+
+.f2s-log-entry:hover {
+  border-color: var(--color-orange);
+}
+
+/* Une seule ligne, tronquée : voir le commentaire sur `f2s-log-entry-text`
+   dans DeckPanel.tsx — un nom de calque texte peut être un paragraphe
+   entier, seul compte de pouvoir identifier l'élément et cliquer dessus.
+   Le message (ce qui a été fait) est prioritaire : c'est le nom du calque
+   qui cède la place et se tronque en premier. */
+.f2s-log-entry-text {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.f2s-log-entry-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.f2s-log-entry-message {
+  flex: 0 1 auto;
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.f2s-log-entry--blocking {
+  border-color: var(--color-error);
+  color: var(--color-error);
+}
+
+/* ---- Création de template : rapport de contenu communicable ----
+   (brief-creation-template-google-slides.md — couleurs, typos, layouts,
+   placeholders). Même rail de vignettes + zone principale que le deck,
+   mais la zone principale devient un rapport à deux colonnes plutôt qu'un
+   simple aperçu centré : le contenu peut dépasser la hauteur visible, donc
+   alignement en haut plutôt que centré verticalement. */
+
+.f2s-canvas--template {
+  justify-content: flex-start;
+  align-items: stretch;
+}
+
+.f2s-tmpl-report {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+  width: 100%;
+}
+
+.f2s-tmpl-preview {
+  max-width: 360px;
+}
+
+.f2s-tmpl-panel {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.f2s-tmpl-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.f2s-tmpl-heading {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-black-70);
+}
+
+.f2s-tmpl-section--blocking .f2s-tmpl-heading {
+  color: var(--color-error);
+}
+
+/* Attentes de fin de parcours : ce que "template" veut dire côté Slides
+   (présentation à dupliquer, pas un vrai master) — voir TemplatePanel.tsx. */
+.f2s-tmpl-note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-black-70);
+  max-width: 720px;
+}
+
+.f2s-tmpl-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.f2s-tmpl-warning,
+.f2s-tmpl-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+
+.f2s-tmpl-warning {
+  border-color: var(--color-error);
+  color: var(--color-error);
+}
+
+.f2s-tmpl-warning:hover,
+.f2s-tmpl-chip:hover {
+  border-color: var(--color-orange);
+}
+
+/* Rôle de placeholder en texte neutre (les anciens badges colorés
+   title/subtitle=orange, image/logo=rouge ne portaient aucune sémantique
+   lisible — décoration retirée, cf. audit). */
+.f2s-tmpl-role {
+  flex: none;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-black-70);
+}
+
+.f2s-tmpl-swatches {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.f2s-tmpl-swatch-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Damier sous la pastille : une couleur semi-transparente se lit comme
+   telle au lieu d'être faussée par le fond du panneau. */
+.f2s-tmpl-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  flex: none;
+  overflow: hidden;
+  display: block;
+  background-image: linear-gradient(45deg, rgba(127, 127, 127, 0.25) 25%, transparent 25%, transparent 75%, rgba(127, 127, 127, 0.25) 75%),
+    linear-gradient(45deg, rgba(127, 127, 127, 0.25) 25%, transparent 25%, transparent 75%, rgba(127, 127, 127, 0.25) 75%);
+  background-size: 12px 12px;
+  background-position: 0 0, 6px 6px;
+}
+
+.f2s-tmpl-swatch-color {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.f2s-tmpl-swatch-label {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.f2s-tmpl-font-family {
+  font-weight: 700;
+}
+
+/* Rouge plein, distinct de la bordure de sélection active (orange-red) —
+   TODO.md : affordance d'erreur plus riche à designer. */
+.f2s-frame-preview--blocking {
+  border-color: var(--color-error);
+}
+
+/* ---- Barre de statut (login / progression / erreurs) ---- */
+
+.f2s-statusbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 12px 16px;
+  background: var(--color-bg);
+  border-top: 1px solid var(--color-border);
+}
+
+.f2s-progress {
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.f2s-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--color-orange-40);
+  border-top-color: var(--color-orange);
+  animation: f2s-spin 0.8s linear infinite;
+  flex: none;
+}
+
+/* Spinner + libellé à l'intérieur d'un `.f2s-btn` (ex. "Sign in with
+   Google" pendant les deux temps d'attente réseau) — un `<button>`/`<a>`
+   ne peut pas être lui-même flex sans perturber son padding/alignement
+   existant, ce wrapper interne s'en charge à la place. */
+.f2s-btn-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@keyframes f2s-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.f2s-error {
+  color: var(--color-error);
+  font-size: 12px;
+  margin: 0;
+}
+
+.f2s-login {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* ---- Footer (settings / support) ---- */
+
+.f2s-footer {
+  flex: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg);
+  z-index: 50;
+}
+
+.f2s-footer-settings {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-black-70);
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin-left: -10px;
+  transition: color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
+}
+
+.f2s-footer-settings:hover:not(:disabled),
+.f2s-footer-settings[aria-expanded='true'] {
+  color: var(--color-text);
+  background: var(--color-surface-muted);
+}
+
+/* Transform translateY() uniquement en mode moderne/hybrid */
+html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) {
+  transform: translateY(0.5px);
+}
+
+/* Micro-interaction de l'icône settings (gear retenu, le slider comparé
+   en parallèle a été retiré) — comme le translateY() ci-dessus,
+   désactivée en win95 (esprit rétro, pas d'animation). */
+html:not(.f2s-skin--win95) .f2s-icon-gear {
+  transition: transform 0.45s cubic-bezier(0.34, 1.15, 0.64, 1);
+}
+
+/* 60° = un sixième de tour, l'esprit d'un décalage d'une dent pour un
+   engrenage à 6 dents — mais ce tracé IBM est dessiné à la main, pas un
+   hexagone mathématiquement régulier : un calque superposé à 0°/60°
+   montre que les dents ne retombent pas exactement les unes sur les
+   autres. À la taille réelle de l'icône (16px) ça ne se voit pas, mais
+   ce n'est pas un alignement pixel-perfect. Rebond adouci (overshoot
+   1.56 -> 1.15) et transition ralentie (0.35s -> 0.45s) : la version
+   précédente rendait trop violente au hover. scale réduit (1.04 -> 1.02)
+   pour rester discret. */
+html:not(.f2s-skin--win95) .f2s-footer-settings:hover:not(:disabled) .f2s-icon-gear {
+  transform: rotate(60deg) scale(1.02);
+}
+
+/* Continue le tour amorcé au hover (même sens, pas d'inversion) au lieu
+   de s'arrêter pile à 60° — et compresse légèrement pour le ressenti
+   d'enfoncement. Transition plus courte et sans rebond : l'appui doit
+   être net, le rebond est réservé à l'arrivée en hover. */
+html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-icon-gear {
+  transform: rotate(68deg) scale(0.95);
+  transition-duration: 0.12s;
+  transition-timing-function: ease-out;
+}
+
+.f2s-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Message d'export échoué (session expirée, 400 Slides API, backend
+   injoignable…) : tronqué sur une ligne pour ne pas casser la mise en page
+   fixe du footer — le message complet reste dans `title`. */
+.f2s-footer-error {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- Modale de réglages ---- */
+
+:root {
+  /* Aligné sur TRANSITION_MS (ui/SettingsModal.tsx), qui pilote le démontage
+     du composant à la fin de l'animation de sortie. */
+  --f2s-modal-duration: 220ms;
+  --f2s-modal-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.f2s-modal-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(18, 15, 13, 0.45);
+  /* État de DÉPART de l'ouverture (et d'arrivée de la fermeture) : `.is-open`
+     est posée un frame après le montage pour que la transition ait deux états
+     distincts à interpoler. */
+  opacity: 0;
+  transition: opacity var(--f2s-modal-duration) var(--f2s-modal-ease);
+}
+
+.f2s-modal-overlay.is-open {
+  opacity: 1;
+}
+
+.f2s-modal {
+  width: 100%;
+  max-width: 480px;
+  /* Surface (et non --color-bg) : le panneau doit se détacher du fond de
+     l'app derrière l'overlay, y compris en thème sombre où bordure et ombre
+     seules suffisent à peine. */
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(18, 15, 13, 0.18);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(8px) scale(0.98);
+  transition: opacity var(--f2s-modal-duration) var(--f2s-modal-ease), transform var(--f2s-modal-duration) var(--f2s-modal-ease);
+}
+
+.f2s-modal:focus {
+  outline: none;
+}
+
+.f2s-modal-overlay.is-open .f2s-modal {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* Figma n'expose pas de réglage "réduire les animations" à l'iframe : on suit
+   la préférence système, la modale apparaît alors sans glissement. */
+@media (prefers-reduced-motion: reduce) {
+  .f2s-modal-overlay,
+  .f2s-modal {
+    transition-duration: 0.01ms;
+  }
+
+  .f2s-modal {
+    transform: none;
+  }
+}
+
+.f2s-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.f2s-modal-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.f2s-modal-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.f2s-setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.f2s-setting-text {
+  min-width: 0;
+}
+
+.f2s-setting-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.f2s-setting-desc {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--color-black-70);
+}
+
+/* ---- Tab menu (segmented control) ---- */
+
+.f2s-tabs {
+  display: inline-flex;
+  flex: none;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+  border-radius: 8px;
+}
+
+.f2s-tab {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-black-70);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 14px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.f2s-tab:hover:not(.is-active) {
+  color: var(--color-text);
+}
+
+.f2s-tab.is-active {
+  background: var(--color-orange);
+  color: var(--color-bg);
+}
+
+/* ---- Aperçu d'export "Windows 95" ----
+   Pendant un export, le grand aperçu du deck montre la frame dont le lot est
+   en cours d'application côté backend, en la "générant" bande par bande
+   (voir ui/RetroExportPreview.tsx). Les couleurs de cette fenêtre sont
+   volontairement figées (ni thème clair ni thème sombre) : c'est une
+   citation littérale du chrome 95, gris #c0c0c0 et biseaux 1 px compris. */
+
+.f2s-retro {
+  --w95-face: #c0c0c0;
+  --w95-light: #ffffff;
+  --w95-shadow: #808080;
+  --w95-dark: #000000;
+  --w95-title: #000080;
+  --w95-title-fade: #1084d0;
+
+  flex: none;
+  width: 100%;
+  max-width: 640px;
+  padding: 3px;
+  background: var(--w95-face);
+  color: #000000;
+  font-family: Tahoma, Verdana, "MS Sans Serif", Geneva, sans-serif;
+  font-size: 11px;
+  /* Biseau sortant : clair en haut/gauche, deux niveaux d'ombre en bas/droite. */
+  border-top: 1px solid var(--w95-light);
+  border-left: 1px solid var(--w95-light);
+  border-right: 1px solid var(--w95-dark);
+  border-bottom: 1px solid var(--w95-dark);
+  box-shadow: inset -1px -1px 0 var(--w95-shadow);
+}
+
+.f2s-retro-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 2px 2px 4px;
+  background: linear-gradient(90deg, var(--w95-title), var(--w95-title-fade));
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.f2s-retro-title {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.f2s-retro-window-buttons {
+  display: flex;
+  gap: 2px;
+  flex: none;
+}
+
+.f2s-retro-window-buttons i {
+  width: 16px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-style: normal;
+  font-size: 9px;
+  line-height: 1;
+  color: #000000;
+  background: var(--w95-face);
+  border-top: 1px solid var(--w95-light);
+  border-left: 1px solid var(--w95-light);
+  border-right: 1px solid var(--w95-dark);
+  border-bottom: 1px solid var(--w95-dark);
+}
+
+/* Biseau rentrant : l'écran est "enfoncé" dans la fenêtre. */
+.f2s-retro-screen {
+  position: relative;
+  margin-top: 3px;
+  overflow: hidden;
+  background: #008080;
+  border-top: 1px solid var(--w95-shadow);
+  border-left: 1px solid var(--w95-shadow);
+  border-right: 1px solid var(--w95-light);
+  border-bottom: 1px solid var(--w95-light);
+}
+
+.f2s-retro-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* Le tramage VGA de la passe grossière ne survivrait pas à un lissage. */
+  image-rendering: pixelated;
+}
+
+.f2s-retro-noise {
+  padding: 48px 0;
+  text-align: center;
+  color: #00ff00;
+  letter-spacing: 2px;
+}
+
+.f2s-retro-scanlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.16) 0,
+    rgba(0, 0, 0, 0.16) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+/* Ligne de balayage : là où l'image est en train d'être "générée". */
+.f2s-retro-beam {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  pointer-events: none;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.7);
+}
+
+.f2s-retro-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 3px 4px;
+  border-top: 1px solid var(--w95-shadow);
+  border-left: 1px solid var(--w95-shadow);
+  border-right: 1px solid var(--w95-light);
+  border-bottom: 1px solid var(--w95-light);
+}
+
+.f2s-retro-status-text {
+  flex: none;
+  white-space: nowrap;
+}
+
+.f2s-retro-ellipsis {
+  animation: f2s-retro-blink 1s steps(1, end) infinite;
+}
+
+@keyframes f2s-retro-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.f2s-retro-bar {
+  flex: 1;
+  min-width: 0;
+  height: 14px;
+  padding: 1px;
+  background: var(--w95-face);
+  border-top: 1px solid var(--w95-shadow);
+  border-left: 1px solid var(--w95-shadow);
+  border-right: 1px solid var(--w95-light);
+  border-bottom: 1px solid var(--w95-light);
+}
+
+/* Les blocs bleus caractéristiques : un dégradé à paliers durs, découpé par
+   la largeur du remplissage — pas de bloc à moitié peint. */
+.f2s-retro-bar-fill {
+  height: 100%;
+  background: repeating-linear-gradient(
+    to right,
+    var(--w95-title) 0,
+    var(--w95-title) 8px,
+    transparent 8px,
+    transparent 10px
+  );
+  transition: width 120ms linear;
+}
+
+/* Vignette du rail correspondant à la frame en cours d'export. */
+.f2s-frame-preview.is-exporting {
+  border-color: var(--color-orange);
+  animation: f2s-exporting-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes f2s-exporting-pulse {
+  50% {
+    border-color: var(--color-orange-40);
+  }
+}
