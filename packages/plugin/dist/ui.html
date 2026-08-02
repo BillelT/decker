@@ -641,6 +641,34 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   color: var(--color-error);
 }
 
+.f2s-log-entry--rasterized {
+  border-color: var(--color-error);
+}
+
+.f2s-log-entry--visual-diff {
+  border-color: var(--color-orange);
+}
+
+.f2s-log-entry-flag {
+  flex: none;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.f2s-log-entry-flag--rasterized {
+  background: var(--color-error);
+}
+
+.f2s-log-entry-flag--visual-diff {
+  background: var(--color-orange);
+}
+
 /* ---- Création de template : rapport de contenu communicable ----
    (brief-creation-template-google-slides.md — couleurs, typos, layouts,
    placeholders). Même rail de vignettes + zone principale que le deck,
@@ -1667,6 +1695,10 @@ html.f2s-skin--win95 .f2s-tmpl-warning {
   color: var(--color-error);
 }
 
+html.f2s-skin--win95 .f2s-log-entry-flag {
+  border-radius: 0;
+}
+
 html.f2s-skin--win95 .f2s-tmpl-role {
   color: #000;
 }
@@ -1993,6 +2025,10 @@ html.f2s-skin--hybrid .f2s-tmpl-chip:active {
 html.f2s-skin--hybrid .f2s-log-entry--blocking,
 html.f2s-skin--hybrid .f2s-tmpl-warning {
   border-color: transparent;
+}
+
+html.f2s-skin--hybrid .f2s-log-entry-flag {
+  border-radius: 0;
 }
 
 html.f2s-skin--hybrid .f2s-tmpl-swatch {
@@ -2760,6 +2796,24 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
 
   // src/ui/DeckPanel.tsx
   var DRAG_THRESHOLD_PX = 3;
+  var RASTERIZED_WARNING_CODES = /* @__PURE__ */ new Set([
+    "FONT_MISSING",
+    "GRADIENT_RASTERIZED",
+    "EFFECT_RASTERIZED",
+    "BLEND_MODE_RASTERIZED",
+    "MASK_RASTERIZED",
+    "VECTOR_RASTERIZED",
+    "LINE_RASTERIZED",
+    "LETTER_SPACING_LOST",
+    "CORNER_RADIUS_RASTERIZED",
+    "MULTIPLE_FILLS_RASTERIZED"
+  ]);
+  var VISUAL_DIFF_WARNING_CODES = /* @__PURE__ */ new Set(["FONT_SUBSTITUTED", "RADIUS_APPROXIMATED"]);
+  function logEntryFlag(code) {
+    if (RASTERIZED_WARNING_CODES.has(code)) return "rasterized";
+    if (VISUAL_DIFF_WARNING_CODES.has(code)) return "visual-diff";
+    return void 0;
+  }
   var DRAG_SWAP_MARGIN = 0.32;
   function DeckPanel({
     order,
@@ -2931,22 +2985,28 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
               " rasterized"
             ] })
           ] }),
-          previewedFrame.warnings && previewedFrame.warnings.length > 0 ? /* @__PURE__ */ u3("ul", { className: "f2s-tmpl-list", children: previewedFrame.warnings.map((w3, i3) => /* @__PURE__ */ u3("li", { children: /* @__PURE__ */ u3(
-            "button",
-            {
-              type: "button",
-              className: `f2s-log-entry${w3.severity === "blocking" ? " f2s-log-entry--blocking" : ""}`,
-              title: `${w3.nodeName} \u2014 ${w3.message}`,
-              onClick: () => selectSourceNodes([w3.sourceNodeId]),
-              children: /* @__PURE__ */ u3("span", { className: "f2s-log-entry-text", children: [
-                /* @__PURE__ */ u3("strong", { className: "f2s-log-entry-name", children: w3.nodeName }),
-                /* @__PURE__ */ u3("span", { className: "f2s-log-entry-message", children: [
-                  "\u2014 ",
-                  w3.message
-                ] })
-              ] })
-            }
-          ) }, i3)) }) : /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: "No issues detected on this frame." })
+          previewedFrame.warnings && previewedFrame.warnings.length > 0 ? /* @__PURE__ */ u3("ul", { className: "f2s-tmpl-list", children: previewedFrame.warnings.map((w3, i3) => {
+            const flag = logEntryFlag(w3.code);
+            return /* @__PURE__ */ u3("li", { children: /* @__PURE__ */ u3(
+              "button",
+              {
+                type: "button",
+                className: `f2s-log-entry${w3.severity === "blocking" ? " f2s-log-entry--blocking" : ""}${flag ? ` f2s-log-entry--${flag}` : ""}`,
+                title: `${w3.nodeName} \u2014 ${w3.message}`,
+                onClick: () => selectSourceNodes([w3.sourceNodeId]),
+                children: [
+                  flag && /* @__PURE__ */ u3("span", { className: `f2s-log-entry-flag f2s-log-entry-flag--${flag}`, children: flag === "rasterized" ? "Rasterized" : "May look different" }),
+                  /* @__PURE__ */ u3("span", { className: "f2s-log-entry-text", children: [
+                    /* @__PURE__ */ u3("strong", { className: "f2s-log-entry-name", children: w3.nodeName }),
+                    /* @__PURE__ */ u3("span", { className: "f2s-log-entry-message", children: [
+                      "\u2014 ",
+                      w3.message
+                    ] })
+                  ] })
+                ]
+              }
+            ) }, i3);
+          }) }) : /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: "No issues detected on this frame." })
         ] })
       ] }) : /* @__PURE__ */ u3("p", { className: "f2s-canvas-empty", children: "Select a frame on the left to preview it." }) })
     ] });

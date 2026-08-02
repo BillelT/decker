@@ -30,6 +30,8 @@ const SLIDES_READY_KEY = 'slidesExportReady';
 const DECK_TAG = 'true';
 const TEMPLATE_TAG = 'template';
 const LINT_GROUP_ID_KEY = 'slidesLintGroupId';
+/** Repère de lint sur le canvas : un contour épais plutôt qu'un petit badge, pour rester repérable même sur une frame chargée (voir `addLintAnnotations`). */
+const LINT_STROKE_WEIGHT = 8;
 const SLIDES_READY_PREFIX = '[Slides Ready] ';
 const TEMPLATE_READY_PREFIX = '[Template Ready] ';
 const COPY_GAP_PX = 200;
@@ -278,28 +280,39 @@ async function removeLintAnnotations(copy: ExportableNode): Promise<void> {
 }
 
 /**
- * Brief "Approche retenue" — linter visuel : place un repère rouge au
- * coin haut-droit de chaque calque qui serait rasterisé à l'export, en
- * SIBLING de la copie (jamais un enfant) pour ne jamais polluer le contenu
- * réellement exporté. Positionné en coordonnées absolues (repère direct
- * enfant de la page), donc correct même si la copie est imbriquée.
+ * Brief "Approche retenue" — linter visuel : entoure d'un contour rouge épais
+ * chaque calque qui serait rasterisé (ou visuellement différent) à l'export,
+ * en SIBLING de la copie (jamais un enfant) pour ne jamais polluer le contenu
+ * réellement exporté ni influencer l'arbre de décision natif/raster (un
+ * stroke posé sur le calque lui-même aurait pu, par ex., déclencher une
+ * rasterisation à cause de `hasMultipleOrOffCenterStroke`). Le contour épouse
+ * la bounding box du calque signalé — pour un texte, c'est donc le contour de
+ * la textbox elle-même qui est mis en avant, jamais un trait posé sur le
+ * texte. Positionné en coordonnées absolues (repère direct enfant de la
+ * page), donc correct même si la copie est imbriquée. `strokeAlign: 'OUTSIDE'`
+ * garde le contour entièrement à l'extérieur de la bounding box, sans jamais
+ * recouvrir le contenu qu'il signale.
  */
 async function addLintAnnotations(copy: ExportableNode, warnings: LintWarning[]): Promise<void> {
   await removeLintAnnotations(copy);
   if (warnings.length === 0) return;
 
-  const badges: EllipseNode[] = [];
+  const badges: RectangleNode[] = [];
   for (const w of warnings) {
     const node = await figma.getNodeByIdAsync(w.nodeId);
     if (!node || !('absoluteBoundingBox' in node) || !node.absoluteBoundingBox) continue;
     const box = node.absoluteBoundingBox;
-    const badge = figma.createEllipse();
-    badge.resize(10, 10);
-    badge.x = box.x + box.width - 5;
-    badge.y = box.y - 5;
-    badge.fills = [{ type: 'SOLID', color: { r: 0.94, g: 0.23, b: 0.18 } }];
-    badge.strokes = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-    badge.strokeWeight = 1;
+    const badge = figma.createRectangle();
+    badge.resize(Math.max(box.width, 1), Math.max(box.height, 1));
+    badge.x = box.x;
+    badge.y = box.y;
+    badge.fills = [];
+    badge.strokes = [{ type: 'SOLID', color: { r: 0.94, g: 0.23, b: 0.18 } }];
+    badge.strokeWeight = LINT_STROKE_WEIGHT;
+    badge.strokeAlign = 'OUTSIDE';
+    if ('cornerRadius' in node && typeof node.cornerRadius === 'number') {
+      badge.cornerRadius = node.cornerRadius;
+    }
     badge.name = `⚠ ${w.nodeName} — ${w.message}`;
     badges.push(badge);
   }
