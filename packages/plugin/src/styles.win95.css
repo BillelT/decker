@@ -136,6 +136,20 @@ html.f2s-skin--win95 .f2s-footer-actions {
   gap: 6px;
 }
 
+/* Le logo prend la même hauteur que le bouton ".f2s-btn--secondary" juste
+   à côté de lui en win95 (11px + padding 4px/4px + bordure 1px/1px = 22px,
+   mesuré en rendu réel). Un align-items:stretch + aspect-ratio:1/1 aurait
+   évité de recopier cette valeur à la main, mais casse ici : le SVG du
+   logo est dimensionné en width/height 100% (styles.css), donc sans
+   hauteur explicite sur .f2s-logo le stretch n'a rien à partir de quoi se
+   calculer (dépendance circulaire) et le logo explose à la taille de
+   remplacement par défaut (300×300) — vérifié en rendu. Valeur fixe donc,
+   à réajuster si le gabarit du bouton change. */
+html.f2s-skin--win95 .f2s-logo {
+  width: 22px;
+  height: 22px;
+}
+
 html.f2s-skin--win95 .f2s-toolbar {
   gap: 8px;
   padding: 6px;
