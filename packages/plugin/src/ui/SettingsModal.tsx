@@ -33,6 +33,9 @@ interface SettingsModalProps {
   /** Email du compte Google connecté (GET /auth/me) — undefined si inconnu (session plus ancienne que le scope email) ou pas encore chargé. */
   accountEmail: string | undefined;
   onSignOut: () => void;
+  /** Section Developer visible seulement en mode deck avec au moins une frame (voir ui.tsx). */
+  showDebugExport: boolean;
+  onExportDebugIr: () => void;
 }
 
 const THEME_TABS: { value: ThemePreference; label: string; hint: string }[] = [
@@ -54,7 +57,19 @@ function CloseIcon() {
   );
 }
 
-export function SettingsModal({ open, theme, onThemeChange, skin, onSkinChange, onClose, signedIn, accountEmail, onSignOut }: SettingsModalProps) {
+export function SettingsModal({
+  open,
+  theme,
+  onThemeChange,
+  skin,
+  onSkinChange,
+  onClose,
+  signedIn,
+  accountEmail,
+  onSignOut,
+  showDebugExport,
+  onExportDebugIr,
+}: SettingsModalProps) {
   // La modale reste montée le temps de l'animation de sortie : la démonter dès
   // `open === false` couperait la transition net (rien à animer une fois le
   // nœud retiré du DOM).
@@ -194,6 +209,20 @@ export function SettingsModal({ open, theme, onThemeChange, skin, onSkinChange, 
               ))}
             </div>
           </section>
+
+          {showDebugExport && (
+            <section className="f2s-setting">
+              <div className="f2s-setting-text">
+                <h3 className="f2s-setting-title">Developer</h3>
+                <p className="f2s-setting-desc">
+                  Download the current deck as IRDocument JSON — for building calibration fixtures (see LIMITATIONS.md). Never sent over the network.
+                </p>
+              </div>
+              <button type="button" className="f2s-btn f2s-btn--secondary" onClick={onExportDebugIr}>
+                Download IR JSON
+              </button>
+            </section>
+          )}
         </div>
       </div>
     </div>

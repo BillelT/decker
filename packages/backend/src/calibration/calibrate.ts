@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 import 'dotenv/config';
-import { writeFile } from 'node:fs/promises';
+import { readdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { PNG } from 'pngjs';
-import type { CalibrationData } from '@figma-to-slides/shared';
+import type { CalibrationData, IRDocument } from '@figma-to-slides/shared';
 import { UNCALIBRATED_DEFAULTS } from '@figma-to-slides/shared';
 import { computeScale } from '../mapper/transform.js';
 import { mapDocumentToBatches } from '../mapper/index.js';
@@ -23,6 +24,21 @@ import { writeCalibrationReport, type BboxDeviation, type FixtureResult, type Me
 
 const SSIM_THRESHOLD_RECTS = 0.99;
 const BBOX_THRESHOLD_PT_RECTS = 0.5;
+
+/**
+ * Spec §9 : `01-rects` à `13-batch` sont censées venir d'un vrai fichier
+ * Figma exporté (`fixtures/<name>.json` + `fixtures/<name>.png`), pas d'un
+ * générateur en code comme `01-rects`/`03-text-inset` (des contournements
+ * faits faute d'accès Figma). N'importe quelle paire posée dans ce dossier
+ * est reprise automatiquement au run suivant — pas besoin de retoucher ce
+ * script pour chaque nouvelle fixture. Seuil moins strict que `01-rects` :
+ * du texte/des formes réels ont plus d'anti-aliasing que des rectangles
+ * unis, et ces fixtures sont informatives (elles n'engagent pas le critère
+ * de sortie de Phase 0, qui reste `01-rects` exclusivement, spec §4).
+ */
+const FIXTURES_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../../fixtures');
+const SSIM_THRESHOLD_FILE_FIXTURE = 0.95;
+const BBOX_THRESHOLD_PT_FILE_FIXTURE = 1;
 
 /**
  * 1pt = 1/72 inch = 12700 EMU (English Metric Units) — même si nos requêtes
@@ -58,6 +74,20 @@ async function main(): Promise<void> {
   const rectsResult = await runRectsFixture(accessToken);
   results.push(rectsResult);
 
+  const fileFixtureNames = await discoverFileFixtures();
+  for (const name of fileFixtureNames) {
+    try {
+      results.push(await runFileFixture(accessToken, name));
+    } catch (err) {
+      // Une fixture de fichier mal formée (multi-slides, images non
+      // supportées, JSON invalide…) ne doit pas empêcher les autres fixtures
+      // — ni celles de fichier, ni 01-rects/03-text-inset — de produire leur
+      // résultat. Voir LIMITATIONS.md pour les limites actuelles de ce
+      // harnais (1 slide, pas d'IRImage).
+      console.error(`⚠️  Fixture "${name}" ignorée : ${(err as Error).message}`);
+    }
+  }
+
   const textInsetMeasurement = await measureTextInset(accessToken);
 
   const outDir = process.cwd();
@@ -81,6 +111,19 @@ async function main(): Promise<void> {
       `LIMITATIONS.md) — ne pas prioriser leur calibration tant qu'ils ne sont branchés nulle part.`,
   );
 
+  if (fileFixtureNames.length === 0) {
+    console.log(
+      `\nAucune fixture de fichier trouvée dans ${FIXTURES_DIR} — dépose des paires <nom>.json/<nom>.png ` +
+        '(spec §9, ex. "02-rotation") pour qu\'elles soient reprises automatiquement au prochain run.',
+    );
+  } else {
+    for (const r of results) {
+      if (r.name === '01-rects') continue;
+      const filePassed = r.ssimScore >= r.ssimThreshold && r.bboxDeviations.every((d) => d.deviationPt <= r.bboxThresholdPt);
+      console.log(`${filePassed ? '✅' : '⚠️ '} ${r.name} : SSIM = ${r.ssimScore.toFixed(4)} (seuil ${r.ssimThreshold}, informatif — voir calibration-report.html).`);
+    }
+  }
+
   const passed = rectsResult.ssimScore >= SSIM_THRESHOLD_RECTS && rectsResult.bboxDeviations.every((d) => d.deviationPt <= BBOX_THRESHOLD_PT_RECTS);
   if (!passed) {
     console.error('❌ Critère de sortie de Phase 0 non atteint (spec §4). Voir calibration-report.html.');
@@ -88,6 +131,43 @@ async function main(): Promise<void> {
   } else {
     console.log('✅ Critère de sortie de Phase 0 atteint (SSIM ≥ 0.99, écart ≤ 0.5pt).');
   }
+}
+
+/** Toute paire `<nom>.json` + `<nom>.png` posée dans `fixtures/` (racine du repo) — voir spec §9. */
+async function discoverFileFixtures(): Promise<string[]> {
+  let entries: string[];
+  try {
+    entries = await readdir(FIXTURES_DIR);
+  } catch {
+    return [];
+  }
+  const jsonNames = new Set(entries.filter((f) => f.endsWith('.json')).map((f) => f.slice(0, -'.json'.length)));
+  const pngNames = new Set(entries.filter((f) => f.endsWith('.png')).map((f) => f.slice(0, -'.png'.length)));
+  return [...jsonNames].filter((n) => pngNames.has(n)).sort();
+}
+
+/**
+ * Fait tourner une fixture décrite par un vrai `IRDocument` exporté depuis
+ * Figma (`fixtures/<name>.json`) contre une image de référence tout aussi
+ * réelle (`fixtures/<name>.png`, export natif Figma du même frame) — même
+ * pipeline que `runRectsFixture`, généralisé.
+ *
+ * Limites actuelles (voir LIMITATIONS.md) : une seule slide par fixture, et
+ * aucun élément `image` — l'hébergement d'un asset public depuis ce script
+ * autonome (sans backend HTTP qui tourne) n'est pas encore câblé.
+ */
+async function runFileFixture(accessToken: string, name: string): Promise<FixtureResult> {
+  const doc = JSON.parse(await readFile(path.join(FIXTURES_DIR, `${name}.json`), 'utf8')) as IRDocument;
+  const referencePng = await readFile(path.join(FIXTURES_DIR, `${name}.png`));
+
+  if (doc.slides.length !== 1) {
+    throw new Error(`${doc.slides.length} slides — ce harnais ne gère pour l'instant que les fixtures à 1 slide.`);
+  }
+  if (doc.slides[0].elements.some((el) => el.kind === 'image')) {
+    throw new Error("contient un élément image — l'hébergement d'asset public n'est pas encore câblé dans ce script autonome.");
+  }
+
+  return runGeometryFixture(accessToken, doc, referencePng, name, SSIM_THRESHOLD_FILE_FIXTURE, BBOX_THRESHOLD_PT_FILE_FIXTURE);
 }
 
 /**
@@ -166,8 +246,27 @@ async function measureTextInset(accessToken: string): Promise<{ textInset: Calib
 async function runRectsFixture(accessToken: string): Promise<FixtureResult> {
   const doc = buildRectsFixtureDocument();
   const referencePng = renderRectsReferencePng(2);
+  return runGeometryFixture(accessToken, doc, referencePng, '01-rects', SSIM_THRESHOLD_RECTS, BBOX_THRESHOLD_PT_RECTS);
+}
 
-  const { presentationId, firstSlideObjectId } = await createPresentation(accessToken, doc.presentationTitle);
+/**
+ * Cœur commun à toute fixture "comparaison géométrique" (position + SSIM
+ * contre une image de référence) : crée la présentation, applique le lot
+ * unique de la slide, récupère la miniature réelle et les transforms
+ * réellement appliquées, calcule écarts de position + SSIM. `01-rects`
+ * (référence synthétique) et les fixtures de fichier (référence = export
+ * Figma réel) partagent exactement cette mécanique — seule la provenance du
+ * document et de l'image change.
+ */
+async function runGeometryFixture(
+  accessToken: string,
+  doc: IRDocument,
+  referencePng: Buffer,
+  name: string,
+  ssimThreshold: number,
+  bboxThresholdPt: number,
+): Promise<FixtureResult> {
+  const { presentationId, firstSlideObjectId } = await createPresentation(accessToken, doc.presentationTitle, doc.slideSize);
   const [batch] = mapDocumentToBatches(doc, () => '', UNCALIBRATED_DEFAULTS);
   await applyBatch(accessToken, presentationId, batch);
   await applyBatch(accessToken, presentationId, {
@@ -200,16 +299,7 @@ async function runRectsFixture(accessToken: string): Promise<FixtureResult> {
 
   const { score, diffPng } = compareSsim(referencePng, renderedPng);
 
-  return {
-    name: '01-rects',
-    ssimScore: score,
-    referencePng,
-    renderedPng,
-    diffPng,
-    bboxDeviations,
-    ssimThreshold: SSIM_THRESHOLD_RECTS,
-    bboxThresholdPt: BBOX_THRESHOLD_PT_RECTS,
-  };
+  return { name, ssimScore: score, referencePng, renderedPng, diffPng, bboxDeviations, ssimThreshold, bboxThresholdPt };
 }
 
 function printMissingCredentialsHelp(): void {

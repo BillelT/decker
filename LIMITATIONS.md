@@ -178,7 +178,61 @@ avec les couches suivantes **testées et fonctionnelles hors ligne** :
     bout — utiles surtout une fois qu'un vrai fichier Figma existe pour
     les produire fidèlement, pas en équivalent code.
   Un vrai fichier Figma dédié (spec §9) reste donc la voie normale pour
-  ces fixtures-là quand l'équipe voudra les couvrir.
+  ces fixtures-là — voir "Comment ajouter une fixture" ci-dessous, le
+  harnais les reprend maintenant automatiquement sans toucher au code.
+
+### Comment ajouter une fixture (spec §9)
+
+`npm run calibrate` scanne désormais le dossier `fixtures/` (racine du
+repo) à chaque run : toute paire `<nom>.json` (un `IRDocument`) +
+`<nom>.png` (export Figma du même frame) y est reprise automatiquement,
+comparée à l'API Slides réelle (SSIM + écart de position), et ajoutée au
+rapport — pas besoin de retoucher `calibrate.ts`.
+
+**Limite actuelle du chargeur générique** (`runFileFixture` dans
+`calibrate.ts`) : une seule slide par fixture, et aucun élément `image` —
+l'hébergement d'un asset public depuis ce script autonome (sans backend
+HTTP qui tourne) n'est pas câblé. Une fixture qui en contient est ignorée
+avec un message explicite plutôt que de planter tout le run ; couvre pour
+l'instant `02`, `04`, `05`, `06`, `11` (pas d'image) — `07`, `08`, `09`,
+`10`, `12`, `13` (qui rasterisent forcément quelque chose, ou qui
+contiennent plusieurs slides pour `13-batch`) attendront que ce
+branchement soit fait.
+
+**Étapes pour construire une fixture, ex. `02-rotation` :**
+
+1. Dans Figma, crée une frame `720×405` (ou n'importe quel ratio — le
+   mapper recentre) contenant EXACTEMENT ce que la colonne "Contenu"
+   décrit ci-dessous pour la fixture visée.
+2. Sélectionne cette frame dans le plugin (mode deck, "Select frames to
+   add"), PUIS ouvre **Settings → Developer → "Download IR JSON"** :
+   télécharge le `IRDocument` exact tel qu'il serait envoyé à l'export —
+   aucun appel réseau, juste un fichier local (audit 2026-08, nouveau).
+3. Renomme ce fichier téléchargé en `<nom-de-la-fixture>.json` et dépose-le
+   dans `fixtures/` à la racine du repo (ex. `fixtures/02-rotation.json`).
+4. Exporte la MÊME frame en PNG depuis Figma (clic droit sur la frame →
+   Export, ou panneau Export en bas à droite, échelle 2x) — c'est l'image
+   de référence, indépendante du plugin. Renomme-la pareil
+   (`fixtures/02-rotation.png`).
+5. Relance `npm run calibrate` : la fixture apparaît automatiquement dans
+   `calibration-report.html`, avec son propre score SSIM.
+
+**Contenu attendu par fixture** (spec §9 — colonne "Ce que ça teste" pour
+le détail de l'intention) :
+
+| Fixture | Contenu à dessiner dans Figma |
+|---|---|
+| `02-rotation` | 4-5 rectangles unis, identiques sauf leur rotation : 0°, 15°, 45°, 90°, -30°. |
+| `04-text-multi-style` | Un seul bloc de texte, un paragraphe, avec au moins un mot en gras, un en italique, un dans une couleur différente, un lien hypertexte, et une liste à puces sur 2-3 lignes. |
+| `05-text-edge` | Un bloc avec une police NON disponible dans Google Fonts/Slides (ex. une police système Windows comme "Segoe UI" ou une police de marque), un letter-spacing prononcé (> 5%), du texte en MAJUSCULES via le réglage "Case" de Figma, et un interligne serré (< 100%). |
+| `06-shapes` | Une ellipse, un pentagone ou hexagone, une étoile, un rectangle à coins arrondis (rayon dans la fourchette 8-25 % du plus petit côté), et une forme avec un contour (stroke) visible. |
+| `11-autolayout` | Un auto-layout (frame avec "Auto layout" activé dans Figma) imbriqué sur 2 niveaux, avec padding et gap réglés, contenant 3-4 éléments texte/forme. |
+
+`07-gradients`, `08-effects`, `09-vectors`, `10-images`, `12-realistic`,
+`13-batch` suivent le même processus MAIS resteront ignorées par
+`runFileFixture` tant que l'hébergement d'asset n'est pas branché (elles
+rasterisent au moins un élément) — construis-les si tu veux, elles seront
+prêtes à tourner dès que ce point sera traité.
 - Le stockage d'assets utilisé en production est **Vercel Blob**
   (`ASSET_STORAGE_DRIVER=vercel-blob`, `src/storage/vercelBlobAssetStore.ts`
   — voir README §8.2), pas juste un stockage disque local : ça couvre déjà

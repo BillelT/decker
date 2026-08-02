@@ -1695,6 +1695,25 @@
         }
         return;
       }
+      if (msg.type === "request-export-debug") {
+        try {
+          const m = msg;
+          const orderedIds = m.order.filter((id) => m.includedFrameIds.includes(id));
+          const { slides } = await collectSlidesAndAssets(pending, orderedIds, m.fontOverrides ?? {}, 2);
+          const doc = {
+            version: 1,
+            presentationTitle: m.presentationTitle,
+            slideSize: computeSlideSizePt(slides[0]?.frameSize),
+            slides,
+            options: { mode: "new-presentation", rasterScale: 2, includeUnderlay: false, underlayOpacity: 0.3, strictMode: false }
+          };
+          figma.ui.postMessage({ type: "export-debug-payload", document: doc });
+        } catch (err) {
+          console.error(err);
+          figma.ui.postMessage({ type: "export-error", message: err.message });
+        }
+        return;
+      }
       if (msg.type === "request-template") {
         try {
           await handleTemplateCreateRequest(

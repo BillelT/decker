@@ -3623,7 +3623,19 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
   function CloseIcon() {
     return /* @__PURE__ */ u3("svg", { width: "14", height: "14", viewBox: "0 0 14 14", fill: "none", xmlns: "http://www.w3.org/2000/svg", "aria-hidden": "true", children: /* @__PURE__ */ u3("path", { d: "m3 3 8 8M11 3l-8 8", stroke: "currentColor", strokeWidth: "1.6", strokeLinecap: "round" }) });
   }
-  function SettingsModal({ open, theme, onThemeChange, skin, onSkinChange, onClose, signedIn, accountEmail, onSignOut }) {
+  function SettingsModal({
+    open,
+    theme,
+    onThemeChange,
+    skin,
+    onSkinChange,
+    onClose,
+    signedIn,
+    accountEmail,
+    onSignOut,
+    showDebugExport,
+    onExportDebugIr
+  }) {
     const [mounted, setMounted] = d2(open);
     const [entered, setEntered] = d2(false);
     const dialogRef = A2(null);
@@ -3729,6 +3741,13 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
                     },
                     tab.value
                   )) })
+                ] }),
+                showDebugExport && /* @__PURE__ */ u3("section", { className: "f2s-setting", children: [
+                  /* @__PURE__ */ u3("div", { className: "f2s-setting-text", children: [
+                    /* @__PURE__ */ u3("h3", { className: "f2s-setting-title", children: "Developer" }),
+                    /* @__PURE__ */ u3("p", { className: "f2s-setting-desc", children: "Download the current deck as IRDocument JSON \u2014 for building calibration fixtures (see LIMITATIONS.md). Never sent over the network." })
+                  ] }),
+                  /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--secondary", onClick: onExportDebugIr, children: "Download IR JSON" })
                 ] })
               ] })
             ]
@@ -4143,6 +4162,22 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
             setExportState("error");
             setExportError(msg.message);
             break;
+          // Modale Settings, section Developer : dump de l'IRDocument courant
+          // en JSON téléchargeable, pour construire les fixtures de
+          // calibration `fixtures/<nom>.json` (voir LIMITATIONS.md, spec §9) —
+          // ne passe jamais par /assets ni /export, juste un téléchargement
+          // local du document tel qu'il serait envoyé.
+          case "export-debug-payload": {
+            const doc = msg.document;
+            const blob = new Blob([JSON.stringify(doc, null, 2)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const anchor = document.createElement("a");
+            anchor.href = url;
+            anchor.download = `${(doc.presentationTitle || "fixture").replace(/[^a-z0-9-_]+/gi, "_")}.json`;
+            anchor.click();
+            URL.revokeObjectURL(url);
+            break;
+          }
           default:
             break;
         }
@@ -4401,6 +4436,9 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
     h2(() => {
       postToPlugin({ type: "ui-ready" });
     }, []);
+    function handleExportDebugIr() {
+      postToPlugin({ type: "request-export-debug", includedFrameIds: order, order, presentationTitle: deckTitle.trim() || "fixture", fontOverrides });
+    }
     function handlePrepareForSlides() {
       postToPlugin({ type: "prepare-for-slides", deckFrameIds: order, fontOverrides });
     }
@@ -4737,7 +4775,9 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
           onClose: () => setSettingsOpen(false),
           signedIn: Boolean(sessionToken),
           accountEmail,
-          onSignOut: handleSignOut
+          onSignOut: handleSignOut,
+          showDebugExport: mode === "deck" && order.length > 0,
+          onExportDebugIr: handleExportDebugIr
         }
       )
     ] });
