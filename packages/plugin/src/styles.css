@@ -999,11 +999,14 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
 }
 
 /* Sur le bouton primaire (fond orange, cf. "Waiting for Google sign-in…"),
-   le spinner orange sur orange devient invisible — il lui faut des teintes
-   blanches pour rester visible sur ce fond. */
+   le spinner orange sur orange devient invisible. On reprend --color-bg,
+   déjà utilisé comme couleur du libellé de ce bouton (clair en thème clair,
+   sombre en thème sombre — cf. :root et les overrides figma-dark/prefers-
+   color-scheme) : le spinner reste ainsi assorti au texte dans les deux
+   thèmes plutôt que blanc fixe, illisible en thème sombre. */
 .f2s-btn--primary .f2s-spinner {
-  border-color: rgba(255, 255, 255, 0.4);
-  border-top-color: #fff;
+  border-color: color-mix(in srgb, var(--color-bg) 40%, transparent);
+  border-top-color: var(--color-bg);
 }
 
 /* Spinner + libellé à l'intérieur d'un `.f2s-btn` (ex. "Sign in with
