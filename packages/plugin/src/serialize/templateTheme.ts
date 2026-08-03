@@ -43,20 +43,32 @@ export const THEME_ROLES: ThemeColorRole[] = [
   'FOLLOWED_HYPERLINK',
 ];
 
+/** Mêmes libellés que le sélecteur de couleurs de thème natif de Slides (Format > Thème > Couleurs) — pas les noms internes `ThemeColorType` de l'API. */
 export const THEME_ROLE_LABELS: Record<ThemeColorRole, string> = {
-  DARK1: 'Dark 1',
-  LIGHT1: 'Light 1',
-  DARK2: 'Dark 2',
-  LIGHT2: 'Light 2',
+  DARK1: 'Text & background 1',
+  LIGHT1: 'Text & background 2',
+  DARK2: 'Text & background 3',
+  LIGHT2: 'Text & background 4',
   ACCENT1: 'Accent 1',
   ACCENT2: 'Accent 2',
   ACCENT3: 'Accent 3',
   ACCENT4: 'Accent 4',
   ACCENT5: 'Accent 5',
   ACCENT6: 'Accent 6',
-  HYPERLINK: 'Hyperlink',
+  HYPERLINK: 'Link',
   FOLLOWED_HYPERLINK: 'Followed hyperlink',
 };
+
+/**
+ * Rôles proposés dans l'aside Styles : Slides expose 11 des 12
+ * `ThemeColorType` dans son propre sélecteur (Format > Thème > Couleurs) —
+ * `FOLLOWED_HYPERLINK` n'y est jamais éditable séparément (dérivé
+ * automatiquement). On masque donc cette ligne côté UI tout en la gardant
+ * dans `THEME_ROLES`/`DEFAULT_THEME_ROLE_COLORS` : l'API l'exige quand même
+ * dans l'écriture du thème (mapper/theme.ts::ALL_THEME_ROLES), elle reçoit
+ * juste toujours sa valeur de repli plutôt qu'une assignation manuelle.
+ */
+export const VISIBLE_THEME_ROLES: ThemeColorRole[] = THEME_ROLES.filter((role) => role !== 'FOLLOWED_HYPERLINK');
 
 function hexToRgb(hex: string): { r: number; g: number; b: number } {
   const n = parseInt(hex.slice(1), 16);
