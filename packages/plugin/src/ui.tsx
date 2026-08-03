@@ -23,7 +23,6 @@ import {
 } from './ui/types.js';
 import { DeckPanel } from './ui/DeckPanel';
 import { TemplatePanel } from './ui/TemplatePanel';
-import { TemplateStylePanel } from './ui/TemplateStylePanel';
 import { SettingsModal } from './ui/SettingsModal';
 import {
   applyThemeOverride,
@@ -279,7 +278,6 @@ function App() {
   // couleur détectée (voir mapper/theme.ts côté backend). Strictement
   // additif — un template sans aucune assignation s'exporte exactement
   // comme avant (aplats RGB statiques).
-  const [templateSubView, setTemplateSubView] = useState<'layouts' | 'style'>('layouts');
   const [colorRoles, setColorRoles] = useState<Record<string, ThemeColorRole>>({});
   /** Hex tapé à la main pour un rôle dans l'onglet Style, prioritaire sur la couleur détectée assignée via `colorRoles` (voir `serialize/templateTheme.ts::resolveThemeRoleHexes`). */
   const [roleColorOverrides, setRoleColorOverrides] = useState<Partial<Record<ThemeColorRole, string>>>({});
@@ -1213,27 +1211,6 @@ function App() {
           </div>
         ) : (
           <div className="f2s-topbar-actions">
-            <div className="f2s-tabs" role="tablist" aria-label="Template view">
-              <button
-                type="button"
-                role="tab"
-                aria-selected={templateSubView === 'layouts'}
-                className={`f2s-tab${templateSubView === 'layouts' ? ' is-active' : ''}`}
-                onClick={() => setTemplateSubView('layouts')}
-              >
-                Layouts
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={templateSubView === 'style'}
-                title="Assign a Slides theme color role to colors used across the whole template."
-                className={`f2s-tab${templateSubView === 'style' ? ' is-active' : ''}`}
-                onClick={() => setTemplateSubView('style')}
-              >
-                Style
-              </button>
-            </div>
             <button
               type="button"
               className="f2s-btn f2s-btn--tertiary"
@@ -1311,7 +1288,7 @@ function App() {
           exportCursor={exporting && exportSource === 'deck' ? exportCursor : undefined}
           notice={selectionNotice}
         />
-      ) : templateSubView === 'layouts' ? (
+      ) : (
         <TemplatePanel
           order={templateOrder}
           setOrder={setTemplateOrder}
@@ -1324,9 +1301,6 @@ function App() {
           onRemove={removeTemplateLayout}
           onRename={renameTemplateLayout}
           exportCursor={exporting && exportSource === 'template' ? exportCursor : undefined}
-        />
-      ) : (
-        <TemplateStylePanel
           colors={templateColors}
           fonts={templateFonts}
           colorRoles={colorRoles}

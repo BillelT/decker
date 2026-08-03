@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { moveToIndex } from './reorderFrames.js';
 import { RetroExportPreview } from './RetroExportPreview.js';
+import { TemplateStylePanel, type TemplateStylePanelProps } from './TemplateStylePanel.js';
 import type { ExportCursor } from './exportCursor.js';
 import { postToPlugin, selectSourceNodes, type TemplateLayoutState } from './types.js';
 
@@ -14,7 +15,7 @@ const DRAG_THRESHOLD_PX = 3;
  */
 const DRAG_SWAP_MARGIN = 0.32;
 
-export interface TemplatePanelProps {
+export interface TemplatePanelProps extends TemplateStylePanelProps {
   order: string[];
   setOrder: (updater: (prev: string[]) => string[]) => void;
   layouts: Record<string, TemplateLayoutState>;
@@ -47,6 +48,12 @@ export function TemplatePanel({
   onRemove,
   onRename,
   exportCursor,
+  colors,
+  fonts,
+  colorRoles,
+  setColorRoles,
+  roleColorOverrides,
+  setRoleColorOverrides,
 }: TemplatePanelProps) {
   const [dragId, setDragId] = useState<string | undefined>();
   const [dragOffsetY, setDragOffsetY] = useState(0);
@@ -171,6 +178,16 @@ export function TemplatePanel({
             you want to use as a layout on the Figma canvas, and click the button again to add your selection.
           </p>
         </main>
+        <aside className="f2s-style-aside">
+          <TemplateStylePanel
+            colors={colors}
+            fonts={fonts}
+            colorRoles={colorRoles}
+            setColorRoles={setColorRoles}
+            roleColorOverrides={roleColorOverrides}
+            setRoleColorOverrides={setRoleColorOverrides}
+          />
+        </aside>
       </div>
     );
   }
@@ -367,6 +384,16 @@ export function TemplatePanel({
           <p className="f2s-canvas-empty">Select a layout on the left to see its report.</p>
         )}
       </main>
+      <aside className="f2s-style-aside">
+        <TemplateStylePanel
+          colors={colors}
+          fonts={fonts}
+          colorRoles={colorRoles}
+          setColorRoles={setColorRoles}
+          roleColorOverrides={roleColorOverrides}
+          setRoleColorOverrides={setRoleColorOverrides}
+        />
+      </aside>
     </div>
   );
 }

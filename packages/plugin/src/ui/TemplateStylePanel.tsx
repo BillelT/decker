@@ -36,16 +36,21 @@ function HexField({ value, onCommit }: { value: string; onCommit: (hex: string) 
 }
 
 /**
- * Onglet "Style" du mode template (audit 2026-08, point 2 — TODO.md §
+ * Panneau "Styles" du mode template (audit 2026-08, point 2 — TODO.md §
  * Mode template) : vue agrégée de TOUT le template (contrairement au
  * rapport par layout de TemplatePanel, qui n'affiche qu'une frame à la
- * fois). Centré sur les 12 rôles de thème Slides (pas sur les couleurs
+ * fois), affichée dans l'aside droit (280px, cf. TemplatePanel) plutôt
+ * que dans un onglet séparé — comme la liste "Color styles"/"Text
+ * styles" de Figma, mais chaque ligne reste directement éditable (hex
+ * tapé à la main) et propose les couleurs détectées comme suggestions de
+ * remplacement en un clic, là où Figma se contente d'assigner un style
+ * existant. Centré sur les 12 rôles de thème Slides (pas sur les couleurs
  * détectées) — voir `serialize/templateTheme.ts` — puisque ce sont eux
  * que l'API écrit d'un coup sur le Master (mapper/theme.ts) : les 12
  * apparaissent donc toujours, avec leur valeur de repli, plutôt que de
  * n'afficher que ce que le créateur a explicitement touché. Un rôle non
- * assigné reste un aplat RGB statique par élément comme avant : cet
- * onglet est strictement additif, jamais requis pour créer un template.
+ * assigné reste un aplat RGB statique par élément comme avant : ce
+ * panneau est strictement additif, jamais requis pour créer un template.
  */
 export function TemplateStylePanel({ colors, fonts, colorRoles, setColorRoles, roleColorOverrides, setRoleColorOverrides }: TemplateStylePanelProps) {
   const roleHexes = resolveThemeRoleHexes(colorRoles, colors, roleColorOverrides);
@@ -77,26 +82,20 @@ export function TemplateStylePanel({ colors, fonts, colorRoles, setColorRoles, r
   }
 
   return (
-    <div className="f2s-body">
-      <main className="f2s-canvas f2s-canvas--template">
-        <p className="f2s-tmpl-note">
-          Assign a Slides theme color role to the colors that matter most. The Slides API can't set its native theme colors
-          directly, but an assigned color is linked LIVE to that role instead of a fixed value — changing it later in Slides
-          (Slide &gt; Edit theme colors) recolors every element that uses it, everywhere in the template at once.
-        </p>
-
-        <section className="f2s-tmpl-section">
-          <h3 className="f2s-tmpl-heading">Theme colors (12)</h3>
-          <ul className="f2s-tmpl-list">
-            {THEME_ROLES.map((role) => {
-              const hex = roleHexes[role];
-              const assignedKey = assignedKeyByRole.get(role);
-              return (
-                <li key={role} className="f2s-tmpl-role-row">
-                  <span className="f2s-tmpl-swatch">
-                    <span className="f2s-tmpl-swatch-color" style={{ backgroundColor: hex }} />
+    <div className="f2s-style-panel">
+      <section className="f2s-tmpl-section">
+        <h3 className="f2s-tmpl-heading">Colors</h3>
+        <ul className="f2s-style-list">
+          {THEME_ROLES.map((role) => {
+            const hex = roleHexes[role];
+            const assignedKey = assignedKeyByRole.get(role);
+            return (
+              <li key={role} className="f2s-style-row">
+                <div className="f2s-style-row-main">
+                  <span className="f2s-style-swatch" style={{ backgroundColor: hex }} />
+                  <span className="f2s-style-label" title={THEME_ROLE_LABELS[role]}>
+                    {THEME_ROLE_LABELS[role]}
                   </span>
-                  <span className="f2s-tmpl-role">{THEME_ROLE_LABELS[role]}</span>
                   <HexField value={hex} onCommit={(next) => setRoleHex(role, next)} />
                   {hex !== DEFAULT_THEME_ROLE_HEX[role] && (
                     <button
@@ -116,47 +115,58 @@ export function TemplateStylePanel({ colors, fonts, colorRoles, setColorRoles, r
                       ✕
                     </button>
                   )}
-                  {sortedColors.length > 0 && (
-                    <span className="f2s-tmpl-suggestions">
-                      {sortedColors.map((c) => {
-                        const key = colorKey(c.hex, c.alpha);
-                        return (
-                          <button
-                            key={key}
-                            type="button"
-                            className={`f2s-tmpl-suggestion${key === assignedKey ? ' is-selected' : ''}`}
-                            title={`Use ${c.hex}${c.alpha < 1 ? ` · ${Math.round(c.alpha * 100)}%` : ''} · used ${c.usageCount}×`}
-                            onClick={() => assignDetectedColor(role, key)}
-                          >
-                            <span style={{ backgroundColor: c.hex, opacity: c.alpha }} />
-                          </button>
-                        );
-                      })}
-                    </span>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-          {colors.length === 0 && <p className="f2s-toolbar-muted">No color detected yet — add layouts first.</p>}
-        </section>
+                </div>
+                {sortedColors.length > 0 && (
+                  <span className="f2s-tmpl-suggestions">
+                    {sortedColors.map((c) => {
+                      const key = colorKey(c.hex, c.alpha);
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          className={`f2s-tmpl-suggestion${key === assignedKey ? ' is-selected' : ''}`}
+                          title={`Use ${c.hex}${c.alpha < 1 ? ` · ${Math.round(c.alpha * 100)}%` : ''} · used ${c.usageCount}×`}
+                          onClick={() => assignDetectedColor(role, key)}
+                        >
+                          <span style={{ backgroundColor: c.hex, opacity: c.alpha }} />
+                        </button>
+                      );
+                    })}
+                  </span>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+        {colors.length === 0 && <p className="f2s-toolbar-muted">No color detected yet — add layouts first.</p>}
+        <p className="f2s-tmpl-note">
+          A role linked to a color stays LIVE — changing it later in Slides (Slide &gt; Edit theme colors) recolors every
+          element that uses it, everywhere in the template at once.
+        </p>
+      </section>
 
-        <section className="f2s-tmpl-section">
-          <h3 className="f2s-tmpl-heading">Typography ({fonts.length})</h3>
-          {fonts.length === 0 ? (
-            <p className="f2s-toolbar-muted">No text detected yet.</p>
-          ) : (
-            <ul className="f2s-tmpl-list">
-              {fonts.map((f) => (
-                <li key={f.family}>
-                  <span className="f2s-tmpl-font-family">{f.family}</span>{' '}
-                  <span className="f2s-toolbar-muted">({f.weights.join(', ')})</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      </main>
+      <section className="f2s-tmpl-section">
+        <h3 className="f2s-tmpl-heading">Typography</h3>
+        {fonts.length === 0 ? (
+          <p className="f2s-toolbar-muted">No text detected yet.</p>
+        ) : (
+          <ul className="f2s-style-list">
+            {fonts.map((f) => (
+              <li key={f.family} className="f2s-style-row">
+                <div className="f2s-style-row-main">
+                  <span className="f2s-style-font-swatch" style={{ fontFamily: f.family }}>
+                    Aa
+                  </span>
+                  <span className="f2s-style-font-info">
+                    <span className="f2s-tmpl-font-family">{f.family}</span>
+                    <span className="f2s-toolbar-muted">{f.weights.join(', ')}</span>
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }
