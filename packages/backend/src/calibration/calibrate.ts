@@ -4,7 +4,7 @@ import { readdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PNG } from 'pngjs';
-import type { CalibrationData, IRDocument } from '@figma-to-slides/shared';
+import type { CalibrationData, IRDocument, IRSlide } from '@figma-to-slides/shared';
 import { applyTextInset, computeScale, rotatedTransform } from '../mapper/transform.js';
 import { mapDocumentToBatches, type AssetUrlResolver } from '../mapper/index.js';
 import { loadCalibration } from './loadCalibration.js';
@@ -102,13 +102,21 @@ async function main(): Promise<void> {
   const fileFixtureNames = await discoverFileFixtures();
   for (const name of fileFixtureNames) {
     try {
-      results.push(await runFileFixture(accessToken, name, loadedCalibration));
+      const doc = JSON.parse(await readFile(path.join(FIXTURES_DIR, `${name}.json`), 'utf8')) as IRDocument;
+      // `13-batch` (spec §9) est la seule fixture à plusieurs slides — un
+      // IRDocument normal en a toujours exactement 1 (une frame = une
+      // slide). Router sur cette seule propriété évite d'avoir à nommer les
+      // fixtures multi-slides différemment.
+      if (doc.slides.length > 1) {
+        results.push(...(await runBatchFixture(accessToken, name, doc, loadedCalibration)));
+      } else {
+        results.push(await runFileFixture(accessToken, name, doc, loadedCalibration));
+      }
     } catch (err) {
-      // Une fixture de fichier mal formée (multi-slides, images non
-      // supportées, JSON invalide…) ne doit pas empêcher les autres fixtures
-      // — ni celles de fichier, ni 01-rects/03-text-inset — de produire leur
-      // résultat. Voir LIMITATIONS.md pour les limites actuelles de ce
-      // harnais (1 slide, pas d'IRImage).
+      // Une fixture de fichier mal formée (JSON invalide, image référencée
+      // sans fichier déposé…) ne doit pas empêcher les autres fixtures —
+      // ni celles de fichier, ni 01-rects/03-text-inset — de produire leur
+      // résultat.
       console.error(`⚠️  Fixture "${name}" ignorée : ${(err as Error).message}`);
     }
   }
@@ -181,7 +189,11 @@ async function discoverFileFixtures(): Promise<string[]> {
   }
   const jsonNames = new Set(entries.filter((f) => f.endsWith('.json')).map((f) => f.slice(0, -'.json'.length)));
   const pngNames = new Set(entries.filter((f) => f.endsWith('.png')).map((f) => f.slice(0, -'.png'.length)));
-  return [...jsonNames].filter((n) => pngNames.has(n)).sort();
+  // Une fixture normale a UNE référence `<nom>.png`. Une fixture multi-slides
+  // (13-batch) a une référence PAR slide, `<nom>-0.png`, `<nom>-1.png`... —
+  // la présence de la première (`<nom>-0.png`) suffit à la repérer ici,
+  // `runBatchFixture` lit le nombre exact de slides depuis le JSON lui-même.
+  return [...jsonNames].filter((n) => pngNames.has(n) || pngNames.has(`${n}-0`)).sort();
 }
 
 /** Remplace tout caractère invalide dans un nom de fichier Windows/Mac/Linux par `_` — DOIT rester identique à la sanitisation faite côté plugin (ui.tsx, téléchargement des assets debug), sinon les noms ne matchent plus. */
@@ -190,43 +202,31 @@ function sanitizeAssetFileName(assetKey: string): string {
 }
 
 /**
- * Fait tourner une fixture décrite par un vrai `IRDocument` exporté depuis
- * Figma (`fixtures/<name>.json`) contre une image de référence tout aussi
- * réelle (`fixtures/<name>.png`, export natif Figma du même frame) — même
- * pipeline que `runRectsFixture`, généralisé.
+ * Upload (spec §5.3, `getAssetStore()`) tout asset référencé par
+ * `imageElements` vers le VRAI store d'assets de production, pour obtenir
+ * une URL que l'API Slides peut réellement fetcher — un fichier local ou
+ * `localhost` n'est joignable ni depuis Vercel ni depuis Google (voir
+ * LIMITATIONS.md). Fichier attendu : `fixtures/<name>-assets/<assetKey-
+ * sanitisé>.png` (téléchargé automatiquement par "Download IR JSON" côté
+ * plugin). Partagé par `runFileFixture` (1 slide) et `runBatchFixture`
+ * (plusieurs) — les deux uploadent, dans les deux cas, TOUS les assets de
+ * TOUTES leurs slides d'un coup avant de rien créer côté Slides.
  *
- * Limite actuelle (voir LIMITATIONS.md) : une seule slide par fixture. Les
- * éléments `image` SONT supportés (audit 2026-08) : chaque asset référencé
- * doit avoir un fichier `fixtures/<name>-assets/<assetKey-sanitisé>.png`
- * (téléchargé automatiquement par le bouton "Download IR JSON" du plugin,
- * en même temps que le JSON) — uploadé via le VRAI store d'assets de
- * production (`getAssetStore()`, spec §5.3) pour obtenir une URL que
- * l'API Slides peut réellement fetcher, puis supprimé une fois la fixture
- * terminée. Nécessite `ASSET_STORAGE_DRIVER=vercel-blob` +
- * `BLOB_READ_WRITE_TOKEN` dans l'environnement (le store en mémoire de
- * secours pour Redis, kv.ts, suffit pour la durée d'un run — pas besoin de
- * credentials Redis en plus).
+ * Le `cleanup()` retourné doit être appelé une fois la fixture terminée
+ * (best-effort : ne fait jamais échouer l'appelant si la suppression rate) —
+ * sinon ces images de test s'accumulent indéfiniment dans le Blob store de
+ * PRODUCTION (même token que les exports réels des utilisateurs).
  */
-async function runFileFixture(accessToken: string, name: string, calibration: CalibrationData): Promise<FixtureResult> {
-  const doc = JSON.parse(await readFile(path.join(FIXTURES_DIR, `${name}.json`), 'utf8')) as IRDocument;
-  const referencePng = await readFile(path.join(FIXTURES_DIR, `${name}.png`));
-
-  if (doc.slides.length !== 1) {
-    throw new Error(`${doc.slides.length} slides — ce harnais ne gère pour l'instant que les fixtures à 1 slide.`);
-  }
-
-  const imageElements = doc.slides[0].elements.filter((el) => el.kind === 'image');
+async function prepareFixtureAssets(name: string, imageElements: { assetKey: string }[]): Promise<{ resolveAssetUrl: AssetUrlResolver; cleanup: () => Promise<void> }> {
   if (imageElements.length === 0) {
-    return runGeometryFixture(accessToken, doc, referencePng, name, SSIM_THRESHOLD_SECONDARY, BBOX_THRESHOLD_PT_SECONDARY, calibration);
+    return { resolveAssetUrl: () => '', cleanup: async () => undefined };
   }
 
   if (env.assets.driver !== 'vercel-blob') {
     throw new Error(
       `contient ${imageElements.length} élément(s) image — configure ASSET_STORAGE_DRIVER=vercel-blob et ` +
         'BLOB_READ_WRITE_TOKEN=<ton token, Vercel → Storage → Blob> dans ton environnement avant de relancer ' +
-        '(ASSET_STORAGE_DRIVER actuel : ' +
-        env.assets.driver +
-        ').',
+        `(ASSET_STORAGE_DRIVER actuel : ${env.assets.driver}).`,
     );
   }
 
@@ -234,6 +234,9 @@ async function runFileFixture(accessToken: string, name: string, calibration: Ca
   const assetsDir = path.join(FIXTURES_DIR, `${name}-assets`);
   const uploadedKeys: string[] = [];
   const urlByAssetKey = new Map<string, string>();
+  const cleanup = async (): Promise<void> => {
+    await Promise.all(uploadedKeys.map((k) => assetStore.delete(k).catch(() => undefined)));
+  };
 
   try {
     for (const el of imageElements) {
@@ -251,12 +254,93 @@ async function runFileFixture(accessToken: string, name: string, calibration: Ca
       uploadedKeys.push(el.assetKey);
       urlByAssetKey.set(el.assetKey, await assetStore.getSignedUrl(el.assetKey));
     }
+  } catch (err) {
+    // Une image sur 7 manquante ne doit pas laisser les 6 déjà uploadées
+    // trainer dans le Blob store — nettoyage avant de faire remonter l'erreur.
+    await cleanup();
+    throw err;
+  }
 
-    const resolveAssetUrl: AssetUrlResolver = (key) => urlByAssetKey.get(key) ?? '';
+  return { resolveAssetUrl: (key) => urlByAssetKey.get(key) ?? '', cleanup };
+}
+
+/**
+ * Fait tourner une fixture décrite par un vrai `IRDocument` exporté depuis
+ * Figma (`fixtures/<name>.json`, une seule slide) contre une image de
+ * référence tout aussi réelle (`fixtures/<name>.png`, export natif Figma du
+ * même frame) — même pipeline que `runRectsFixture`, généralisé.
+ */
+async function runFileFixture(accessToken: string, name: string, doc: IRDocument, calibration: CalibrationData): Promise<FixtureResult> {
+  const referencePng = await readFile(path.join(FIXTURES_DIR, `${name}.png`));
+  const imageElements = doc.slides[0].elements.filter((el) => el.kind === 'image');
+  const { resolveAssetUrl, cleanup } = await prepareFixtureAssets(name, imageElements);
+  try {
     return await runGeometryFixture(accessToken, doc, referencePng, name, SSIM_THRESHOLD_SECONDARY, BBOX_THRESHOLD_PT_SECONDARY, calibration, resolveAssetUrl);
   } finally {
-    // Nettoyage best-effort : ne fait pas échouer le run si la suppression rate (quota/permissions), juste ne pollue pas indéfiniment le Blob store.
-    await Promise.all(uploadedKeys.map((k) => assetStore.delete(k).catch(() => undefined)));
+    await cleanup();
+  }
+}
+
+/**
+ * `13-batch` (spec §9) — variante multi-slides : un seul `IRDocument` avec
+ * PLUSIEURS slides, exportées ensemble dans UNE présentation comme un vrai
+ * deck (pas une présentation par slide), chaque slide comparée à SA PROPRE
+ * image de référence `fixtures/<name>-<i>.png` (i = index dans
+ * `doc.slides` trié par `.order`, PAS l'ordre d'apparition dans le JSON).
+ *
+ * L'intérêt par rapport aux fixtures à 1 slide : vérifier que Slides crée
+ * bien AUTANT de slides que prévu, DANS le bon ordre. Un décalage ou une
+ * perte de slide (ex. lot > `MAX_REQUESTS_PER_BATCH`, erreur silencieuse
+ * dans un batch) se traduirait par un nombre de pages différent (détecté
+ * explicitement ci-dessous) ou par une slide comparée à la mauvaise
+ * référence (bbox/SSIM très dégradés sur cette slide précise).
+ */
+async function runBatchFixture(accessToken: string, name: string, doc: IRDocument, calibration: CalibrationData): Promise<FixtureResult[]> {
+  const sortedSlides = [...doc.slides].sort((a, b) => a.order - b.order);
+  const imageElements = sortedSlides.flatMap((s) => s.elements.filter((el) => el.kind === 'image'));
+  const { resolveAssetUrl, cleanup } = await prepareFixtureAssets(name, imageElements);
+
+  try {
+    const { presentationId, firstSlideObjectId } = await createPresentation(accessToken, doc.presentationTitle, doc.slideSize);
+    for (const batch of mapDocumentToBatches(doc, resolveAssetUrl, calibration)) {
+      await applyBatch(accessToken, presentationId, batch);
+    }
+    await applyBatch(accessToken, presentationId, {
+      sourceSlideId: '__default__',
+      requests: [{ deleteObject: { objectId: firstSlideObjectId } }],
+    }).catch(() => undefined);
+
+    const presentation = (await getPresentation(accessToken, presentationId)) as { slides: ActualSlidesPage[] };
+    if (presentation.slides.length !== sortedSlides.length) {
+      throw new Error(
+        `${sortedSlides.length} slides attendues, ${presentation.slides.length} trouvées dans la présentation réelle ` +
+          '— une slide a été perdue ou dupliquée pendant l\'export.',
+      );
+    }
+
+    const results: FixtureResult[] = [];
+    for (let i = 0; i < sortedSlides.length; i++) {
+      const page = presentation.slides[i];
+      const referencePng = await readFile(path.join(FIXTURES_DIR, `${name}-${i}.png`));
+      const thumb = await getPageThumbnail(accessToken, presentationId, page.objectId);
+      const renderedPng = Buffer.from(await (await fetch(thumb.contentUrl)).arrayBuffer());
+      results.push(
+        compareSlideToReference(
+          `${name}-${String(i).padStart(2, '0')}`,
+          sortedSlides[i],
+          doc.slideSize,
+          page,
+          referencePng,
+          renderedPng,
+          SSIM_THRESHOLD_SECONDARY,
+          BBOX_THRESHOLD_PT_SECONDARY,
+          calibration,
+        ),
+      );
+    }
+    return results;
+  } finally {
+    await cleanup();
   }
 }
 
@@ -360,6 +444,11 @@ async function runShapesFixture(accessToken: string, calibration: CalibrationDat
  * Figma réel) partagent exactement cette mécanique — seule la provenance du
  * document et de l'image change.
  */
+interface ActualSlidesPage {
+  objectId: string;
+  pageElements: { objectId: string; transform: { translateX: number; translateY: number; unit?: 'PT' | 'EMU' } }[];
+}
+
 async function runGeometryFixture(
   accessToken: string,
   doc: IRDocument,
@@ -382,16 +471,31 @@ async function runGeometryFixture(
   const thumb = await getPageThumbnail(accessToken, presentationId, pageObjectId);
   const renderedPng = Buffer.from(await (await fetch(thumb.contentUrl)).arrayBuffer());
 
-  const presentation = (await getPresentation(accessToken, presentationId)) as {
-    slides: {
-      objectId: string;
-      pageElements: { objectId: string; transform: { translateX: number; translateY: number; unit?: 'PT' | 'EMU' } }[];
-    }[];
-  };
+  const presentation = (await getPresentation(accessToken, presentationId)) as { slides: ActualSlidesPage[] };
   const page = presentation.slides.find((p) => p.objectId === pageObjectId);
 
-  const { scale, offsetXPt, offsetYPt } = computeScale(doc.slides[0].frameSize, doc.slideSize);
-  const bboxDeviations: BboxDeviation[] = doc.slides[0].elements.map((el) => {
+  return compareSlideToReference(name, doc.slides[0], doc.slideSize, page, referencePng, renderedPng, ssimThreshold, bboxThresholdPt, calibration);
+}
+
+/**
+ * Cœur commun à toute comparaison "une slide contre sa référence" (position
+ * + SSIM) — extrait pour être partagé entre `runGeometryFixture` (1 slide,
+ * 1 présentation) et `runBatchFixture` (plusieurs slides, 1 présentation,
+ * cette fonction appelée une fois par slide).
+ */
+function compareSlideToReference(
+  name: string,
+  slide: IRSlide,
+  slideSize: IRDocument['slideSize'],
+  page: ActualSlidesPage | undefined,
+  referencePng: Buffer,
+  renderedPng: Buffer,
+  ssimThreshold: number,
+  bboxThresholdPt: number,
+  calibration: CalibrationData,
+): FixtureResult {
+  const { scale, offsetXPt, offsetYPt } = computeScale(slide.frameSize, slideSize);
+  const bboxDeviations: BboxDeviation[] = slide.elements.map((el) => {
     // Deux corrections par rapport à une comparaison naïve `rect.x*scale+offset` :
     // - `rotatedTransform` plutôt que le coin haut-gauche non tourné, pour
     //   un élément tourné (02-rotation) — même calcul que mapper/shapes.ts ;
@@ -423,7 +527,7 @@ async function runGeometryFixture(
 
   const { score, diffPng } = compareSsim(referencePng, renderedPng);
 
-  const containsText = doc.slides[0].elements.some((el) => el.kind === 'text');
+  const containsText = slide.elements.some((el) => el.kind === 'text');
   return { name, ssimScore: score, referencePng, renderedPng, diffPng, bboxDeviations, ssimThreshold, bboxThresholdPt, containsText };
 }
 
