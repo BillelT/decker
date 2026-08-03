@@ -5,9 +5,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PNG } from 'pngjs';
 import type { CalibrationData, IRDocument } from '@figma-to-slides/shared';
-import { UNCALIBRATED_DEFAULTS } from '@figma-to-slides/shared';
-import { computeScale, rotatedTransform } from '../mapper/transform.js';
+import { applyTextInset, computeScale, rotatedTransform } from '../mapper/transform.js';
 import { mapDocumentToBatches } from '../mapper/index.js';
+import { loadCalibration } from './loadCalibration.js';
 import { buildRotationFixtureDocument, renderRotationReferencePng } from './fixtures/rotation.js';
 import { buildShapesFixtureDocument, renderShapesReferencePng } from './fixtures/shapes.js';
 import { applyBatch, createPresentation, getPageThumbnail, getPresentation } from '../slides/client.js';
@@ -82,17 +82,25 @@ async function main(): Promise<void> {
   // qui reçoit déjà un access token prêt à l'emploi côté F2S_SESSION_TOKEN).
   const accessToken = sessionToken;
 
+  // Charge le VRAI calibration.json déjà mesuré s'il existe (même fonction
+  // que le backend de production, routes/export.ts) — sans ça, ce script
+  // testait ses propres fixtures texte contre les valeurs par défaut non
+  // mesurées (`UNCALIBRATED_DEFAULTS.textInset`, 7.2/3.6) plutôt que contre
+  // le vrai `textInset` déjà mesuré par un run précédent, faussant tableau
+  // d'écarts ET rendu réel des fixtures texte (audit 2026-08).
+  const loadedCalibration = await loadCalibration();
+
   const results: FixtureResult[] = [];
 
-  const rectsResult = await runRectsFixture(accessToken);
+  const rectsResult = await runRectsFixture(accessToken, loadedCalibration);
   results.push(rectsResult);
-  results.push(await runRotationFixture(accessToken));
-  results.push(await runShapesFixture(accessToken));
+  results.push(await runRotationFixture(accessToken, loadedCalibration));
+  results.push(await runShapesFixture(accessToken, loadedCalibration));
 
   const fileFixtureNames = await discoverFileFixtures();
   for (const name of fileFixtureNames) {
     try {
-      results.push(await runFileFixture(accessToken, name));
+      results.push(await runFileFixture(accessToken, name, loadedCalibration));
     } catch (err) {
       // Une fixture de fichier mal formée (multi-slides, images non
       // supportées, JSON invalide…) ne doit pas empêcher les autres fixtures
@@ -109,7 +117,7 @@ async function main(): Promise<void> {
   await writeCalibrationReport(path.join(outDir, 'calibration-report.html'), results, [textInsetMeasurement.report]);
 
   const calibration: CalibrationData = {
-    ...UNCALIBRATED_DEFAULTS,
+    ...loadedCalibration,
     textInset: textInsetMeasurement.textInset,
     measuredAt: new Date().toISOString(),
   };
@@ -170,7 +178,7 @@ async function discoverFileFixtures(): Promise<string[]> {
  * aucun élément `image` — l'hébergement d'un asset public depuis ce script
  * autonome (sans backend HTTP qui tourne) n'est pas encore câblé.
  */
-async function runFileFixture(accessToken: string, name: string): Promise<FixtureResult> {
+async function runFileFixture(accessToken: string, name: string, calibration: CalibrationData): Promise<FixtureResult> {
   const doc = JSON.parse(await readFile(path.join(FIXTURES_DIR, `${name}.json`), 'utf8')) as IRDocument;
   const referencePng = await readFile(path.join(FIXTURES_DIR, `${name}.png`));
 
@@ -181,7 +189,7 @@ async function runFileFixture(accessToken: string, name: string): Promise<Fixtur
     throw new Error("contient un élément image — l'hébergement d'asset public n'est pas encore câblé dans ce script autonome.");
   }
 
-  return runGeometryFixture(accessToken, doc, referencePng, name, SSIM_THRESHOLD_SECONDARY, BBOX_THRESHOLD_PT_SECONDARY);
+  return runGeometryFixture(accessToken, doc, referencePng, name, SSIM_THRESHOLD_SECONDARY, BBOX_THRESHOLD_PT_SECONDARY, calibration);
 }
 
 /**
@@ -257,22 +265,22 @@ async function measureTextInset(accessToken: string): Promise<{ textInset: Calib
   };
 }
 
-async function runRectsFixture(accessToken: string): Promise<FixtureResult> {
+async function runRectsFixture(accessToken: string, calibration: CalibrationData): Promise<FixtureResult> {
   const doc = buildRectsFixtureDocument();
   const referencePng = renderRectsReferencePng(2);
-  return runGeometryFixture(accessToken, doc, referencePng, '01-rects', SSIM_THRESHOLD_RECTS, BBOX_THRESHOLD_PT_RECTS);
+  return runGeometryFixture(accessToken, doc, referencePng, '01-rects', SSIM_THRESHOLD_RECTS, BBOX_THRESHOLD_PT_RECTS, calibration);
 }
 
-async function runRotationFixture(accessToken: string): Promise<FixtureResult> {
+async function runRotationFixture(accessToken: string, calibration: CalibrationData): Promise<FixtureResult> {
   const doc = buildRotationFixtureDocument();
   const referencePng = renderRotationReferencePng(2);
-  return runGeometryFixture(accessToken, doc, referencePng, '02-rotation', SSIM_THRESHOLD_SECONDARY, BBOX_THRESHOLD_PT_SECONDARY);
+  return runGeometryFixture(accessToken, doc, referencePng, '02-rotation', SSIM_THRESHOLD_SECONDARY, BBOX_THRESHOLD_PT_SECONDARY, calibration);
 }
 
-async function runShapesFixture(accessToken: string): Promise<FixtureResult> {
+async function runShapesFixture(accessToken: string, calibration: CalibrationData): Promise<FixtureResult> {
   const doc = buildShapesFixtureDocument();
   const referencePng = renderShapesReferencePng(2);
-  return runGeometryFixture(accessToken, doc, referencePng, '06-shapes', SSIM_THRESHOLD_SECONDARY, BBOX_THRESHOLD_PT_SECONDARY);
+  return runGeometryFixture(accessToken, doc, referencePng, '06-shapes', SSIM_THRESHOLD_SECONDARY, BBOX_THRESHOLD_PT_SECONDARY, calibration);
 }
 
 /**
@@ -291,9 +299,10 @@ async function runGeometryFixture(
   name: string,
   ssimThreshold: number,
   bboxThresholdPt: number,
+  calibration: CalibrationData,
 ): Promise<FixtureResult> {
   const { presentationId, firstSlideObjectId } = await createPresentation(accessToken, doc.presentationTitle, doc.slideSize);
-  const [batch] = mapDocumentToBatches(doc, () => '', UNCALIBRATED_DEFAULTS);
+  const [batch] = mapDocumentToBatches(doc, () => '', calibration);
   await applyBatch(accessToken, presentationId, batch);
   await applyBatch(accessToken, presentationId, {
     sourceSlideId: '__default__',
@@ -314,13 +323,26 @@ async function runGeometryFixture(
 
   const { scale, offsetXPt, offsetYPt } = computeScale(doc.slides[0].frameSize, doc.slideSize);
   const bboxDeviations: BboxDeviation[] = doc.slides[0].elements.map((el) => {
-    // `rotatedTransform` plutôt que `rect.x*scale+offset` brut : pour un
-    // élément tourné (fixture 02-rotation), translateX/Y attendu n'est PAS
-    // le coin haut-gauche non tourné — c'est le même calcul que
-    // mapper/shapes.ts, réutilisé ici pour ne pas comparer deux géométries
-    // différentes (rotation=0 retombe sur l'identité, donc aucun changement
-    // pour 01-rects).
-    const expected = rotatedTransform(el.rect.x * scale + offsetXPt, el.rect.y * scale + offsetYPt, el.rect.w * scale, el.rect.h * scale, el.rotation);
+    // Deux corrections par rapport à une comparaison naïve `rect.x*scale+offset` :
+    // - `rotatedTransform` plutôt que le coin haut-gauche non tourné, pour
+    //   un élément tourné (02-rotation) — même calcul que mapper/shapes.ts ;
+    //   rotation=0 retombe sur l'identité, donc aucun changement pour 01-rects.
+    // - pour un texte, `mapText` décale et agrandit la boîte de `textInset`
+    //   AVANT même de considérer la rotation (`applyTextInset`, en PX comme
+    //   `rect`) — comparer au `rect` brut ferait apparaître un "écart" de la
+    //   taille exacte de l'inset (audit 2026-08 : c'est précisément ce qui
+    //   rendait le tableau d'écarts illisible sur les fixtures texte, alors
+    //   que le rendu réel était correct).
+    const box =
+      el.kind === 'text'
+        ? applyTextInset(el.rect, {
+            left: calibration.textInset.left / scale,
+            right: calibration.textInset.right / scale,
+            top: calibration.textInset.top / scale,
+            bottom: calibration.textInset.bottom / scale,
+          })
+        : el.rect;
+    const expected = rotatedTransform(box.x * scale + offsetXPt, box.y * scale + offsetYPt, box.w * scale, box.h * scale, el.rotation);
     const expectedXPt = expected.translateX;
     const expectedYPt = expected.translateY;
     const actual = page?.pageElements.find((pe) => pe.objectId === el.id);
