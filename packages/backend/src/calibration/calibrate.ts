@@ -136,8 +136,14 @@ async function main(): Promise<void> {
 
   for (const r of results) {
     if (r.name === '01-rects') continue;
-    const secondaryPassed = r.ssimScore >= r.ssimThreshold && r.bboxDeviations.every((d) => d.deviationPt <= r.bboxThresholdPt);
-    console.log(`${secondaryPassed ? '✅' : '⚠️ '} ${r.name} : SSIM = ${r.ssimScore.toFixed(4)} (seuil ${r.ssimThreshold}, informatif — voir calibration-report.html).`);
+    const bboxPassed = r.bboxDeviations.every((d) => d.deviationPt <= r.bboxThresholdPt);
+    // Le SSIM n'est PAS un signal fiable sur du texte réel (moteurs de rendu
+    // de police différents entre Figma et Slides — audit 2026-08, voir
+    // FixtureResult.containsText) : seul l'écart de position engage le
+    // statut pass/fail pour ces fixtures-là.
+    const secondaryPassed = r.containsText ? bboxPassed : r.ssimScore >= r.ssimThreshold && bboxPassed;
+    const ssimLabel = r.containsText ? `SSIM = ${r.ssimScore.toFixed(4)} (informatif, texte réel — voir écart de position)` : `SSIM = ${r.ssimScore.toFixed(4)} (seuil ${r.ssimThreshold}, informatif)`;
+    console.log(`${secondaryPassed ? '✅' : '⚠️ '} ${r.name} : ${ssimLabel} — voir calibration-report.html.`);
   }
   if (fileFixtureNames.length === 0) {
     console.log(
@@ -354,7 +360,8 @@ async function runGeometryFixture(
 
   const { score, diffPng } = compareSsim(referencePng, renderedPng);
 
-  return { name, ssimScore: score, referencePng, renderedPng, diffPng, bboxDeviations, ssimThreshold, bboxThresholdPt };
+  const containsText = doc.slides[0].elements.some((el) => el.kind === 'text');
+  return { name, ssimScore: score, referencePng, renderedPng, diffPng, bboxDeviations, ssimThreshold, bboxThresholdPt, containsText };
 }
 
 function printMissingCredentialsHelp(): void {

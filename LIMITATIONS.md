@@ -158,7 +158,30 @@ avec les couches suivantes **testées et fonctionnelles hors ligne** :
   de sécurité empiriques contre un écart de rendu de police qui varie par
   police/taille, pas une constante unique mesurable par une seule fixture
   géométrique — leur valeur par défaut reste un choix raisonnable plutôt
-  qu'une mesure.
+  qu'une mesure. Les mesurer précisément demanderait un vrai fichier Figma
+  (texte `tightFit` sans substitution — la largeur "naturelle" que Figma
+  calcule pour une boîte à largeur ajustée n'existe nulle part en dehors de
+  Figma lui-même, exactement comme `05-text-edge`/`11-autolayout` plus
+  haut) — repoussé pour l'instant (audit 2026-08) : le cas qui dégrade le
+  plus la fidélité de taille de zone de texte est justement une police
+  substituée cumulée à du letter-spacing, un cas que **"Prepare for
+  Slides" est spécifiquement conçu pour absorber en amont** (letter-spacing
+  remis à zéro, police choisie explicitement) plutôt que de compter sur
+  une marge de sécurité générique côté backend pour le rattraper après
+  coup — l'un ne remplace pas l'autre, mais rend le second moins critique.
+- **Le SSIM n'est pas un signal de fidélité fiable sur du texte réel**
+  (audit 2026-08, confirmé en conditions réelles sur `04`/`05`/`11` :
+  position mesurée parfaite — 0.000pt d'écart partout, une fois le bug
+  ci-dessus corrigé — mais SSIM entre 0.56 et 0.86 malgré ça). Cause : Figma
+  et Slides utilisent chacun leur propre moteur de rendu de police
+  (hinting/anti-aliasing distincts), donc même un texte à la position
+  EXACTEMENT correcte produit un delta pixel visible sur chaque ligne —
+  contrairement aux formes unies (`01-rects`/`02-rotation`/`06-shapes`,
+  0.99+). `calibration-report.html` et la console de `npm run calibrate`
+  ignorent donc désormais le SSIM dans le statut pass/fail des fixtures
+  contenant du texte (`FixtureResult.containsText`) — seul l'écart de
+  position reste engageant, le SSIM y est affiché à titre strictement
+  informatif.
 - Le jeu de fixtures complet listé au spec §9 (`01-rects` à `13-batch`) a
   maintenant **`01-rects`, `02-rotation`, `03-text-inset` et `06-shapes`
   en version code-générée** (sans fichier Figma réel) — la règle qui
