@@ -176,12 +176,14 @@ les suivants) :
    (plutôt que de les dupliquer manuellement sur chaque layout comme
    aujourd'hui) ; à l'export, ces éléments sont écrits sur la page Master
    plutôt que sur chaque slide individuellement.
-4. **Slide de style guide optionnelle** (checkbox à l'export), générée en
-   première position du template : swatches + rôles + échantillon typo par
-   police. Une vraie slide Slides (texte/formes natifs, donc 100 %
-   faisable) — sert maintenant surtout de preuve visuelle de ce qui a été
-   écrit dans le vrai thème (point 1), plus de filet de secours en son
-   absence.
+4. ~~**Slide de style guide optionnelle.**~~ — abandonné (2026-08-03) :
+   l'idée initiale (checkbox à l'export générant une slide swatches/rôles/
+   échantillon typo en 1ère position) servait surtout de preuve visuelle de
+   ce qui a été écrit dans le vrai thème. Devenu redondant maintenant que le
+   point 1 écrit le vrai `colorScheme` sur le Master — la palette est déjà
+   visible nativement dans l'éditeur "Modifier le thème" de Google Slides
+   une fois le template exporté, pas besoin d'une slide fabriquée pour la
+   prouver.
 5. **Étiquette "Cover/Master" purement visuelle** sur une vignette du rail
    de layouts — distincte du chrome réellement écrit sur le Master (point
    3), juste pour que le rail se lise comme un vrai jeu de layouts
@@ -220,7 +222,10 @@ les suivants) :
     tag `f2s-placeholder:<RÔLE>` déjà posé en alt text côté Slides (et, si
     le point 6 sur `replaceAllText` est fait, remplir directement via un
     `batchUpdate` plutôt qu'à la main), pour l'aider à remplir une nouvelle
-    slide dupliquée depuis un layout.
+    slide dupliquée depuis un layout. **Hors périmètre de l'UI du plugin
+    Figma** (2026-08-03) : cet utilisateur final travaille dans Google
+    Slides une fois le template déjà exporté, pas dans Figma — ce serait un
+    outil séparé (ex. Apps Script côté Slides), pas un panneau du plugin.
 
 ~~**Nettoyage**~~ — fait : la route temporaire `routes/spike.ts` et le
 bouton "Run theme spike" du footer plugin ont été retirés une fois la
