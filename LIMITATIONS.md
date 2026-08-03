@@ -114,11 +114,16 @@ avec les couches suivantes **testées et fonctionnelles hors ligne** :
 - Harnais de calibration (`npm run calibrate`) : le calcul SSIM et la
   génération du rapport sont testés (comparaison d'images synthétiques), et
   **le pipeline complet a maintenant tourné avec succès contre un vrai
-  compte Google** (audit 2026-08) : critère de sortie de Phase 0 atteint
-  sur la fixture `01-rects` — SSIM = 0.9973 (seuil ≥ 0.99), écart de
-  position nul sur les 5 rectangles (0.000pt, seuil ≤ 0.5pt). Deux bugs
-  réels ont été trouvés et corrigés à cette occasion, invisibles tant que
-  ce script n'avait jamais tourné pour de vrai :
+  compte Google, sur les 13 fixtures du jeu (`01-rects` à `13-batch`)** —
+  toutes passées au vert (2026-08-03). Critère de sortie de Phase 0 validé
+  initialement sur `01-rects` — SSIM = 0.9973 (seuil ≥ 0.99), écart de
+  position nul sur les 5 rectangles (0.000pt, seuil ≤ 0.5pt) — puis confirmé
+  sur l'ensemble du jeu. Le détail par fixture (`calibration-report.html`)
+  est un artefact local non commité au repo ; seules les constantes de
+  compensation dérivées (`calibration.json`, régénéré à chaque run) sont
+  suivies dans git. Deux bugs réels ont été trouvés et corrigés à
+  l'occasion du tout premier run, invisibles tant que ce script n'avait
+  jamais tourné pour de vrai :
   - `presentations.get` renvoie les positions en **EMU**, pas en points,
     même quand les requêtes d'écriture précisent `unit: 'PT'` — le calcul
     d'écart comparait donc deux unités différentes et rapportait des
@@ -352,6 +357,9 @@ plusieurs slides :
   cette slide avec un message Slides API explicite plutôt que de planter.
   Non testé contre l'API Slides réelle (comme le reste du backend, voir
   § état du projet plus bas).
-- §7.1 (underlay de contrôle) et §7.2 (drag & drop) sont **volontairement
-  non implémentés** : la spec les marque optionnels, à faire après
-  validation des phases 0 à 3.
+- §7.1 (underlay de contrôle) est **volontairement non implémenté** : la
+  spec le marque optionnel, à faire après validation des phases 0 à 3.
+  §7.2 (réordonnancement des vignettes par drag & drop), en revanche, **est
+  fait** : `ui/reorderFrames.ts` (`moveToIndex`) est câblé dans
+  `DeckPanel.tsx` et `TemplatePanel.tsx`, dans les deux modes (voir
+  `TODO.md`, point 8 du backlog "Mode template").
