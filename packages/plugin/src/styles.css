@@ -998,6 +998,14 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   flex: none;
 }
 
+/* Sur le bouton primaire (fond orange, cf. "Waiting for Google sign-in…"),
+   le spinner orange sur orange devient invisible — il lui faut des teintes
+   blanches pour rester visible sur ce fond. */
+.f2s-btn--primary .f2s-spinner {
+  border-color: rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+}
+
 /* Spinner + libellé à l'intérieur d'un `.f2s-btn` (ex. "Sign in with
    Google" pendant les deux temps d'attente réseau) — un `<button>`/`<a>`
    ne peut pas être lui-même flex sans perturber son padding/alignement
