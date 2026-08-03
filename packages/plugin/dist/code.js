@@ -84,6 +84,27 @@
       if (input.container?.clipsContentWithOverflow) {
         return { action: "raster", warningCode: "EFFECT_RASTERIZED", message: "Group clips overflowing children \u2014 flattened into an image." };
       }
+      const bg = input.container?.fill;
+      if (bg && bg.visibleFillCount > 0) {
+        if (bg.visibleFillCount > 1 || bg.fillIsGradient || bg.fillIsImage || bg.hasMultipleOrOffCenterStroke) {
+          return {
+            action: "raster",
+            warningCode: "CONTAINER_BACKGROUND_RASTERIZED",
+            message: "This layout frame's own background (gradient, image fill, multiple fills, or non-standard stroke) can't be combined natively with its children \u2014 the whole group is converted to an image."
+          };
+        }
+        if (bg.radiusDecision) {
+          const rd = bg.radiusDecision;
+          if (rd.kind === "raster") {
+            return { action: "raster", warningCode: "CORNER_RADIUS_RASTERIZED", message: rd.reason };
+          }
+          if (rd.kind === "ellipse") return { action: "descend", background: { action: "native-shape-ellipse" } };
+          if (rd.kind === "round-rectangle") {
+            return { action: "descend", background: { action: "native-shape-round-rectangle", approximated: rd.approximated } };
+          }
+        }
+        return { action: "descend", background: { action: "native-shape-preset" } };
+      }
       return { action: "descend" };
     }
     return { action: "ignore" };
@@ -540,6 +561,18 @@
       }
       case "descend": {
         const container = node;
+        if (decision.background) {
+          state.elements.push(buildNativeShape(node, decision.background.action, state));
+          if (decision.background.action === "native-shape-round-rectangle" && decision.background.approximated) {
+            state.warnings.push({
+              code: "RADIUS_APPROXIMATED",
+              severity: "info",
+              sourceNodeId: node.id,
+              nodeName: node.name,
+              message: "Corner radius is approximated by Slides (fixed, non-adjustable value)."
+            });
+          }
+        }
         for (const child of container.children) {
           await walk(child, { ...state, maskedByAncestor: state.maskedByAncestor });
         }
@@ -576,7 +609,11 @@
     }
     if (kind === "GROUP_LIKE") {
       const clipsContent = "clipsContent" in node ? Boolean(node.clipsContent) : false;
-      input.container = { clipsContentWithOverflow: clipsContent && childrenOverflow(node) };
+      input.container = {
+        clipsContentWithOverflow: clipsContent && childrenOverflow(node),
+        // Un GROUP (contrairement à FRAME/COMPONENT/INSTANCE) n'a pas de `fills` — pas de fond propre possible.
+        fill: "fills" in node ? shapeInfo(node, "GROUP_LIKE") : void 0
+      };
     }
     return input;
   }
@@ -625,7 +662,7 @@
     const fillIsImage = visibleFills.length === 1 && visibleFills[0].type === "IMAGE";
     const hasMultipleOrOffCenterStroke = evaluateStroke(node);
     let radiusDecision;
-    if (kind === "RECTANGLE" && "topLeftRadius" in node) {
+    if ((kind === "RECTANGLE" || kind === "GROUP_LIKE") && "topLeftRadius" in node) {
       radiusDecision = decideRadius(
         {
           topLeft: node.topLeftRadius,
@@ -813,6 +850,15 @@
         }
         return;
       case "descend": {
+        if (decision.background?.action === "native-shape-round-rectangle" && decision.background.approximated) {
+          warnings.push({
+            nodeId: node.id,
+            nodeName: node.name,
+            code: "RADIUS_APPROXIMATED",
+            message: "Corner radius is approximated by Slides (fixed, non-adjustable value).",
+            category: "visual-diff"
+          });
+        }
         const container = node;
         for (const child of container.children) {
           await walk2(child, warnings, maskedByAncestor);
@@ -996,6 +1042,7 @@
     "LETTER_SPACING_LOST",
     "CORNER_RADIUS_RASTERIZED",
     "MULTIPLE_FILLS_RASTERIZED",
+    "CONTAINER_BACKGROUND_RASTERIZED",
     // Pas un raster, mais bloquant quand même en mode template : un tag de
     // placeholder mal orthographié (`[[titel]]`…) signifie qu'un placeholder
     // prévu MANQUERA dans le template livré — exactement le genre d'erreur qui

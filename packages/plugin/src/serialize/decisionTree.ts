@@ -47,6 +47,21 @@ export interface DecisionInput {
   };
   container?: {
     clipsContentWithOverflow: boolean;
+    /**
+     * Fond propre du conteneur (FRAME/COMPONENT/INSTANCE — un GROUP n'a pas
+     * de `fills`, `undefined` dans ce cas) — même forme que `shape` ci-dessus,
+     * pour réutiliser exactement la même logique de décision fill/contour/
+     * rayon qu'un vrai RECTANGLE (audit 2026-08 : avant ça, le fond d'un
+     * conteneur imbriqué — pas la slide racine — disparaissait toujours,
+     * silencieusement, dès que ce conteneur restait natif).
+     */
+    fill?: {
+      visibleFillCount: number;
+      fillIsGradient: boolean;
+      fillIsImage: boolean;
+      hasMultipleOrOffCenterStroke: boolean;
+      radiusDecision?: RadiusDecision;
+    };
   };
 }
 
@@ -62,7 +77,8 @@ export type WarningCode =
   | 'LETTER_SPACING_LOST'
   | 'RADIUS_APPROXIMATED'
   | 'CORNER_RADIUS_RASTERIZED'
-  | 'MULTIPLE_FILLS_RASTERIZED';
+  | 'MULTIPLE_FILLS_RASTERIZED'
+  | 'CONTAINER_BACKGROUND_RASTERIZED';
 
 export type Decision =
   | { action: 'ignore' }
@@ -73,7 +89,11 @@ export type Decision =
   | { action: 'native-shape-round-rectangle'; approximated: boolean }
   | { action: 'native-line' }
   | { action: 'image' }
-  | { action: 'descend' };
+  | {
+      action: 'descend';
+      /** Fond du conteneur à créer AVANT de descendre dans ses enfants (z-order arrière → avant) — absent si le conteneur n'a aucun fill visible. */
+      background?: { action: 'native-shape-preset' | 'native-shape-ellipse' | 'native-shape-round-rectangle'; approximated?: boolean };
+    };
 
 /**
  * `PASS_THROUGH` est la valeur renvoyée par l'API Figma pour la quasi-
@@ -167,6 +187,36 @@ export function classifyNode(input: DecisionInput): Decision {
   if (input.kind === 'GROUP_LIKE') {
     if (input.container?.clipsContentWithOverflow) {
       return { action: 'raster', warningCode: 'EFFECT_RASTERIZED', message: 'Group clips overflowing children — flattened into an image.' };
+    }
+    const bg = input.container?.fill;
+    if (bg && bg.visibleFillCount > 0) {
+      // Un conteneur imbriqué (pas la slide racine) a aussi une boîte visible
+      // propre — sans ce bloc, elle disparaissait toujours silencieusement,
+      // seuls ses enfants étaient exportés (audit 2026-08). Une seule
+      // solution FIABLE quand le fond ne peut pas être représenté nativement
+      // (dégradé, image, fills multiples, contour non standard) : rastériser
+      // TOUT le sous-arbre (fond + enfants), comme pour un masque/ombre plus
+      // haut — un raster "juste le fond" nécessiterait de cacher
+      // temporairement les enfants avant `exportAsync`, bien plus invasif
+      // pour un document ouvert par l'utilisateur.
+      if (bg.visibleFillCount > 1 || bg.fillIsGradient || bg.fillIsImage || bg.hasMultipleOrOffCenterStroke) {
+        return {
+          action: 'raster',
+          warningCode: 'CONTAINER_BACKGROUND_RASTERIZED',
+          message: "This layout frame's own background (gradient, image fill, multiple fills, or non-standard stroke) can't be combined natively with its children — the whole group is converted to an image.",
+        };
+      }
+      if (bg.radiusDecision) {
+        const rd = bg.radiusDecision;
+        if (rd.kind === 'raster') {
+          return { action: 'raster', warningCode: 'CORNER_RADIUS_RASTERIZED', message: rd.reason };
+        }
+        if (rd.kind === 'ellipse') return { action: 'descend', background: { action: 'native-shape-ellipse' } };
+        if (rd.kind === 'round-rectangle') {
+          return { action: 'descend', background: { action: 'native-shape-round-rectangle', approximated: rd.approximated } };
+        }
+      }
+      return { action: 'descend', background: { action: 'native-shape-preset' } };
     }
     return { action: 'descend' };
   }

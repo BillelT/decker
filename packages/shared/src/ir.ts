@@ -213,6 +213,7 @@ export interface IRWarning {
     | 'RADIUS_APPROXIMATED'
     | 'CORNER_RADIUS_RASTERIZED'
     | 'MULTIPLE_FILLS_RASTERIZED'
+    | 'CONTAINER_BACKGROUND_RASTERIZED'
     | 'PLACEHOLDER_TAG_UNKNOWN';
   severity: 'info' | 'warning' | 'blocking';
   sourceNodeId: string;

@@ -28,6 +28,7 @@ de l'approximer silencieusement, et te le signale.
 | Polices non disponibles dans Google Fonts ni dans la liste système de Slides | Remplacées par une police proche quand une correspondance existe (ex. *SF Pro Display* → *Inter*), sinon le texte est converti en image et un avertissement bloquant te demande de confirmer ou de changer la police. |
 | Auto-layout (agencement automatique) | Converti en positions fixes au moment de l'export — un redimensionnement ultérieur dans Slides ne réajustera pas automatiquement les éléments comme le ferait Figma. |
 | Groupes / composants Figma | Aplatis : chaque élément devient indépendant dans Slides, il n'y a pas de "groupe" Slides qu'on peut déplacer d'un bloc. |
+| Fond (couleur) d'une frame **imbriquée** (pas la slide elle-même) — ex. une carte, un badge, une pastille colorée | Reproduit nativement (couleur + rayon d'angle, même règle que pour une forme) si le fond est une seule couleur unie. S'il s'agit d'un dégradé, d'une image, de plusieurs remplissages, ou d'un contour non standard, TOUTE la frame (fond + contenu) est convertie en image plutôt que de perdre juste le fond. |
 
 ## Création de template (mode dédié)
 

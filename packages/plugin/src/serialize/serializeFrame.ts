@@ -185,6 +185,21 @@ async function walk(node: SceneNode, state: WalkState): Promise<void> {
 
     case 'descend': {
       const container = node as FrameNode | GroupNode | ComponentNode | InstanceNode;
+      // §2.4/§7.1 RÈGLE z-order : le fond du conteneur, s'il y en a un, est
+      // créé avant ses enfants (le plus en arrière) — même ordre que le fond
+      // de la slide racine et l'underlay.
+      if (decision.background) {
+        state.elements.push(buildNativeShape(node, decision.background.action, state));
+        if (decision.background.action === 'native-shape-round-rectangle' && decision.background.approximated) {
+          state.warnings.push({
+            code: 'RADIUS_APPROXIMATED',
+            severity: 'info',
+            sourceNodeId: node.id,
+            nodeName: node.name,
+            message: 'Corner radius is approximated by Slides (fixed, non-adjustable value).',
+          });
+        }
+      }
       for (const child of container.children) {
         await walk(child, { ...state, maskedByAncestor: state.maskedByAncestor });
       }
@@ -230,7 +245,11 @@ export function toDecisionInput(node: SceneNode, maskedByAncestor: boolean): Dec
 
   if (kind === 'GROUP_LIKE') {
     const clipsContent = 'clipsContent' in node ? Boolean(node.clipsContent) : false;
-    input.container = { clipsContentWithOverflow: clipsContent && childrenOverflow(node as FrameNode) };
+    input.container = {
+      clipsContentWithOverflow: clipsContent && childrenOverflow(node as FrameNode),
+      // Un GROUP (contrairement à FRAME/COMPONENT/INSTANCE) n'a pas de `fills` — pas de fond propre possible.
+      fill: 'fills' in node ? shapeInfo(node, 'GROUP_LIKE') : undefined,
+    };
   }
 
   return input;
@@ -286,7 +305,7 @@ function shapeInfo(node: SceneNode, kind: NodeKind): DecisionInput['shape'] {
   const hasMultipleOrOffCenterStroke = evaluateStroke(node);
 
   let radiusDecision: RadiusDecision | undefined;
-  if (kind === 'RECTANGLE' && 'topLeftRadius' in node) {
+  if ((kind === 'RECTANGLE' || kind === 'GROUP_LIKE') && 'topLeftRadius' in node) {
     radiusDecision = decideRadius(
       {
         topLeft: node.topLeftRadius,

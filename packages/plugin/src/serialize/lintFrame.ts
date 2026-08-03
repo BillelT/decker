@@ -85,6 +85,15 @@ async function walk(node: SceneNode, warnings: LintWarning[], maskedByAncestor: 
       return;
 
     case 'descend': {
+      if (decision.background?.action === 'native-shape-round-rectangle' && decision.background.approximated) {
+        warnings.push({
+          nodeId: node.id,
+          nodeName: node.name,
+          code: 'RADIUS_APPROXIMATED',
+          message: 'Corner radius is approximated by Slides (fixed, non-adjustable value).',
+          category: 'visual-diff',
+        });
+      }
       const container = node as FrameNode | GroupNode | ComponentNode | InstanceNode;
       for (const child of container.children) {
         await walk(child, warnings, maskedByAncestor);
