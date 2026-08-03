@@ -932,6 +932,7 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
 }
 
 .f2s-style-heading {
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
