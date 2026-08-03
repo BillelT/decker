@@ -208,3 +208,55 @@ describe('classifyNode — vector-like and containers', () => {
     expect(classifyNode(base({ kind: 'OTHER' }))).toEqual({ action: 'ignore' });
   });
 });
+
+describe('classifyNode — GROUP_LIKE own background (audit 2026-08)', () => {
+  it('descends without a background when the container has no fill', () => {
+    expect(classifyNode(base({ kind: 'GROUP_LIKE', container: { clipsContentWithOverflow: false } }))).toEqual({ action: 'descend' });
+  });
+
+  it('descends WITH a background shape for a nested frame with a simple solid fill (the bug this fixes: it used to just disappear)', () => {
+    const d = classifyNode(
+      base({
+        kind: 'GROUP_LIKE',
+        container: { clipsContentWithOverflow: false, fill: { visibleFillCount: 1, fillIsGradient: false, fillIsImage: false, hasMultipleOrOffCenterStroke: false } },
+      }),
+    );
+    expect(d).toEqual({ action: 'descend', background: { action: 'native-shape-preset' } });
+  });
+
+  it('uses the radius decision for the container background, same as a real RECTANGLE (e.g. a circular badge frame)', () => {
+    const d = classifyNode(
+      base({
+        kind: 'GROUP_LIKE',
+        container: {
+          clipsContentWithOverflow: false,
+          fill: { visibleFillCount: 1, fillIsGradient: false, fillIsImage: false, hasMultipleOrOffCenterStroke: false, radiusDecision: { kind: 'ellipse' } },
+        },
+      }),
+    );
+    expect(d).toEqual({ action: 'descend', background: { action: 'native-shape-ellipse' } });
+  });
+
+  it('rasters the whole group when its own background cannot be represented natively (gradient/image/multiple fills/bad stroke) — a partial raster of just the background is not possible', () => {
+    const d = classifyNode(
+      base({
+        kind: 'GROUP_LIKE',
+        container: { clipsContentWithOverflow: false, fill: { visibleFillCount: 1, fillIsGradient: true, fillIsImage: false, hasMultipleOrOffCenterStroke: false } },
+      }),
+    );
+    expect(d).toMatchObject({ action: 'raster', warningCode: 'CONTAINER_BACKGROUND_RASTERIZED' });
+  });
+
+  it('rasters the whole group when the container background radius decision says raster', () => {
+    const d = classifyNode(
+      base({
+        kind: 'GROUP_LIKE',
+        container: {
+          clipsContentWithOverflow: false,
+          fill: { visibleFillCount: 1, fillIsGradient: false, fillIsImage: false, hasMultipleOrOffCenterStroke: false, radiusDecision: { kind: 'raster', reason: 'non-uniform' } },
+        },
+      }),
+    );
+    expect(d).toMatchObject({ action: 'raster', warningCode: 'CORNER_RADIUS_RASTERIZED' });
+  });
+});

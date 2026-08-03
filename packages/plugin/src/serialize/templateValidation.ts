@@ -26,6 +26,7 @@ const RASTER_WARNING_CODES = new Set<IRWarning['code']>([
   'LETTER_SPACING_LOST',
   'CORNER_RADIUS_RASTERIZED',
   'MULTIPLE_FILLS_RASTERIZED',
+  'CONTAINER_BACKGROUND_RASTERIZED',
   // Pas un raster, mais bloquant quand même en mode template : un tag de
   // placeholder mal orthographié (`[[titel]]`…) signifie qu'un placeholder
   // prévu MANQUERA dans le template livré — exactement le genre d'erreur qui
