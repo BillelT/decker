@@ -1,0 +1,20 @@
+{
+  "textInset": {
+    "top": 16.499999999999996,
+    "left": 9.749999999999995,
+    "bottom": 16.900000000000045,
+    "right": 10.200000000000033
+  },
+  "roundRectRadiusRatio": 0.16,
+  "defaultOutlineWeightPt": 1,
+  "lineSpacingBaseline": 1.2,
+  "radiusNativeTolerance": {
+    "min": 0.08,
+    "max": 0.25
+  },
+  "textWidthSafetyMarginEm": 0.15,
+  "textWidthSafetyMarginSubstitutedFontEm": 0.9,
+  "textWidthSafetyMarginTightFitEm": 1.2,
+  "textWidthSafetyMarginTightFitProportional": 0.05,
+  "measuredAt": "2026-08-03T11:12:33.998Z"
+}
