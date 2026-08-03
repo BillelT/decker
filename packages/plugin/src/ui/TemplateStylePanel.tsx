@@ -84,7 +84,7 @@ export function TemplateStylePanel({ colors, fonts, colorRoles, setColorRoles, r
   return (
     <div className="f2s-style-panel">
       <section className="f2s-tmpl-section">
-        <h3 className="f2s-tmpl-heading">Colors</h3>
+        <h3 className="f2s-tmpl-heading f2s-style-heading">Colors</h3>
         <ul className="f2s-style-list">
           {VISIBLE_THEME_ROLES.map((role) => {
             const hex = roleHexes[role];
@@ -139,14 +139,10 @@ export function TemplateStylePanel({ colors, fonts, colorRoles, setColorRoles, r
           })}
         </ul>
         {colors.length === 0 && <p className="f2s-toolbar-muted">No color detected yet — add layouts first.</p>}
-        <p className="f2s-tmpl-note">
-          A role linked to a color stays LIVE — changing it later in Slides (Slide &gt; Edit theme colors) recolors every
-          element that uses it, everywhere in the template at once.
-        </p>
       </section>
 
       <section className="f2s-tmpl-section">
-        <h3 className="f2s-tmpl-heading">Typography</h3>
+        <h3 className="f2s-tmpl-heading f2s-style-heading">Typography</h3>
         {fonts.length === 0 ? (
           <p className="f2s-toolbar-muted">No text detected yet.</p>
         ) : (
