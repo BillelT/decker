@@ -213,7 +213,7 @@ export function DeckPanel({
         )}
         <main className="f2s-canvas">
           <p className="f2s-empty">
-            Use "Select frames to add", then select the frames
+            Click "Select frames to add", then select the frames
             <br />
             you want to export on the Figma canvas, and click the button again to add your selection.
           </p>
