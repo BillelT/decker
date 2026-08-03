@@ -3097,7 +3097,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
       return /* @__PURE__ */ u3("div", { className: "f2s-body", children: [
         notice && /* @__PURE__ */ u3("div", { className: "f2s-toast", role: "status", children: notice }),
         /* @__PURE__ */ u3("main", { className: "f2s-canvas", children: /* @__PURE__ */ u3("p", { className: "f2s-empty", children: [
-          'Use "Select frames to add", then select the frames',
+          'Click "Select frames to add", then select the frames',
           /* @__PURE__ */ u3("br", {}),
           "you want to export on the Figma canvas, and click the button again to add your selection."
         ] }) })
@@ -3295,7 +3295,11 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
       return () => cancelAnimationFrame(frame);
     }, [suppressShiftTransition]);
     if (order.length === 0) {
-      return /* @__PURE__ */ u3("div", { className: "f2s-body", children: /* @__PURE__ */ u3("main", { className: "f2s-canvas", children: /* @__PURE__ */ u3("p", { className: "f2s-empty", children: 'Click "Select layout to add" to choose the layouts that make up this template \u2014 e.g. a title slide, a content slide.' }) }) });
+      return /* @__PURE__ */ u3("div", { className: "f2s-body", children: /* @__PURE__ */ u3("main", { className: "f2s-canvas", children: /* @__PURE__ */ u3("p", { className: "f2s-empty", children: [
+        'Click "Select layout to add", then select the frames',
+        /* @__PURE__ */ u3("br", {}),
+        "you want to use as a layout on the Figma canvas, and click the button again to add your selection."
+      ] }) }) });
     }
     return /* @__PURE__ */ u3("div", { className: "f2s-body", children: [
       /* @__PURE__ */ u3("aside", { className: "f2s-sidebar", children: [
