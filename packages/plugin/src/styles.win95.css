@@ -378,9 +378,7 @@ html.f2s-skin--win95 .f2s-tmpl-section--blocking .f2s-tmpl-heading {
 /* Entrées de liste cliquables : boutons à biseau, pas des puces à bord
    arrondi qui changent de couleur au survol. */
 html.f2s-skin--win95 .f2s-log-entry,
-html.f2s-skin--win95 .f2s-tmpl-warning,
-html.f2s-skin--win95 .f2s-tmpl-chip,
-html.f2s-skin--win95 .f2s-tmpl-note-item {
+html.f2s-skin--win95 .f2s-tmpl-chip {
   font-size: 11px;
   border: none;
   border-radius: 0;
@@ -391,21 +389,16 @@ html.f2s-skin--win95 .f2s-tmpl-note-item {
 }
 
 html.f2s-skin--win95 .f2s-log-entry:hover,
-html.f2s-skin--win95 .f2s-tmpl-warning:hover,
-html.f2s-skin--win95 .f2s-tmpl-chip:hover,
-html.f2s-skin--win95 .f2s-tmpl-note-item:hover {
+html.f2s-skin--win95 .f2s-tmpl-chip:hover {
   border-color: transparent;
 }
 
 html.f2s-skin--win95 .f2s-log-entry:active,
-html.f2s-skin--win95 .f2s-tmpl-warning:active,
-html.f2s-skin--win95 .f2s-tmpl-chip:active,
-html.f2s-skin--win95 .f2s-tmpl-note-item:active {
+html.f2s-skin--win95 .f2s-tmpl-chip:active {
   box-shadow: var(--w95-pressed);
 }
 
-html.f2s-skin--win95 .f2s-log-entry--blocking,
-html.f2s-skin--win95 .f2s-tmpl-warning {
+html.f2s-skin--win95 .f2s-log-entry--blocking {
   color: var(--color-error);
 }
 
@@ -415,12 +408,6 @@ html.f2s-skin--win95 .f2s-log-entry-flag {
 
 html.f2s-skin--win95 .f2s-tmpl-role {
   color: #000;
-}
-
-html.f2s-skin--win95 .f2s-tmpl-swatch {
-  border: none;
-  border-radius: 0;
-  box-shadow: var(--w95-in);
 }
 
 /* ---- Progression / erreurs ---- */

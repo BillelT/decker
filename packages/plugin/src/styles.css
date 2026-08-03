@@ -750,10 +750,14 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
 
 /* ---- Création de template : rapport de contenu communicable ----
    (brief-creation-template-google-slides.md — couleurs, typos, layouts,
-   placeholders). Même rail de vignettes + zone principale que le deck,
-   mais la zone principale devient un rapport à deux colonnes plutôt qu'un
-   simple aperçu centré : le contenu peut dépasser la hauteur visible, donc
-   alignement en haut plutôt que centré verticalement. */
+   placeholders). Même rail de vignettes + zone principale que le deck. Les
+   couleurs/typo AGRÉGÉES de tout le template vivent désormais dans l'aside
+   "Styles" (TemplateStylePanel) : un rapport par layout, redondant, n'a
+   plus sa place ici — la zone principale empile donc la preview (pleine
+   largeur, juste les 24px de padding de `.f2s-canvas`) puis les infos
+   propres à CE layout (placeholders, erreurs, contenu) — le contenu peut
+   dépasser la hauteur visible, d'où l'alignement en haut plutôt que centré
+   verticalement. */
 
 .f2s-canvas--template {
   justify-content: flex-start;
@@ -762,18 +766,18 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
 
 .f2s-tmpl-report {
   display: flex;
-  align-items: flex-start;
+  flex-direction: column;
   gap: 24px;
   width: 100%;
 }
 
 .f2s-tmpl-preview {
-  max-width: 360px;
+  align-self: stretch;
+  width: 100%;
+  max-width: 100%;
 }
 
 .f2s-tmpl-panel {
-  flex: 1;
-  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -814,13 +818,12 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   gap: 4px;
 }
 
-.f2s-tmpl-warning,
-.f2s-tmpl-chip,
-.f2s-tmpl-note-item {
+.f2s-tmpl-chip {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   width: 100%;
+  min-width: 0;
   text-align: left;
   font-family: inherit;
   font-size: 12px;
@@ -831,14 +834,7 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   padding: 6px 10px;
 }
 
-.f2s-tmpl-warning {
-  border-color: var(--color-error);
-  color: var(--color-error);
-}
-
-.f2s-tmpl-warning:hover,
-.f2s-tmpl-chip:hover,
-.f2s-tmpl-note-item:hover {
+.f2s-tmpl-chip:hover {
   border-color: var(--color-orange);
 }
 
@@ -854,46 +850,16 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   color: var(--color-black-70);
 }
 
-.f2s-tmpl-swatches {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.f2s-tmpl-swatch-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* Damier sous la pastille : une couleur semi-transparente se lit comme
-   telle au lieu d'être faussée par le fond du panneau. */
-.f2s-tmpl-swatch {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  border: 1px solid var(--color-border);
-  flex: none;
+/* Le nom du calque tagué devient le label du placeholder (p.label) : sur un
+   calque texte, ce nom par défaut est son contenu entier — tronqué sur une
+   ligne plutôt que de casser sur plusieurs, le libellé complet reste dans
+   `title` (cf. f2s-log-entry-name dans DeckPanel.tsx). */
+.f2s-tmpl-chip-label {
+  flex: 1 1 auto;
+  min-width: 0;
   overflow: hidden;
-  display: block;
-  background-image: linear-gradient(45deg, rgba(127, 127, 127, 0.25) 25%, transparent 25%, transparent 75%, rgba(127, 127, 127, 0.25) 75%),
-    linear-gradient(45deg, rgba(127, 127, 127, 0.25) 25%, transparent 25%, transparent 75%, rgba(127, 127, 127, 0.25) 75%);
-  background-size: 12px 12px;
-  background-position: 0 0, 6px 6px;
-}
-
-.f2s-tmpl-swatch-color {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.f2s-tmpl-swatch-label {
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .f2s-tmpl-font-family {

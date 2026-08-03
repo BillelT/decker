@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
+import { logEntryFlag } from './logEntryFlag.js';
 import { moveToIndex } from './reorderFrames.js';
 import { RetroExportPreview } from './RetroExportPreview.js';
 import type { ExportCursor } from './exportCursor.js';
@@ -6,38 +7,6 @@ import { postToPlugin, selectSourceNodes, type FrameState } from './types.js';
 
 /** En dessous de ce mouvement, un pointerdown reste un simple clic de sélection. */
 const DRAG_THRESHOLD_PX = 3;
-
-/**
- * Repère à mettre en avant dans les Logs : un calque rasterisé quitte
- * l'édition native (police, interligne, espacement des lettres figés en
- * pixels au moment de l'export) ; un calque gardé natif mais listé ici
- * (police substituée, radius approximé) peut malgré tout rendre différemment
- * de l'original faute d'équivalent exact côté Slides. Les deux catégories
- * méritent de sauter aux yeux plutôt que de se fondre avec le reste des
- * entrées (ex. tag de placeholder inconnu, qui est un souci de config, pas
- * de fidélité visuelle).
- */
-const RASTERIZED_WARNING_CODES = new Set([
-  'FONT_MISSING',
-  'GRADIENT_RASTERIZED',
-  'EFFECT_RASTERIZED',
-  'BLEND_MODE_RASTERIZED',
-  'MASK_RASTERIZED',
-  'VECTOR_RASTERIZED',
-  'LINE_RASTERIZED',
-  'LETTER_SPACING_LOST',
-  'CORNER_RADIUS_RASTERIZED',
-  'MULTIPLE_FILLS_RASTERIZED',
-  'CONTAINER_BACKGROUND_RASTERIZED',
-]);
-
-const VISUAL_DIFF_WARNING_CODES = new Set(['FONT_SUBSTITUTED', 'RADIUS_APPROXIMATED']);
-
-function logEntryFlag(code: string): 'rasterized' | 'visual-diff' | undefined {
-  if (RASTERIZED_WARNING_CODES.has(code)) return 'rasterized';
-  if (VISUAL_DIFF_WARNING_CODES.has(code)) return 'visual-diff';
-  return undefined;
-}
 
 /**
  * Fraction (0–1) d'un slot qu'il reste à parcourir, avant un recouvrement

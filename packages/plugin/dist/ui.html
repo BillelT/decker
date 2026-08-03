@@ -755,10 +755,14 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
 
 /* ---- Création de template : rapport de contenu communicable ----
    (brief-creation-template-google-slides.md — couleurs, typos, layouts,
-   placeholders). Même rail de vignettes + zone principale que le deck,
-   mais la zone principale devient un rapport à deux colonnes plutôt qu'un
-   simple aperçu centré : le contenu peut dépasser la hauteur visible, donc
-   alignement en haut plutôt que centré verticalement. */
+   placeholders). Même rail de vignettes + zone principale que le deck. Les
+   couleurs/typo AGRÉGÉES de tout le template vivent désormais dans l'aside
+   "Styles" (TemplateStylePanel) : un rapport par layout, redondant, n'a
+   plus sa place ici — la zone principale empile donc la preview (pleine
+   largeur, juste les 24px de padding de `.f2s-canvas`) puis les infos
+   propres à CE layout (placeholders, erreurs, contenu) — le contenu peut
+   dépasser la hauteur visible, d'où l'alignement en haut plutôt que centré
+   verticalement. */
 
 .f2s-canvas--template {
   justify-content: flex-start;
@@ -767,18 +771,18 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
 
 .f2s-tmpl-report {
   display: flex;
-  align-items: flex-start;
+  flex-direction: column;
   gap: 24px;
   width: 100%;
 }
 
 .f2s-tmpl-preview {
-  max-width: 360px;
+  align-self: stretch;
+  width: 100%;
+  max-width: 100%;
 }
 
 .f2s-tmpl-panel {
-  flex: 1;
-  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -819,13 +823,12 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   gap: 4px;
 }
 
-.f2s-tmpl-warning,
-.f2s-tmpl-chip,
-.f2s-tmpl-note-item {
+.f2s-tmpl-chip {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   width: 100%;
+  min-width: 0;
   text-align: left;
   font-family: inherit;
   font-size: 12px;
@@ -836,14 +839,7 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   padding: 6px 10px;
 }
 
-.f2s-tmpl-warning {
-  border-color: var(--color-error);
-  color: var(--color-error);
-}
-
-.f2s-tmpl-warning:hover,
-.f2s-tmpl-chip:hover,
-.f2s-tmpl-note-item:hover {
+.f2s-tmpl-chip:hover {
   border-color: var(--color-orange);
 }
 
@@ -859,46 +855,16 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   color: var(--color-black-70);
 }
 
-.f2s-tmpl-swatches {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.f2s-tmpl-swatch-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* Damier sous la pastille : une couleur semi-transparente se lit comme
-   telle au lieu d'être faussée par le fond du panneau. */
-.f2s-tmpl-swatch {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  border: 1px solid var(--color-border);
-  flex: none;
+/* Le nom du calque tagué devient le label du placeholder (p.label) : sur un
+   calque texte, ce nom par défaut est son contenu entier — tronqué sur une
+   ligne plutôt que de casser sur plusieurs, le libellé complet reste dans
+   `title` (cf. f2s-log-entry-name dans DeckPanel.tsx). */
+.f2s-tmpl-chip-label {
+  flex: 1 1 auto;
+  min-width: 0;
   overflow: hidden;
-  display: block;
-  background-image: linear-gradient(45deg, rgba(127, 127, 127, 0.25) 25%, transparent 25%, transparent 75%, rgba(127, 127, 127, 0.25) 75%),
-    linear-gradient(45deg, rgba(127, 127, 127, 0.25) 25%, transparent 25%, transparent 75%, rgba(127, 127, 127, 0.25) 75%);
-  background-size: 12px 12px;
-  background-position: 0 0, 6px 6px;
-}
-
-.f2s-tmpl-swatch-color {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.f2s-tmpl-swatch-label {
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .f2s-tmpl-font-family {
@@ -1935,9 +1901,7 @@ html.f2s-skin--win95 .f2s-tmpl-section--blocking .f2s-tmpl-heading {
 /* Entrées de liste cliquables : boutons à biseau, pas des puces à bord
    arrondi qui changent de couleur au survol. */
 html.f2s-skin--win95 .f2s-log-entry,
-html.f2s-skin--win95 .f2s-tmpl-warning,
-html.f2s-skin--win95 .f2s-tmpl-chip,
-html.f2s-skin--win95 .f2s-tmpl-note-item {
+html.f2s-skin--win95 .f2s-tmpl-chip {
   font-size: 11px;
   border: none;
   border-radius: 0;
@@ -1948,21 +1912,16 @@ html.f2s-skin--win95 .f2s-tmpl-note-item {
 }
 
 html.f2s-skin--win95 .f2s-log-entry:hover,
-html.f2s-skin--win95 .f2s-tmpl-warning:hover,
-html.f2s-skin--win95 .f2s-tmpl-chip:hover,
-html.f2s-skin--win95 .f2s-tmpl-note-item:hover {
+html.f2s-skin--win95 .f2s-tmpl-chip:hover {
   border-color: transparent;
 }
 
 html.f2s-skin--win95 .f2s-log-entry:active,
-html.f2s-skin--win95 .f2s-tmpl-warning:active,
-html.f2s-skin--win95 .f2s-tmpl-chip:active,
-html.f2s-skin--win95 .f2s-tmpl-note-item:active {
+html.f2s-skin--win95 .f2s-tmpl-chip:active {
   box-shadow: var(--w95-pressed);
 }
 
-html.f2s-skin--win95 .f2s-log-entry--blocking,
-html.f2s-skin--win95 .f2s-tmpl-warning {
+html.f2s-skin--win95 .f2s-log-entry--blocking {
   color: var(--color-error);
 }
 
@@ -1972,12 +1931,6 @@ html.f2s-skin--win95 .f2s-log-entry-flag {
 
 html.f2s-skin--win95 .f2s-tmpl-role {
   color: #000;
-}
-
-html.f2s-skin--win95 .f2s-tmpl-swatch {
-  border: none;
-  border-radius: 0;
-  box-shadow: var(--w95-in);
 }
 
 /* ---- Progression / erreurs ---- */
@@ -2285,34 +2238,23 @@ html.f2s-skin--hybrid .f2s-tmpl-section {
 /* Entrées de liste cliquables : biseau sortant/enfoncé plutôt que puces
    arrondies, l'accent orange au survol reste celui du skin moderne. */
 html.f2s-skin--hybrid .f2s-log-entry,
-html.f2s-skin--hybrid .f2s-tmpl-warning,
-html.f2s-skin--hybrid .f2s-tmpl-chip,
-html.f2s-skin--hybrid .f2s-tmpl-note-item {
+html.f2s-skin--hybrid .f2s-tmpl-chip {
   border-radius: 0;
   border-color: transparent;
   box-shadow: var(--hyb-out);
 }
 
 html.f2s-skin--hybrid .f2s-log-entry:active,
-html.f2s-skin--hybrid .f2s-tmpl-warning:active,
-html.f2s-skin--hybrid .f2s-tmpl-chip:active,
-html.f2s-skin--hybrid .f2s-tmpl-note-item:active {
+html.f2s-skin--hybrid .f2s-tmpl-chip:active {
   box-shadow: var(--hyb-pressed);
 }
 
-html.f2s-skin--hybrid .f2s-log-entry--blocking,
-html.f2s-skin--hybrid .f2s-tmpl-warning {
+html.f2s-skin--hybrid .f2s-log-entry--blocking {
   border-color: transparent;
 }
 
 html.f2s-skin--hybrid .f2s-log-entry-flag {
   border-radius: 0;
-}
-
-html.f2s-skin--hybrid .f2s-tmpl-swatch {
-  border: none;
-  border-radius: 0;
-  box-shadow: var(--hyb-in);
 }
 
 /* ---- Modale de réglages ----
@@ -2876,6 +2818,27 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
     postToPlugin({ type: "select-nodes", nodeIds: sourceNodeIds });
   }
 
+  // src/ui/logEntryFlag.ts
+  var RASTERIZED_WARNING_CODES = /* @__PURE__ */ new Set([
+    "FONT_MISSING",
+    "GRADIENT_RASTERIZED",
+    "EFFECT_RASTERIZED",
+    "BLEND_MODE_RASTERIZED",
+    "MASK_RASTERIZED",
+    "VECTOR_RASTERIZED",
+    "LINE_RASTERIZED",
+    "LETTER_SPACING_LOST",
+    "CORNER_RADIUS_RASTERIZED",
+    "MULTIPLE_FILLS_RASTERIZED",
+    "CONTAINER_BACKGROUND_RASTERIZED"
+  ]);
+  var VISUAL_DIFF_WARNING_CODES = /* @__PURE__ */ new Set(["FONT_SUBSTITUTED", "RADIUS_APPROXIMATED"]);
+  function logEntryFlag(code) {
+    if (RASTERIZED_WARNING_CODES.has(code)) return "rasterized";
+    if (VISUAL_DIFF_WARNING_CODES.has(code)) return "visual-diff";
+    return void 0;
+  }
+
   // src/ui/reorderFrames.ts
   function moveToIndex(order, id, targetIndex) {
     const idx = order.indexOf(id);
@@ -3080,25 +3043,6 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
 
   // src/ui/DeckPanel.tsx
   var DRAG_THRESHOLD_PX = 3;
-  var RASTERIZED_WARNING_CODES = /* @__PURE__ */ new Set([
-    "FONT_MISSING",
-    "GRADIENT_RASTERIZED",
-    "EFFECT_RASTERIZED",
-    "BLEND_MODE_RASTERIZED",
-    "MASK_RASTERIZED",
-    "VECTOR_RASTERIZED",
-    "LINE_RASTERIZED",
-    "LETTER_SPACING_LOST",
-    "CORNER_RADIUS_RASTERIZED",
-    "MULTIPLE_FILLS_RASTERIZED",
-    "CONTAINER_BACKGROUND_RASTERIZED"
-  ]);
-  var VISUAL_DIFF_WARNING_CODES = /* @__PURE__ */ new Set(["FONT_SUBSTITUTED", "RADIUS_APPROXIMATED"]);
-  function logEntryFlag(code) {
-    if (RASTERIZED_WARNING_CODES.has(code)) return "rasterized";
-    if (VISUAL_DIFF_WARNING_CODES.has(code)) return "visual-diff";
-    return void 0;
-  }
   var DRAG_SWAP_MARGIN = 0.32;
   function DeckPanel({
     order,
@@ -3470,6 +3414,30 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
   }
 
   // src/ui/TemplatePanel.tsx
+  function TemplateLogList({ warnings }) {
+    return /* @__PURE__ */ u3("ul", { className: "f2s-tmpl-list", children: warnings.map((w3, i3) => {
+      const flag = logEntryFlag(w3.code);
+      return /* @__PURE__ */ u3("li", { children: /* @__PURE__ */ u3(
+        "button",
+        {
+          type: "button",
+          className: `f2s-log-entry${w3.severity === "blocking" ? " f2s-log-entry--blocking" : ""}${flag ? ` f2s-log-entry--${flag}` : ""}`,
+          title: `${w3.nodeName} \u2014 ${w3.message}`,
+          onClick: () => selectSourceNodes([w3.sourceNodeId]),
+          children: [
+            flag && /* @__PURE__ */ u3("span", { className: `f2s-log-entry-flag f2s-log-entry-flag--${flag}`, children: flag === "rasterized" ? "Rasterized" : "May look different" }),
+            /* @__PURE__ */ u3("span", { className: "f2s-log-entry-text", children: [
+              /* @__PURE__ */ u3("strong", { className: "f2s-log-entry-name", children: w3.nodeName }),
+              /* @__PURE__ */ u3("span", { className: "f2s-log-entry-message", children: [
+                "\u2014 ",
+                w3.message
+              ] })
+            ] })
+          ]
+        }
+      ) }, i3);
+    }) });
+  }
   var DRAG_THRESHOLD_PX2 = 3;
   var DRAG_SWAP_MARGIN2 = 0.32;
   function TemplatePanel({
@@ -3658,22 +3626,6 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
           exportCursor.frameId
         ) }) : /* @__PURE__ */ u3("div", { className: "f2s-canvas-preview f2s-tmpl-preview", children: previewedLayout.previewDataUrl && /* @__PURE__ */ u3("img", { src: previewedLayout.previewDataUrl, alt: previewedLayout.name }) }),
         /* @__PURE__ */ u3("div", { className: "f2s-tmpl-panel", children: [
-          previewedLayout.warnings.filter((w3) => w3.severity === "blocking").length > 0 && /* @__PURE__ */ u3("section", { className: "f2s-tmpl-section f2s-tmpl-section--blocking", children: [
-            /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Fix before creating the template" }),
-            /* @__PURE__ */ u3("ul", { className: "f2s-tmpl-list", children: previewedLayout.warnings.filter((w3) => w3.severity === "blocking").map((w3, i3) => /* @__PURE__ */ u3("li", { children: /* @__PURE__ */ u3("button", { type: "button", className: "f2s-tmpl-warning", onClick: () => selectSourceNodes([w3.sourceNodeId]), children: [
-              /* @__PURE__ */ u3("strong", { children: w3.nodeName }),
-              " \u2014 ",
-              w3.message
-            ] }) }, i3)) })
-          ] }),
-          previewedLayout.warnings.filter((w3) => w3.severity !== "blocking").length > 0 && /* @__PURE__ */ u3("section", { className: "f2s-tmpl-section", children: [
-            /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Notes" }),
-            /* @__PURE__ */ u3("ul", { className: "f2s-tmpl-list", children: previewedLayout.warnings.filter((w3) => w3.severity !== "blocking").map((w3, i3) => /* @__PURE__ */ u3("li", { children: /* @__PURE__ */ u3("button", { type: "button", className: "f2s-tmpl-note-item", onClick: () => selectSourceNodes([w3.sourceNodeId]), children: [
-              /* @__PURE__ */ u3("strong", { children: w3.nodeName }),
-              " \u2014 ",
-              w3.message
-            ] }) }, i3)) })
-          ] }),
           /* @__PURE__ */ u3("section", { className: "f2s-tmpl-section", children: [
             /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Placeholders" }),
             previewedLayout.placeholders.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: [
@@ -3689,43 +3641,18 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
               " or ",
               /* @__PURE__ */ u3("code", { children: "[[logo]]" }),
               " to mark it."
-            ] }) : /* @__PURE__ */ u3("ul", { className: "f2s-tmpl-list", children: previewedLayout.placeholders.map((p3) => /* @__PURE__ */ u3("li", { children: /* @__PURE__ */ u3("button", { type: "button", className: "f2s-tmpl-chip", onClick: () => selectSourceNodes([p3.sourceNodeId]), children: [
+            ] }) : /* @__PURE__ */ u3("ul", { className: "f2s-tmpl-list", children: previewedLayout.placeholders.map((p3) => /* @__PURE__ */ u3("li", { children: /* @__PURE__ */ u3("button", { type: "button", className: "f2s-tmpl-chip", title: p3.label, onClick: () => selectSourceNodes([p3.sourceNodeId]), children: [
               /* @__PURE__ */ u3("span", { className: "f2s-tmpl-role", children: p3.role }),
-              p3.label
+              /* @__PURE__ */ u3("span", { className: "f2s-tmpl-chip-label", children: p3.label })
             ] }) }, p3.id)) })
           ] }),
-          /* @__PURE__ */ u3("section", { className: "f2s-tmpl-section", children: [
-            /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Colors" }),
-            previewedLayout.colors.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: "No solid color detected." }) : /* @__PURE__ */ u3("ul", { className: "f2s-tmpl-swatches", children: previewedLayout.colors.map((c3, i3) => /* @__PURE__ */ u3("li", { className: "f2s-tmpl-swatch-item", children: [
-              /* @__PURE__ */ u3("span", { className: "f2s-tmpl-swatch", children: /* @__PURE__ */ u3(
-                "span",
-                {
-                  className: "f2s-tmpl-swatch-color",
-                  style: { backgroundColor: c3.hex, opacity: c3.alpha }
-                }
-              ) }),
-              /* @__PURE__ */ u3("span", { className: "f2s-tmpl-swatch-label", children: [
-                c3.hex,
-                c3.alpha < 1 ? ` \xB7 ${Math.round(c3.alpha * 100)}%` : "",
-                /* @__PURE__ */ u3("span", { className: "f2s-toolbar-muted", children: [
-                  " \xB7 used ",
-                  c3.usageCount,
-                  "\xD7"
-                ] })
-              ] })
-            ] }, i3)) })
+          previewedLayout.warnings.filter((w3) => w3.severity === "blocking").length > 0 && /* @__PURE__ */ u3("div", { className: "f2s-logs f2s-tmpl-section--blocking", children: [
+            /* @__PURE__ */ u3("div", { className: "f2s-logs-header", children: /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Fix before creating the template" }) }),
+            /* @__PURE__ */ u3(TemplateLogList, { warnings: previewedLayout.warnings.filter((w3) => w3.severity === "blocking") })
           ] }),
-          /* @__PURE__ */ u3("section", { className: "f2s-tmpl-section", children: [
-            /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Typography" }),
-            previewedLayout.fonts.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: "No text detected." }) : /* @__PURE__ */ u3("ul", { className: "f2s-tmpl-list", children: previewedLayout.fonts.map((f4) => /* @__PURE__ */ u3("li", { children: [
-              /* @__PURE__ */ u3("span", { className: "f2s-tmpl-font-family", children: f4.family }),
-              " ",
-              /* @__PURE__ */ u3("span", { className: "f2s-toolbar-muted", children: [
-                "(",
-                f4.weights.join(", "),
-                ")"
-              ] })
-            ] }, f4.family)) })
+          previewedLayout.warnings.filter((w3) => w3.severity !== "blocking").length > 0 && /* @__PURE__ */ u3("div", { className: "f2s-logs", children: [
+            /* @__PURE__ */ u3("div", { className: "f2s-logs-header", children: /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Content" }) }),
+            /* @__PURE__ */ u3(TemplateLogList, { warnings: previewedLayout.warnings.filter((w3) => w3.severity !== "blocking") })
           ] })
         ] })
       ] }) : /* @__PURE__ */ u3("p", { className: "f2s-canvas-empty", children: "Select a layout on the left to see its report." }) }),
