@@ -113,6 +113,14 @@ async function main(): Promise<void> {
     }
   }
 
+  // Les 3 fixtures code-générées sont poussées dans `results` avant la boucle
+  // de découverte de fichiers (ordre d'exécution, pas d'affichage) — sans ce
+  // tri, le rapport et la console les affichaient AVANT 03/04/05 alors que
+  // leur numéro (01/02/06) les place ailleurs dans le spec §9. Le préfixe
+  // "NN-" étant toujours sur 2 chiffres, un tri alphabétique suffit à
+  // retrouver l'ordre numérique 01→12.
+  results.sort((a, b) => a.name.localeCompare(b.name));
+
   const textInsetMeasurement = await measureTextInset(accessToken);
 
   const outDir = process.cwd();
