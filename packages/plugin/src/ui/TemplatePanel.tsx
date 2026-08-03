@@ -1,9 +1,45 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
+import { logEntryFlag } from './logEntryFlag.js';
 import { moveToIndex } from './reorderFrames.js';
 import { RetroExportPreview } from './RetroExportPreview.js';
 import { TemplateStylePanel, type TemplateStylePanelProps } from './TemplateStylePanel.js';
 import type { ExportCursor } from './exportCursor.js';
-import { postToPlugin, selectSourceNodes, type TemplateLayoutState } from './types.js';
+import { postToPlugin, selectSourceNodes, type TemplateLayoutState, type TemplateWarning } from './types.js';
+
+/**
+ * Rendu d'une liste de warnings (bloquants ou non) au même aspect que le
+ * panneau Logs du mode deck (DeckPanel.tsx) — même structure de bouton, même
+ * troncature sur une ligne pour le nom de calque + message.
+ */
+function TemplateLogList({ warnings }: { warnings: TemplateWarning[] }) {
+  return (
+    <ul className="f2s-tmpl-list">
+      {warnings.map((w, i) => {
+        const flag = logEntryFlag(w.code);
+        return (
+          <li key={i}>
+            <button
+              type="button"
+              className={`f2s-log-entry${w.severity === 'blocking' ? ' f2s-log-entry--blocking' : ''}${flag ? ` f2s-log-entry--${flag}` : ''}`}
+              title={`${w.nodeName} — ${w.message}`}
+              onClick={() => selectSourceNodes([w.sourceNodeId])}
+            >
+              {flag && (
+                <span className={`f2s-log-entry-flag f2s-log-entry-flag--${flag}`}>
+                  {flag === 'rasterized' ? 'Rasterized' : 'May look different'}
+                </span>
+              )}
+              <span className="f2s-log-entry-text">
+                <strong className="f2s-log-entry-name">{w.nodeName}</strong>
+                <span className="f2s-log-entry-message">— {w.message}</span>
+              </span>
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
 
 /** En dessous de ce mouvement, un pointerdown reste un simple clic de sélection. */
 const DRAG_THRESHOLD_PX = 3;
@@ -281,40 +317,6 @@ export function TemplatePanel({
             )}
 
             <div className="f2s-tmpl-panel">
-              {previewedLayout.warnings.filter((w) => w.severity === 'blocking').length > 0 && (
-                <section className="f2s-tmpl-section f2s-tmpl-section--blocking">
-                  <h3 className="f2s-tmpl-heading">Fix before creating the template</h3>
-                  <ul className="f2s-tmpl-list">
-                    {previewedLayout.warnings
-                      .filter((w) => w.severity === 'blocking')
-                      .map((w, i) => (
-                        <li key={i}>
-                          <button type="button" className="f2s-tmpl-warning" onClick={() => selectSourceNodes([w.sourceNodeId])}>
-                            <strong>{w.nodeName}</strong> — {w.message}
-                          </button>
-                        </li>
-                      ))}
-                  </ul>
-                </section>
-              )}
-
-              {previewedLayout.warnings.filter((w) => w.severity !== 'blocking').length > 0 && (
-                <section className="f2s-tmpl-section">
-                  <h3 className="f2s-tmpl-heading">Notes</h3>
-                  <ul className="f2s-tmpl-list">
-                    {previewedLayout.warnings
-                      .filter((w) => w.severity !== 'blocking')
-                      .map((w, i) => (
-                        <li key={i}>
-                          <button type="button" className="f2s-tmpl-note-item" onClick={() => selectSourceNodes([w.sourceNodeId])}>
-                            <strong>{w.nodeName}</strong> — {w.message}
-                          </button>
-                        </li>
-                      ))}
-                  </ul>
-                </section>
-              )}
-
               <section className="f2s-tmpl-section">
                 <h3 className="f2s-tmpl-heading">Placeholders</h3>
                 {previewedLayout.placeholders.length === 0 ? (
@@ -326,9 +328,9 @@ export function TemplatePanel({
                   <ul className="f2s-tmpl-list">
                     {previewedLayout.placeholders.map((p) => (
                       <li key={p.id}>
-                        <button type="button" className="f2s-tmpl-chip" onClick={() => selectSourceNodes([p.sourceNodeId])}>
+                        <button type="button" className="f2s-tmpl-chip" title={p.label} onClick={() => selectSourceNodes([p.sourceNodeId])}>
                           <span className="f2s-tmpl-role">{p.role}</span>
-                          {p.label}
+                          <span className="f2s-tmpl-chip-label">{p.label}</span>
                         </button>
                       </li>
                     ))}
@@ -336,48 +338,23 @@ export function TemplatePanel({
                 )}
               </section>
 
-              <section className="f2s-tmpl-section">
-                <h3 className="f2s-tmpl-heading">Colors</h3>
-                {previewedLayout.colors.length === 0 ? (
-                  <p className="f2s-toolbar-muted">No solid color detected.</p>
-                ) : (
-                  <ul className="f2s-tmpl-swatches">
-                    {previewedLayout.colors.map((c, i) => (
-                      <li key={i} className="f2s-tmpl-swatch-item">
-                        {/* Fond damier sous la pastille : une couleur semi-transparente
-                            se lit comme telle au lieu d'être faussée par le fond du panneau. */}
-                        <span className="f2s-tmpl-swatch">
-                          <span
-                            className="f2s-tmpl-swatch-color"
-                            style={{ backgroundColor: c.hex, opacity: c.alpha }}
-                          />
-                        </span>
-                        <span className="f2s-tmpl-swatch-label">
-                          {c.hex}
-                          {c.alpha < 1 ? ` · ${Math.round(c.alpha * 100)}%` : ''}
-                          <span className="f2s-toolbar-muted"> · used {c.usageCount}×</span>
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </section>
+              {previewedLayout.warnings.filter((w) => w.severity === 'blocking').length > 0 && (
+                <div className="f2s-logs f2s-tmpl-section--blocking">
+                  <div className="f2s-logs-header">
+                    <h3 className="f2s-tmpl-heading">Fix before creating the template</h3>
+                  </div>
+                  <TemplateLogList warnings={previewedLayout.warnings.filter((w) => w.severity === 'blocking')} />
+                </div>
+              )}
 
-              <section className="f2s-tmpl-section">
-                <h3 className="f2s-tmpl-heading">Typography</h3>
-                {previewedLayout.fonts.length === 0 ? (
-                  <p className="f2s-toolbar-muted">No text detected.</p>
-                ) : (
-                  <ul className="f2s-tmpl-list">
-                    {previewedLayout.fonts.map((f) => (
-                      <li key={f.family}>
-                        <span className="f2s-tmpl-font-family">{f.family}</span>{' '}
-                        <span className="f2s-toolbar-muted">({f.weights.join(', ')})</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </section>
+              {previewedLayout.warnings.filter((w) => w.severity !== 'blocking').length > 0 && (
+                <div className="f2s-logs">
+                  <div className="f2s-logs-header">
+                    <h3 className="f2s-tmpl-heading">Content</h3>
+                  </div>
+                  <TemplateLogList warnings={previewedLayout.warnings.filter((w) => w.severity !== 'blocking')} />
+                </div>
+              )}
             </div>
           </div>
         ) : (
