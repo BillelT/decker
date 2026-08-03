@@ -1,0 +1,643 @@
+{
+  "version": 1,
+  "presentationTitle": "fixture",
+  "slideSize": {
+    "widthPt": 720,
+    "heightPt": 405
+  },
+  "slides": [
+    {
+      "sourceNodeId": "199:1849",
+      "frameName": "12-realistic",
+      "frameSize": {
+        "width": 720,
+        "height": 405
+      },
+      "background": {
+        "type": "SOLID",
+        "color": {
+          "r": 1,
+          "g": 1,
+          "b": 1,
+          "a": 1
+        }
+      },
+      "elements": [
+        {
+          "kind": "shape",
+          "id": "f2s_0:0_0",
+          "sourceNodeId": "200:1885",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "w": 8.840591430664062,
+            "h": 406.66717529296875
+          },
+          "rotation": 0,
+          "opacity": 1,
+          "shapeType": "RECTANGLE",
+          "fill": {
+            "type": "SOLID",
+            "color": {
+              "r": 0.9399999976158142,
+              "g": 0.4073333144187927,
+              "b": 0,
+              "a": 1
+            }
+          }
+        },
+        {
+          "kind": "text",
+          "id": "f2s_0:0_1",
+          "sourceNodeId": "200:1892",
+          "rect": {
+            "x": 17.681631983177795,
+            "y": 17.68115085363388,
+            "w": 144.98570251464844,
+            "h": 25
+          },
+          "rotation": 3.1805550606152258e-15,
+          "opacity": 1,
+          "content": "Anto",
+          "runs": [
+            {
+              "start": 0,
+              "end": 4,
+              "fontFamily": "Inter",
+              "fontWeight": 500,
+              "italic": false,
+              "fontSizePx": 35.362361907958984,
+              "color": {
+                "r": 0.06960000097751617,
+                "g": 0.06000000238418579,
+                "b": 0.05040000006556511,
+                "a": 1
+              },
+              "originalFontFamily": "Zodiak Variable"
+            }
+          ],
+          "paragraphs": [
+            {
+              "start": 0,
+              "end": 4,
+              "align": "START"
+            }
+          ],
+          "vAlign": "TOP",
+          "tightFit": false
+        },
+        {
+          "kind": "text",
+          "id": "f2s_0:0_2",
+          "sourceNodeId": "200:1894",
+          "rect": {
+            "x": 17.681631983177795,
+            "y": 53.29003822803497,
+            "w": 144.98570251464844,
+            "h": 14
+          },
+          "rotation": 3.1805550606152258e-15,
+          "opacity": 1,
+          "content": "Projet personnel",
+          "runs": [
+            {
+              "start": 0,
+              "end": 16,
+              "fontFamily": "Inter",
+              "fontWeight": 500,
+              "italic": false,
+              "fontSizePx": 11.492768287658691,
+              "color": {
+                "r": 0.06960000097751617,
+                "g": 0.06000000238418579,
+                "b": 0.05040000006556511,
+                "a": 1
+              },
+              "originalFontFamily": "Cabinet Grotesk"
+            }
+          ],
+          "paragraphs": [
+            {
+              "start": 0,
+              "end": 16,
+              "align": "START"
+            }
+          ],
+          "vAlign": "TOP",
+          "tightFit": false
+        },
+        {
+          "kind": "text",
+          "id": "f2s_0:0_3",
+          "sourceNodeId": "200:1895",
+          "rect": {
+            "x": 17.681631983177795,
+            "y": 74.36230218410492,
+            "w": 144.98570251464844,
+            "h": 42
+          },
+          "rotation": 3.1805550606152258e-15,
+          "opacity": 1,
+          "content": "Web - WebGL - Branding Animation 3D - Identité visuelle",
+          "runs": [
+            {
+              "start": 0,
+              "end": 55,
+              "fontFamily": "Inter",
+              "fontWeight": 500,
+              "italic": false,
+              "fontSizePx": 11.492768287658691,
+              "color": {
+                "r": 0.06960000097751617,
+                "g": 0.06000000238418579,
+                "b": 0.05040000006556511,
+                "a": 1
+              },
+              "originalFontFamily": "Cabinet Grotesk"
+            }
+          ],
+          "paragraphs": [
+            {
+              "start": 0,
+              "end": 55,
+              "align": "START"
+            }
+          ],
+          "vAlign": "TOP",
+          "tightFit": false
+        },
+        {
+          "kind": "text",
+          "id": "f2s_0:0_4",
+          "sourceNodeId": "200:1896",
+          "rect": {
+            "x": 17.68163365125656,
+            "y": 130.50732326507568,
+            "w": 117,
+            "h": 16
+          },
+          "rotation": 3.1805550606152258e-15,
+          "opacity": 1,
+          "content": "Projet réalisé en 2 semaines",
+          "runs": [
+            {
+              "start": 0,
+              "end": 28,
+              "fontFamily": "Inter",
+              "fontWeight": 400,
+              "italic": false,
+              "fontSizePx": 9.724649429321289,
+              "color": {
+                "r": 0.06960000097751617,
+                "g": 0.06000000238418579,
+                "b": 0.05040000006556511,
+                "a": 1
+              },
+              "originalFontFamily": "Cabinet Grotesk"
+            }
+          ],
+          "paragraphs": [
+            {
+              "start": 0,
+              "end": 28,
+              "align": "START",
+              "lineSpacingPct": 160.0000023841858
+            }
+          ],
+          "vAlign": "TOP",
+          "tightFit": true
+        },
+        {
+          "kind": "text",
+          "id": "f2s_0:0_5",
+          "sourceNodeId": "200:1898",
+          "rect": {
+            "x": 168.85546875,
+            "y": 112.40576171875,
+            "w": 72.49284362792969,
+            "h": 12
+          },
+          "rotation": 0,
+          "opacity": 1,
+          "content": "Github",
+          "runs": [
+            {
+              "start": 0,
+              "end": 6,
+              "fontFamily": "Inter",
+              "fontWeight": 500,
+              "italic": false,
+              "fontSizePx": 9.724649429321289,
+              "color": {
+                "r": 0.06960000097751617,
+                "g": 0.06000000238418579,
+                "b": 0.05040000006556511,
+                "a": 1
+              },
+              "underline": true,
+              "link": "https://github.com/BillelT/Anto",
+              "originalFontFamily": "Cabinet Grotesk"
+            }
+          ],
+          "paragraphs": [
+            {
+              "start": 0,
+              "end": 6,
+              "align": "START"
+            }
+          ],
+          "vAlign": "TOP",
+          "tightFit": false
+        },
+        {
+          "kind": "text",
+          "id": "f2s_0:0_6",
+          "sourceNodeId": "200:1900",
+          "rect": {
+            "x": 168.85546875,
+            "y": 132.1083984375,
+            "w": 54,
+            "h": 12
+          },
+          "rotation": 0,
+          "opacity": 1,
+          "content": "Voir le projet",
+          "runs": [
+            {
+              "start": 0,
+              "end": 14,
+              "fontFamily": "Inter",
+              "fontWeight": 500,
+              "italic": false,
+              "fontSizePx": 9.724649429321289,
+              "color": {
+                "r": 0.06960000097751617,
+                "g": 0.06000000238418579,
+                "b": 0.05040000006556511,
+                "a": 1
+              },
+              "originalFontFamily": "Cabinet Grotesk"
+            }
+          ],
+          "paragraphs": [
+            {
+              "start": 0,
+              "end": 14,
+              "align": "START"
+            }
+          ],
+          "vAlign": "TOP",
+          "tightFit": true
+        },
+        {
+          "kind": "image",
+          "id": "f2s_0:0_7",
+          "sourceNodeId": "200:1903",
+          "rect": {
+            "x": 234.6796875,
+            "y": 134.01953125,
+            "w": 8.177734375,
+            "h": 8.177734375
+          },
+          "rotation": 0,
+          "opacity": 1,
+          "assetKey": "f2s_0:0_7",
+          "isRasterFallback": true,
+          "rasterizedNodeIds": [
+            "200:1903"
+          ]
+        },
+        {
+          "kind": "text",
+          "id": "f2s_0:0_8",
+          "sourceNodeId": "200:1904",
+          "rect": {
+            "x": 17.681640625,
+            "y": 167.724609375,
+            "w": 236.92784118652344,
+            "h": 161
+          },
+          "rotation": 0,
+          "opacity": 1,
+          "content": "Anto est une marque de guitare haut de gamme que j’ai imaginée et pour laquelle j’ai voulu transmettre l’histoire de ses racines et son évolution vers un produit d’exception, mais conçu pour tous.\nJ’ai donc choisi un noir et un blanc purs, typiques des marques de luxe, accompagnés de couleurs chaudes, avec un rouge et un jaune doré rappelant les racines hispano-japonaises de la marque en plus du coté chaleureux et rassurant.\nLa police pour les titres, “Mélodrama”, a un trait fin, caractéristique des typos haut de gamme. Elle est accompagnée de Noto Sans JP, accessible et fait référence aux racines japonaises.\nJ’ai développé le site avec React et R3F, réalisé le modèle et l’animation sur Blender, et mon frère a composé et joué à la guitare la musique présente sur le site et l’animation de produit.",
+          "runs": [
+            {
+              "start": 0,
+              "end": 807,
+              "fontFamily": "Inter",
+              "fontWeight": 400,
+              "italic": false,
+              "fontSizePx": 7.956531524658203,
+              "color": {
+                "r": 0.06960000097751617,
+                "g": 0.06000000238418579,
+                "b": 0.05040000006556511,
+                "a": 1
+              },
+              "originalFontFamily": "Cabinet Grotesk"
+            }
+          ],
+          "paragraphs": [
+            {
+              "start": 0,
+              "end": 196,
+              "align": "START",
+              "lineSpacingPct": 160.0000023841858
+            },
+            {
+              "start": 197,
+              "end": 428,
+              "align": "START",
+              "lineSpacingPct": 160.0000023841858
+            },
+            {
+              "start": 429,
+              "end": 616,
+              "align": "START",
+              "lineSpacingPct": 160.0000023841858
+            },
+            {
+              "start": 617,
+              "end": 807,
+              "align": "START",
+              "lineSpacingPct": 160.0000023841858
+            }
+          ],
+          "vAlign": "TOP",
+          "tightFit": false
+        },
+        {
+          "kind": "image",
+          "id": "f2s_0:0_9",
+          "sourceNodeId": "200:1905",
+          "rect": {
+            "x": 228.818359375,
+            "y": 17.68115234375,
+            "w": 25.7890625,
+            "h": 25.78955078125
+          },
+          "rotation": 0,
+          "opacity": 1,
+          "assetKey": "f2s_0:0_9",
+          "isRasterFallback": true,
+          "rasterizedNodeIds": [
+            "200:1905"
+          ]
+        },
+        {
+          "kind": "image",
+          "id": "f2s_0:0_10",
+          "sourceNodeId": "200:1906",
+          "rect": {
+            "x": 17.681640625,
+            "y": 363.1962890625,
+            "w": 25.7890625,
+            "h": 25.78955078125
+          },
+          "rotation": 0,
+          "opacity": 1,
+          "assetKey": "f2s_0:0_10",
+          "isRasterFallback": true,
+          "rasterizedNodeIds": [
+            "200:1906"
+          ]
+        },
+        {
+          "kind": "text",
+          "id": "f2s_0:0_11",
+          "sourceNodeId": "200:1907",
+          "rect": {
+            "x": 270.96484375,
+            "y": 283.416015625,
+            "w": 297.0438537597656,
+            "h": 52
+          },
+          "rotation": 0,
+          "opacity": 1,
+          "content": "Le layout du site est pensé pour laisser place au modèle 3D. Un contenu minimaliste et épuré afin de souligner le côté luxe. La musique permet une immersion et une proximité avec l’utilisateur à travers l’instrument.\u000bMon inspiration principale est un site réalisé par Immersive Garden : Alizera.",
+          "runs": [
+            {
+              "start": 0,
+              "end": 287,
+              "fontFamily": "Inter",
+              "fontWeight": 400,
+              "italic": false,
+              "fontSizePx": 7.956531524658203,
+              "color": {
+                "r": 0.06960000097751617,
+                "g": 0.06000000238418579,
+                "b": 0.05040000006556511,
+                "a": 1
+              },
+              "originalFontFamily": "Cabinet Grotesk"
+            },
+            {
+              "start": 287,
+              "end": 294,
+              "fontFamily": "Inter",
+              "fontWeight": 400,
+              "italic": false,
+              "fontSizePx": 7.956531524658203,
+              "color": {
+                "r": 0.9399999976158142,
+                "g": 0.4073333144187927,
+                "b": 0,
+                "a": 1
+              },
+              "underline": true,
+              "link": "https://alireza.com/",
+              "originalFontFamily": "Cabinet Grotesk"
+            },
+            {
+              "start": 294,
+              "end": 295,
+              "fontFamily": "Inter",
+              "fontWeight": 400,
+              "italic": false,
+              "fontSizePx": 7.956531524658203,
+              "color": {
+                "r": 0.9399999976158142,
+                "g": 0.4073333144187927,
+                "b": 0,
+                "a": 1
+              },
+              "originalFontFamily": "Cabinet Grotesk"
+            }
+          ],
+          "paragraphs": [
+            {
+              "start": 0,
+              "end": 295,
+              "align": "START",
+              "lineSpacingPct": 160.0000023841858
+            }
+          ],
+          "vAlign": "TOP",
+          "tightFit": false
+        },
+        {
+          "kind": "image",
+          "id": "f2s_0:0_12",
+          "sourceNodeId": "200:1908",
+          "rect": {
+            "x": 270.96484375,
+            "y": 17.68115234375,
+            "w": 169.427734375,
+            "h": 121.6533203125
+          },
+          "rotation": 0,
+          "opacity": 1,
+          "assetKey": "f2s_0:0_12",
+          "isRasterFallback": false
+        },
+        {
+          "kind": "image",
+          "id": "f2s_0:0_13",
+          "sourceNodeId": "200:1909",
+          "rect": {
+            "x": 270.96484375,
+            "y": 147.7333984375,
+            "w": 169.427734375,
+            "h": 121.6533203125
+          },
+          "rotation": 0,
+          "opacity": 1,
+          "assetKey": "f2s_0:0_13",
+          "isRasterFallback": false
+        },
+        {
+          "kind": "image",
+          "id": "f2s_0:0_14",
+          "sourceNodeId": "200:1910",
+          "rect": {
+            "x": 448.71875,
+            "y": 17.68115234375,
+            "w": 169.796875,
+            "h": 121.6533203125
+          },
+          "rotation": 0,
+          "opacity": 1,
+          "assetKey": "f2s_0:0_14",
+          "isRasterFallback": false
+        },
+        {
+          "kind": "image",
+          "id": "f2s_0:0_15",
+          "sourceNodeId": "200:1911",
+          "rect": {
+            "x": 448.71875,
+            "y": 147.7333984375,
+            "w": 169.796875,
+            "h": 121.6533203125
+          },
+          "rotation": 0,
+          "opacity": 1,
+          "assetKey": "f2s_0:0_15",
+          "isRasterFallback": false
+        }
+      ],
+      "warnings": [
+        {
+          "code": "FONT_SUBSTITUTED",
+          "severity": "info",
+          "sourceNodeId": "200:1892",
+          "nodeName": "Anto",
+          "message": "Font \"Zodiak Variable\" replaced with \"Inter\"."
+        },
+        {
+          "code": "FONT_SUBSTITUTED",
+          "severity": "info",
+          "sourceNodeId": "200:1894",
+          "nodeName": "Project type",
+          "message": "Font \"Cabinet Grotesk\" replaced with \"Inter\"."
+        },
+        {
+          "code": "FONT_SUBSTITUTED",
+          "severity": "info",
+          "sourceNodeId": "200:1895",
+          "nodeName": "Project categories",
+          "message": "Font \"Cabinet Grotesk\" replaced with \"Inter\"."
+        },
+        {
+          "code": "FONT_SUBSTITUTED",
+          "severity": "info",
+          "sourceNodeId": "200:1896",
+          "nodeName": "Duration",
+          "message": "Font \"Cabinet Grotesk\" replaced with \"Inter\"."
+        },
+        {
+          "code": "FONT_SUBSTITUTED",
+          "severity": "info",
+          "sourceNodeId": "200:1898",
+          "nodeName": "Github Link",
+          "message": "Font \"Cabinet Grotesk\" replaced with \"Inter\"."
+        },
+        {
+          "code": "FONT_SUBSTITUTED",
+          "severity": "info",
+          "sourceNodeId": "200:1900",
+          "nodeName": "Text",
+          "message": "Font \"Cabinet Grotesk\" replaced with \"Inter\"."
+        },
+        {
+          "code": "VECTOR_RASTERIZED",
+          "severity": "warning",
+          "sourceNodeId": "200:1903",
+          "nodeName": "Arrow",
+          "message": "Custom vector shape (icon, boolean operation, path) — converted to an image."
+        },
+        {
+          "code": "FONT_SUBSTITUTED",
+          "severity": "info",
+          "sourceNodeId": "200:1904",
+          "nodeName": "Presentation",
+          "message": "Font \"Cabinet Grotesk\" replaced with \"Inter\"."
+        },
+        {
+          "code": "VECTOR_RASTERIZED",
+          "severity": "warning",
+          "sourceNodeId": "200:1905",
+          "nodeName": "Right Top Triangle",
+          "message": "Custom vector shape (icon, boolean operation, path) — converted to an image."
+        },
+        {
+          "code": "VECTOR_RASTERIZED",
+          "severity": "warning",
+          "sourceNodeId": "200:1906",
+          "nodeName": "Left Bottom Triangle",
+          "message": "Custom vector shape (icon, boolean operation, path) — converted to an image."
+        },
+        {
+          "code": "FONT_SUBSTITUTED",
+          "severity": "info",
+          "sourceNodeId": "200:1907",
+          "nodeName": "Le layout du site est pensé pour laisser place au modèle 3D. Un contenu minimaliste et épuré afin de souligner le côté luxe. La musique permet une immersion et une proximité avec l’utilisateur à travers l’instrument. Mon inspiration principale est un site réalisé par Immersive Garden : Alizera.",
+          "message": "Font \"Cabinet Grotesk\" replaced with \"Inter\"."
+        },
+        {
+          "code": "FONT_SUBSTITUTED",
+          "severity": "info",
+          "sourceNodeId": "200:1907",
+          "nodeName": "Le layout du site est pensé pour laisser place au modèle 3D. Un contenu minimaliste et épuré afin de souligner le côté luxe. La musique permet une immersion et une proximité avec l’utilisateur à travers l’instrument. Mon inspiration principale est un site réalisé par Immersive Garden : Alizera.",
+          "message": "Font \"Cabinet Grotesk\" replaced with \"Inter\"."
+        },
+        {
+          "code": "FONT_SUBSTITUTED",
+          "severity": "info",
+          "sourceNodeId": "200:1907",
+          "nodeName": "Le layout du site est pensé pour laisser place au modèle 3D. Un contenu minimaliste et épuré afin de souligner le côté luxe. La musique permet une immersion et une proximité avec l’utilisateur à travers l’instrument. Mon inspiration principale est un site réalisé par Immersive Garden : Alizera.",
+          "message": "Font \"Cabinet Grotesk\" replaced with \"Inter\"."
+        }
+      ],
+      "order": 0,
+      "previewDataUrl": ""
+    }
+  ],
+  "options": {
+    "mode": "new-presentation",
+    "rasterScale": 2,
+    "includeUnderlay": false,
+    "underlayOpacity": 0.3,
+    "strictMode": false
+  }
+}

@@ -1,0 +1,205 @@
+{
+  "version": 1,
+  "presentationTitle": "fixture",
+  "slideSize": {
+    "widthPt": 720,
+    "heightPt": 405
+  },
+  "slides": [
+    {
+      "sourceNodeId": "197:1504",
+      "frameName": "11-autolayout",
+      "frameSize": {
+        "width": 720,
+        "height": 405
+      },
+      "background": {
+        "type": "SOLID",
+        "color": {
+          "r": 1,
+          "g": 1,
+          "b": 1,
+          "a": 1
+        }
+      },
+      "elements": [
+        {
+          "kind": "text",
+          "id": "f2s_0:0_6",
+          "sourceNodeId": "197:1510",
+          "rect": {
+            "x": 145,
+            "y": 118.5,
+            "w": 120,
+            "h": 11
+          },
+          "rotation": 0,
+          "opacity": 1,
+          "content": "autolayout wewe",
+          "runs": [
+            {
+              "start": 0,
+              "end": 15,
+              "fontFamily": "Open Sans",
+              "fontWeight": 400,
+              "italic": false,
+              "fontSizePx": 16,
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 1
+              },
+              "originalFontFamily": "Segoe UI"
+            }
+          ],
+          "paragraphs": [
+            {
+              "start": 0,
+              "end": 15,
+              "align": "START",
+              "lineSpacingPct": 69.9999988079071
+            }
+          ],
+          "vAlign": "TOP",
+          "tightFit": true
+        },
+        {
+          "kind": "shape",
+          "id": "f2s_0:0_7",
+          "sourceNodeId": "197:1512",
+          "rect": {
+            "x": 285,
+            "y": 114,
+            "w": 20,
+            "h": 20
+          },
+          "rotation": 0,
+          "opacity": 1,
+          "shapeType": "RECTANGLE",
+          "fill": {
+            "type": "SOLID",
+            "color": {
+              "r": 0.75,
+              "g": 0.9041666388511658,
+              "b": 1,
+              "a": 1
+            }
+          }
+        },
+        {
+          "kind": "shape",
+          "id": "f2s_0:0_8",
+          "sourceNodeId": "197:1513",
+          "rect": {
+            "x": 325,
+            "y": 114,
+            "w": 20,
+            "h": 20
+          },
+          "rotation": 0,
+          "opacity": 1,
+          "shapeType": "RECTANGLE",
+          "fill": {
+            "type": "SOLID",
+            "color": {
+              "r": 0.7846153974533081,
+              "g": 1,
+              "b": 0.7307692170143127,
+              "a": 1
+            }
+          }
+        },
+        {
+          "kind": "text",
+          "id": "f2s_0:0_9",
+          "sourceNodeId": "197:1517",
+          "rect": {
+            "x": 397,
+            "y": 118.5,
+            "w": 120,
+            "h": 11
+          },
+          "rotation": 0,
+          "opacity": 1,
+          "content": "autolayout wewe",
+          "runs": [
+            {
+              "start": 0,
+              "end": 15,
+              "fontFamily": "Open Sans",
+              "fontWeight": 400,
+              "italic": false,
+              "fontSizePx": 16,
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 1
+              },
+              "originalFontFamily": "Segoe UI"
+            }
+          ],
+          "paragraphs": [
+            {
+              "start": 0,
+              "end": 15,
+              "align": "START",
+              "lineSpacingPct": 69.9999988079071
+            }
+          ],
+          "vAlign": "TOP",
+          "tightFit": true
+        },
+        {
+          "kind": "shape",
+          "id": "f2s_0:0_10",
+          "sourceNodeId": "197:1515",
+          "rect": {
+            "x": 517,
+            "y": 114,
+            "w": 20,
+            "h": 20
+          },
+          "rotation": 0,
+          "opacity": 1,
+          "shapeType": "RECTANGLE",
+          "fill": {
+            "type": "SOLID",
+            "color": {
+              "r": 1,
+              "g": 0.6346153616905212,
+              "b": 0.6346153616905212,
+              "a": 1
+            }
+          }
+        }
+      ],
+      "warnings": [
+        {
+          "code": "FONT_SUBSTITUTED",
+          "severity": "info",
+          "sourceNodeId": "197:1510",
+          "nodeName": "autolayout wewe",
+          "message": "Font \"Segoe UI\" replaced with \"Open Sans\"."
+        },
+        {
+          "code": "FONT_SUBSTITUTED",
+          "severity": "info",
+          "sourceNodeId": "197:1517",
+          "nodeName": "autolayout wewe",
+          "message": "Font \"Segoe UI\" replaced with \"Open Sans\"."
+        }
+      ],
+      "order": 0,
+      "previewDataUrl": ""
+    }
+  ],
+  "options": {
+    "mode": "new-presentation",
+    "rasterScale": 2,
+    "includeUnderlay": false,
+    "underlayOpacity": 0.3,
+    "strictMode": false
+  }
+}

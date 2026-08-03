@@ -1,0 +1,232 @@
+{
+  "version": 1,
+  "presentationTitle": "fixture",
+  "slideSize": {
+    "widthPt": 720,
+    "heightPt": 405
+  },
+  "slides": [
+    {
+      "sourceNodeId": "197:1484",
+      "frameName": "04-text-multi-style",
+      "frameSize": {
+        "width": 720,
+        "height": 405
+      },
+      "background": {
+        "type": "SOLID",
+        "color": {
+          "r": 1,
+          "g": 1,
+          "b": 1,
+          "a": 1
+        }
+      },
+      "elements": [
+        {
+          "kind": "text",
+          "id": "f2s_0:0_2",
+          "sourceNodeId": "197:1488",
+          "rect": {
+            "x": 24,
+            "y": 24,
+            "w": 672,
+            "h": 32
+          },
+          "rotation": 0,
+          "opacity": 1,
+          "content": "Ceci est un putain de test chiant mais utile car je veux me faire remarquer mais je sais pas si ca va marché",
+          "runs": [
+            {
+              "start": 0,
+              "end": 108,
+              "fontFamily": "Inter",
+              "fontWeight": 400,
+              "italic": false,
+              "fontSizePx": 16,
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 1
+              },
+              "originalFontFamily": "Cabinet Grotesk"
+            }
+          ],
+          "paragraphs": [
+            {
+              "start": 0,
+              "end": 108,
+              "align": "START",
+              "lineSpacingPct": 100
+            }
+          ],
+          "vAlign": "TOP",
+          "tightFit": false
+        },
+        {
+          "kind": "text",
+          "id": "f2s_0:0_3",
+          "sourceNodeId": "197:1489",
+          "rect": {
+            "x": 24,
+            "y": 131,
+            "w": 672,
+            "h": 32
+          },
+          "rotation": 0,
+          "opacity": 1,
+          "content": "Ceci est un putain de test chiant mais utile car je veux me faire remarquer mais je sais pas si ca va marché",
+          "runs": [
+            {
+              "start": 0,
+              "end": 108,
+              "fontFamily": "Open Sans",
+              "fontWeight": 400,
+              "italic": false,
+              "fontSizePx": 16,
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 1
+              },
+              "originalFontFamily": "Segoe UI"
+            }
+          ],
+          "paragraphs": [
+            {
+              "start": 0,
+              "end": 108,
+              "align": "START",
+              "lineSpacingPct": 100
+            }
+          ],
+          "vAlign": "TOP",
+          "tightFit": false
+        },
+        {
+          "kind": "text",
+          "id": "f2s_0:0_4",
+          "sourceNodeId": "197:1490",
+          "rect": {
+            "x": 24,
+            "y": 279,
+            "w": 672,
+            "h": 22
+          },
+          "rotation": 0,
+          "opacity": 1,
+          "content": "Ceci est un putain de test chiant mais utile car je veux me faire remarquer mais je sais pas si ca va marché",
+          "runs": [
+            {
+              "start": 0,
+              "end": 108,
+              "fontFamily": "Open Sans",
+              "fontWeight": 400,
+              "italic": false,
+              "fontSizePx": 16,
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 1
+              },
+              "originalFontFamily": "Segoe UI"
+            }
+          ],
+          "paragraphs": [
+            {
+              "start": 0,
+              "end": 108,
+              "align": "START",
+              "lineSpacingPct": 69.9999988079071
+            }
+          ],
+          "vAlign": "TOP",
+          "tightFit": false
+        },
+        {
+          "kind": "text",
+          "id": "f2s_0:0_5",
+          "sourceNodeId": "197:1496",
+          "rect": {
+            "x": 24,
+            "y": 222,
+            "w": 672,
+            "h": 32
+          },
+          "rotation": 0,
+          "opacity": 1,
+          "content": "CECI EST UN PUTAIN DE TEST CHIANT MAIS UTILE CAR JE VEUX ME FAIRE REMARQUER MAIS JE SAIS PAS SI CA VA MARCHÉ",
+          "runs": [
+            {
+              "start": 0,
+              "end": 108,
+              "fontFamily": "Open Sans",
+              "fontWeight": 400,
+              "italic": false,
+              "fontSizePx": 16,
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 1
+              },
+              "originalFontFamily": "Segoe UI"
+            }
+          ],
+          "paragraphs": [
+            {
+              "start": 0,
+              "end": 108,
+              "align": "START",
+              "lineSpacingPct": 100
+            }
+          ],
+          "vAlign": "TOP",
+          "tightFit": false
+        }
+      ],
+      "warnings": [
+        {
+          "code": "FONT_SUBSTITUTED",
+          "severity": "info",
+          "sourceNodeId": "197:1488",
+          "nodeName": "Ceci est un putain de test chiant mais utile car je veux me faire remarquer mais je sais pas si ca va marché",
+          "message": "Font \"Cabinet Grotesk\" replaced with \"Inter\"."
+        },
+        {
+          "code": "FONT_SUBSTITUTED",
+          "severity": "info",
+          "sourceNodeId": "197:1489",
+          "nodeName": "Ceci est un putain de test chiant mais utile car je veux me faire remarquer mais je sais pas si ca va marché",
+          "message": "Font \"Segoe UI\" replaced with \"Open Sans\"."
+        },
+        {
+          "code": "FONT_SUBSTITUTED",
+          "severity": "info",
+          "sourceNodeId": "197:1490",
+          "nodeName": "Ceci est un putain de test chiant mais utile car je veux me faire remarquer mais je sais pas si ca va marché",
+          "message": "Font \"Segoe UI\" replaced with \"Open Sans\"."
+        },
+        {
+          "code": "FONT_SUBSTITUTED",
+          "severity": "info",
+          "sourceNodeId": "197:1496",
+          "nodeName": "Ceci est un putain de test chiant mais utile car je veux me faire remarquer mais je sais pas si ca va marché",
+          "message": "Font \"Segoe UI\" replaced with \"Open Sans\"."
+        }
+      ],
+      "order": 0,
+      "previewDataUrl": ""
+    }
+  ],
+  "options": {
+    "mode": "new-presentation",
+    "rasterScale": 2,
+    "includeUnderlay": false,
+    "underlayOpacity": 0.3,
+    "strictMode": false
+  }
+}

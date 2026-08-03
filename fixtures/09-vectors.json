@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "presentationTitle": "fixture",
+  "slideSize": {
+    "widthPt": 720,
+    "heightPt": 405
+  },
+  "slides": [
+    {
+      "sourceNodeId": "199:1822",
+      "frameName": "09-vectors",
+      "frameSize": {
+        "width": 720,
+        "height": 405
+      },
+      "background": {
+        "type": "SOLID",
+        "color": {
+          "r": 1,
+          "g": 1,
+          "b": 1,
+          "a": 1
+        }
+      },
+      "elements": [
+        {
+          "kind": "image",
+          "id": "f2s_0:0_4",
+          "sourceNodeId": "200:1877",
+          "rect": {
+            "x": 94.75390625,
+            "y": 113.83203125,
+            "w": 95.01953125,
+            "h": 78.99853515625
+          },
+          "rotation": 0,
+          "opacity": 1,
+          "assetKey": "f2s_0:0_4",
+          "isRasterFallback": true,
+          "rasterizedNodeIds": [
+            "200:1877"
+          ]
+        },
+        {
+          "kind": "image",
+          "id": "f2s_0:0_5",
+          "sourceNodeId": "200:1880",
+          "rect": {
+            "x": 375,
+            "y": 119,
+            "w": 50,
+            "h": 50
+          },
+          "rotation": 0,
+          "opacity": 1,
+          "assetKey": "f2s_0:0_5",
+          "isRasterFallback": true,
+          "rasterizedNodeIds": [
+            "200:1880"
+          ]
+        }
+      ],
+      "warnings": [
+        {
+          "code": "VECTOR_RASTERIZED",
+          "severity": "warning",
+          "sourceNodeId": "200:1877",
+          "nodeName": "Vector 33",
+          "message": "Custom vector shape (icon, boolean operation, path) — converted to an image."
+        },
+        {
+          "code": "VECTOR_RASTERIZED",
+          "severity": "warning",
+          "sourceNodeId": "200:1880",
+          "nodeName": "Exclude",
+          "message": "Custom vector shape (icon, boolean operation, path) — converted to an image."
+        }
+      ],
+      "order": 0,
+      "previewDataUrl": ""
+    }
+  ],
+  "options": {
+    "mode": "new-presentation",
+    "rasterScale": 2,
+    "includeUnderlay": false,
+    "underlayOpacity": 0.3,
+    "strictMode": false
+  }
+}

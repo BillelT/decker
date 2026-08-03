@@ -1,0 +1,412 @@
+{
+  "version": 1,
+  "presentationTitle": "fixture",
+  "slideSize": {
+    "widthPt": 720,
+    "heightPt": 405
+  },
+  "slides": [
+    {
+      "sourceNodeId": "197:1406",
+      "frameName": "[Slides Ready] 14",
+      "frameSize": {
+        "width": 720,
+        "height": 405
+      },
+      "background": {
+        "type": "SOLID",
+        "color": {
+          "r": 1,
+          "g": 1,
+          "b": 1,
+          "a": 1
+        }
+      },
+      "elements": [
+        {
+          "kind": "text",
+          "id": "f2s_0:0_0",
+          "sourceNodeId": "197:1407",
+          "rect": {
+            "x": 24,
+            "y": 24,
+            "w": 672,
+            "h": 64
+          },
+          "rotation": 0,
+          "opacity": 1,
+          "content": "Bonjour, je m’appelle Billel, je recherche une alternance mais c’est dur ! Je taff de fou depuis bientot 4 ans, je suis pas payé, toujours pauvre car j’essaye de prouver a des gens que je mérite, mais ils me donnent pas ma chance... Si ils me la donnent, ça sera quand je serais meilleur qu’eux donc 0 utilité quoi",
+          "runs": [
+            {
+              "start": 0,
+              "end": 22,
+              "fontFamily": "Inter",
+              "fontWeight": 400,
+              "italic": false,
+              "fontSizePx": 16,
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 1
+              },
+              "originalFontFamily": "Cabinet Grotesk"
+            },
+            {
+              "start": 22,
+              "end": 28,
+              "fontFamily": "Inter",
+              "fontWeight": 700,
+              "italic": false,
+              "fontSizePx": 16,
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 1
+              },
+              "originalFontFamily": "Cabinet Grotesk"
+            },
+            {
+              "start": 28,
+              "end": 105,
+              "fontFamily": "Inter",
+              "fontWeight": 400,
+              "italic": false,
+              "fontSizePx": 16,
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 1
+              },
+              "originalFontFamily": "Cabinet Grotesk"
+            },
+            {
+              "start": 105,
+              "end": 130,
+              "fontFamily": "Inter",
+              "fontWeight": 400,
+              "italic": false,
+              "fontSizePx": 16,
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 1
+              },
+              "underline": true,
+              "originalFontFamily": "Cabinet Grotesk Variable"
+            },
+            {
+              "start": 130,
+              "end": 314,
+              "fontFamily": "Inter",
+              "fontWeight": 400,
+              "italic": false,
+              "fontSizePx": 16,
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 1
+              },
+              "originalFontFamily": "Cabinet Grotesk"
+            }
+          ],
+          "paragraphs": [
+            {
+              "start": 0,
+              "end": 314,
+              "align": "START",
+              "lineSpacingPct": 100
+            }
+          ],
+          "vAlign": "TOP",
+          "tightFit": false
+        },
+        {
+          "kind": "text",
+          "id": "f2s_0:0_1",
+          "sourceNodeId": "197:1470",
+          "rect": {
+            "x": 24,
+            "y": 157,
+            "w": 672,
+            "h": 144
+          },
+          "rotation": 0,
+          "opacity": 1,
+          "content": "Bonjour, je m’appelle Billel, je recherche une alternance mais c’est dur ! Je taff de fou depuis bientot 4 ans, je suis pas payé, toujours pauvre car j’essaye de prouver a des gens que je mérite, mais ils me donnent pas ma chance... Si ils me la donnent, ça sera quand je serais meilleur qu’eux donc 0 utilité quoi\n\nJe veux faire de l’argent\nJ’ai besoin\nJe suis en hess depuis toujours\nAlors que je taff 15h par jour",
+          "runs": [
+            {
+              "start": 0,
+              "end": 22,
+              "fontFamily": "Inter",
+              "fontWeight": 400,
+              "italic": false,
+              "fontSizePx": 16,
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 1
+              }
+            },
+            {
+              "start": 22,
+              "end": 28,
+              "fontFamily": "Inter",
+              "fontWeight": 700,
+              "italic": false,
+              "fontSizePx": 16,
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 1
+              }
+            },
+            {
+              "start": 28,
+              "end": 47,
+              "fontFamily": "Inter",
+              "fontWeight": 400,
+              "italic": false,
+              "fontSizePx": 16,
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 1
+              }
+            },
+            {
+              "start": 47,
+              "end": 57,
+              "fontFamily": "Inter",
+              "fontWeight": 400,
+              "italic": false,
+              "fontSizePx": 16,
+              "color": {
+                "r": 1,
+                "g": 0,
+                "b": 0,
+                "a": 1
+              }
+            },
+            {
+              "start": 57,
+              "end": 75,
+              "fontFamily": "Inter",
+              "fontWeight": 400,
+              "italic": false,
+              "fontSizePx": 16,
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 1
+              }
+            },
+            {
+              "start": 75,
+              "end": 89,
+              "fontFamily": "Inter",
+              "fontWeight": 400,
+              "italic": false,
+              "fontSizePx": 16,
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 1
+              },
+              "underline": true,
+              "link": "https://billeltighidet.fr"
+            },
+            {
+              "start": 89,
+              "end": 105,
+              "fontFamily": "Inter",
+              "fontWeight": 400,
+              "italic": false,
+              "fontSizePx": 16,
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 1
+              }
+            },
+            {
+              "start": 105,
+              "end": 130,
+              "fontFamily": "Inter",
+              "fontWeight": 400,
+              "italic": false,
+              "fontSizePx": 16,
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 1
+              },
+              "underline": true
+            },
+            {
+              "start": 130,
+              "end": 269,
+              "fontFamily": "Inter",
+              "fontWeight": 400,
+              "italic": false,
+              "fontSizePx": 16,
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 1
+              }
+            },
+            {
+              "start": 269,
+              "end": 287,
+              "fontFamily": "Inter",
+              "fontWeight": 400,
+              "italic": true,
+              "fontSizePx": 16,
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 1
+              }
+            },
+            {
+              "start": 287,
+              "end": 316,
+              "fontFamily": "Inter",
+              "fontWeight": 400,
+              "italic": false,
+              "fontSizePx": 16,
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 1
+              }
+            },
+            {
+              "start": 316,
+              "end": 416,
+              "fontFamily": "Inter",
+              "fontWeight": 400,
+              "italic": false,
+              "fontSizePx": 16,
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 1
+              }
+            }
+          ],
+          "paragraphs": [
+            {
+              "start": 0,
+              "end": 314,
+              "align": "START",
+              "lineSpacingPct": 100
+            },
+            {
+              "start": 315,
+              "end": 316,
+              "align": "START",
+              "lineSpacingPct": 100
+            },
+            {
+              "start": 316,
+              "end": 341,
+              "align": "START",
+              "lineSpacingPct": 100,
+              "indentStartPt": 1,
+              "bullet": "UNORDERED"
+            },
+            {
+              "start": 342,
+              "end": 353,
+              "align": "START",
+              "lineSpacingPct": 100,
+              "indentStartPt": 1,
+              "bullet": "UNORDERED"
+            },
+            {
+              "start": 354,
+              "end": 385,
+              "align": "START",
+              "lineSpacingPct": 100,
+              "indentStartPt": 1,
+              "bullet": "UNORDERED"
+            },
+            {
+              "start": 386,
+              "end": 416,
+              "align": "START",
+              "lineSpacingPct": 100,
+              "indentStartPt": 1,
+              "bullet": "UNORDERED"
+            }
+          ],
+          "vAlign": "TOP",
+          "tightFit": false
+        }
+      ],
+      "warnings": [
+        {
+          "code": "FONT_SUBSTITUTED",
+          "severity": "info",
+          "sourceNodeId": "197:1407",
+          "nodeName": "Bonjour, je m’appelle Billel, je recherche une alternance mais c’est dur ! Je taff de fou depuis bientot 4 ans, je suis pas payé, toujours pauvre car j’essaye de prouver a des gens que je mérite, mais ils me donnent pas ma chance... Si ils me la donnent, ça sera quand je serais meilleur qu’eux donc 0 utilité quoi",
+          "message": "Font \"Cabinet Grotesk\" replaced with \"Inter\"."
+        },
+        {
+          "code": "FONT_SUBSTITUTED",
+          "severity": "info",
+          "sourceNodeId": "197:1407",
+          "nodeName": "Bonjour, je m’appelle Billel, je recherche une alternance mais c’est dur ! Je taff de fou depuis bientot 4 ans, je suis pas payé, toujours pauvre car j’essaye de prouver a des gens que je mérite, mais ils me donnent pas ma chance... Si ils me la donnent, ça sera quand je serais meilleur qu’eux donc 0 utilité quoi",
+          "message": "Font \"Cabinet Grotesk\" replaced with \"Inter\"."
+        },
+        {
+          "code": "FONT_SUBSTITUTED",
+          "severity": "info",
+          "sourceNodeId": "197:1407",
+          "nodeName": "Bonjour, je m’appelle Billel, je recherche une alternance mais c’est dur ! Je taff de fou depuis bientot 4 ans, je suis pas payé, toujours pauvre car j’essaye de prouver a des gens que je mérite, mais ils me donnent pas ma chance... Si ils me la donnent, ça sera quand je serais meilleur qu’eux donc 0 utilité quoi",
+          "message": "Font \"Cabinet Grotesk\" replaced with \"Inter\"."
+        },
+        {
+          "code": "FONT_SUBSTITUTED",
+          "severity": "info",
+          "sourceNodeId": "197:1407",
+          "nodeName": "Bonjour, je m’appelle Billel, je recherche une alternance mais c’est dur ! Je taff de fou depuis bientot 4 ans, je suis pas payé, toujours pauvre car j’essaye de prouver a des gens que je mérite, mais ils me donnent pas ma chance... Si ils me la donnent, ça sera quand je serais meilleur qu’eux donc 0 utilité quoi",
+          "message": "Font \"Cabinet Grotesk Variable\" replaced with \"Inter\"."
+        },
+        {
+          "code": "FONT_SUBSTITUTED",
+          "severity": "info",
+          "sourceNodeId": "197:1407",
+          "nodeName": "Bonjour, je m’appelle Billel, je recherche une alternance mais c’est dur ! Je taff de fou depuis bientot 4 ans, je suis pas payé, toujours pauvre car j’essaye de prouver a des gens que je mérite, mais ils me donnent pas ma chance... Si ils me la donnent, ça sera quand je serais meilleur qu’eux donc 0 utilité quoi",
+          "message": "Font \"Cabinet Grotesk\" replaced with \"Inter\"."
+        }
+      ],
+      "order": 0,
+      "previewDataUrl": ""
+    }
+  ],
+  "options": {
+    "mode": "new-presentation",
+    "rasterScale": 2,
+    "includeUnderlay": false,
+    "underlayOpacity": 0.3,
+    "strictMode": false
+  }
+}

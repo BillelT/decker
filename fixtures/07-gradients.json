@@ -1,0 +1,140 @@
+{
+  "version": 1,
+  "presentationTitle": "fixture",
+  "slideSize": {
+    "widthPt": 720,
+    "heightPt": 405
+  },
+  "slides": [
+    {
+      "sourceNodeId": "199:1804",
+      "frameName": "07-gradients",
+      "frameSize": {
+        "width": 720,
+        "height": 405
+      },
+      "background": {
+        "type": "SOLID",
+        "color": {
+          "r": 1,
+          "g": 1,
+          "b": 1,
+          "a": 1
+        }
+      },
+      "elements": [
+        {
+          "kind": "image",
+          "id": "f2s_0:0_0",
+          "sourceNodeId": "200:1868",
+          "rect": {
+            "x": 32,
+            "y": 30,
+            "w": 208,
+            "h": 173
+          },
+          "rotation": 0,
+          "opacity": 1,
+          "assetKey": "f2s_0:0_0",
+          "isRasterFallback": true,
+          "rasterizedNodeIds": [
+            "200:1868"
+          ]
+        },
+        {
+          "kind": "image",
+          "id": "f2s_0:0_1",
+          "sourceNodeId": "200:1871",
+          "rect": {
+            "x": 32,
+            "y": 221,
+            "w": 208,
+            "h": 173
+          },
+          "rotation": 0,
+          "opacity": 1,
+          "assetKey": "f2s_0:0_1",
+          "isRasterFallback": true,
+          "rasterizedNodeIds": [
+            "200:1871"
+          ]
+        },
+        {
+          "kind": "image",
+          "id": "f2s_0:0_2",
+          "sourceNodeId": "200:1870",
+          "rect": {
+            "x": 366,
+            "y": 30,
+            "w": 140,
+            "h": 140
+          },
+          "rotation": 0,
+          "opacity": 1,
+          "assetKey": "f2s_0:0_2",
+          "isRasterFallback": true,
+          "rasterizedNodeIds": [
+            "200:1870"
+          ]
+        },
+        {
+          "kind": "image",
+          "id": "f2s_0:0_3",
+          "sourceNodeId": "200:1872",
+          "rect": {
+            "x": 366,
+            "y": 221,
+            "w": 173,
+            "h": 173
+          },
+          "rotation": 0,
+          "opacity": 1,
+          "assetKey": "f2s_0:0_3",
+          "isRasterFallback": true,
+          "rasterizedNodeIds": [
+            "200:1872"
+          ]
+        }
+      ],
+      "warnings": [
+        {
+          "code": "GRADIENT_RASTERIZED",
+          "severity": "warning",
+          "sourceNodeId": "200:1868",
+          "nodeName": "Rectangle 4763",
+          "message": "Gradients are not supported by Slides — converted to an image."
+        },
+        {
+          "code": "GRADIENT_RASTERIZED",
+          "severity": "warning",
+          "sourceNodeId": "200:1871",
+          "nodeName": "Rectangle 4764",
+          "message": "Gradients are not supported by Slides — converted to an image."
+        },
+        {
+          "code": "GRADIENT_RASTERIZED",
+          "severity": "warning",
+          "sourceNodeId": "200:1870",
+          "nodeName": "Ellipse 180",
+          "message": "Gradients are not supported by Slides — converted to an image."
+        },
+        {
+          "code": "GRADIENT_RASTERIZED",
+          "severity": "warning",
+          "sourceNodeId": "200:1872",
+          "nodeName": "Ellipse 181",
+          "message": "Gradients are not supported by Slides — converted to an image."
+        }
+      ],
+      "order": 0,
+      "previewDataUrl": ""
+    }
+  ],
+  "options": {
+    "mode": "new-presentation",
+    "rasterScale": 2,
+    "includeUnderlay": false,
+    "underlayOpacity": 0.3,
+    "strictMode": false
+  }
+}
