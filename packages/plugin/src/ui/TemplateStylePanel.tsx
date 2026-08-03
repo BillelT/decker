@@ -1,6 +1,6 @@
 import type { ThemeColorRole } from '@figma-to-slides/shared';
 import { colorKey } from '../serialize/templateSummary.js';
-import { DEFAULT_THEME_ROLE_HEX, THEME_ROLES, THEME_ROLE_LABELS, resolveThemeRoleHexes } from '../serialize/templateTheme.js';
+import { DEFAULT_THEME_ROLE_HEX, THEME_ROLE_LABELS, VISIBLE_THEME_ROLES, resolveThemeRoleHexes } from '../serialize/templateTheme.js';
 import type { TemplateColorSwatch, TemplateFontUsage } from './types.js';
 
 export interface TemplateStylePanelProps {
@@ -86,7 +86,7 @@ export function TemplateStylePanel({ colors, fonts, colorRoles, setColorRoles, r
       <section className="f2s-tmpl-section">
         <h3 className="f2s-tmpl-heading">Colors</h3>
         <ul className="f2s-style-list">
-          {THEME_ROLES.map((role) => {
+          {VISIBLE_THEME_ROLES.map((role) => {
             const hex = roleHexes[role];
             const assignedKey = assignedKeyByRole.get(role);
             return (

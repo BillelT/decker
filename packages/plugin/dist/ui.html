@@ -3304,19 +3304,20 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
     "FOLLOWED_HYPERLINK"
   ];
   var THEME_ROLE_LABELS = {
-    DARK1: "Dark 1",
-    LIGHT1: "Light 1",
-    DARK2: "Dark 2",
-    LIGHT2: "Light 2",
+    DARK1: "Text & background 1",
+    LIGHT1: "Text & background 2",
+    DARK2: "Text & background 3",
+    LIGHT2: "Text & background 4",
     ACCENT1: "Accent 1",
     ACCENT2: "Accent 2",
     ACCENT3: "Accent 3",
     ACCENT4: "Accent 4",
     ACCENT5: "Accent 5",
     ACCENT6: "Accent 6",
-    HYPERLINK: "Hyperlink",
+    HYPERLINK: "Link",
     FOLLOWED_HYPERLINK: "Followed hyperlink"
   };
+  var VISIBLE_THEME_ROLES = THEME_ROLES.filter((role) => role !== "FOLLOWED_HYPERLINK");
   function rgbToHex({ r: r3, g: g2, b: b2 }) {
     const channel = (v3) => Math.round(Math.min(1, Math.max(0, v3)) * 255).toString(16).padStart(2, "0").toUpperCase();
     return `#${channel(r3)}${channel(g2)}${channel(b2)}`;
@@ -3387,7 +3388,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
     return /* @__PURE__ */ u3("div", { className: "f2s-style-panel", children: [
       /* @__PURE__ */ u3("section", { className: "f2s-tmpl-section", children: [
         /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Colors" }),
-        /* @__PURE__ */ u3("ul", { className: "f2s-style-list", children: THEME_ROLES.map((role) => {
+        /* @__PURE__ */ u3("ul", { className: "f2s-style-list", children: VISIBLE_THEME_ROLES.map((role) => {
           const hex = roleHexes[role];
           const assignedKey = assignedKeyByRole.get(role);
           return /* @__PURE__ */ u3("li", { className: "f2s-style-row", children: [

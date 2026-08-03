@@ -1160,6 +1160,7 @@
     "HYPERLINK",
     "FOLLOWED_HYPERLINK"
   ];
+  var VISIBLE_THEME_ROLES = THEME_ROLES.filter((role) => role !== "FOLLOWED_HYPERLINK");
   function hexToRgb(hex) {
     const n = parseInt(hex.slice(1), 16);
     return { r: (n >> 16 & 255) / 255, g: (n >> 8 & 255) / 255, b: (n & 255) / 255 };
