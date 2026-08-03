@@ -623,12 +623,20 @@ const LIVE_REFRESH_DEBOUNCE_MS = 700;
  * - template : TOUTES les frames suivies, taguées ou non — c'est ce qui
  *   referme la boucle « corrige l'erreur bloquante dans Figma → le layout
  *   se re-valide dans le panneau » sans supprimer/re-ajouter.
+ *
+ * Fallback (bug Figma connu, non résolu côté éditeur — forum #38664) :
+ * `nodechange` peut s'arrêter silencieusement de se déclencher pour le
+ * reste de la session après certains `undo`, sans erreur visible côté
+ * plugin. `refreshFromSelection`, appelé aussi depuis `selectionchange`,
+ * repasse par le même chemin marquage-sale/debounce : re-sélectionner une
+ * frame suivie la re-synchronise même si `nodechange` est resté muet
+ * depuis la dernière vraie retouche.
  */
 function watchFramesForLiveRefresh(
   pending: PendingSlide[],
   accepts: (node: SceneNode) => boolean,
   refresh: (frame: ExportableNode) => Promise<boolean>,
-): void {
+): { refreshFromSelection: (selection: readonly SceneNode[]) => void } {
   const dirtyIds = new Set<string>();
   let timer: ReturnType<typeof setTimeout> | undefined;
 
@@ -648,6 +656,11 @@ function watchFramesForLiveRefresh(
     }
   };
 
+  const scheduleFlush = () => {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => void flush(), LIVE_REFRESH_DEBOUNCE_MS);
+  };
+
   figma.currentPage.on('nodechange', (event) => {
     if (pending.length === 0) return;
     const trackedIds = new Set(pending.map((p) => p.frame.id));
@@ -664,9 +677,25 @@ function watchFramesForLiveRefresh(
       }
     }
     if (!dirty) return;
-    if (timer) clearTimeout(timer);
-    timer = setTimeout(() => void flush(), LIVE_REFRESH_DEBOUNCE_MS);
+    scheduleFlush();
   });
+
+  return {
+    refreshFromSelection(selection) {
+      if (pending.length === 0 || selection.length === 0) return;
+      const trackedIds = new Set(pending.map((p) => p.frame.id));
+      let dirty = false;
+      for (const node of selection) {
+        const match = nearestTrackedAncestor(node, trackedIds, accepts);
+        if (match) {
+          dirtyIds.add(match.id);
+          dirty = true;
+        }
+      }
+      if (!dirty) return;
+      scheduleFlush();
+    },
+  };
 }
 
 async function main(): Promise<void> {
@@ -707,18 +736,24 @@ async function main(): Promise<void> {
   const templatePending: PendingSlide[] = [];
   const idGen = createIdGenerator(figma.root.id.slice(0, 8));
 
+  const deckLiveRefresh = watchFramesForLiveRefresh(pending, isSlidesReady, (frame) => refreshPendingEntry(frame, pending, idGen));
+  const templateLiveRefresh = watchFramesForLiveRefresh(templatePending, () => true, (frame) => refreshTemplateEntry(frame, templatePending, idGen));
+
   // Permet à l'UI de masquer son hint « sélectionne des frames sur le
   // canvas » dès qu'une sélection exportable existe déjà, plutôt que de le
-  // garder affiché même une fois l'action faite.
+  // garder affiché même une fois l'action faite. Sert aussi de filet de
+  // secours au live refresh : re-sélectionner une frame suivie la
+  // re-synchronise même si `nodechange` s'est arrêté de se déclencher (bug
+  // Figma connu après un `undo`, cf. `watchFramesForLiveRefresh`).
   figma.on('selectionchange', () => {
+    const selection = figma.currentPage.selection;
     figma.ui.postMessage({
       type: 'canvas-selection-changed',
-      hasSelection: figma.currentPage.selection.some(isExportable),
+      hasSelection: selection.some(isExportable),
     });
+    deckLiveRefresh.refreshFromSelection(selection);
+    templateLiveRefresh.refreshFromSelection(selection);
   });
-
-  watchFramesForLiveRefresh(pending, isSlidesReady, (frame) => refreshPendingEntry(frame, pending, idGen));
-  watchFramesForLiveRefresh(templatePending, () => true, (frame) => refreshTemplateEntry(frame, templatePending, idGen));
 
   figma.ui.onmessage = async (msg: { type: string; [key: string]: unknown }) => {
     if (msg.type === 'ui-ready') {
