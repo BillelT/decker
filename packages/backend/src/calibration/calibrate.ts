@@ -6,8 +6,10 @@ import { fileURLToPath } from 'node:url';
 import { PNG } from 'pngjs';
 import type { CalibrationData, IRDocument } from '@figma-to-slides/shared';
 import { UNCALIBRATED_DEFAULTS } from '@figma-to-slides/shared';
-import { computeScale } from '../mapper/transform.js';
+import { computeScale, rotatedTransform } from '../mapper/transform.js';
 import { mapDocumentToBatches } from '../mapper/index.js';
+import { buildRotationFixtureDocument, renderRotationReferencePng } from './fixtures/rotation.js';
+import { buildShapesFixtureDocument, renderShapesReferencePng } from './fixtures/shapes.js';
 import { applyBatch, createPresentation, getPageThumbnail, getPresentation } from '../slides/client.js';
 import { buildRectsFixtureDocument, renderRectsReferencePng } from './fixtures/rects.js';
 import {
@@ -26,19 +28,30 @@ const SSIM_THRESHOLD_RECTS = 0.99;
 const BBOX_THRESHOLD_PT_RECTS = 0.5;
 
 /**
- * Spec §9 : `01-rects` à `13-batch` sont censées venir d'un vrai fichier
- * Figma exporté (`fixtures/<name>.json` + `fixtures/<name>.png`), pas d'un
- * générateur en code comme `01-rects`/`03-text-inset` (des contournements
- * faits faute d'accès Figma). N'importe quelle paire posée dans ce dossier
- * est reprise automatiquement au run suivant — pas besoin de retoucher ce
- * script pour chaque nouvelle fixture. Seuil moins strict que `01-rects` :
- * du texte/des formes réels ont plus d'anti-aliasing que des rectangles
- * unis, et ces fixtures sont informatives (elles n'engagent pas le critère
- * de sortie de Phase 0, qui reste `01-rects` exclusivement, spec §4).
+ * Seuils partagés par tout ce qui n'est PAS `01-rects` : `02-rotation` et
+ * `06-shapes` (code-générées, audit 2026-08 — même logique que `01-rects` :
+ * rotation/shapeType/stroke sont des champs du contrat IR déjà résolus, pas
+ * une décision d'extraction Figma, donc testables sans fichier Figma réel)
+ * ainsi que les fixtures de fichier ci-dessous. Moins strict que
+ * `01-rects` : plus de formes/anti-aliasing, et `06-shapes` compare contre
+ * un rayon de coin arrondi approximatif (voir shapes.ts). Ces fixtures sont
+ * informatives — elles n'engagent pas le critère de sortie de Phase 0, qui
+ * reste `01-rects` exclusivement (spec §4).
+ */
+const SSIM_THRESHOLD_SECONDARY = 0.95;
+const BBOX_THRESHOLD_PT_SECONDARY = 1;
+
+/**
+ * Spec §9 : `04-text-multi-style`, `05-text-edge`, `07` à `13` sont censées
+ * venir d'un vrai fichier Figma exporté (`fixtures/<name>.json` +
+ * `fixtures/<name>.png`) — soit parce qu'elles testent une décision
+ * d'extraction/résolution Figma qui ne laisse aucune trace distinctive dans
+ * l'IRDocument final (substitution de police, aplatissement d'auto-layout…),
+ * soit parce qu'une image de référence fidèle en pur code demanderait de
+ * réimplémenter un rasterizeur de police. N'importe quelle paire posée dans
+ * ce dossier est reprise automatiquement au run suivant.
  */
 const FIXTURES_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../../fixtures');
-const SSIM_THRESHOLD_FILE_FIXTURE = 0.95;
-const BBOX_THRESHOLD_PT_FILE_FIXTURE = 1;
 
 /**
  * 1pt = 1/72 inch = 12700 EMU (English Metric Units) — même si nos requêtes
@@ -73,6 +86,8 @@ async function main(): Promise<void> {
 
   const rectsResult = await runRectsFixture(accessToken);
   results.push(rectsResult);
+  results.push(await runRotationFixture(accessToken));
+  results.push(await runShapesFixture(accessToken));
 
   const fileFixtureNames = await discoverFileFixtures();
   for (const name of fileFixtureNames) {
@@ -111,17 +126,16 @@ async function main(): Promise<void> {
       `LIMITATIONS.md) — ne pas prioriser leur calibration tant qu'ils ne sont branchés nulle part.`,
   );
 
+  for (const r of results) {
+    if (r.name === '01-rects') continue;
+    const secondaryPassed = r.ssimScore >= r.ssimThreshold && r.bboxDeviations.every((d) => d.deviationPt <= r.bboxThresholdPt);
+    console.log(`${secondaryPassed ? '✅' : '⚠️ '} ${r.name} : SSIM = ${r.ssimScore.toFixed(4)} (seuil ${r.ssimThreshold}, informatif — voir calibration-report.html).`);
+  }
   if (fileFixtureNames.length === 0) {
     console.log(
       `\nAucune fixture de fichier trouvée dans ${FIXTURES_DIR} — dépose des paires <nom>.json/<nom>.png ` +
-        '(spec §9, ex. "02-rotation") pour qu\'elles soient reprises automatiquement au prochain run.',
+        '(spec §9, ex. "04-text-multi-style") pour qu\'elles soient reprises automatiquement au prochain run.',
     );
-  } else {
-    for (const r of results) {
-      if (r.name === '01-rects') continue;
-      const filePassed = r.ssimScore >= r.ssimThreshold && r.bboxDeviations.every((d) => d.deviationPt <= r.bboxThresholdPt);
-      console.log(`${filePassed ? '✅' : '⚠️ '} ${r.name} : SSIM = ${r.ssimScore.toFixed(4)} (seuil ${r.ssimThreshold}, informatif — voir calibration-report.html).`);
-    }
   }
 
   const passed = rectsResult.ssimScore >= SSIM_THRESHOLD_RECTS && rectsResult.bboxDeviations.every((d) => d.deviationPt <= BBOX_THRESHOLD_PT_RECTS);
@@ -167,7 +181,7 @@ async function runFileFixture(accessToken: string, name: string): Promise<Fixtur
     throw new Error("contient un élément image — l'hébergement d'asset public n'est pas encore câblé dans ce script autonome.");
   }
 
-  return runGeometryFixture(accessToken, doc, referencePng, name, SSIM_THRESHOLD_FILE_FIXTURE, BBOX_THRESHOLD_PT_FILE_FIXTURE);
+  return runGeometryFixture(accessToken, doc, referencePng, name, SSIM_THRESHOLD_SECONDARY, BBOX_THRESHOLD_PT_SECONDARY);
 }
 
 /**
@@ -249,6 +263,18 @@ async function runRectsFixture(accessToken: string): Promise<FixtureResult> {
   return runGeometryFixture(accessToken, doc, referencePng, '01-rects', SSIM_THRESHOLD_RECTS, BBOX_THRESHOLD_PT_RECTS);
 }
 
+async function runRotationFixture(accessToken: string): Promise<FixtureResult> {
+  const doc = buildRotationFixtureDocument();
+  const referencePng = renderRotationReferencePng(2);
+  return runGeometryFixture(accessToken, doc, referencePng, '02-rotation', SSIM_THRESHOLD_SECONDARY, BBOX_THRESHOLD_PT_SECONDARY);
+}
+
+async function runShapesFixture(accessToken: string): Promise<FixtureResult> {
+  const doc = buildShapesFixtureDocument();
+  const referencePng = renderShapesReferencePng(2);
+  return runGeometryFixture(accessToken, doc, referencePng, '06-shapes', SSIM_THRESHOLD_SECONDARY, BBOX_THRESHOLD_PT_SECONDARY);
+}
+
 /**
  * Cœur commun à toute fixture "comparaison géométrique" (position + SSIM
  * contre une image de référence) : crée la présentation, applique le lot
@@ -288,8 +314,15 @@ async function runGeometryFixture(
 
   const { scale, offsetXPt, offsetYPt } = computeScale(doc.slides[0].frameSize, doc.slideSize);
   const bboxDeviations: BboxDeviation[] = doc.slides[0].elements.map((el) => {
-    const expectedXPt = el.rect.x * scale + offsetXPt;
-    const expectedYPt = el.rect.y * scale + offsetYPt;
+    // `rotatedTransform` plutôt que `rect.x*scale+offset` brut : pour un
+    // élément tourné (fixture 02-rotation), translateX/Y attendu n'est PAS
+    // le coin haut-gauche non tourné — c'est le même calcul que
+    // mapper/shapes.ts, réutilisé ici pour ne pas comparer deux géométries
+    // différentes (rotation=0 retombe sur l'identité, donc aucun changement
+    // pour 01-rects).
+    const expected = rotatedTransform(el.rect.x * scale + offsetXPt, el.rect.y * scale + offsetYPt, el.rect.w * scale, el.rect.h * scale, el.rotation);
+    const expectedXPt = expected.translateX;
+    const expectedYPt = expected.translateY;
     const actual = page?.pageElements.find((pe) => pe.objectId === el.id);
     const actualXPt = actual ? toPt(actual.transform.translateX, actual.transform.unit) : NaN;
     const actualYPt = actual ? toPt(actual.transform.translateY, actual.transform.unit) : NaN;

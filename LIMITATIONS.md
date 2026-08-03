@@ -159,47 +159,65 @@ avec les couches suivantes **testées et fonctionnelles hors ligne** :
   police/taille, pas une constante unique mesurable par une seule fixture
   géométrique — leur valeur par défaut reste un choix raisonnable plutôt
   qu'une mesure.
-- Le jeu de fixtures complet listé au spec §9 (`01-rects` à `13-batch`)
-  n'a que `01-rects` et `03-text-inset` en version code-générée (sans
-  fichier Figma réel — voir plus bas pourquoi les autres n'ont pas été
-  construites de la même façon) :
-  - `02-rotation`, `06-shapes`, `10-images` testeraient surtout la même
-    chaîne coordonnées/échelle déjà validée par `01-rects` (juste avec plus
-    de variété de formes) — valeur ajoutée réelle mais secondaire.
-  - `04-text-multi-style`, `05-text-edge`, `07-gradients`, `08-effects`,
-    `09-vectors`, `11-autolayout` testent la logique de décision native/
-    raster et l'extraction Figma **côté plugin** (`packages/plugin/src/serialize`),
-    pas ce harnais de calibration backend qui part d'un `IRDocument` déjà
-    produit — déjà couverts par les tests unitaires du plugin (mocks de
-    nœuds Figma), et une fixture "de référence" en pur code pour un
-    dégradé/vecteur/effet n'apporterait rien puisqu'on n'a justement pas de
-    moteur de rendu Figma ici pour produire une image de référence fidèle.
+- Le jeu de fixtures complet listé au spec §9 (`01-rects` à `13-batch`) a
+  maintenant **`01-rects`, `02-rotation`, `03-text-inset` et `06-shapes`
+  en version code-générée** (sans fichier Figma réel) — la règle qui
+  décide si une fixture PEUT être code-générée (audit 2026-08, corrigée en
+  cours de route — voir historique) : est-ce que ce que la fixture teste
+  survit jusqu'à l'`IRDocument` (le contrat déjà résolu que consomme le
+  mapper backend), ou est-ce que c'est une décision prise **avant**, côté
+  plugin, qui ne laisse aucune trace distinctive une fois l'IR construit ?
+  - `02-rotation` (transform affine) et `06-shapes` (mapping de presets +
+    stroke) sont purement des champs du contrat IR déjà résolus
+    (`rotation`, `shapeType`, `stroke` sur `IRShape`/`IRBase`) — le mapper
+    n'a besoin que d'un `IRShape` valide, peu importe sa provenance,
+    exactement comme `01-rects`. Même chose pour un bloc de texte à
+    plusieurs styles (`04-text-multi-style` : `IRTextRun[]`/bold/italic/
+    couleur/lien sont des champs directs du contrat) — mais SANS moteur de
+    rendu de police ici, impossible de produire une image de référence
+    fidèle à comparer par SSIM ; non construite pour cette raison précise
+    (pas une histoire d'extraction Figma comme pour les suivantes).
+  - `05-text-edge` (substitution de police, letter-spacing, textCase) et
+    `11-autolayout` (aplatissement de positions) testent des décisions
+    prises **côté plugin** (`packages/plugin/src/serialize`) qui sont déjà
+    résolues avant que l'`IRDocument` existe : une police substituée
+    arrive déjà sous son nom final dans `IRTextRun.fontFamily`, un
+    letter-spacing trop faible pour être visible est déjà silencieusement
+    ignoré (rien dans le contrat pour le représenter), un auto-layout est
+    déjà aplati en positions fixes. Construire ces fixtures "en code"
+    referait donc juste `01`/`02`/`04` sous un autre nom — ces
+    fixtures-là ont vraiment besoin d'un fichier Figma réel pour tester ce
+    qu'elles sont censées tester (déjà couvert par ailleurs par les tests
+    unitaires du plugin, mocks de nœuds Figma).
+  - `07-gradients`, `08-effects`, `09-vectors`, `10-images` rasterisent
+    toujours au moins un élément (fallback image) — nécessitent un vrai
+    fichier Figma ET l'hébergement d'asset (voir plus bas).
   - `12-realistic` et `13-batch` sont des scènes composites de bout en
     bout — utiles surtout une fois qu'un vrai fichier Figma existe pour
-    les produire fidèlement, pas en équivalent code.
-  Un vrai fichier Figma dédié (spec §9) reste donc la voie normale pour
-  ces fixtures-là — voir "Comment ajouter une fixture" ci-dessous, le
-  harnais les reprend maintenant automatiquement sans toucher au code.
+    les produire fidèlement.
+  Voir "Comment ajouter une fixture" ci-dessous pour les 4 restantes qui
+  ont vraiment besoin d'un fichier Figma sans image (`04`, `05`, `11`, et
+  toute fixture composite) — le harnais les reprend automatiquement sans
+  toucher au code une fois déposées dans `fixtures/`.
 
 ### Comment ajouter une fixture (spec §9)
 
-`npm run calibrate` scanne désormais le dossier `fixtures/` (racine du
-repo) à chaque run : toute paire `<nom>.json` (un `IRDocument`) +
-`<nom>.png` (export Figma du même frame) y est reprise automatiquement,
-comparée à l'API Slides réelle (SSIM + écart de position), et ajoutée au
-rapport — pas besoin de retoucher `calibrate.ts`.
+`npm run calibrate` scanne le dossier `fixtures/` (racine du repo) à
+chaque run : toute paire `<nom>.json` (un `IRDocument`) + `<nom>.png`
+(export Figma du même frame) y est reprise automatiquement, comparée à
+l'API Slides réelle (SSIM + écart de position), et ajoutée au rapport —
+pas besoin de retoucher `calibrate.ts`.
 
 **Limite actuelle du chargeur générique** (`runFileFixture` dans
 `calibrate.ts`) : une seule slide par fixture, et aucun élément `image` —
 l'hébergement d'un asset public depuis ce script autonome (sans backend
 HTTP qui tourne) n'est pas câblé. Une fixture qui en contient est ignorée
 avec un message explicite plutôt que de planter tout le run ; couvre pour
-l'instant `02`, `04`, `05`, `06`, `11` (pas d'image) — `07`, `08`, `09`,
-`10`, `12`, `13` (qui rasterisent forcément quelque chose, ou qui
-contiennent plusieurs slides pour `13-batch`) attendront que ce
-branchement soit fait.
+l'instant `04`, `05`, `11` — `07`, `08`, `09`, `10`, `12`, `13` (qui
+rasterisent forcément quelque chose, ou qui contiennent plusieurs slides
+pour `13-batch`) attendront que ce branchement soit fait.
 
-**Étapes pour construire une fixture, ex. `02-rotation` :**
+**Étapes pour construire une fixture, ex. `04-text-multi-style` :**
 
 1. Dans Figma, crée une frame `720×405` (ou n'importe quel ratio — le
    mapper recentre) contenant EXACTEMENT ce que la colonne "Contenu"
@@ -209,11 +227,11 @@ branchement soit fait.
    télécharge le `IRDocument` exact tel qu'il serait envoyé à l'export —
    aucun appel réseau, juste un fichier local (audit 2026-08, nouveau).
 3. Renomme ce fichier téléchargé en `<nom-de-la-fixture>.json` et dépose-le
-   dans `fixtures/` à la racine du repo (ex. `fixtures/02-rotation.json`).
+   dans `fixtures/` à la racine du repo (ex. `fixtures/04-text-multi-style.json`).
 4. Exporte la MÊME frame en PNG depuis Figma (clic droit sur la frame →
    Export, ou panneau Export en bas à droite, échelle 2x) — c'est l'image
    de référence, indépendante du plugin. Renomme-la pareil
-   (`fixtures/02-rotation.png`).
+   (`fixtures/04-text-multi-style.png`).
 5. Relance `npm run calibrate` : la fixture apparaît automatiquement dans
    `calibration-report.html`, avec son propre score SSIM.
 
@@ -222,10 +240,8 @@ le détail de l'intention) :
 
 | Fixture | Contenu à dessiner dans Figma |
 |---|---|
-| `02-rotation` | 4-5 rectangles unis, identiques sauf leur rotation : 0°, 15°, 45°, 90°, -30°. |
 | `04-text-multi-style` | Un seul bloc de texte, un paragraphe, avec au moins un mot en gras, un en italique, un dans une couleur différente, un lien hypertexte, et une liste à puces sur 2-3 lignes. |
 | `05-text-edge` | Un bloc avec une police NON disponible dans Google Fonts/Slides (ex. une police système Windows comme "Segoe UI" ou une police de marque), un letter-spacing prononcé (> 5%), du texte en MAJUSCULES via le réglage "Case" de Figma, et un interligne serré (< 100%). |
-| `06-shapes` | Une ellipse, un pentagone ou hexagone, une étoile, un rectangle à coins arrondis (rayon dans la fourchette 8-25 % du plus petit côté), et une forme avec un contour (stroke) visible. |
 | `11-autolayout` | Un auto-layout (frame avec "Auto layout" activé dans Figma) imbriqué sur 2 niveaux, avec padding et gap réglés, contenant 3-4 éléments texte/forme. |
 
 `07-gradients`, `08-effects`, `09-vectors`, `10-images`, `12-realistic`,
