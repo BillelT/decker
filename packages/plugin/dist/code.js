@@ -1525,6 +1525,10 @@
         await yieldToUi();
       }
     };
+    const scheduleFlush = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => void flush(), LIVE_REFRESH_DEBOUNCE_MS);
+    };
     figma.currentPage.on("nodechange", (event) => {
       if (pending.length === 0) return;
       const trackedIds = new Set(pending.map((p) => p.frame.id));
@@ -1541,9 +1545,24 @@
         }
       }
       if (!dirty) return;
-      if (timer) clearTimeout(timer);
-      timer = setTimeout(() => void flush(), LIVE_REFRESH_DEBOUNCE_MS);
+      scheduleFlush();
     });
+    return {
+      refreshFromSelection(selection) {
+        if (pending.length === 0 || selection.length === 0) return;
+        const trackedIds = new Set(pending.map((p) => p.frame.id));
+        let dirty = false;
+        for (const node of selection) {
+          const match = nearestTrackedAncestor(node, trackedIds, accepts);
+          if (match) {
+            dirtyIds.add(match.id);
+            dirty = true;
+          }
+        }
+        if (!dirty) return;
+        scheduleFlush();
+      }
+    };
   }
   async function main() {
     let storedSkin;
@@ -1563,14 +1582,17 @@
     const pending = [];
     const templatePending = [];
     const idGen = createIdGenerator(figma.root.id.slice(0, 8));
+    const deckLiveRefresh = watchFramesForLiveRefresh(pending, isSlidesReady, (frame) => refreshPendingEntry(frame, pending, idGen));
+    const templateLiveRefresh = watchFramesForLiveRefresh(templatePending, () => true, (frame) => refreshTemplateEntry(frame, templatePending, idGen));
     figma.on("selectionchange", () => {
+      const selection = figma.currentPage.selection;
       figma.ui.postMessage({
         type: "canvas-selection-changed",
-        hasSelection: figma.currentPage.selection.some(isExportable)
+        hasSelection: selection.some(isExportable)
       });
+      deckLiveRefresh.refreshFromSelection(selection);
+      templateLiveRefresh.refreshFromSelection(selection);
     });
-    watchFramesForLiveRefresh(pending, isSlidesReady, (frame) => refreshPendingEntry(frame, pending, idGen));
-    watchFramesForLiveRefresh(templatePending, () => true, (frame) => refreshTemplateEntry(frame, templatePending, idGen));
     figma.ui.onmessage = async (msg) => {
       if (msg.type === "ui-ready") {
         figma.ui.postMessage({
