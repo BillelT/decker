@@ -18,6 +18,16 @@ export interface FixtureResult {
   bboxDeviations: BboxDeviation[];
   ssimThreshold: number;
   bboxThresholdPt: number;
+  /**
+   * Une fixture qui contient du texte réel ne peut structurellement pas
+   * viser un SSIM élevé (audit 2026-08) : Figma et Slides utilisent chacun
+   * leur propre moteur de rendu de police (hinting/anti-aliasing distincts),
+   * donc même un texte à la position EXACTEMENT correcte (voir bboxDeviations,
+   * le vrai signal de fidélité ici) produit un delta pixel important sur
+   * chaque ligne. Le SSIM reste affiché mais n'est plus traité comme un
+   * signal pass/fail pour ces fixtures — seul l'écart de position l'est.
+   */
+  containsText: boolean;
 }
 
 /**
@@ -88,6 +98,9 @@ function renderMeasurementSection(m: MeasurementResult): string {
 
 function renderFixtureSection(r: FixtureResult): string {
   const ssimPass = r.ssimScore >= r.ssimThreshold;
+  const ssimNote = r.containsText
+    ? ` <span title="Texte réel : deux moteurs de rendu de police différents (Figma, Slides) produisent toujours un delta pixel significatif, même à position exacte — voir la colonne écart (pt) ci-dessous pour le vrai signal de fidélité.">(informatif, ignorer pour du texte — voir écart de position)</span>`
+    : '';
   const rows = r.bboxDeviations
     .map(
       (d) => `<tr class="${d.deviationPt <= r.bboxThresholdPt ? 'pass' : 'fail'}">
@@ -103,7 +116,7 @@ function renderFixtureSection(r: FixtureResult): string {
 
   return `<section>
   <h2>${r.name}</h2>
-  <p>SSIM global : <span class="${ssimPass ? 'pass' : 'fail'}">${r.ssimScore.toFixed(4)}</span> (seuil ≥ ${r.ssimThreshold})</p>
+  <p>SSIM global : <span class="${r.containsText ? '' : ssimPass ? 'pass' : 'fail'}">${r.ssimScore.toFixed(4)}</span> (seuil ≥ ${r.ssimThreshold})${ssimNote}</p>
   <div class="images">
     <figure><img src="data:image/png;base64,${r.referencePng.toString('base64')}" /><figcaption>Référence</figcaption></figure>
     <figure><img src="data:image/png;base64,${r.renderedPng.toString('base64')}" /><figcaption>Rendu Slides</figcaption></figure>
