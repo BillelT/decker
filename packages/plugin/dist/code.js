@@ -775,7 +775,7 @@
     const decision = classifyNode(toDecisionInput(node, maskedByAncestor));
     switch (decision.action) {
       case "raster":
-        warnings.push({ nodeId: node.id, nodeName: node.name, code: decision.warningCode, message: decision.message });
+        warnings.push({ nodeId: node.id, nodeName: node.name, code: decision.warningCode, message: decision.message, category: "rasterized" });
         return;
       case "native-text": {
         const extraction = extractTextRuns(node);
@@ -784,11 +784,34 @@
             nodeId: node.id,
             nodeName: node.name,
             code: "LETTER_SPACING_LOST",
-            message: extraction.rasterReason ?? "Text cannot be represented \u2014 it will be converted to an image."
+            message: extraction.rasterReason ?? "Text cannot be represented \u2014 it will be converted to an image.",
+            category: "rasterized"
+          });
+          return;
+        }
+        for (const w of extraction.fontWarnings) {
+          if (!w.substitute) continue;
+          warnings.push({
+            nodeId: node.id,
+            nodeName: node.name,
+            code: "FONT_SUBSTITUTED",
+            message: `Font "${w.original}" replaced with "${w.substitute}" \u2014 text may look different.`,
+            category: "visual-diff"
           });
         }
         return;
       }
+      case "native-shape-round-rectangle":
+        if (decision.approximated) {
+          warnings.push({
+            nodeId: node.id,
+            nodeName: node.name,
+            code: "RADIUS_APPROXIMATED",
+            message: "Corner radius is approximated by Slides (fixed, non-adjustable value).",
+            category: "visual-diff"
+          });
+        }
+        return;
       case "descend": {
         const container = node;
         for (const child of container.children) {
@@ -1168,7 +1191,15 @@
   var DECK_TAG = "true";
   var TEMPLATE_TAG = "template";
   var LINT_GROUP_ID_KEY = "slidesLintGroupId";
-  var LINT_STROKE_WEIGHT = 8;
+  var LINT_STROKE_MAX = 8;
+  var LINT_STROKE_MIN = 1.5;
+  var LINT_STROKE_RATIO = 0.15;
+  var LINT_COLOR_RASTERIZED = { r: 0.94, g: 0.23, b: 0.18 };
+  var LINT_COLOR_VISUAL_DIFF = { r: 0.96, g: 0.62, b: 0.04 };
+  function lintStrokeWeightFor(width, height) {
+    const minDim = Math.min(width, height);
+    return Math.min(LINT_STROKE_MAX, Math.max(LINT_STROKE_MIN, minDim * LINT_STROKE_RATIO));
+  }
   var SLIDES_READY_PREFIX = "[Slides Ready] ";
   var TEMPLATE_READY_PREFIX = "[Template Ready] ";
   var COPY_GAP_PX = 200;
@@ -1326,13 +1357,13 @@
       badge.x = box.x;
       badge.y = box.y;
       badge.fills = [];
-      badge.strokes = [{ type: "SOLID", color: { r: 0.94, g: 0.23, b: 0.18 } }];
-      badge.strokeWeight = LINT_STROKE_WEIGHT;
+      badge.strokes = [{ type: "SOLID", color: w.category === "visual-diff" ? LINT_COLOR_VISUAL_DIFF : LINT_COLOR_RASTERIZED }];
+      badge.strokeWeight = lintStrokeWeightFor(box.width, box.height);
       badge.strokeAlign = "OUTSIDE";
       if ("cornerRadius" in node && typeof node.cornerRadius === "number") {
         badge.cornerRadius = node.cornerRadius;
       }
-      badge.name = `\u26A0 ${w.nodeName} \u2014 ${w.message}`;
+      badge.name = `${w.category === "visual-diff" ? "\u25D0" : "\u26A0"} ${w.nodeName} \u2014 ${w.message}`;
       badges.push(badge);
     }
     if (badges.length === 0) return;
@@ -1394,7 +1425,7 @@
     figma.viewport.scrollAndZoomIntoView(copies);
     const label = copies.length === 1 ? "frame" : "frames";
     figma.notify(
-      totalWarnings === 0 ? `Prepared ${copies.length} ${label} for Slides \u2014 no issues found.` : `Prepared ${copies.length} ${label} for Slides \u2014 ${totalWarnings} issue(s) flagged on canvas (red markers).`
+      totalWarnings === 0 ? `Prepared ${copies.length} ${label} for Slides \u2014 no issues found.` : `Prepared ${copies.length} ${label} for Slides \u2014 ${totalWarnings} issue(s) flagged on canvas (red = rasterized, orange = may look different).`
     );
     await addFrames(newlyCreated, pending, idGen);
   }
@@ -1488,7 +1519,7 @@
     figma.viewport.scrollAndZoomIntoView(copies);
     const label = copies.length === 1 ? "layout" : "layouts";
     figma.notify(
-      totalWarnings === 0 ? `Prepared ${copies.length} ${label} for Slides \u2014 no issues found.` : `Prepared ${copies.length} ${label} for Slides \u2014 ${totalWarnings} issue(s) flagged on canvas (red markers).`
+      totalWarnings === 0 ? `Prepared ${copies.length} ${label} for Slides \u2014 no issues found.` : `Prepared ${copies.length} ${label} for Slides \u2014 ${totalWarnings} issue(s) flagged on canvas (red = rasterized, orange = may look different).`
     );
     await addTemplateLayoutNodes(newlyCreated, pending, idGen);
   }
