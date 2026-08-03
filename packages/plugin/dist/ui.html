@@ -4600,27 +4600,18 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
       /* @__PURE__ */ u3("header", { className: "f2s-topbar", children: [
         /* @__PURE__ */ u3("div", { className: "f2s-topbar-left", children: [
           /* @__PURE__ */ u3(Logo, {}),
-          /* @__PURE__ */ u3(
-            "button",
-            {
-              type: "button",
-              className: "f2s-btn f2s-btn--secondary",
-              disabled: exporting,
-              onClick: () => setMode((m3) => m3 === "deck" ? "template" : "deck"),
-              title: exporting ? "An export is running \u2014 wait for it to finish before switching modes." : mode === "deck" ? "Build a reusable Slides template with tagged placeholders." : "Back to exporting a one-off deck.",
-              children: mode === "deck" ? "Create a template" : "Back to deck export"
-            }
-          ),
-          mode === "template" && /* @__PURE__ */ u3("div", { className: "f2s-tabs", role: "tablist", "aria-label": "Template view", children: [
+          /* @__PURE__ */ u3("div", { className: "f2s-tabs", role: "tablist", "aria-label": "Deck or template", children: [
             /* @__PURE__ */ u3(
               "button",
               {
                 type: "button",
                 role: "tab",
-                "aria-selected": templateSubView === "layouts",
-                className: `f2s-tab${templateSubView === "layouts" ? " is-active" : ""}`,
-                onClick: () => setTemplateSubView("layouts"),
-                children: "Layouts"
+                "aria-selected": mode === "deck",
+                className: `f2s-tab${mode === "deck" ? " is-active" : ""}`,
+                disabled: exporting,
+                title: exporting ? "An export is running \u2014 wait for it to finish before switching modes." : "Export a one-off deck to Slides.",
+                onClick: () => setMode("deck"),
+                children: "Deck"
               }
             ),
             /* @__PURE__ */ u3(
@@ -4628,11 +4619,34 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
               {
                 type: "button",
                 role: "tab",
-                "aria-selected": templateSubView === "style",
-                title: "Assign a Slides theme color role to colors used across the whole template.",
-                className: `f2s-tab${templateSubView === "style" ? " is-active" : ""}`,
-                onClick: () => setTemplateSubView("style"),
-                children: "Style"
+                "aria-selected": mode === "template",
+                className: `f2s-tab${mode === "template" ? " is-active" : ""}`,
+                disabled: exporting,
+                title: exporting ? "An export is running \u2014 wait for it to finish before switching modes." : "Build a reusable Slides template with tagged placeholders.",
+                onClick: () => setMode("template"),
+                children: "Templates"
+              }
+            )
+          ] }),
+          /* @__PURE__ */ u3("div", { className: "f2s-toolbar-group", children: [
+            /* @__PURE__ */ u3("span", { className: "f2s-toolbar-label", children: mode === "deck" ? "Deck name:" : "Template name:" }),
+            mode === "deck" ? /* @__PURE__ */ u3(
+              "input",
+              {
+                type: "text",
+                className: "f2s-title-input",
+                placeholder: "Figma \u2192 Slides export",
+                value: deckTitle,
+                onInput: (e3) => setDeckTitle(e3.target.value)
+              }
+            ) : /* @__PURE__ */ u3(
+              "input",
+              {
+                type: "text",
+                className: "f2s-title-input",
+                placeholder: "Figma template",
+                value: templateTitle,
+                onInput: (e3) => setTemplateTitle(e3.target.value)
               }
             )
           ] })
@@ -4662,6 +4676,31 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
           ),
           renderPrimaryAction("Export", exporting || order.length === 0, busyFromOtherMode ? busyTitle : void 0, startExport)
         ] }) : /* @__PURE__ */ u3("div", { className: "f2s-topbar-actions", children: [
+          /* @__PURE__ */ u3("div", { className: "f2s-tabs", role: "tablist", "aria-label": "Template view", children: [
+            /* @__PURE__ */ u3(
+              "button",
+              {
+                type: "button",
+                role: "tab",
+                "aria-selected": templateSubView === "layouts",
+                className: `f2s-tab${templateSubView === "layouts" ? " is-active" : ""}`,
+                onClick: () => setTemplateSubView("layouts"),
+                children: "Layouts"
+              }
+            ),
+            /* @__PURE__ */ u3(
+              "button",
+              {
+                type: "button",
+                role: "tab",
+                "aria-selected": templateSubView === "style",
+                title: "Assign a Slides theme color role to colors used across the whole template.",
+                className: `f2s-tab${templateSubView === "style" ? " is-active" : ""}`,
+                onClick: () => setTemplateSubView("style"),
+                children: "Style"
+              }
+            )
+          ] }),
           /* @__PURE__ */ u3(
             "button",
             {
@@ -4692,49 +4731,25 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
           )
         ] })
       ] }),
-      /* @__PURE__ */ u3("div", { className: "f2s-toolbar", children: /* @__PURE__ */ u3("div", { className: "f2s-toolbar-row", children: [
-        /* @__PURE__ */ u3("div", { className: "f2s-toolbar-group", children: [
-          /* @__PURE__ */ u3("span", { className: "f2s-toolbar-label", children: mode === "deck" ? "Deck name:" : "Template name:" }),
-          mode === "deck" ? /* @__PURE__ */ u3(
-            "input",
+      /* @__PURE__ */ u3("div", { className: "f2s-toolbar", children: /* @__PURE__ */ u3("div", { className: "f2s-toolbar-row", children: /* @__PURE__ */ u3("div", { className: "f2s-toolbar-group", children: [
+        /* @__PURE__ */ u3("span", { className: "f2s-toolbar-label", children: "Fonts:" }),
+        (mode === "deck" ? deckFontSubstitutions : templateFontSubstitutions).length === 0 ? /* @__PURE__ */ u3("span", { className: "f2s-toolbar-muted", children: "All fonts will appear here and can be replaced automatically." }) : (mode === "deck" ? deckFontSubstitutions : templateFontSubstitutions).map((s3) => /* @__PURE__ */ u3("label", { className: "f2s-font-select", title: `"${s3.original}" isn't available in Slides \u2014 pick the replacement to use.`, children: [
+          /* @__PURE__ */ u3("span", { className: "f2s-font-original", children: s3.original }),
+          /* @__PURE__ */ u3("span", { className: "f2s-font-arrow", children: "\u2192" }),
+          /* @__PURE__ */ u3(
+            "select",
             {
-              type: "text",
-              className: "f2s-title-input",
-              placeholder: "Figma \u2192 Slides export",
-              value: deckTitle,
-              onInput: (e3) => setDeckTitle(e3.target.value)
-            }
-          ) : /* @__PURE__ */ u3(
-            "input",
-            {
-              type: "text",
-              className: "f2s-title-input",
-              placeholder: "Figma template",
-              value: templateTitle,
-              onInput: (e3) => setTemplateTitle(e3.target.value)
+              className: "f2s-font-dropdown",
+              value: fontOverrides[s3.original] ?? s3.resolved,
+              onChange: (e3) => {
+                const value = e3.target.value;
+                setFontOverrides((prev) => ({ ...prev, [s3.original]: value }));
+              },
+              children: AVAILABLE_SLIDES_FONTS.map((font) => /* @__PURE__ */ u3("option", { value: font, children: font }, font))
             }
           )
-        ] }),
-        /* @__PURE__ */ u3("div", { className: "f2s-toolbar-group", children: [
-          /* @__PURE__ */ u3("span", { className: "f2s-toolbar-label", children: "Fonts:" }),
-          (mode === "deck" ? deckFontSubstitutions : templateFontSubstitutions).length === 0 ? /* @__PURE__ */ u3("span", { className: "f2s-toolbar-muted", children: "All fonts will appear here and can be replaced automatically." }) : (mode === "deck" ? deckFontSubstitutions : templateFontSubstitutions).map((s3) => /* @__PURE__ */ u3("label", { className: "f2s-font-select", title: `"${s3.original}" isn't available in Slides \u2014 pick the replacement to use.`, children: [
-            /* @__PURE__ */ u3("span", { className: "f2s-font-original", children: s3.original }),
-            /* @__PURE__ */ u3("span", { className: "f2s-font-arrow", children: "\u2192" }),
-            /* @__PURE__ */ u3(
-              "select",
-              {
-                className: "f2s-font-dropdown",
-                value: fontOverrides[s3.original] ?? s3.resolved,
-                onChange: (e3) => {
-                  const value = e3.target.value;
-                  setFontOverrides((prev) => ({ ...prev, [s3.original]: value }));
-                },
-                children: AVAILABLE_SLIDES_FONTS.map((font) => /* @__PURE__ */ u3("option", { value: font, children: font }, font))
-              }
-            )
-          ] }, s3.original))
-        ] })
-      ] }) }),
+        ] }, s3.original))
+      ] }) }) }),
       mode === "deck" ? /* @__PURE__ */ u3(
         DeckPanel,
         {
