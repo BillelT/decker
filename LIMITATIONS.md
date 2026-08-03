@@ -232,13 +232,18 @@ l'API Slides réelle (SSIM + écart de position), et ajoutée au rapport —
 pas besoin de retoucher `calibrate.ts`.
 
 **Limite actuelle du chargeur générique** (`runFileFixture` dans
-`calibrate.ts`) : une seule slide par fixture, et aucun élément `image` —
-l'hébergement d'un asset public depuis ce script autonome (sans backend
-HTTP qui tourne) n'est pas câblé. Une fixture qui en contient est ignorée
-avec un message explicite plutôt que de planter tout le run ; couvre pour
-l'instant `04`, `05`, `11` — `07`, `08`, `09`, `10`, `12`, `13` (qui
-rasterisent forcément quelque chose, ou qui contiennent plusieurs slides
-pour `13-batch`) attendront que ce branchement soit fait.
+`calibrate.ts`) : une seule slide par fixture — `13-batch` (10 frames)
+attendra un chargeur multi-slides dédié. Les éléments `image` SONT
+supportés (audit 2026-08) : chaque asset référencé est uploadé via le VRAI
+store d'assets de production (`getAssetStore()`, spec §5.3 —
+`ASSET_STORAGE_DRIVER=vercel-blob` + `BLOB_READ_WRITE_TOKEN` requis dans
+l'environnement, sinon message d'erreur explicite plutôt qu'un plantage
+silencieux) pour obtenir une URL que l'API Slides peut réellement fetcher,
+puis supprimé une fois la fixture terminée (best-effort). Le fichier
+attendu est `fixtures/<nom>-assets/<assetKey-sanitisé>.png` — téléchargé
+automatiquement par **Settings → Developer → "Download IR JSON"** en même
+temps que le JSON (un fichier PNG par élément `image` de la frame), aucune
+manip manuelle supplémentaire.
 
 **Étapes pour construire une fixture, ex. `04-text-multi-style` :**
 
@@ -251,11 +256,21 @@ pour `13-batch`) attendront que ce branchement soit fait.
    aucun appel réseau, juste un fichier local (audit 2026-08, nouveau).
 3. Renomme ce fichier téléchargé en `<nom-de-la-fixture>.json` et dépose-le
    dans `fixtures/` à la racine du repo (ex. `fixtures/04-text-multi-style.json`).
+   **Si la frame contient une image** (fill IMAGE, dégradé/effet/vecteur
+   rasterisé…), le téléchargement produit AUSSI un ou plusieurs `.png` —
+   dépose-les dans un dossier `fixtures/<nom-de-la-fixture>-assets/` (à
+   créer), sans les renommer (le nom généré correspond déjà à l'`assetKey`
+   attendu par le harnais).
 4. Exporte la MÊME frame en PNG depuis Figma (clic droit sur la frame →
    Export, ou panneau Export en bas à droite, échelle 2x) — c'est l'image
    de référence, indépendante du plugin. Renomme-la pareil
    (`fixtures/04-text-multi-style.png`).
-5. Relance `npm run calibrate` : la fixture apparaît automatiquement dans
+5. Si la fixture contient une image, configure une fois pour toutes
+   `ASSET_STORAGE_DRIVER=vercel-blob` et `BLOB_READ_WRITE_TOKEN=<ton
+   token>` (Vercel → ton projet → Storage → Blob) dans ton environnement
+   avant de lancer `npm run calibrate` — sans ça, l'erreur retournée
+   l'indique explicitement plutôt que de planter ailleurs.
+6. Relance `npm run calibrate` : la fixture apparaît automatiquement dans
    `calibration-report.html`, avec son propre score SSIM.
 
 **Contenu attendu par fixture** (spec §9 — colonne "Ce que ça teste" pour
@@ -265,13 +280,15 @@ le détail de l'intention) :
 |---|---|
 | `04-text-multi-style` | Un seul bloc de texte, un paragraphe, avec au moins un mot en gras, un en italique, un dans une couleur différente, un lien hypertexte, et une liste à puces sur 2-3 lignes. |
 | `05-text-edge` | Un bloc avec une police NON disponible dans Google Fonts/Slides (ex. une police système Windows comme "Segoe UI" ou une police de marque), un letter-spacing prononcé (> 5%), du texte en MAJUSCULES via le réglage "Case" de Figma, et un interligne serré (< 100%). |
+| `07-gradients` | Une forme avec un dégradé linéaire (2 stops), une autre avec un dégradé radial ou angulaire — toutes deux converties en image à l'export (voir LIMITATIONS.md § tableau principal). |
+| `08-effects` | Une forme avec une ombre portée visible, une autre avec un flou de calque — converties en image. |
+| `09-vectors` | Une icône vectorielle custom (dessinée à la plume, PAS un rectangle/ellipse simple) ou une opération booléenne (union/soustraction de 2 formes) — convertie en image. |
+| `10-images` | Une photo importée (fill IMAGE) sans transformation particulière. |
 | `11-autolayout` | Un auto-layout (frame avec "Auto layout" activé dans Figma) imbriqué sur 2 niveaux, avec padding et gap réglés, contenant 3-4 éléments texte/forme. |
+| `12-realistic` | Une slide marketing crédible et complète (titre, corps de texte, image, forme de mise en avant) — critère de référence du spec §1.2. |
 
-`07-gradients`, `08-effects`, `09-vectors`, `10-images`, `12-realistic`,
-`13-batch` suivent le même processus MAIS resteront ignorées par
-`runFileFixture` tant que l'hébergement d'asset n'est pas branché (elles
-rasterisent au moins un élément) — construis-les si tu veux, elles seront
-prêtes à tourner dès que ce point sera traité.
+`13-batch` (10 frames variées) attend encore un chargeur multi-slides
+dédié (voir plus haut) — pas construit pour l'instant.
 - Le stockage d'assets utilisé en production est **Vercel Blob**
   (`ASSET_STORAGE_DRIVER=vercel-blob`, `src/storage/vercelBlobAssetStore.ts`
   — voir README §8.2), pas juste un stockage disque local : ça couvre déjà
