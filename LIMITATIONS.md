@@ -232,10 +232,22 @@ chaque run : toute paire `<nom>.json` (un `IRDocument`) + `<nom>.png`
 l'API Slides réelle (SSIM + écart de position), et ajoutée au rapport —
 pas besoin de retoucher `calibrate.ts`.
 
-**Limite actuelle du chargeur générique** (`runFileFixture` dans
-`calibrate.ts`) : une seule slide par fixture — `13-batch` (10 frames)
-attendra un chargeur multi-slides dédié. Les éléments `image` SONT
-supportés (audit 2026-08) : chaque asset référencé est uploadé via le VRAI
+Le harnais gère deux formes : `runFileFixture` pour une fixture à 1 slide
+(le cas normal — une frame Figma = un `IRDocument` à 1 slide) et
+`runBatchFixture` (audit 2026-08) pour `13-batch`, la seule fixture à
+plusieurs slides — le routage se fait automatiquement sur
+`doc.slides.length`, aucune fixture n'a besoin d'indiquer explicitement son
+mode. `runBatchFixture` crée toutes les slides dans UNE seule présentation
+(comme un vrai deck), puis compare CHACUNE à sa propre référence
+`fixtures/13-batch-<i>.png` (i = index dans `doc.slides` une fois trié par
+`.order`) — ça vérifie en plus ce qu'une fixture à 1 slide ne peut pas
+voir : que Slides crée bien autant de slides que prévu, dans le bon ordre
+(un décompte différent fait échouer la fixture explicitement plutôt que de
+comparer silencieusement la mauvaise slide à la mauvaise référence).
+
+Les éléments `image` SONT supportés dans les deux chargeurs (audit
+2026-08) : chaque asset référencé (toutes slides confondues, pour
+`13-batch`) est uploadé via le VRAI
 store d'assets de production (`getAssetStore()`, spec §5.3 —
 `ASSET_STORAGE_DRIVER=vercel-blob` + `BLOB_READ_WRITE_TOKEN` requis dans
 l'environnement, sinon message d'erreur explicite plutôt qu'un plantage
@@ -287,9 +299,27 @@ le détail de l'intention) :
 | `10-images` | Une photo importée (fill IMAGE) sans transformation particulière. |
 | `11-autolayout` | Un auto-layout (frame avec "Auto layout" activé dans Figma) imbriqué sur 2 niveaux, avec padding et gap réglés, contenant 3-4 éléments texte/forme. |
 | `12-realistic` | Une slide marketing crédible et complète (titre, corps de texte, image, forme de mise en avant) — critère de référence du spec §1.2. |
+| `13-batch` | 10 frames variées (un mélange des catégories ci-dessus — texte, formes, dégradés, images…), réunies dans le MÊME export en un seul deck, pour tester le passage à l'échelle plutôt qu'une nouvelle catégorie de bug. |
 
-`13-batch` (10 frames variées) attend encore un chargeur multi-slides
-dédié (voir plus haut) — pas construit pour l'instant.
+**`13-batch` construite différemment des autres** (audit 2026-08,
+`runBatchFixture` dans `calibrate.ts`), vu que c'est la seule fixture à
+plusieurs slides :
+
+1. Dans Figma, crée les 10 frames, ajoute-les TOUTES au plugin (mode deck,
+   "Select frames to add") et mets-les dans l'ordre voulu (l'ordre de la
+   liste de réorganisation du plugin = l'ordre `i` des références ci-dessous
+   — pas l'ordre du canvas Figma).
+2. **Download IR JSON** avec les 10 sélectionnées : produit UN SEUL
+   `13-batch.json` à 10 slides (plus les `.png` d'assets rasterisés
+   éventuels, comme d'habitude) — renomme-le, dépose-le dans `fixtures/`.
+3. Exporte CHAQUE frame séparément en PNG depuis Figma, et nomme-les
+   `fixtures/13-batch-0.png`, `13-batch-1.png`, ... `13-batch-9.png` — le
+   suffixe `-i` DOIT correspondre à la position de la frame dans l'ordre du
+   plugin (étape 1), pas à son ordre d'export Figma.
+4. Même étape Blob que les autres si une des 10 frames contient une image.
+5. `npm run calibrate` détecte automatiquement le JSON à 10 slides et
+   produit 10 entrées dans le rapport (`13-batch-00` à `13-batch-09`), une
+   par slide, plutôt qu'une seule ligne globale.
 - Le stockage d'assets utilisé en production est **Vercel Blob**
   (`ASSET_STORAGE_DRIVER=vercel-blob`, `src/storage/vercelBlobAssetStore.ts`
   — voir README §8.2), pas juste un stockage disque local : ça couvre déjà
