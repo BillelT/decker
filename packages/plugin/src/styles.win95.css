@@ -291,6 +291,12 @@ html.f2s-skin--win95 .f2s-sidebar {
   box-shadow: inset -1px 0 0 var(--w95-white);
 }
 
+html.f2s-skin--win95 .f2s-style-aside {
+  padding: 8px;
+  border-left: 1px solid var(--w95-shadow);
+  box-shadow: inset 1px 0 0 var(--w95-white);
+}
+
 html.f2s-skin--win95 .f2s-canvas {
   padding: 12px;
   gap: 12px;
