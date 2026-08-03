@@ -1161,7 +1161,7 @@ function App() {
               Templates
             </button>
           </div>
-          <div className="f2s-toolbar-group">
+          <div className="f2s-topbar-title-group">
             <span className="f2s-toolbar-label">{mode === 'deck' ? 'Deck name:' : 'Template name:'}</span>
             {mode === 'deck' ? (
               <input

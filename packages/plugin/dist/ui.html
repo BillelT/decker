@@ -159,6 +159,21 @@ a {
   display: flex;
   align-items: center;
   gap: 16px;
+  /* Flexible (contrairement à .f2s-topbar-actions, jamais rétréci) : c'est
+     ce qui laisse le champ nom (le seul enfant vraiment compressible, cf.
+     .f2s-topbar-title-group) céder de la place aux boutons d'action plutôt
+     que de pousser la topbar en dehors du plugin. min-width reste le défaut
+     `auto` — le rétrécissement s'arrête au contenu minimal (libellé +
+     min-width de l'input), sinon le nom se met à chevaucher les boutons au
+     lieu de simplement déclencher un débordement honnête. */
+  flex: 1;
+}
+
+.f2s-topbar-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
 }
 
 .f2s-topbar-actions {
@@ -214,6 +229,7 @@ a {
   font-size: 12px;
   font-weight: 700;
   color: var(--color-black-70);
+  white-space: nowrap;
 }
 
 .f2s-toolbar-muted {
@@ -250,7 +266,9 @@ a {
   color: var(--color-text);
   border-radius: 4px;
   padding: 3px 8px;
-  width: 220px;
+  flex: 1;
+  min-width: 60px;
+  max-width: 220px;
 }
 
 .f2s-title-input:focus {
@@ -952,6 +970,11 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   gap: 20px;
 }
 
+.f2s-style-heading {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 .f2s-style-list {
   list-style: none;
   margin: 0;
@@ -974,9 +997,9 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
 }
 
 .f2s-style-swatch {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
   border: 1px solid var(--color-border);
   flex: none;
 }
@@ -3387,7 +3410,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
     }
     return /* @__PURE__ */ u3("div", { className: "f2s-style-panel", children: [
       /* @__PURE__ */ u3("section", { className: "f2s-tmpl-section", children: [
-        /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Colors" }),
+        /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading f2s-style-heading", children: "Colors" }),
         /* @__PURE__ */ u3("ul", { className: "f2s-style-list", children: VISIBLE_THEME_ROLES.map((role) => {
           const hex = roleHexes[role];
           const assignedKey = assignedKeyByRole.get(role);
@@ -3431,11 +3454,10 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
             }) })
           ] }, role);
         }) }),
-        colors.length === 0 && /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: "No color detected yet \u2014 add layouts first." }),
-        /* @__PURE__ */ u3("p", { className: "f2s-tmpl-note", children: "A role linked to a color stays LIVE \u2014 changing it later in Slides (Slide > Edit theme colors) recolors every element that uses it, everywhere in the template at once." })
+        colors.length === 0 && /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: "No color detected yet \u2014 add layouts first." })
       ] }),
       /* @__PURE__ */ u3("section", { className: "f2s-tmpl-section", children: [
-        /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Typography" }),
+        /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading f2s-style-heading", children: "Typography" }),
         fonts.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: "No text detected yet." }) : /* @__PURE__ */ u3("ul", { className: "f2s-style-list", children: fonts.map((f4) => /* @__PURE__ */ u3("li", { className: "f2s-style-row", children: /* @__PURE__ */ u3("div", { className: "f2s-style-row-main", children: [
           /* @__PURE__ */ u3("span", { className: "f2s-style-font-swatch", style: { fontFamily: f4.family }, children: "Aa" }),
           /* @__PURE__ */ u3("span", { className: "f2s-style-font-info", children: [
@@ -4723,7 +4745,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
               }
             )
           ] }),
-          /* @__PURE__ */ u3("div", { className: "f2s-toolbar-group", children: [
+          /* @__PURE__ */ u3("div", { className: "f2s-topbar-title-group", children: [
             /* @__PURE__ */ u3("span", { className: "f2s-toolbar-label", children: mode === "deck" ? "Deck name:" : "Template name:" }),
             mode === "deck" ? /* @__PURE__ */ u3(
               "input",

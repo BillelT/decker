@@ -154,6 +154,21 @@ a {
   display: flex;
   align-items: center;
   gap: 16px;
+  /* Flexible (contrairement à .f2s-topbar-actions, jamais rétréci) : c'est
+     ce qui laisse le champ nom (le seul enfant vraiment compressible, cf.
+     .f2s-topbar-title-group) céder de la place aux boutons d'action plutôt
+     que de pousser la topbar en dehors du plugin. min-width reste le défaut
+     `auto` — le rétrécissement s'arrête au contenu minimal (libellé +
+     min-width de l'input), sinon le nom se met à chevaucher les boutons au
+     lieu de simplement déclencher un débordement honnête. */
+  flex: 1;
+}
+
+.f2s-topbar-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
 }
 
 .f2s-topbar-actions {
@@ -209,6 +224,7 @@ a {
   font-size: 12px;
   font-weight: 700;
   color: var(--color-black-70);
+  white-space: nowrap;
 }
 
 .f2s-toolbar-muted {
@@ -245,7 +261,9 @@ a {
   color: var(--color-text);
   border-radius: 4px;
   padding: 3px 8px;
-  width: 220px;
+  flex: 1;
+  min-width: 60px;
+  max-width: 220px;
 }
 
 .f2s-title-input:focus {
@@ -947,6 +965,11 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   gap: 20px;
 }
 
+.f2s-style-heading {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 .f2s-style-list {
   list-style: none;
   margin: 0;
@@ -969,9 +992,9 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
 }
 
 .f2s-style-swatch {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
   border: 1px solid var(--color-border);
   flex: none;
 }
