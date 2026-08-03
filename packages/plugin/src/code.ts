@@ -31,8 +31,28 @@ const SLIDES_READY_KEY = 'slidesExportReady';
 const DECK_TAG = 'true';
 const TEMPLATE_TAG = 'template';
 const LINT_GROUP_ID_KEY = 'slidesLintGroupId';
-/** Repère de lint sur le canvas : un contour épais plutôt qu'un petit badge, pour rester repérable même sur une frame chargée (voir `addLintAnnotations`). */
-const LINT_STROKE_WEIGHT = 8;
+/**
+ * Repère de lint sur le canvas : un contour épais plutôt qu'un petit badge,
+ * pour rester repérable même sur une frame chargée (voir `addLintAnnotations`)
+ * — mais un contour à `LINT_STROKE_MAX` fixe sur un élément de 32×32 (ex. une
+ * petite icône) engloutit le calque signalé sous le rouge/orange, ce qui est
+ * exactement le problème inverse de ce que le lint doit faire. Le poids réel
+ * (`lintStrokeWeightFor`) est donc proportionnel au plus petit côté de la
+ * bounding box, borné entre `LINT_STROKE_MIN` (encore visible sur une icône
+ * 16×16) et `LINT_STROKE_MAX` (le poids historique, pour les gros éléments).
+ */
+const LINT_STROKE_MAX = 8;
+const LINT_STROKE_MIN = 1.5;
+const LINT_STROKE_RATIO = 0.15;
+/** Rouge — calque converti en image (perte d'édition native, rendu identique à l'original). */
+const LINT_COLOR_RASTERIZED = { r: 0.94, g: 0.23, b: 0.18 };
+/** Orange — calque resté natif mais rendu par Slides avec une approximation (police substituée, radius) : reste éditable, mais c'est là qu'une vraie différence visuelle peut apparaître. */
+const LINT_COLOR_VISUAL_DIFF = { r: 0.96, g: 0.62, b: 0.04 };
+
+function lintStrokeWeightFor(width: number, height: number): number {
+  const minDim = Math.min(width, height);
+  return Math.min(LINT_STROKE_MAX, Math.max(LINT_STROKE_MIN, minDim * LINT_STROKE_RATIO));
+}
 const SLIDES_READY_PREFIX = '[Slides Ready] ';
 const TEMPLATE_READY_PREFIX = '[Template Ready] ';
 const COPY_GAP_PX = 200;
@@ -281,18 +301,19 @@ async function removeLintAnnotations(copy: ExportableNode): Promise<void> {
 }
 
 /**
- * Brief "Approche retenue" — linter visuel : entoure d'un contour rouge épais
- * chaque calque qui serait rasterisé (ou visuellement différent) à l'export,
- * en SIBLING de la copie (jamais un enfant) pour ne jamais polluer le contenu
- * réellement exporté ni influencer l'arbre de décision natif/raster (un
- * stroke posé sur le calque lui-même aurait pu, par ex., déclencher une
- * rasterisation à cause de `hasMultipleOrOffCenterStroke`). Le contour épouse
- * la bounding box du calque signalé — pour un texte, c'est donc le contour de
- * la textbox elle-même qui est mis en avant, jamais un trait posé sur le
- * texte. Positionné en coordonnées absolues (repère direct enfant de la
- * page), donc correct même si la copie est imbriquée. `strokeAlign: 'OUTSIDE'`
- * garde le contour entièrement à l'extérieur de la bounding box, sans jamais
- * recouvrir le contenu qu'il signale.
+ * Brief "Approche retenue" — linter visuel : entoure d'un contour épais
+ * chaque calque qui serait rasterisé (rouge) ou rendu avec une approximation
+ * visuelle tout en restant natif (orange — police substituée, radius) à
+ * l'export, en SIBLING de la copie (jamais un enfant) pour ne jamais polluer
+ * le contenu réellement exporté ni influencer l'arbre de décision
+ * natif/raster (un stroke posé sur le calque lui-même aurait pu, par ex.,
+ * déclencher une rasterisation à cause de `hasMultipleOrOffCenterStroke`). Le
+ * contour épouse la bounding box du calque signalé — pour un texte, c'est
+ * donc le contour de la textbox elle-même qui est mis en avant, jamais un
+ * trait posé sur le texte. Positionné en coordonnées absolues (repère direct
+ * enfant de la page), donc correct même si la copie est imbriquée.
+ * `strokeAlign: 'OUTSIDE'` garde le contour entièrement à l'extérieur de la
+ * bounding box, sans jamais recouvrir le contenu qu'il signale.
  */
 async function addLintAnnotations(copy: ExportableNode, warnings: LintWarning[]): Promise<void> {
   await removeLintAnnotations(copy);
@@ -308,13 +329,13 @@ async function addLintAnnotations(copy: ExportableNode, warnings: LintWarning[])
     badge.x = box.x;
     badge.y = box.y;
     badge.fills = [];
-    badge.strokes = [{ type: 'SOLID', color: { r: 0.94, g: 0.23, b: 0.18 } }];
-    badge.strokeWeight = LINT_STROKE_WEIGHT;
+    badge.strokes = [{ type: 'SOLID', color: w.category === 'visual-diff' ? LINT_COLOR_VISUAL_DIFF : LINT_COLOR_RASTERIZED }];
+    badge.strokeWeight = lintStrokeWeightFor(box.width, box.height);
     badge.strokeAlign = 'OUTSIDE';
     if ('cornerRadius' in node && typeof node.cornerRadius === 'number') {
       badge.cornerRadius = node.cornerRadius;
     }
-    badge.name = `⚠ ${w.nodeName} — ${w.message}`;
+    badge.name = `${w.category === 'visual-diff' ? '◐' : '⚠'} ${w.nodeName} — ${w.message}`;
     badges.push(badge);
   }
   if (badges.length === 0) return;
@@ -422,7 +443,7 @@ async function handlePrepareForSlides(
   figma.notify(
     totalWarnings === 0
       ? `Prepared ${copies.length} ${label} for Slides — no issues found.`
-      : `Prepared ${copies.length} ${label} for Slides — ${totalWarnings} issue(s) flagged on canvas (red markers).`,
+      : `Prepared ${copies.length} ${label} for Slides — ${totalWarnings} issue(s) flagged on canvas (red = rasterized, orange = may look different).`,
   );
 
   await addFrames(newlyCreated, pending, idGen);
@@ -573,7 +594,7 @@ async function handlePrepareTemplateForSlides(
   figma.notify(
     totalWarnings === 0
       ? `Prepared ${copies.length} ${label} for Slides — no issues found.`
-      : `Prepared ${copies.length} ${label} for Slides — ${totalWarnings} issue(s) flagged on canvas (red markers).`,
+      : `Prepared ${copies.length} ${label} for Slides — ${totalWarnings} issue(s) flagged on canvas (red = rasterized, orange = may look different).`,
   );
 
   await addTemplateLayoutNodes(newlyCreated, pending, idGen);
