@@ -570,6 +570,23 @@ function App() {
           URL.revokeObjectURL(url);
           break;
         }
+        // Octets d'un asset rasterisé, pour une fixture qui contient une
+        // image — même sanitisation de nom de fichier que côté
+        // calibrate.ts (fixtures/<nom>-assets/<assetKey>.png), pour que le
+        // nom téléchargé ici corresponde exactement à ce que le harnais va
+        // chercher.
+        case 'export-debug-asset': {
+          const assetKey = msg.assetKey as string;
+          const bytes = msg.bytes as ArrayBuffer;
+          const blob = new Blob([bytes], { type: 'image/png' });
+          const url = URL.createObjectURL(blob);
+          const anchor = document.createElement('a');
+          anchor.href = url;
+          anchor.download = `${assetKey.replace(/[^a-z0-9-_]+/gi, '_')}.png`;
+          anchor.click();
+          URL.revokeObjectURL(url);
+          break;
+        }
         default:
           break;
       }

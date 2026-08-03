@@ -947,7 +947,7 @@ async function main(): Promise<void> {
           fontOverrides?: Record<string, string>;
         };
         const orderedIds = m.order.filter((id) => m.includedFrameIds.includes(id));
-        const { slides } = await collectSlidesAndAssets(pending, orderedIds, m.fontOverrides ?? {}, 2);
+        const { slides, assets } = await collectSlidesAndAssets(pending, orderedIds, m.fontOverrides ?? {}, 2);
         const doc: IRDocument = {
           version: 1,
           presentationTitle: m.presentationTitle,
@@ -956,6 +956,14 @@ async function main(): Promise<void> {
           options: { mode: 'new-presentation', rasterScale: 2, includeUnderlay: false, underlayOpacity: 0.3, strictMode: false },
         };
         figma.ui.postMessage({ type: 'export-debug-payload', document: doc });
+        // Une fixture avec un élément `image` (rasterisé ou photo réelle) a
+        // aussi besoin des octets de l'asset pour tourner dans
+        // `npm run calibrate` (fixtures/<nom>-assets/<assetKey>.png) — sans
+        // ça, seul le JSON serait téléchargé et la fixture resterait
+        // ignorée par le harnais faute de fichier image.
+        for (const asset of assets) {
+          figma.ui.postMessage({ type: 'export-debug-asset', assetKey: asset.assetKey, bytes: asset.bytes.buffer });
+        }
       } catch (err) {
         console.error(err);
         figma.ui.postMessage({ type: 'export-error', message: (err as Error).message });

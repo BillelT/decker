@@ -1721,7 +1721,7 @@
         try {
           const m = msg;
           const orderedIds = m.order.filter((id) => m.includedFrameIds.includes(id));
-          const { slides } = await collectSlidesAndAssets(pending, orderedIds, m.fontOverrides ?? {}, 2);
+          const { slides, assets } = await collectSlidesAndAssets(pending, orderedIds, m.fontOverrides ?? {}, 2);
           const doc = {
             version: 1,
             presentationTitle: m.presentationTitle,
@@ -1730,6 +1730,9 @@
             options: { mode: "new-presentation", rasterScale: 2, includeUnderlay: false, underlayOpacity: 0.3, strictMode: false }
           };
           figma.ui.postMessage({ type: "export-debug-payload", document: doc });
+          for (const asset of assets) {
+            figma.ui.postMessage({ type: "export-debug-asset", assetKey: asset.assetKey, bytes: asset.bytes.buffer });
+          }
         } catch (err) {
           console.error(err);
           figma.ui.postMessage({ type: "export-error", message: err.message });

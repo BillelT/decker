@@ -6,8 +6,10 @@ import { fileURLToPath } from 'node:url';
 import { PNG } from 'pngjs';
 import type { CalibrationData, IRDocument } from '@figma-to-slides/shared';
 import { applyTextInset, computeScale, rotatedTransform } from '../mapper/transform.js';
-import { mapDocumentToBatches } from '../mapper/index.js';
+import { mapDocumentToBatches, type AssetUrlResolver } from '../mapper/index.js';
 import { loadCalibration } from './loadCalibration.js';
+import { env } from '../env.js';
+import { getAssetStore } from '../storage/index.js';
 import { buildRotationFixtureDocument, renderRotationReferencePng } from './fixtures/rotation.js';
 import { buildShapesFixtureDocument, renderShapesReferencePng } from './fixtures/shapes.js';
 import { applyBatch, createPresentation, getPageThumbnail, getPresentation } from '../slides/client.js';
@@ -174,15 +176,28 @@ async function discoverFileFixtures(): Promise<string[]> {
   return [...jsonNames].filter((n) => pngNames.has(n)).sort();
 }
 
+/** Remplace tout caractère invalide dans un nom de fichier Windows/Mac/Linux par `_` — DOIT rester identique à la sanitisation faite côté plugin (ui.tsx, téléchargement des assets debug), sinon les noms ne matchent plus. */
+function sanitizeAssetFileName(assetKey: string): string {
+  return assetKey.replace(/[^a-z0-9-_]+/gi, '_');
+}
+
 /**
  * Fait tourner une fixture décrite par un vrai `IRDocument` exporté depuis
  * Figma (`fixtures/<name>.json`) contre une image de référence tout aussi
  * réelle (`fixtures/<name>.png`, export natif Figma du même frame) — même
  * pipeline que `runRectsFixture`, généralisé.
  *
- * Limites actuelles (voir LIMITATIONS.md) : une seule slide par fixture, et
- * aucun élément `image` — l'hébergement d'un asset public depuis ce script
- * autonome (sans backend HTTP qui tourne) n'est pas encore câblé.
+ * Limite actuelle (voir LIMITATIONS.md) : une seule slide par fixture. Les
+ * éléments `image` SONT supportés (audit 2026-08) : chaque asset référencé
+ * doit avoir un fichier `fixtures/<name>-assets/<assetKey-sanitisé>.png`
+ * (téléchargé automatiquement par le bouton "Download IR JSON" du plugin,
+ * en même temps que le JSON) — uploadé via le VRAI store d'assets de
+ * production (`getAssetStore()`, spec §5.3) pour obtenir une URL que
+ * l'API Slides peut réellement fetcher, puis supprimé une fois la fixture
+ * terminée. Nécessite `ASSET_STORAGE_DRIVER=vercel-blob` +
+ * `BLOB_READ_WRITE_TOKEN` dans l'environnement (le store en mémoire de
+ * secours pour Redis, kv.ts, suffit pour la durée d'un run — pas besoin de
+ * credentials Redis en plus).
  */
 async function runFileFixture(accessToken: string, name: string, calibration: CalibrationData): Promise<FixtureResult> {
   const doc = JSON.parse(await readFile(path.join(FIXTURES_DIR, `${name}.json`), 'utf8')) as IRDocument;
@@ -191,11 +206,50 @@ async function runFileFixture(accessToken: string, name: string, calibration: Ca
   if (doc.slides.length !== 1) {
     throw new Error(`${doc.slides.length} slides — ce harnais ne gère pour l'instant que les fixtures à 1 slide.`);
   }
-  if (doc.slides[0].elements.some((el) => el.kind === 'image')) {
-    throw new Error("contient un élément image — l'hébergement d'asset public n'est pas encore câblé dans ce script autonome.");
+
+  const imageElements = doc.slides[0].elements.filter((el) => el.kind === 'image');
+  if (imageElements.length === 0) {
+    return runGeometryFixture(accessToken, doc, referencePng, name, SSIM_THRESHOLD_SECONDARY, BBOX_THRESHOLD_PT_SECONDARY, calibration);
   }
 
-  return runGeometryFixture(accessToken, doc, referencePng, name, SSIM_THRESHOLD_SECONDARY, BBOX_THRESHOLD_PT_SECONDARY, calibration);
+  if (env.assets.driver !== 'vercel-blob') {
+    throw new Error(
+      `contient ${imageElements.length} élément(s) image — configure ASSET_STORAGE_DRIVER=vercel-blob et ` +
+        'BLOB_READ_WRITE_TOKEN=<ton token, Vercel → Storage → Blob> dans ton environnement avant de relancer ' +
+        '(ASSET_STORAGE_DRIVER actuel : ' +
+        env.assets.driver +
+        ').',
+    );
+  }
+
+  const assetStore = getAssetStore();
+  const assetsDir = path.join(FIXTURES_DIR, `${name}-assets`);
+  const uploadedKeys: string[] = [];
+  const urlByAssetKey = new Map<string, string>();
+
+  try {
+    for (const el of imageElements) {
+      const fileName = `${sanitizeAssetFileName(el.assetKey)}.png`;
+      let bytes: Buffer;
+      try {
+        bytes = await readFile(path.join(assetsDir, fileName));
+      } catch {
+        throw new Error(
+          `image "${el.assetKey}" référencée mais fichier introuvable : fixtures/${name}-assets/${fileName} ` +
+            '("Download IR JSON" côté plugin télécharge aussi ce fichier — vérifie qu\'il a bien été déplacé là.)',
+        );
+      }
+      await assetStore.put(el.assetKey, bytes, 'image/png');
+      uploadedKeys.push(el.assetKey);
+      urlByAssetKey.set(el.assetKey, await assetStore.getSignedUrl(el.assetKey));
+    }
+
+    const resolveAssetUrl: AssetUrlResolver = (key) => urlByAssetKey.get(key) ?? '';
+    return await runGeometryFixture(accessToken, doc, referencePng, name, SSIM_THRESHOLD_SECONDARY, BBOX_THRESHOLD_PT_SECONDARY, calibration, resolveAssetUrl);
+  } finally {
+    // Nettoyage best-effort : ne fait pas échouer le run si la suppression rate (quota/permissions), juste ne pollue pas indéfiniment le Blob store.
+    await Promise.all(uploadedKeys.map((k) => assetStore.delete(k).catch(() => undefined)));
+  }
 }
 
 /**
@@ -306,9 +360,10 @@ async function runGeometryFixture(
   ssimThreshold: number,
   bboxThresholdPt: number,
   calibration: CalibrationData,
+  resolveAssetUrl: AssetUrlResolver = () => '',
 ): Promise<FixtureResult> {
   const { presentationId, firstSlideObjectId } = await createPresentation(accessToken, doc.presentationTitle, doc.slideSize);
-  const [batch] = mapDocumentToBatches(doc, () => '', calibration);
+  const [batch] = mapDocumentToBatches(doc, resolveAssetUrl, calibration);
   await applyBatch(accessToken, presentationId, batch);
   await applyBatch(accessToken, presentationId, {
     sourceSlideId: '__default__',
