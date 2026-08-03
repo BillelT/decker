@@ -1139,44 +1139,50 @@ function App() {
       <header className="f2s-topbar">
         <div className="f2s-topbar-left">
           <Logo />
-          <button
-            type="button"
-            className="f2s-btn f2s-btn--secondary"
-            disabled={exporting}
-            onClick={() => setMode((m) => (m === 'deck' ? 'template' : 'deck'))}
-            title={
-              exporting
-                ? 'An export is running — wait for it to finish before switching modes.'
-                : mode === 'deck'
-                  ? 'Build a reusable Slides template with tagged placeholders.'
-                  : 'Back to exporting a one-off deck.'
-            }
-          >
-            {mode === 'deck' ? 'Create a template' : 'Back to deck export'}
-          </button>
-          {mode === 'template' && (
-            <div className="f2s-tabs" role="tablist" aria-label="Template view">
-              <button
-                type="button"
-                role="tab"
-                aria-selected={templateSubView === 'layouts'}
-                className={`f2s-tab${templateSubView === 'layouts' ? ' is-active' : ''}`}
-                onClick={() => setTemplateSubView('layouts')}
-              >
-                Layouts
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={templateSubView === 'style'}
-                title="Assign a Slides theme color role to colors used across the whole template."
-                className={`f2s-tab${templateSubView === 'style' ? ' is-active' : ''}`}
-                onClick={() => setTemplateSubView('style')}
-              >
-                Style
-              </button>
-            </div>
-          )}
+          <div className="f2s-tabs" role="tablist" aria-label="Deck or template">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === 'deck'}
+              className={`f2s-tab${mode === 'deck' ? ' is-active' : ''}`}
+              disabled={exporting}
+              title={exporting ? 'An export is running — wait for it to finish before switching modes.' : 'Export a one-off deck to Slides.'}
+              onClick={() => setMode('deck')}
+            >
+              Deck
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === 'template'}
+              className={`f2s-tab${mode === 'template' ? ' is-active' : ''}`}
+              disabled={exporting}
+              title={exporting ? 'An export is running — wait for it to finish before switching modes.' : 'Build a reusable Slides template with tagged placeholders.'}
+              onClick={() => setMode('template')}
+            >
+              Templates
+            </button>
+          </div>
+          <div className="f2s-toolbar-group">
+            <span className="f2s-toolbar-label">{mode === 'deck' ? 'Deck name:' : 'Template name:'}</span>
+            {mode === 'deck' ? (
+              <input
+                type="text"
+                className="f2s-title-input"
+                placeholder="Figma → Slides export"
+                value={deckTitle}
+                onInput={(e) => setDeckTitle((e.target as HTMLInputElement).value)}
+              />
+            ) : (
+              <input
+                type="text"
+                className="f2s-title-input"
+                placeholder="Figma template"
+                value={templateTitle}
+                onInput={(e) => setTemplateTitle((e.target as HTMLInputElement).value)}
+              />
+            )}
+          </div>
         </div>
 
         {mode === 'deck' ? (
@@ -1207,6 +1213,27 @@ function App() {
           </div>
         ) : (
           <div className="f2s-topbar-actions">
+            <div className="f2s-tabs" role="tablist" aria-label="Template view">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={templateSubView === 'layouts'}
+                className={`f2s-tab${templateSubView === 'layouts' ? ' is-active' : ''}`}
+                onClick={() => setTemplateSubView('layouts')}
+              >
+                Layouts
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={templateSubView === 'style'}
+                title="Assign a Slides theme color role to colors used across the whole template."
+                className={`f2s-tab${templateSubView === 'style' ? ' is-active' : ''}`}
+                onClick={() => setTemplateSubView('style')}
+              >
+                Style
+              </button>
+            </div>
             <button
               type="button"
               className="f2s-btn f2s-btn--tertiary"
@@ -1241,26 +1268,6 @@ function App() {
 
       <div className="f2s-toolbar">
         <div className="f2s-toolbar-row">
-          <div className="f2s-toolbar-group">
-            <span className="f2s-toolbar-label">{mode === 'deck' ? 'Deck name:' : 'Template name:'}</span>
-            {mode === 'deck' ? (
-              <input
-                type="text"
-                className="f2s-title-input"
-                placeholder="Figma → Slides export"
-                value={deckTitle}
-                onInput={(e) => setDeckTitle((e.target as HTMLInputElement).value)}
-              />
-            ) : (
-              <input
-                type="text"
-                className="f2s-title-input"
-                placeholder="Figma template"
-                value={templateTitle}
-                onInput={(e) => setTemplateTitle((e.target as HTMLInputElement).value)}
-              />
-            )}
-          </div>
           <div className="f2s-toolbar-group">
             <span className="f2s-toolbar-label">Fonts:</span>
             {(mode === 'deck' ? deckFontSubstitutions : templateFontSubstitutions).length === 0 ? (
