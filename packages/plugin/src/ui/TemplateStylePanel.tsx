@@ -92,7 +92,10 @@ export function TemplateStylePanel({ colors, fonts, fontOverrides, colorRoles, s
               return (
                 <li key={key} className="f2s-style-row">
                   <div className="f2s-style-row-main">
-                    <span className="f2s-style-swatch" style={{ backgroundColor: c.hex, opacity: c.alpha }} />
+                    <span
+                      className={`f2s-style-swatch${c.alpha < 1 ? ' f2s-style-swatch--transparent' : ''}`}
+                      style={{ backgroundColor: c.hex, opacity: c.alpha }}
+                    />
                     <span className="f2s-style-label" title={label}>
                       {label}
                     </span>
