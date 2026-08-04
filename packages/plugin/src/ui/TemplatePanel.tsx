@@ -59,8 +59,6 @@ export interface TemplatePanelProps extends TemplateStylePanelProps {
   notice: string | undefined;
   onRemove: (id: string) => void;
   onRename: (id: string, name: string) => void;
-  /** Choix manuel de police (bandeau "Fonts") — reflété dans le tag des entrées FONT_SUBSTITUTED, voir logEntryFlag.ts. */
-  fontOverrides: Record<string, string>;
   /** Layout dont le lot est en cours d'application côté backend, s'il y a une création de template en cours. */
   exportCursor?: ExportCursor;
 }
@@ -218,6 +216,7 @@ export function TemplatePanel({
           <TemplateStylePanel
             colors={colors}
             fonts={fonts}
+            fontOverrides={fontOverrides}
             colorRoles={colorRoles}
             setColorRoles={setColorRoles}
             roleColorOverrides={roleColorOverrides}
@@ -365,6 +364,7 @@ export function TemplatePanel({
         <TemplateStylePanel
           colors={colors}
           fonts={fonts}
+          fontOverrides={fontOverrides}
           colorRoles={colorRoles}
           setColorRoles={setColorRoles}
           roleColorOverrides={roleColorOverrides}
