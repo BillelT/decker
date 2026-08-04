@@ -953,13 +953,18 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   gap: 6px;
 }
 
-/* Le damier sous-jacent rend visible l'alpha d'une couleur détectée semi-transparente, plutôt que de la faire fondre dans le fond du panneau. */
 .f2s-style-swatch {
   width: 24px;
   height: 24px;
   border-radius: 50%;
   border: 1px solid var(--color-border);
   flex: none;
+}
+
+/* Le damier ne s'affiche que pour une couleur détectée semi-transparente
+   (rend son alpha visible plutôt que de la faire fondre dans le fond du
+   panneau) — une couleur opaque n'a pas de raison de l'afficher. */
+.f2s-style-swatch--transparent {
   background-image: linear-gradient(45deg, rgba(127, 127, 127, 0.25) 25%, transparent 25%, transparent 75%, rgba(127, 127, 127, 0.25) 75%),
     linear-gradient(45deg, rgba(127, 127, 127, 0.25) 25%, transparent 25%, transparent 75%, rgba(127, 127, 127, 0.25) 75%);
   background-size: 8px 8px;
@@ -967,18 +972,24 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   background-origin: border-box;
 }
 
+/* min-width couvre au moins un hex complet ("#XXXXXX") sans le tronquer —
+   seul un long nom de variable Figma (colorLabel dans TemplateStylePanel)
+   passe par l'ellipsis. */
 .f2s-style-label {
   flex: 1;
-  min-width: 0;
-  font-size: 12px;
+  min-width: 64px;
+  font-size: 11px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+/* Largeur fixe : tous les selects de la liste s'alignent, quelle que soit
+   la longueur du libellé de couleur sur leur ligne. */
 .f2s-style-role-select {
-  flex: 1 1 auto;
-  min-width: 0;
+  flex: none;
+  width: 130px;
+  font-size: 11px;
 }
 
 .f2s-style-font-swatch {
