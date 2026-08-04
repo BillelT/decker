@@ -1898,6 +1898,7 @@
         return;
       }
       if (msg.type === "request-export-debug") {
+        if (true) return;
         try {
           const m = msg;
           const orderedIds = m.order.filter((id) => m.includedFrameIds.includes(id));

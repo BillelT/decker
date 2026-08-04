@@ -9,6 +9,16 @@ import { applyThemeRolesToElements, buildTemplateTheme } from './serialize/templ
 import { applyPlaceholderText } from './serialize/templatePlaceholderText.js';
 import { KNOWN_ROLE_TAGS, setPlaceholderTag } from './serialize/placeholder.js';
 
+// Injecté au build (voir esbuild.config.mjs) — false dans le build distribué
+// aux utilisateurs. Le bouton "Download IR JSON" de la modale Settings est
+// déjà masqué côté UI quand ce flag est faux (ui.tsx), mais rien n'empêche
+// un utilisateur d'ouvrir la console de l'iframe (clic droit > Inspect, ou
+// Plugins > Development > Show/Hide console) et de poster directement un
+// message `request-export-debug` à la main : le handler ci-dessous doit
+// donc REFUSER ce message côté sandbox lui-même, pas seulement ne pas
+// l'exposer dans l'UI.
+declare const __DEBUG_TOOLS__: boolean;
+
 const MAX_FRAMES_WARNING = 20;
 /**
  * Un template reste un petit jeu de layouts réutilisables (cf. "Simple
@@ -1068,6 +1078,9 @@ async function main(): Promise<void> {
     // `01-rects`/`03-text-inset`. Le PNG de référence s'exporte séparément
     // via l'export natif Figma (Export panel), pas par ce chemin.
     if (msg.type === 'request-export-debug') {
+      // Défense en profondeur : même un message forgé à la main via la
+      // console (bouton UI absent du build distribué) ne doit rien produire.
+      if (!__DEBUG_TOOLS__) return;
       try {
         const m = msg as unknown as {
           includedFrameIds: string[];
