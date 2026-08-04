@@ -88,8 +88,6 @@ export function TemplatePanel({
   fonts,
   colorRoles,
   setColorRoles,
-  roleColorOverrides,
-  setRoleColorOverrides,
 }: TemplatePanelProps) {
   const [dragId, setDragId] = useState<string | undefined>();
   const [dragOffsetY, setDragOffsetY] = useState(0);
@@ -220,8 +218,6 @@ export function TemplatePanel({
             fonts={fonts}
             colorRoles={colorRoles}
             setColorRoles={setColorRoles}
-            roleColorOverrides={roleColorOverrides}
-            setRoleColorOverrides={setRoleColorOverrides}
           />
         </aside>
       </div>
@@ -367,8 +363,6 @@ export function TemplatePanel({
           fonts={fonts}
           colorRoles={colorRoles}
           setColorRoles={setColorRoles}
-          roleColorOverrides={roleColorOverrides}
-          setRoleColorOverrides={setRoleColorOverrides}
         />
       </aside>
     </div>

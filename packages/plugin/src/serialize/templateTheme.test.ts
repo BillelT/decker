@@ -1,13 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { IRElement, IRLine, IRShape, IRText } from '@figma-to-slides/shared';
-import {
-  applyThemeRolesToElements,
-  buildTemplateTheme,
-  DEFAULT_THEME_ROLE_COLORS,
-  DEFAULT_THEME_ROLE_HEX,
-  resolveThemeRoleHexes,
-  THEME_ROLES,
-} from './templateTheme.js';
+import { applyThemeRolesToElements, buildTemplateTheme, DEFAULT_THEME_ROLE_COLORS } from './templateTheme.js';
 
 function baseShape(overrides: Partial<IRShape> = {}): IRShape {
   return {
@@ -68,42 +61,10 @@ describe('buildTemplateTheme', () => {
     expect(theme?.ACCENT2).toEqual(DEFAULT_THEME_ROLE_COLORS.ACCENT2);
   });
 
-  it('is not undefined when only a manual hex override is set, with no detected color assigned', () => {
-    const theme = buildTemplateTheme({}, [], { ACCENT3: '#00FF00' });
-    expect(theme?.ACCENT3).toEqual({ r: 0, g: 1, b: 0 });
-    expect(theme?.DARK1).toEqual(DEFAULT_THEME_ROLE_COLORS.DARK1);
-  });
-
-  it('lets a manual hex override win over a detected color assigned to the same role', () => {
-    const theme = buildTemplateTheme({ '#FF6B00:1.00': 'ACCENT1' }, [{ hex: '#FF6B00', alpha: 1, usageCount: 3 }], { ACCENT1: '#00FF00' });
-    expect(theme?.ACCENT1).toEqual({ r: 0, g: 1, b: 0 });
-  });
-
   it('never drifts a default role color through a hex round-trip', () => {
     // #DB (219) back to a float is 0.858823… — DEFAULT_THEME_ROLE_COLORS.ACCENT2's exact 0.86 must survive untouched.
-    const theme = buildTemplateTheme({}, [], { ACCENT1: '#00FF00' });
+    const theme = buildTemplateTheme({ '#FF6B00:1.00': 'ACCENT1' }, [{ hex: '#FF6B00', alpha: 1, usageCount: 3 }]);
     expect(theme?.ACCENT2).toEqual(DEFAULT_THEME_ROLE_COLORS.ACCENT2);
-  });
-});
-
-describe('resolveThemeRoleHexes', () => {
-  it('falls back to the default hex for every role when nothing is assigned or overridden', () => {
-    expect(resolveThemeRoleHexes({}, [])).toEqual(DEFAULT_THEME_ROLE_HEX);
-  });
-
-  it('prefers a detected color assigned via colorRoles over the default', () => {
-    const hexes = resolveThemeRoleHexes({ '#FF6B00:1.00': 'ACCENT1' }, [{ hex: '#FF6B00', alpha: 1, usageCount: 3 }]);
-    expect(hexes.ACCENT1).toBe('#FF6B00');
-    expect(hexes.DARK1).toBe(DEFAULT_THEME_ROLE_HEX.DARK1);
-  });
-
-  it('prefers a manual override over both the detected color and the default', () => {
-    const hexes = resolveThemeRoleHexes({ '#FF6B00:1.00': 'ACCENT1' }, [{ hex: '#FF6B00', alpha: 1, usageCount: 3 }], { ACCENT1: '#123456' });
-    expect(hexes.ACCENT1).toBe('#123456');
-  });
-
-  it('covers all 12 theme roles', () => {
-    expect(Object.keys(resolveThemeRoleHexes({}, []))).toEqual(THEME_ROLES);
   });
 });
 

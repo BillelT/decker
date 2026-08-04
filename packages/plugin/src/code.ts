@@ -929,6 +929,12 @@ async function main(): Promise<void> {
       return;
     }
 
+    if (msg.type === 'notify') {
+      // Onglet Style : signale un changement fait au clavier/souris que l'UI seule ne peut pas rendre assez visible (ex. un rôle de thème volé à une autre couleur).
+      figma.notify(String(msg.message));
+      return;
+    }
+
     if (msg.type === 'request-export') {
       // Sans ce try/catch, une exception ici (p. ex. `exportAsync` qui
       // échoue sur un nœud dégénéré) rejette silencieusement cette promesse
@@ -1001,7 +1007,6 @@ async function main(): Promise<void> {
             presentationTitle: string;
             fontOverrides?: Record<string, string>;
             colorRoles?: Record<string, ThemeColorRole>;
-            roleColorOverrides?: Partial<Record<ThemeColorRole, string>>;
           },
           templatePending,
         );
@@ -1137,8 +1142,6 @@ async function handleTemplateCreateRequest(
     fontOverrides?: Record<string, string>;
     /** Onglet "Style" (audit 2026-08, mode template point 2) : clé de couleur (`colorKey`) → rôle assigné. */
     colorRoles?: Record<string, ThemeColorRole>;
-    /** Hex tapé à la main pour un rôle, prioritaire sur `colorRoles` (voir `serialize/templateTheme.ts::resolveThemeRoleHexes`). */
-    roleColorOverrides?: Partial<Record<ThemeColorRole, string>>;
   },
   pending: PendingSlide[],
 ): Promise<void> {
@@ -1162,7 +1165,7 @@ async function handleTemplateCreateRequest(
   // `theme` et les éléments recolorés restent cohérents entre eux).
   const colorRoles = msg.colorRoles ?? {};
   const allColors = aggregateColorSwatches(slides.map((s) => summarizeColors(s.elements)));
-  const theme = buildTemplateTheme(colorRoles, allColors, msg.roleColorOverrides ?? {});
+  const theme = buildTemplateTheme(colorRoles, allColors);
   for (const slide of slides) {
     slide.elements = applyThemeRolesToElements(slide.elements, colorRoles);
     // Le texte réel d'un calque tagué [[role]] cède la place à un

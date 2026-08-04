@@ -288,6 +288,7 @@
     const segments = node.getStyledTextSegments([...SEGMENT_FIELDS]);
     const runs = [];
     const fontWarnings = [];
+    const colorVariableRefs = [];
     let requiresRaster = false;
     let rasterReason;
     for (const seg of segments) {
@@ -304,6 +305,8 @@
           rasterReason = `Letter spacing changes the text width by ${(impact * 100).toFixed(1)}% (> 2%).`;
         }
       }
+      const { color, variableId } = firstSolidFillColor(seg.fills) ?? { color: { r: 0, g: 0, b: 0, a: 1 }, variableId: void 0 };
+      if (variableId) colorVariableRefs.push({ color, variableId });
       runs.push({
         start: seg.start,
         end: seg.end,
@@ -311,7 +314,7 @@
         fontWeight: seg.fontWeight ?? parseFontWeight(seg.fontName.style),
         italic: /italic/i.test(seg.fontName.style),
         fontSizePx: seg.fontSize,
-        color: firstSolidFillColor(seg.fills) ?? { r: 0, g: 0, b: 0, a: 1 },
+        color,
         underline: seg.textDecoration === "UNDERLINE" ? true : void 0,
         strikethrough: seg.textDecoration === "STRIKETHROUGH" ? true : void 0,
         smallCaps: seg.textCase === "SMALL_CAPS" ? true : void 0,
@@ -323,7 +326,7 @@
       segments.map((seg) => applyTextCase(node.characters.slice(seg.start, seg.end), seg.textCase)).join("")
     );
     const paragraphs = buildParagraphs(node, segments);
-    return { content, runs, paragraphs, requiresRaster, rasterReason, fontWarnings };
+    return { content, runs, paragraphs, requiresRaster, rasterReason, fontWarnings, colorVariableRefs };
   }
   function buildParagraphs(node, segments) {
     const paragraphs = [];
@@ -359,7 +362,11 @@
     if (fills === figma.mixed || !Array.isArray(fills)) return void 0;
     const solid = fills.find((f) => f.type === "SOLID" && f.visible !== false);
     if (!solid) return void 0;
-    return { r: solid.color.r, g: solid.color.g, b: solid.color.b, a: solid.opacity ?? 1 };
+    const bound = solid.boundVariables?.color;
+    return {
+      color: { r: solid.color.r, g: solid.color.g, b: solid.color.b, a: solid.opacity ?? 1 },
+      variableId: bound?.type === "VARIABLE_ALIAS" ? bound.id : void 0
+    };
   }
   function estimateSegmentWidthPx(seg) {
     const avgCharWidthRatio = 0.55;
@@ -443,12 +450,14 @@
     const elements = [];
     const warnings = [];
     const nodesToRaster = /* @__PURE__ */ new Map();
+    const colorVariableRefs = [];
     const rootX = frame.absoluteBoundingBox?.x ?? frame.x;
     const rootY = frame.absoluteBoundingBox?.y ?? frame.y;
     const background = uniformFrameBackground(frame);
     for (const child of frame.children) {
-      await walk(child, { rootX, rootY, ctx, elements, warnings, nodesToRaster });
+      await walk(child, { rootX, rootY, ctx, elements, warnings, nodesToRaster, colorVariableRefs });
     }
+    await resolveColorVariableNames(colorVariableRefs);
     return {
       slide: {
         sourceNodeId: frame.id,
@@ -460,6 +469,28 @@
       },
       nodesToRaster
     };
+  }
+  function boundColorVariableId(paint) {
+    const bound = paint.boundVariables?.color;
+    return bound?.type === "VARIABLE_ALIAS" ? bound.id : void 0;
+  }
+  async function resolveColorVariableNames(refs) {
+    if (refs.length === 0) return;
+    const ids = [...new Set(refs.map((r) => r.variableId))];
+    const nameById = /* @__PURE__ */ new Map();
+    await Promise.all(
+      ids.map(async (id) => {
+        try {
+          const variable = await figma.variables.getVariableByIdAsync(id);
+          if (variable) nameById.set(id, variable.name);
+        } catch {
+        }
+      })
+    );
+    for (const ref of refs) {
+      const name = nameById.get(ref.variableId);
+      if (name) ref.color.variableName = name;
+    }
   }
   async function walk(node, state) {
     const unknownTag = findUnknownPlaceholderTag(node.name);
@@ -522,6 +553,7 @@
             });
           }
         }
+        state.colorVariableRefs.push(...extraction.colorVariableRefs);
         const rel = relativeRect(node, state);
         state.elements.push({
           kind: "text",
@@ -708,10 +740,18 @@
     const fills = "fills" in node && node.fills !== figma.mixed ? node.fills : [];
     const solidFill = fills.find((f) => f.type === "SOLID" && f.visible !== false);
     const fill = solidFill ? { type: "SOLID", color: { r: solidFill.color.r, g: solidFill.color.g, b: solidFill.color.b, a: solidFill.opacity ?? 1 } } : void 0;
+    if (fill && solidFill) {
+      const variableId = boundColorVariableId(solidFill);
+      if (variableId) state.colorVariableRefs.push({ color: fill.color, variableId });
+    }
     const strokes = "strokes" in node ? node.strokes.filter((s) => s.visible !== false) : [];
     const strokeSolid = strokes.find((s) => s.type === "SOLID");
     const strokeWeight = "strokeWeight" in node && typeof node.strokeWeight === "number" ? node.strokeWeight : 0;
     const stroke = strokeSolid && strokeWeight > 0 ? { color: { r: strokeSolid.color.r, g: strokeSolid.color.g, b: strokeSolid.color.b, a: strokeSolid.opacity ?? 1 }, weightPt: strokeWeight, dash: dashStyleOf(node) } : void 0;
+    if (stroke && strokeSolid) {
+      const variableId = boundColorVariableId(strokeSolid);
+      if (variableId) state.colorVariableRefs.push({ color: stroke.color, variableId });
+    }
     const shapeType = action === "native-shape-ellipse" ? "ELLIPSE" : action === "native-shape-round-rectangle" ? "ROUND_RECTANGLE" : presetShapeType(node);
     return {
       kind: "shape",
@@ -731,6 +771,11 @@
     const strokes = "strokes" in node ? node.strokes.filter((s) => s.visible !== false) : [];
     const strokeSolid = strokes.find((s) => s.type === "SOLID");
     const strokeWeight = "strokeWeight" in node && typeof node.strokeWeight === "number" ? node.strokeWeight : 1;
+    const color = strokeSolid ? { r: strokeSolid.color.r, g: strokeSolid.color.g, b: strokeSolid.color.b, a: strokeSolid.opacity ?? 1 } : { r: 0, g: 0, b: 0, a: 1 };
+    if (strokeSolid) {
+      const variableId = boundColorVariableId(strokeSolid);
+      if (variableId) state.colorVariableRefs.push({ color, variableId });
+    }
     return {
       kind: "line",
       id: state.ctx.nextId(),
@@ -739,7 +784,7 @@
       rotation: "rotation" in node ? node.rotation : 0,
       opacity: "opacity" in node ? node.opacity : 1,
       stroke: {
-        color: strokeSolid ? { r: strokeSolid.color.r, g: strokeSolid.color.g, b: strokeSolid.color.b, a: strokeSolid.opacity ?? 1 } : { r: 0, g: 0, b: 0, a: 1 },
+        color,
         weightPt: strokeWeight,
         dash: dashStyleOf(node)
       },
@@ -1073,8 +1118,9 @@
       const existing = byKey.get(key);
       if (existing) {
         existing.usageCount++;
+        if (!existing.variableName && color.variableName) existing.variableName = color.variableName;
       } else {
-        byKey.set(key, { hex, alpha: color.a, usageCount: 1 });
+        byKey.set(key, { hex, alpha: color.a, usageCount: 1, variableName: color.variableName });
       }
     };
     for (const el of elements) {
@@ -1123,6 +1169,7 @@
         const existing = byKey.get(key);
         if (existing) {
           existing.usageCount += c.usageCount;
+          if (!existing.variableName && c.variableName) existing.variableName = c.variableName;
         } else {
           byKey.set(key, { ...c });
         }
@@ -1165,24 +1212,13 @@
     const n = parseInt(hex.slice(1), 16);
     return { r: (n >> 16 & 255) / 255, g: (n >> 8 & 255) / 255, b: (n & 255) / 255 };
   }
-  function rgbToHex({ r, g, b }) {
-    const channel = (v) => Math.round(Math.min(1, Math.max(0, v)) * 255).toString(16).padStart(2, "0").toUpperCase();
-    return `#${channel(r)}${channel(g)}${channel(b)}`;
-  }
-  var DEFAULT_THEME_ROLE_HEX = THEME_ROLES.reduce(
-    (acc, role) => ({ ...acc, [role]: rgbToHex(DEFAULT_THEME_ROLE_COLORS[role]) }),
-    {}
-  );
-  function buildTemplateTheme(colorRoles, colors, roleColorOverrides = {}) {
-    if (Object.keys(colorRoles).length === 0 && Object.keys(roleColorOverrides).length === 0) return void 0;
+  function buildTemplateTheme(colorRoles, colors) {
+    if (Object.keys(colorRoles).length === 0) return void 0;
     const byKey = new Map(colors.map((c) => [colorKey(c.hex, c.alpha), c]));
     const theme = { ...DEFAULT_THEME_ROLE_COLORS };
     for (const [key, role] of Object.entries(colorRoles)) {
       const swatch = byKey.get(key);
       if (swatch) theme[role] = hexToRgb(swatch.hex);
-    }
-    for (const [role, hex] of Object.entries(roleColorOverrides)) {
-      theme[role] = hexToRgb(hex);
     }
     return theme;
   }
@@ -1784,6 +1820,10 @@
         figma.viewport.scrollAndZoomIntoView(nodes);
         return;
       }
+      if (msg.type === "notify") {
+        figma.notify(String(msg.message));
+        return;
+      }
       if (msg.type === "request-export") {
         try {
           await handleExportRequest(
@@ -1898,7 +1938,7 @@
     const { slides, assets } = await collectSlidesAndAssets(pending, orderedIds, msg.fontOverrides ?? {}, 2);
     const colorRoles = msg.colorRoles ?? {};
     const allColors = aggregateColorSwatches(slides.map((s) => summarizeColors(s.elements)));
-    const theme = buildTemplateTheme(colorRoles, allColors, msg.roleColorOverrides ?? {});
+    const theme = buildTemplateTheme(colorRoles, allColors);
     for (const slide of slides) {
       slide.elements = applyThemeRolesToElements(slide.elements, colorRoles);
       slide.elements = applyPlaceholderText(slide.elements);

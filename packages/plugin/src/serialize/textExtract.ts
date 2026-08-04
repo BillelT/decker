@@ -1,4 +1,4 @@
-import type { IRParagraph, IRTextRun } from '@figma-to-slides/shared';
+import type { IRColor, IRParagraph, IRTextRun } from '@figma-to-slides/shared';
 import { resolveFontFamily, parseFontWeight } from './fonts.js';
 import {
   applyTextCase,
@@ -16,6 +16,8 @@ export interface TextExtractionResult {
   requiresRaster: boolean;
   rasterReason?: string;
   fontWarnings: { original: string; substitute?: string }[];
+  /** Couleur de run / id de `Variable` Figma liée — mêmes paires que `ColorVariableRef` côté `serializeFrame.ts`, fusionnées dans sa résolution async unique en fin de frame. */
+  colorVariableRefs: { color: IRColor; variableId: string }[];
 }
 
 const SEGMENT_FIELDS = [
@@ -40,6 +42,7 @@ export function extractTextRuns(node: TextNode): TextExtractionResult {
   const segments = node.getStyledTextSegments([...SEGMENT_FIELDS]) as unknown as StyledTextSegment[];
   const runs: IRTextRun[] = [];
   const fontWarnings: TextExtractionResult['fontWarnings'] = [];
+  const colorVariableRefs: TextExtractionResult['colorVariableRefs'] = [];
   let requiresRaster = false;
   let rasterReason: string | undefined;
 
@@ -59,6 +62,9 @@ export function extractTextRuns(node: TextNode): TextExtractionResult {
       }
     }
 
+    const { color, variableId } = firstSolidFillColor(seg.fills) ?? { color: { r: 0, g: 0, b: 0, a: 1 } as IRColor, variableId: undefined };
+    if (variableId) colorVariableRefs.push({ color, variableId });
+
     runs.push({
       start: seg.start,
       end: seg.end,
@@ -66,7 +72,7 @@ export function extractTextRuns(node: TextNode): TextExtractionResult {
       fontWeight: seg.fontWeight ?? parseFontWeight(seg.fontName.style),
       italic: /italic/i.test(seg.fontName.style),
       fontSizePx: seg.fontSize,
-      color: firstSolidFillColor(seg.fills) ?? { r: 0, g: 0, b: 0, a: 1 },
+      color,
       underline: seg.textDecoration === 'UNDERLINE' ? true : undefined,
       strikethrough: seg.textDecoration === 'STRIKETHROUGH' ? true : undefined,
       smallCaps: seg.textCase === 'SMALL_CAPS' ? true : undefined,
@@ -84,7 +90,7 @@ export function extractTextRuns(node: TextNode): TextExtractionResult {
 
   const paragraphs = buildParagraphs(node, segments);
 
-  return { content, runs, paragraphs, requiresRaster, rasterReason, fontWarnings };
+  return { content, runs, paragraphs, requiresRaster, rasterReason, fontWarnings, colorVariableRefs };
 }
 
 function buildParagraphs(node: TextNode, segments: StyledTextSegment[]): IRParagraph[] {
@@ -125,11 +131,15 @@ function buildParagraphs(node: TextNode, segments: StyledTextSegment[]): IRParag
   return paragraphs;
 }
 
-function firstSolidFillColor(fills: readonly Paint[] | typeof figma.mixed): { r: number; g: number; b: number; a: number } | undefined {
+function firstSolidFillColor(fills: readonly Paint[] | typeof figma.mixed): { color: IRColor; variableId: string | undefined } | undefined {
   if (fills === figma.mixed || !Array.isArray(fills)) return undefined;
   const solid = fills.find((f): f is SolidPaint => f.type === 'SOLID' && f.visible !== false);
   if (!solid) return undefined;
-  return { r: solid.color.r, g: solid.color.g, b: solid.color.b, a: solid.opacity ?? 1 };
+  const bound = solid.boundVariables?.color;
+  return {
+    color: { r: solid.color.r, g: solid.color.g, b: solid.color.b, a: solid.opacity ?? 1 },
+    variableId: bound?.type === 'VARIABLE_ALIAS' ? bound.id : undefined,
+  };
 }
 
 /**

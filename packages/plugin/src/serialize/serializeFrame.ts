@@ -1,4 +1,4 @@
-import type { IRElement, IRImage, IRLine, IRPaint, IRShape, IRSlide, IRWarning } from '@figma-to-slides/shared';
+import type { IRColor, IRElement, IRImage, IRLine, IRPaint, IRShape, IRSlide, IRWarning } from '@figma-to-slides/shared';
 import { classifyNode, type DecisionInput, type NodeKind } from './decisionTree.js';
 import { decideRadius, type RadiusDecision } from './radius.js';
 import { extractTextRuns } from './textExtract.js';
@@ -40,6 +40,7 @@ export async function serializeFrame(frame: FrameNode | ComponentNode | Instance
   const elements: IRElement[] = [];
   const warnings: IRWarning[] = [];
   const nodesToRaster = new Map<string, SceneNode[]>(); // assetKey (== element id) -> nœuds Figma aplatis dedans
+  const colorVariableRefs: ColorVariableRef[] = [];
 
   const rootX = frame.absoluteBoundingBox?.x ?? frame.x;
   const rootY = frame.absoluteBoundingBox?.y ?? frame.y;
@@ -47,8 +48,10 @@ export async function serializeFrame(frame: FrameNode | ComponentNode | Instance
   const background = uniformFrameBackground(frame);
 
   for (const child of frame.children) {
-    await walk(child, { rootX, rootY, ctx, elements, warnings, nodesToRaster });
+    await walk(child, { rootX, rootY, ctx, elements, warnings, nodesToRaster, colorVariableRefs });
   }
+
+  await resolveColorVariableNames(colorVariableRefs);
 
   return {
     slide: {
@@ -63,6 +66,12 @@ export async function serializeFrame(frame: FrameNode | ComponentNode | Instance
   };
 }
 
+/** Paire couleur déjà construite / id de la `Variable` Figma qui l'alimente — collectée pendant `walk` (accès synchrone à `boundVariables`), résolue en nom lisible en un seul passage async à la fin de `serializeFrame` (voir `resolveColorVariableNames`). */
+interface ColorVariableRef {
+  color: IRColor;
+  variableId: string;
+}
+
 interface WalkState {
   rootX: number;
   rootY: number;
@@ -70,7 +79,44 @@ interface WalkState {
   elements: IRElement[];
   warnings: IRWarning[];
   nodesToRaster: Map<string, SceneNode[]>;
+  colorVariableRefs: ColorVariableRef[];
   maskedByAncestor?: boolean;
+}
+
+/** Id de la `Variable` Figma liée au champ `color` d'un paint solide, si le créateur a utilisé une variable plutôt qu'une couleur figée. */
+function boundColorVariableId(paint: SolidPaint): string | undefined {
+  const bound = paint.boundVariables?.color;
+  return bound?.type === 'VARIABLE_ALIAS' ? bound.id : undefined;
+}
+
+/**
+ * Résout en un seul passage, à la fin de `serializeFrame`, les ids de
+ * `Variable` collectés pendant `walk` en noms lisibles (`IRColor.variableName`
+ * — onglet Style du mode template, affiché à la place du hex quand une
+ * couleur détectée provient d'une variable plutôt que d'un aplat figé).
+ * Dédupliqué par id pour éviter un aller-retour réseau par occurrence
+ * plutôt que par variable distincte. Une variable supprimée/inaccessible
+ * (ex. lib externe non partagée) est silencieusement ignorée : la couleur
+ * garde alors son hex comme libellé côté UI (`variableName` reste absent).
+ */
+async function resolveColorVariableNames(refs: ColorVariableRef[]): Promise<void> {
+  if (refs.length === 0) return;
+  const ids = [...new Set(refs.map((r) => r.variableId))];
+  const nameById = new Map<string, string>();
+  await Promise.all(
+    ids.map(async (id) => {
+      try {
+        const variable = await figma.variables.getVariableByIdAsync(id);
+        if (variable) nameById.set(id, variable.name);
+      } catch {
+        // Variable inaccessible (supprimée, lib externe non partagée) — la couleur reste identifiée par son hex.
+      }
+    }),
+  );
+  for (const ref of refs) {
+    const name = nameById.get(ref.variableId);
+    if (name) ref.color.variableName = name;
+  }
 }
 
 async function walk(node: SceneNode, state: WalkState): Promise<void> {
@@ -143,6 +189,7 @@ async function walk(node: SceneNode, state: WalkState): Promise<void> {
           });
         }
       }
+      state.colorVariableRefs.push(...extraction.colorVariableRefs);
       const rel = relativeRect(node, state);
       state.elements.push({
         kind: 'text',
@@ -393,6 +440,10 @@ function buildNativeShape(node: SceneNode, action: 'native-shape-preset' | 'nati
   const fill: IRPaint | undefined = solidFill
     ? { type: 'SOLID', color: { r: solidFill.color.r, g: solidFill.color.g, b: solidFill.color.b, a: solidFill.opacity ?? 1 } }
     : undefined;
+  if (fill && solidFill) {
+    const variableId = boundColorVariableId(solidFill);
+    if (variableId) state.colorVariableRefs.push({ color: fill.color, variableId });
+  }
 
   const strokes = 'strokes' in node ? node.strokes.filter((s) => s.visible !== false) : [];
   const strokeSolid = strokes.find((s): s is SolidPaint => s.type === 'SOLID');
@@ -400,6 +451,10 @@ function buildNativeShape(node: SceneNode, action: 'native-shape-preset' | 'nati
   const stroke = strokeSolid && strokeWeight > 0
     ? { color: { r: strokeSolid.color.r, g: strokeSolid.color.g, b: strokeSolid.color.b, a: strokeSolid.opacity ?? 1 }, weightPt: strokeWeight, dash: dashStyleOf(node) }
     : undefined;
+  if (stroke && strokeSolid) {
+    const variableId = boundColorVariableId(strokeSolid);
+    if (variableId) state.colorVariableRefs.push({ color: stroke.color, variableId });
+  }
 
   const shapeType = action === 'native-shape-ellipse' ? 'ELLIPSE' : action === 'native-shape-round-rectangle' ? 'ROUND_RECTANGLE' : presetShapeType(node);
 
@@ -422,6 +477,13 @@ function buildNativeLine(node: SceneNode, state: WalkState): IRLine {
   const strokes = 'strokes' in node ? node.strokes.filter((s) => s.visible !== false) : [];
   const strokeSolid = strokes.find((s): s is SolidPaint => s.type === 'SOLID');
   const strokeWeight = 'strokeWeight' in node && typeof node.strokeWeight === 'number' ? node.strokeWeight : 1;
+  const color: IRColor = strokeSolid
+    ? { r: strokeSolid.color.r, g: strokeSolid.color.g, b: strokeSolid.color.b, a: strokeSolid.opacity ?? 1 }
+    : { r: 0, g: 0, b: 0, a: 1 };
+  if (strokeSolid) {
+    const variableId = boundColorVariableId(strokeSolid);
+    if (variableId) state.colorVariableRefs.push({ color, variableId });
+  }
 
   return {
     kind: 'line',
@@ -431,9 +493,7 @@ function buildNativeLine(node: SceneNode, state: WalkState): IRLine {
     rotation: 'rotation' in node ? node.rotation : 0,
     opacity: 'opacity' in node ? node.opacity : 1,
     stroke: {
-      color: strokeSolid
-        ? { r: strokeSolid.color.r, g: strokeSolid.color.g, b: strokeSolid.color.b, a: strokeSolid.opacity ?? 1 }
-        : { r: 0, g: 0, b: 0, a: 1 },
+      color,
       weightPt: strokeWeight,
       dash: dashStyleOf(node),
     },
