@@ -64,7 +64,7 @@ export interface LogEntryWarningLike {
 export function logEntryTagText(w: LogEntryWarningLike, fontOverrides: Record<string, string>): string {
   if (w.code === 'FONT_SUBSTITUTED' && w.fontOriginal) {
     const resolved = fontOverrides[w.fontOriginal] ?? w.fontSubstitute ?? w.fontOriginal;
-    return `Font replacement "${w.fontOriginal}" into "${resolved}"`;
+    return `Font "${w.fontOriginal}" → "${resolved}"`;
   }
   const dashIndex = w.message.indexOf(' — ');
   const reason = dashIndex === -1 ? w.message : w.message.slice(0, dashIndex);
