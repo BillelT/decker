@@ -17,6 +17,7 @@ await build({
   platform: 'browser',
   target: 'es2022',
   format: 'iife',
+  define: { __DEBUG_TOOLS__: JSON.stringify(DEBUG_TOOLS) },
 });
 
 // Logo SVG depuis la racine du projet
