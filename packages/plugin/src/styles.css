@@ -146,17 +146,17 @@ a {
    compressibles (flex: none partout), pour que sa taille ne varie plus
    selon la longueur du libellé des boutons d'action ("Select frames to
    add" vs "Add selection", "Export" vs "Create template", spinner
-   "Waiting for Google sign-in…"…) ni selon le mode deck/template. C'est
-   donc .f2s-topbar qui absorbe l'espace en trop : flex-wrap renvoie
-   .f2s-topbar-actions à la ligne plutôt que de chevaucher ou de déborder
-   quand les deux groupes ne tiennent plus sur une seule ligne (cas rare,
-   ex. le libellé le plus long du flow de connexion Google). */
+   "Waiting…"…) ni selon le mode deck/template. Le header doit rester sur
+   une seule ligne dans tous les cas, sans chevauchement ni scroll : pas
+   de flex-wrap, et chaque libellé de bouton (y compris celui du flow de
+   connexion Google) reste assez court pour que les deux groupes tiennent
+   toujours ensemble dans les 960px du panneau (largeur fixe, non
+   redimensionnable — voir figma.showUI dans code.ts). */
 .f2s-topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
-  row-gap: 8px;
+  flex-wrap: nowrap;
   gap: 16px;
   padding: 16px 16px 0;
   flex: none;
@@ -918,63 +918,6 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   font-weight: 700;
 }
 
-.f2s-tmpl-hex-input {
-  font-family: inherit;
-  font-variant-numeric: tabular-nums;
-  font-size: 12px;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text);
-  border-radius: 4px;
-  padding: 3px 6px;
-  width: 68px;
-  flex: none;
-}
-
-.f2s-tmpl-hex-input:focus {
-  outline: none;
-  border-color: var(--color-orange-40);
-}
-
-/* Couleurs détectées dans le template, proposées comme remplacement en un
-   clic pour le rôle de la ligne — plus rapide que taper le hex à la main
-   quand la couleur voulue existe déjà dans le deck importé. */
-.f2s-tmpl-suggestions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
-}
-
-.f2s-tmpl-suggestion {
-  width: 18px;
-  height: 18px;
-  padding: 0;
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  overflow: hidden;
-  flex: none;
-  background-image: linear-gradient(45deg, rgba(127, 127, 127, 0.25) 25%, transparent 25%, transparent 75%, rgba(127, 127, 127, 0.25) 75%),
-    linear-gradient(45deg, rgba(127, 127, 127, 0.25) 25%, transparent 25%, transparent 75%, rgba(127, 127, 127, 0.25) 75%);
-  background-size: 8px 8px;
-  background-position: 0 0, 4px 4px;
-}
-
-.f2s-tmpl-suggestion span {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.f2s-tmpl-suggestion:hover {
-  border-color: var(--color-orange);
-}
-
-.f2s-tmpl-suggestion.is-selected {
-  border-color: var(--color-orange);
-  box-shadow: 0 0 0 1px var(--color-orange);
-}
-
 /* ---- Aside "Styles" : liste compacte façon Figma (Color/Text styles) ---- */
 
 .f2s-style-panel {
@@ -1013,18 +956,40 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
 .f2s-style-swatch {
   width: 24px;
   height: 24px;
-  border-radius: 4px;
+  border-radius: 50%;
   border: 1px solid var(--color-border);
   flex: none;
 }
 
+/* Le damier ne s'affiche que pour une couleur détectée semi-transparente
+   (rend son alpha visible plutôt que de la faire fondre dans le fond du
+   panneau) — une couleur opaque n'a pas de raison de l'afficher. */
+.f2s-style-swatch--transparent {
+  background-image: linear-gradient(45deg, rgba(127, 127, 127, 0.25) 25%, transparent 25%, transparent 75%, rgba(127, 127, 127, 0.25) 75%),
+    linear-gradient(45deg, rgba(127, 127, 127, 0.25) 25%, transparent 25%, transparent 75%, rgba(127, 127, 127, 0.25) 75%);
+  background-size: 8px 8px;
+  background-position: 0 0, 4px 4px;
+  background-origin: border-box;
+}
+
+/* min-width couvre au moins un hex complet ("#XXXXXX") sans le tronquer —
+   seul un long nom de variable Figma (colorLabel dans TemplateStylePanel)
+   passe par l'ellipsis. */
 .f2s-style-label {
   flex: 1;
-  min-width: 0;
-  font-size: 12px;
+  min-width: 64px;
+  font-size: 11px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Largeur fixe : tous les selects de la liste s'alignent, quelle que soit
+   la longueur du libellé de couleur sur leur ligne. */
+.f2s-style-role-select {
+  flex: none;
+  width: 130px;
+  font-size: 11px;
 }
 
 .f2s-style-font-swatch {

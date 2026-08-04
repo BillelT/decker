@@ -2,6 +2,11 @@ import { build } from 'esbuild';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 
 const BACKEND_URL = process.env.F2S_BACKEND_URL ?? 'http://localhost:8787';
+// Section "Developer" de la modale Settings (Download IR JSON, fixtures de
+// calibration) : outil de mainteneur, jamais destiné aux utilisateurs du
+// plugin. Off par défaut — n'active dans le bundle que si explicitement
+// demandé pour un build local.
+const DEBUG_TOOLS = process.env.F2S_DEBUG_TOOLS === '1';
 
 await mkdir('dist', { recursive: true });
 
@@ -12,6 +17,7 @@ await build({
   platform: 'browser',
   target: 'es2022',
   format: 'iife',
+  define: { __DEBUG_TOOLS__: JSON.stringify(DEBUG_TOOLS) },
 });
 
 // Logo SVG depuis la racine du projet
@@ -24,7 +30,11 @@ const uiResult = await build({
   target: 'es2020',
   format: 'iife',
   write: false,
-  define: { __BACKEND_URL__: JSON.stringify(BACKEND_URL), __LOGO_SVG__: JSON.stringify(logoSvg) },
+  define: {
+    __BACKEND_URL__: JSON.stringify(BACKEND_URL),
+    __LOGO_SVG__: JSON.stringify(logoSvg),
+    __DEBUG_TOOLS__: JSON.stringify(DEBUG_TOOLS),
+  },
   jsx: 'automatic',
   jsxImportSource: 'preact',
 });

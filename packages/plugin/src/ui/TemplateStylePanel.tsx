@@ -1,6 +1,7 @@
 import type { ThemeColorRole } from '@figma-to-slides/shared';
 import { colorKey } from '../serialize/templateSummary.js';
-import { DEFAULT_THEME_ROLE_HEX, THEME_ROLE_LABELS, VISIBLE_THEME_ROLES, resolveThemeRoleHexes } from '../serialize/templateTheme.js';
+import { THEME_ROLE_LABELS, VISIBLE_THEME_ROLES } from '../serialize/templateTheme.js';
+import { postToPlugin } from './types.js';
 import type { TemplateColorSwatch, TemplateFontUsage } from './types.js';
 
 export interface TemplateStylePanelProps {
@@ -10,137 +11,116 @@ export interface TemplateStylePanelProps {
   fontOverrides: Record<string, string>;
   colorRoles: Record<string, ThemeColorRole>;
   setColorRoles: (updater: (prev: Record<string, ThemeColorRole>) => Record<string, ThemeColorRole>) => void;
-  roleColorOverrides: Partial<Record<ThemeColorRole, string>>;
-  setRoleColorOverrides: (
-    updater: (prev: Partial<Record<ThemeColorRole, string>>) => Partial<Record<ThemeColorRole, string>>,
-  ) => void;
 }
 
-const HEX_RE = /^#[0-9a-fA-F]{6}$/;
-
-function HexField({ value, onCommit }: { value: string; onCommit: (hex: string) => void }) {
-  return (
-    <input
-      key={value}
-      type="text"
-      className="f2s-tmpl-hex-input"
-      defaultValue={value}
-      spellcheck={false}
-      maxLength={7}
-      aria-label="Hex color"
-      onInput={(e) => {
-        const raw = (e.target as HTMLInputElement).value.trim();
-        const hex = raw.startsWith('#') ? raw : `#${raw}`;
-        if (HEX_RE.test(hex)) onCommit(hex.toUpperCase());
-      }}
-    />
-  );
+/** Hex ou nom de variable Figma tronqué sur une ligne — le libellé complet reste dans `title` (même convention que `f2s-tmpl-chip-label`). */
+function colorLabel(c: TemplateColorSwatch): string {
+  return c.variableName ?? c.hex;
 }
 
 /**
  * Panneau "Styles" du mode template (audit 2026-08, point 2 — TODO.md §
  * Mode template) : vue agrégée de TOUT le template (contrairement au
  * rapport par layout de TemplatePanel, qui n'affiche qu'une frame à la
- * fois), affichée dans l'aside droit (280px, cf. TemplatePanel) plutôt
- * que dans un onglet séparé — comme la liste "Color styles"/"Text
- * styles" de Figma, mais chaque ligne reste directement éditable (hex
- * tapé à la main) et propose les couleurs détectées comme suggestions de
- * remplacement en un clic, là où Figma se contente d'assigner un style
- * existant. Centré sur les 12 rôles de thème Slides (pas sur les couleurs
- * détectées) — voir `serialize/templateTheme.ts` — puisque ce sont eux
- * que l'API écrit d'un coup sur le Master (mapper/theme.ts) : les 12
- * apparaissent donc toujours, avec leur valeur de repli, plutôt que de
- * n'afficher que ce que le créateur a explicitement touché. Un rôle non
- * assigné reste un aplat RGB statique par élément comme avant : ce
- * panneau est strictement additif, jamais requis pour créer un template.
+ * fois), affichée dans l'aside droit (280px, cf. TemplatePanel) plutôt que
+ * dans un onglet séparé. Centré sur les couleurs RÉELLEMENT DÉTECTÉES
+ * (contrairement à une précédente version centrée sur les 12 rôles de
+ * thème Slides) : chaque couleur détectée peut se voir assigner l'un des
+ * 11 rôles éditables (`VISIBLE_THEME_ROLES` — `FOLLOWED_HYPERLINK` n'est
+ * jamais assignable, cf. `templateTheme.ts`), et l'API continue de
+ * recevoir ses 12 rôles d'un coup côté export (`buildTemplateTheme` remplit
+ * tout rôle non assigné avec `DEFAULT_THEME_ROLE_COLORS`) — ce panneau
+ * reste strictement additif, jamais requis pour créer un template.
  */
-export function TemplateStylePanel({ colors, fonts, fontOverrides, colorRoles, setColorRoles, roleColorOverrides, setRoleColorOverrides }: TemplateStylePanelProps) {
-  const roleHexes = resolveThemeRoleHexes(colorRoles, colors, roleColorOverrides);
+export function TemplateStylePanel({ colors, fonts, fontOverrides, colorRoles, setColorRoles }: TemplateStylePanelProps) {
   const assignedKeyByRole = new Map<ThemeColorRole, string>();
   for (const [key, role] of Object.entries(colorRoles)) assignedKeyByRole.set(role, key);
   const sortedColors = [...colors].sort((a, b) => b.usageCount - a.usageCount);
+  const byKey = new Map(colors.map((c) => [colorKey(c.hex, c.alpha), c]));
 
-  /** Un clic sur une couleur détectée l'assigne au rôle — retire l'éventuelle autre couleur qui tenait déjà ce rôle (un rôle = une source à la fois) et l'éventuel hex tapé à la main (la couleur détectée reprend la main). */
-  function assignDetectedColor(role: ThemeColorRole, key: string) {
+  /**
+   * Un rôle n'est jamais assignable qu'à une seule couleur à la fois (11
+   * rôles éditables au maximum, cf. `VISIBLE_THEME_ROLES`). Choisir un rôle
+   * déjà pris par une AUTRE couleur le lui retire — le sélecteur de chaque
+   * couleur reste donc toujours complet plutôt que de faire disparaître des
+   * options d'une ligne à l'autre — et une notif Figma le signale, ce
+   * changement n'étant sinon visible que si on regarde la ligne qui vient
+   * de perdre son rôle.
+   */
+  function handleRoleChange(key: string, value: string) {
+    if (!value) {
+      setColorRoles((prev) => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
+      return;
+    }
+
+    const role = value as ThemeColorRole;
+    const previousKey = assignedKeyByRole.get(role);
+    if (previousKey && previousKey !== key) {
+      const stolenFrom = byKey.get(previousKey);
+      postToPlugin({
+        type: 'notify',
+        message: `"${THEME_ROLE_LABELS[role]}" was already used by ${stolenFrom ? colorLabel(stolenFrom) : previousKey} — reassigned.`,
+      });
+    }
+
     setColorRoles((prev) => {
       const next: Record<string, ThemeColorRole> = {};
       for (const [k, r] of Object.entries(prev)) {
-        if (r === role || k === key) continue;
+        if (r === role) continue;
         next[k] = r;
       }
       next[key] = role;
       return next;
     });
-    setRoleColorOverrides((prev) => {
-      if (!(role in prev)) return prev;
-      const next = { ...prev };
-      delete next[role];
-      return next;
-    });
-  }
-
-  function setRoleHex(role: ThemeColorRole, hex: string) {
-    setRoleColorOverrides((prev) => ({ ...prev, [role]: hex }));
   }
 
   return (
     <div className="f2s-style-panel">
       <section className="f2s-tmpl-section">
         <h3 className="f2s-tmpl-heading f2s-style-heading">Colors</h3>
-        <ul className="f2s-style-list">
-          {VISIBLE_THEME_ROLES.map((role) => {
-            const hex = roleHexes[role];
-            const assignedKey = assignedKeyByRole.get(role);
-            return (
-              <li key={role} className="f2s-style-row">
-                <div className="f2s-style-row-main">
-                  <span className="f2s-style-swatch" style={{ backgroundColor: hex }} />
-                  <span className="f2s-style-label" title={THEME_ROLE_LABELS[role]}>
-                    {THEME_ROLE_LABELS[role]}
-                  </span>
-                  <HexField value={hex} onCommit={(next) => setRoleHex(role, next)} />
-                  {hex !== DEFAULT_THEME_ROLE_HEX[role] && (
-                    <button
-                      type="button"
-                      className="f2s-icon-btn"
-                      title="Reset to default"
-                      onClick={() => {
-                        if (assignedKey) setColorRoles((prev) => Object.fromEntries(Object.entries(prev).filter(([k]) => k !== assignedKey)));
-                        setRoleColorOverrides((prev) => {
-                          if (!(role in prev)) return prev;
-                          const next = { ...prev };
-                          delete next[role];
-                          return next;
-                        });
-                      }}
+        {colors.length === 0 ? (
+          <p className="f2s-toolbar-muted">No color detected yet — add layouts first.</p>
+        ) : (
+          <ul className="f2s-style-list">
+            {sortedColors.map((c) => {
+              const key = colorKey(c.hex, c.alpha);
+              const label = colorLabel(c);
+              return (
+                <li key={key} className="f2s-style-row">
+                  <div className="f2s-style-row-main">
+                    <span
+                      className={`f2s-style-swatch${c.alpha < 1 ? ' f2s-style-swatch--transparent' : ''}`}
+                      style={{ backgroundColor: c.hex, opacity: c.alpha }}
+                    />
+                    <span className="f2s-style-label" title={label}>
+                      {label}
+                    </span>
+                    <select
+                      className="f2s-font-dropdown f2s-style-role-select"
+                      value={colorRoles[key] ?? ''}
+                      onChange={(e) => handleRoleChange(key, (e.target as HTMLSelectElement).value)}
                     >
-                      ✕
-                    </button>
-                  )}
-                </div>
-                {sortedColors.length > 0 && (
-                  <span className="f2s-tmpl-suggestions">
-                    {sortedColors.map((c) => {
-                      const key = colorKey(c.hex, c.alpha);
-                      return (
-                        <button
-                          key={key}
-                          type="button"
-                          className={`f2s-tmpl-suggestion${key === assignedKey ? ' is-selected' : ''}`}
-                          title={`Use ${c.hex}${c.alpha < 1 ? ` · ${Math.round(c.alpha * 100)}%` : ''} · used ${c.usageCount}×`}
-                          onClick={() => assignDetectedColor(role, key)}
-                        >
-                          <span style={{ backgroundColor: c.hex, opacity: c.alpha }} />
-                        </button>
-                      );
-                    })}
-                  </span>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-        {colors.length === 0 && <p className="f2s-toolbar-muted">No color detected yet — add layouts first.</p>}
+                      <option value="">No role</option>
+                      {VISIBLE_THEME_ROLES.map((role) => {
+                        const takenByOther = assignedKeyByRole.get(role) && assignedKeyByRole.get(role) !== key;
+                        return (
+                          <option key={role} value={role}>
+                            {THEME_ROLE_LABELS[role]}
+                            {takenByOther ? ' (in use)' : ''}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </section>
 
       <section className="f2s-tmpl-section">

@@ -1,17 +1,29 @@
 import { Router } from 'express';
 import { deriveCodeChallenge, generateCodeVerifier } from '../auth/pkce.js';
 import { buildAuthUrl, createOAuthClient, exchangeCodeForTokens, fetchUserEmail } from '../auth/oauth.js';
-import { popAuthResult, popCodeVerifier, stashAuthResult, stashCodeVerifier } from '../auth/pendingAuth.js';
+import { popAuthResult, popCodeVerifier, popSkin, stashAuthResult, stashCodeVerifier, stashSkin } from '../auth/pendingAuth.js';
 import { cacheAccessToken, createSession, destroySession, getEmail, getRefreshToken } from '../auth/session.js';
 
 export const authRouter = Router();
 
+/** Habillages du plugin — voir packages/plugin/src/ui/types.ts::UiSkin, recopié ici (pas de dépendance vers le workspace plugin depuis le backend). */
+type UiSkin = 'win95' | 'modern' | 'hybrid';
+const DEFAULT_UI_SKIN: UiSkin = 'win95';
+
+function normalizeSkin(value: unknown): UiSkin {
+  return value === 'modern' || value === 'hybrid' || value === 'win95' ? value : DEFAULT_UI_SKIN;
+}
+
 /** Spec §5: POST /auth/google → démarre OAuth2 (PKCE). */
-authRouter.post('/auth/google', async (_req, res) => {
+authRouter.post('/auth/google', async (req, res) => {
   const client = createOAuthClient();
   const codeVerifier = generateCodeVerifier();
   const codeChallenge = deriveCodeChallenge(codeVerifier);
   const state = await stashCodeVerifier(codeVerifier);
+  // Le skin voyage avec `state` : GET /auth/callback (déclenché par Google,
+  // pas par le plugin) n'a que ce paramètre pour savoir quel habillage
+  // rendre — voir Logo()/skin dans ui.tsx pour l'origine de la valeur.
+  await stashSkin(state, normalizeSkin((req.body as { skin?: unknown } | undefined)?.skin));
   const url = buildAuthUrl(client, codeChallenge, state);
   // `state` sert aussi d'identifiant de polling (GET /auth/session/:pollId) :
   // le plugin peut ainsi récupérer le jeton de session automatiquement une
@@ -24,9 +36,10 @@ authRouter.get('/auth/callback', async (req, res) => {
   const code = String(req.query.code ?? '');
   const state = String(req.query.state ?? '');
   const codeVerifier = await popCodeVerifier(state);
+  const skin = normalizeSkin(await popSkin(state));
 
   if (!code || !codeVerifier) {
-    res.status(400).type('html').send(renderErrorPage('This sign-in link is invalid or has expired.'));
+    res.status(400).type('html').send(renderErrorPage('This sign-in link is invalid or has expired.', skin));
     return;
   }
 
@@ -53,11 +66,11 @@ authRouter.get('/auth/callback', async (req, res) => {
       sameSite: 'none',
       maxAge: 90 * 24 * 3600 * 1000,
     });
-    res.type('html').send(renderSuccessPage(accessToken, expiresInSec));
+    res.type('html').send(renderSuccessPage(skin));
   } catch (err) {
     const message = (err as Error).message;
     await stashAuthResult(state, { status: 'error', message });
-    res.status(502).type('html').send(renderErrorPage(message));
+    res.status(502).type('html').send(renderErrorPage(message, skin));
   }
 });
 
@@ -71,7 +84,7 @@ function escapeHtml(value: string): string {
   return value.replace(/&/g, '&amp;').replace(/</g, '&lt;');
 }
 
-/** Pile de cartes façon icône Windows 95 — même marque que le plugin, recopiée ici en dur : cette page est rendue par Express, hors du pipeline esbuild du plugin (§esbuild.config.mjs) qui injecte __LOGO_SVG__ au build. */
+/** Pile de cartes façon icône du plugin — recopiée en dur : cette page est rendue par Express, hors du pipeline esbuild du plugin (§esbuild.config.mjs) qui injecte __LOGO_SVG__ au build. */
 const DECKER_MARK_SVG = `<svg viewBox="0 0 32 32" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">
 <rect x="3" y="15" width="20" height="14" fill="#7a3b12" stroke="#1a0d02" stroke-width="1"/>
 <rect x="6" y="10" width="20" height="14" fill="#c1651c" stroke="#1a0d02" stroke-width="1"/>
@@ -85,6 +98,8 @@ const DECKER_MARK_SVG = `<svg viewBox="0 0 32 32" shape-rendering="crispEdges" x
 <path d="M26 5 L28 5 L28 7 Z" fill="#fff4d6"/>
 </svg>`;
 
+const DECKER_FAVICON = `data:image/svg+xml,${encodeURIComponent(DECKER_MARK_SVG)}`;
+
 /** Monogramme "B" personnel — recopié depuis assets/logo.svg (même source que le crédit dans le plugin, ui.tsx §Logo). Sert de crédit discret en pied de page, pas de logo produit ici. */
 const PERSONAL_MARK_SVG = `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
 <rect width="80" height="80" rx="40" fill="#F06800"/>
@@ -93,14 +108,126 @@ const PERSONAL_MARK_SVG = `<svg viewBox="0 0 80 80" fill="none" xmlns="http://ww
 <rect x="30.6235" y="21.0001" width="3" height="37" rx="1.5" fill="#F2ECE8"/>
 </svg>`;
 
-/** Coquille Windows 95 partagée par les pages de succès/erreur d'auth — mêmes tokens que packages/plugin/src/styles.win95.css, recopiés ici (page Express autonome, pas de CSS partagé avec le plugin). */
-function pageShell(title: string, bodyHtml: string): string {
+const FOOTER_CREDIT = `<a href="https://billeltighidet.fr" target="_blank" rel="noreferrer" title="billeltighidet.fr">${PERSONAL_MARK_SVG}</a>`;
+
+interface PageContent {
+  title: string;
+  accent: 'success' | 'error';
+  heading: string;
+  body: string;
+}
+
+/**
+ * Ne montre plus le token brut : l'iframe du plugin récupère le jeton de
+ * session toute seule par polling (voir /auth/session/:pollId), donc ces
+ * pages n'ont plus besoin d'exposer de secret à l'utilisateur. `npm run
+ * calibrate` (spec §4) a une méthode d'obtention distincte du token, voir
+ * printMissingCredentialsHelp() dans calibration/calibrate.ts.
+ */
+
+// ============================================================================
+// Skin "modern" — DA de marque du plugin (orange, coins arrondis).
+// ============================================================================
+
+function renderModernPage(content: PageContent): string {
+  const iconPath =
+    content.accent === 'success'
+      ? '<path d="M20 34 L29 43 L46 24" stroke="#F2ECE8" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>'
+      : '<path d="M24 24 L42 42 M42 24 L24 42" stroke="#F2ECE8" stroke-width="4.5" stroke-linecap="round"/>';
+  const accentColor = content.accent === 'success' ? '#F06800' : '#E00000';
+
   return `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>${escapeHtml(title)}</title>
+<title>${escapeHtml(content.title)}</title>
+<link rel="icon" type="image/svg+xml" href="${DECKER_FAVICON}" />
+<style>
+  :root {
+    color-scheme: light;
+    --f2s-orange: #f06800;
+    --f2s-bg: #fff9f5;
+    --f2s-surface: #ffffff;
+    --f2s-border: #eeeeee;
+    --f2s-text: #120f0d;
+    --f2s-text-muted: rgba(18, 15, 13, 0.7);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.25rem;
+    padding: 1.5rem;
+    background: var(--f2s-bg);
+    color: var(--f2s-text);
+    font-family: 'Cabinet Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+  .card {
+    width: 100%;
+    max-width: 400px;
+    background: var(--f2s-surface);
+    border: 1px solid var(--f2s-border);
+    border-radius: 20px;
+    padding: 2.5rem 2rem;
+    text-align: center;
+    box-shadow: 0 12px 32px rgba(18, 15, 13, 0.08);
+  }
+  .brand { display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 2rem; }
+  .brand-mark { width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0; }
+  .brand-name { font-size: 0.95rem; font-weight: 600; letter-spacing: 0.01em; }
+  .status-icon { width: 64px; height: 64px; margin: 0 auto 1.5rem; }
+  h1 { margin: 0 0 0.75rem; font-size: 1.3rem; font-weight: 700; }
+  p.body { margin: 0 0 2rem; color: var(--f2s-text-muted); font-size: 0.95rem; line-height: 1.5; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; width: 100%;
+    padding: 0.75rem 1.25rem; border-radius: 10px; background: var(--f2s-orange); color: #fff9f5;
+    font-size: 0.95rem; font-weight: 600; text-decoration: none; border: none; cursor: pointer;
+  }
+  .fallback { margin: 1rem 0 0; font-size: 0.8rem; color: var(--f2s-text-muted); }
+  .credit { display: flex; justify-content: center; }
+  .credit a { display: inline-flex; opacity: 0.6; }
+  .credit a:hover { opacity: 1; }
+  .credit svg { width: 24px; height: 24px; display: block; }
+</style>
+</head>
+<body>
+  <main class="card">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${DECKER_MARK_SVG.replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '')}</svg>
+      <span class="brand-name">Decker</span>
+    </div>
+    <svg class="status-icon" viewBox="0 0 66 66" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <circle cx="33" cy="33" r="33" fill="${accentColor}"/>
+      ${iconPath}
+    </svg>
+    <h1>${escapeHtml(content.heading)}</h1>
+    <p class="body">${content.body}</p>
+    <a class="btn" href="figma://">Back to Figma</a>
+    <p class="fallback">If nothing happens, just close this tab.</p>
+  </main>
+  <footer class="credit">${FOOTER_CREDIT}</footer>
+</body>
+</html>`;
+}
+
+// ============================================================================
+// Skin "win95" — chrome Windows 95, mêmes tokens que styles.win95.css.
+// ============================================================================
+
+function renderWin95Page(content: PageContent): string {
+  const icon = content.accent === 'success' ? '✅' : '❌';
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>${escapeHtml(content.title)}</title>
+<link rel="icon" type="image/svg+xml" href="${DECKER_FAVICON}" />
 <style>
   :root {
     --w95-face: #c0c0c0;
@@ -111,7 +238,7 @@ function pageShell(title: string, bodyHtml: string): string {
     --w95-navy: #000080;
     --w95-navy-light: #1084d0;
     --w95-out: inset -1px -1px var(--w95-dark), inset 1px 1px var(--w95-white), inset -2px -2px var(--w95-shadow), inset 2px 2px var(--w95-light);
-    --w95-in: inset -1px -1px var(--w95-white), inset 1px 1px var(--w95-shadow), inset -2px -2px var(--w95-light), inset 2px 2px var(--w95-dark);
+    --w95-pressed: inset -1px -1px var(--w95-white), inset 1px 1px var(--w95-dark), inset -2px -2px var(--w95-light), inset 2px 2px var(--w95-shadow);
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; }
@@ -132,16 +259,9 @@ function pageShell(title: string, bodyHtml: string): string {
   }
   .window { width: 100%; max-width: 440px; background: var(--w95-face); box-shadow: var(--w95-out); padding: 3px; }
   .titlebar {
-    height: 22px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    padding: 0 3px 0 5px;
-    background: linear-gradient(90deg, var(--w95-navy), var(--w95-navy-light));
-    color: #fff;
-    font-weight: 700;
-    font-size: 12px;
+    height: 22px; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 0 3px 0 5px; background: linear-gradient(90deg, var(--w95-navy), var(--w95-navy-light));
+    color: #fff; font-weight: 700; font-size: 12px;
   }
   .titlebar-left { display: flex; align-items: center; gap: 6px; min-width: 0; }
   .titlebar-left svg { width: 16px; height: 16px; flex: none; }
@@ -152,10 +272,12 @@ function pageShell(title: string, bodyHtml: string): string {
   .msg-icon { flex: none; font-size: 28px; line-height: 1; }
   .msg-title { margin: 0 0 6px; font-weight: 700; font-size: 13px; }
   p { margin: 0 0 8px; line-height: 1.5; }
-  .dev-details { margin-top: 14px; background: var(--w95-light); box-shadow: inset -1px -1px var(--w95-white), inset 1px 1px var(--w95-shadow); padding: 8px 10px; }
-  .dev-details summary { cursor: pointer; font-weight: 700; }
-  .dev-note { color: #3f3f3f; font-size: 11px; }
-  textarea { width: 100%; margin-top: 6px; font-family: 'Courier New', monospace; font-size: 11px; padding: 6px; border: none; background: var(--w95-white); box-shadow: var(--w95-in); resize: vertical; }
+  .btn95 {
+    display: inline-flex; align-items: center; justify-content: center; width: 100%; margin-top: 8px;
+    padding: 6px 12px; background: var(--w95-face); color: #000; box-shadow: var(--w95-out);
+    font-family: inherit; font-size: 11px; font-weight: 700; text-decoration: none; border: none; cursor: pointer;
+  }
+  .btn95:active { box-shadow: var(--w95-pressed); }
   .credit { display: flex; justify-content: center; }
   .credit a { display: inline-flex; opacity: 0.85; }
   .credit a:hover { opacity: 1; }
@@ -168,54 +290,141 @@ function pageShell(title: string, bodyHtml: string): string {
       <div class="titlebar-left">${DECKER_MARK_SVG}<span>Decker</span></div>
       <div class="titlebar-btn">×</div>
     </div>
-    <div class="window-body">${bodyHtml}</div>
+    <div class="window-body">
+      <div class="msg-row">
+        <div class="msg-icon">${icon}</div>
+        <div>
+          <p class="msg-title">${escapeHtml(content.heading)}</p>
+          <p>${content.body}</p>
+        </div>
+      </div>
+      <a class="btn95" href="figma://">Back to Figma</a>
+    </div>
   </div>
-  <footer class="credit">
-    <a href="https://billeltighidet.fr" target="_blank" rel="noreferrer" title="billeltighidet.fr">${PERSONAL_MARK_SVG}</a>
-  </footer>
+  <footer class="credit">${FOOTER_CREDIT}</footer>
 </body>
 </html>`;
 }
 
-/**
- * L'iframe du plugin récupère le jeton toute seule par polling (voir
- * /auth/session/:pollId) — le copier-coller ci-dessous n'est là que pour
- * `npm run calibrate` (spec §4), qui a besoin d'un access token Google brut
- * en variable d'env et n'a pas d'autre moyen d'en obtenir un dans ce dépôt.
- * Google expire ce token après `expiresInSec` (~1h) : largement suffisant
- * pour lancer le script juste après, mais il faudra se reconnecter pour un
- * nouveau run plus tard.
- */
-function renderSuccessPage(accessToken: string, expiresInSec: number): string {
-  const escapedToken = escapeHtml(accessToken);
-  const expiresMin = Math.round(expiresInSec / 60);
-  const body = `
-    <div class="msg-row">
-      <div class="msg-icon">✅</div>
-      <div>
-        <p class="msg-title">Signed in with Google</p>
-        <p>You're all set — you can close this tab and go back to Figma. Decker will pick this up automatically.</p>
-      </div>
+// ============================================================================
+// Skin "hybrid" — palette de marque du skin moderne, biseaux/angles droits
+// du skin win95 (mêmes tokens que styles.hybrid.css, valeurs "clair" — ces
+// pages statiques ne suivent pas le thème Figma, comme win95).
+// ============================================================================
+
+function renderHybridPage(content: PageContent): string {
+  const iconPath =
+    content.accent === 'success'
+      ? '<path d="M20 34 L29 43 L46 24" stroke="#F2ECE8" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>'
+      : '<path d="M24 24 L42 42 M42 24 L24 42" stroke="#F2ECE8" stroke-width="4.5" stroke-linecap="round"/>';
+  const accentColor = content.accent === 'success' ? '#F06800' : '#E00000';
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>${escapeHtml(content.title)}</title>
+<link rel="icon" type="image/svg+xml" href="${DECKER_FAVICON}" />
+<style>
+  :root {
+    color-scheme: light;
+    --f2s-orange: #f06800;
+    --f2s-bg: #fff9f5;
+    --f2s-surface: #ffffff;
+    --f2s-text: #120f0d;
+    --f2s-text-muted: rgba(18, 15, 13, 0.7);
+    --hyb-hi: rgba(255, 255, 255, 0.9);
+    --hyb-lo: rgba(18, 15, 13, 0.22);
+    --hyb-lo-strong: rgba(18, 15, 13, 0.4);
+    --hyb-out: inset -1px -1px var(--hyb-lo), inset 1px 1px var(--hyb-hi), inset -2px -2px var(--hyb-lo-strong), inset 2px 2px var(--hyb-hi);
+    --hyb-pressed: inset -1px -1px var(--hyb-hi), inset 1px 1px var(--hyb-lo-strong), inset -2px -2px var(--hyb-hi), inset 2px 2px var(--hyb-lo);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.25rem;
+    padding: 1.5rem;
+    background: var(--f2s-bg);
+    color: var(--f2s-text);
+    font-family: 'Cabinet Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+  .card {
+    width: 100%;
+    max-width: 400px;
+    background: var(--f2s-surface);
+    border-radius: 0;
+    padding: 2.5rem 2rem;
+    text-align: center;
+    box-shadow: var(--hyb-out), 0 12px 32px rgba(18, 15, 13, 0.08);
+  }
+  .brand { display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 2rem; }
+  .brand-mark { width: 28px; height: 28px; border-radius: 0; flex-shrink: 0; }
+  .brand-name { font-size: 0.95rem; font-weight: 600; letter-spacing: 0.01em; }
+  .status-icon { width: 64px; height: 64px; margin: 0 auto 1.5rem; }
+  h1 { margin: 0 0 0.75rem; font-size: 1.3rem; font-weight: 700; }
+  p.body { margin: 0 0 2rem; color: var(--f2s-text-muted); font-size: 0.95rem; line-height: 1.5; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; width: 100%;
+    padding: 0.75rem 1.25rem; border-radius: 0; background: var(--f2s-orange); color: #fff9f5;
+    font-size: 0.95rem; font-weight: 600; text-decoration: none; border: none; cursor: pointer;
+    box-shadow: var(--hyb-out);
+  }
+  .btn:active { box-shadow: var(--hyb-pressed); }
+  .fallback { margin: 1rem 0 0; font-size: 0.8rem; color: var(--f2s-text-muted); }
+  .credit { display: flex; justify-content: center; }
+  .credit a { display: inline-flex; opacity: 0.6; }
+  .credit a:hover { opacity: 1; }
+  .credit svg { width: 24px; height: 24px; display: block; }
+</style>
+</head>
+<body>
+  <main class="card">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${DECKER_MARK_SVG.replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '')}</svg>
+      <span class="brand-name">Decker</span>
     </div>
-    <details class="dev-details">
-      <summary>Access token for <code>npm run calibrate</code> (dev only)</summary>
-      <p class="dev-note">Expires in ~${expiresMin} min. Do not share this — treat it like a password.</p>
-      <textarea readonly rows="4" onclick="this.select()">${escapedToken}</textarea>
-    </details>`;
-  return pageShell('Signed in — Decker', body);
+    <svg class="status-icon" viewBox="0 0 66 66" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <circle cx="33" cy="33" r="33" fill="${accentColor}"/>
+      ${iconPath}
+    </svg>
+    <h1>${escapeHtml(content.heading)}</h1>
+    <p class="body">${content.body}</p>
+    <a class="btn" href="figma://">Back to Figma</a>
+    <p class="fallback">If nothing happens, just close this tab.</p>
+  </main>
+  <footer class="credit">${FOOTER_CREDIT}</footer>
+</body>
+</html>`;
 }
 
-function renderErrorPage(message: string): string {
-  const escaped = escapeHtml(message);
-  const body = `
-    <div class="msg-row">
-      <div class="msg-icon">❌</div>
-      <div>
-        <p class="msg-title">Google sign-in failed</p>
-        <p>${escaped}</p>
-      </div>
-    </div>`;
-  return pageShell('Sign-in failed — Decker', body);
+function renderPage(skin: UiSkin, content: PageContent): string {
+  if (skin === 'modern') return renderModernPage(content);
+  if (skin === 'hybrid') return renderHybridPage(content);
+  return renderWin95Page(content);
+}
+
+function renderSuccessPage(skin: UiSkin): string {
+  return renderPage(skin, {
+    title: 'Signed in — Decker',
+    accent: 'success',
+    heading: "You're signed in",
+    body: 'You can close this tab and go back to Figma — Decker will pick this up automatically.',
+  });
+}
+
+function renderErrorPage(message: string, skin: UiSkin): string {
+  return renderPage(skin, {
+    title: 'Sign-in failed — Decker',
+    accent: 'error',
+    heading: 'Google sign-in failed',
+    body: escapeHtml(message),
+  });
 }
 
 /** GET /auth/me → email du compte connecté, pour la section Compte de la modale Settings du plugin. */

@@ -9,6 +9,16 @@ import { applyThemeRolesToElements, buildTemplateTheme } from './serialize/templ
 import { applyPlaceholderText } from './serialize/templatePlaceholderText.js';
 import { KNOWN_ROLE_TAGS, setPlaceholderTag } from './serialize/placeholder.js';
 
+// Injecté au build (voir esbuild.config.mjs) — false dans le build distribué
+// aux utilisateurs. Le bouton "Download IR JSON" de la modale Settings est
+// déjà masqué côté UI quand ce flag est faux (ui.tsx), mais rien n'empêche
+// un utilisateur d'ouvrir la console de l'iframe (clic droit > Inspect, ou
+// Plugins > Development > Show/Hide console) et de poster directement un
+// message `request-export-debug` à la main : le handler ci-dessous doit
+// donc REFUSER ce message côté sandbox lui-même, pas seulement ne pas
+// l'exposer dans l'UI.
+declare const __DEBUG_TOOLS__: boolean;
+
 const MAX_FRAMES_WARNING = 20;
 /**
  * Un template reste un petit jeu de layouts réutilisables (cf. "Simple
@@ -1012,6 +1022,12 @@ async function main(): Promise<void> {
       return;
     }
 
+    if (msg.type === 'notify') {
+      // Onglet Style : signale un changement fait au clavier/souris que l'UI seule ne peut pas rendre assez visible (ex. un rôle de thème volé à une autre couleur).
+      figma.notify(String(msg.message));
+      return;
+    }
+
     // Sélecteur de rôle du rapport de contenu (TemplatePanel, mode template) :
     // pose le tag `[[role]]` directement sur le calque source plutôt que de
     // demander à l'utilisateur de le taper à la main dans Figma. Ne pousse
@@ -1062,6 +1078,9 @@ async function main(): Promise<void> {
     // `01-rects`/`03-text-inset`. Le PNG de référence s'exporte séparément
     // via l'export natif Figma (Export panel), pas par ce chemin.
     if (msg.type === 'request-export-debug') {
+      // Défense en profondeur : même un message forgé à la main via la
+      // console (bouton UI absent du build distribué) ne doit rien produire.
+      if (!__DEBUG_TOOLS__) return;
       try {
         const m = msg as unknown as {
           includedFrameIds: string[];
@@ -1103,7 +1122,6 @@ async function main(): Promise<void> {
             presentationTitle: string;
             fontOverrides?: Record<string, string>;
             colorRoles?: Record<string, ThemeColorRole>;
-            roleColorOverrides?: Partial<Record<ThemeColorRole, string>>;
           },
           templatePending,
         );
@@ -1239,8 +1257,6 @@ async function handleTemplateCreateRequest(
     fontOverrides?: Record<string, string>;
     /** Onglet "Style" (audit 2026-08, mode template point 2) : clé de couleur (`colorKey`) → rôle assigné. */
     colorRoles?: Record<string, ThemeColorRole>;
-    /** Hex tapé à la main pour un rôle, prioritaire sur `colorRoles` (voir `serialize/templateTheme.ts::resolveThemeRoleHexes`). */
-    roleColorOverrides?: Partial<Record<ThemeColorRole, string>>;
   },
   pending: PendingSlide[],
 ): Promise<void> {
@@ -1264,7 +1280,7 @@ async function handleTemplateCreateRequest(
   // `theme` et les éléments recolorés restent cohérents entre eux).
   const colorRoles = msg.colorRoles ?? {};
   const allColors = aggregateColorSwatches(slides.map((s) => summarizeColors(s.elements)));
-  const theme = buildTemplateTheme(colorRoles, allColors, msg.roleColorOverrides ?? {});
+  const theme = buildTemplateTheme(colorRoles, allColors);
   for (const slide of slides) {
     slide.elements = applyThemeRolesToElements(slide.elements, colorRoles);
     // Le texte réel d'un calque tagué [[role]] cède la place à un
