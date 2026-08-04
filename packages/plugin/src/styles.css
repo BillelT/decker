@@ -712,7 +712,7 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
 
 /* Seuls les éléments RASTERISÉS (perte d'édition native) méritent une
    bordure rouge qui attire l'œil sur toute la liste — un warning "blocking"
-   (mode template) ou "may look different" (police substituée, radius
+   (mode template) ou "Approximated" (police substituée, radius
    approximé…) reste un élément natif éditable, la bordure colorée serait
    trompeuse à côté d'un vrai raster (audit). */
 .f2s-log-entry--blocking {

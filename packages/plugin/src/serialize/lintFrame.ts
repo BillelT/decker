@@ -65,7 +65,7 @@ async function walk(node: SceneNode, warnings: LintWarning[], maskedByAncestor: 
           nodeId: node.id,
           nodeName: node.name,
           code: 'FONT_SUBSTITUTED',
-          message: `Font "${w.original}" replaced with "${w.substitute}" — text may look different.`,
+          message: `Font "${w.original}" → "${w.substitute}".`,
           category: 'visual-diff',
         });
       }

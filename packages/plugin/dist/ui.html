@@ -717,7 +717,7 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
 
 /* Seuls les éléments RASTERISÉS (perte d'édition native) méritent une
    bordure rouge qui attire l'œil sur toute la liste — un warning "blocking"
-   (mode template) ou "may look different" (police substituée, radius
+   (mode template) ou "Approximated" (police substituée, radius
    approximé…) reste un élément natif éditable, la bordure colorée serait
    trompeuse à côté d'un vrai raster (audit). */
 .f2s-log-entry--blocking {
@@ -3225,7 +3225,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
                 title: `${w3.nodeName} \u2014 ${w3.message}`,
                 onClick: () => selectSourceNodes([w3.sourceNodeId]),
                 children: [
-                  flag && /* @__PURE__ */ u3("span", { className: `f2s-log-entry-flag f2s-log-entry-flag--${flag}`, children: flag === "rasterized" ? "Rasterized" : "May look different" }),
+                  flag && /* @__PURE__ */ u3("span", { className: `f2s-log-entry-flag f2s-log-entry-flag--${flag}`, children: flag === "rasterized" ? "Rasterized" : "Approximated" }),
                   /* @__PURE__ */ u3("span", { className: "f2s-log-entry-text", children: [
                     /* @__PURE__ */ u3("strong", { className: "f2s-log-entry-name", children: w3.nodeName }),
                     /* @__PURE__ */ u3("span", { className: "f2s-log-entry-message", children: [
@@ -3426,7 +3426,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
           title: `${w3.nodeName} \u2014 ${w3.message}`,
           onClick: () => selectSourceNodes([w3.sourceNodeId]),
           children: [
-            flag && /* @__PURE__ */ u3("span", { className: `f2s-log-entry-flag f2s-log-entry-flag--${flag}`, children: flag === "rasterized" ? "Rasterized" : "May look different" }),
+            flag && /* @__PURE__ */ u3("span", { className: `f2s-log-entry-flag f2s-log-entry-flag--${flag}`, children: flag === "rasterized" ? "Rasterized" : "Approximated" }),
             /* @__PURE__ */ u3("span", { className: "f2s-log-entry-text", children: [
               /* @__PURE__ */ u3("strong", { className: "f2s-log-entry-name", children: w3.nodeName }),
               /* @__PURE__ */ u3("span", { className: "f2s-log-entry-message", children: [

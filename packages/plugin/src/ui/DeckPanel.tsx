@@ -309,7 +309,7 @@ export function DeckPanel({
                         >
                           {flag && (
                             <span className={`f2s-log-entry-flag f2s-log-entry-flag--${flag}`}>
-                              {flag === 'rasterized' ? 'Rasterized' : 'May look different'}
+                              {flag === 'rasterized' ? 'Rasterized' : 'Approximated'}
                             </span>
                           )}
                           {/* Le nom du calque (nodeName) vient de Figma, où le nom par défaut d'un

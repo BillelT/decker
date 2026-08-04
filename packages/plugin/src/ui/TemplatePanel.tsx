@@ -26,7 +26,7 @@ function TemplateLogList({ warnings }: { warnings: TemplateWarning[] }) {
             >
               {flag && (
                 <span className={`f2s-log-entry-flag f2s-log-entry-flag--${flag}`}>
-                  {flag === 'rasterized' ? 'Rasterized' : 'May look different'}
+                  {flag === 'rasterized' ? 'Rasterized' : 'Approximated'}
                 </span>
               )}
               <span className="f2s-log-entry-text">
