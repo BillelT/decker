@@ -1285,6 +1285,7 @@ function App() {
           selecting={selecting}
           hasCanvasSelection={hasCanvasSelection}
           onRemove={removeFrame}
+          fontOverrides={fontOverrides}
           exportCursor={exporting && exportSource === 'deck' ? exportCursor : undefined}
           notice={selectionNotice}
         />
@@ -1300,6 +1301,7 @@ function App() {
           notice={templateSelectionNotice}
           onRemove={removeTemplateLayout}
           onRename={renameTemplateLayout}
+          fontOverrides={fontOverrides}
           exportCursor={exporting && exportSource === 'template' ? exportCursor : undefined}
           colors={templateColors}
           fonts={templateFonts}

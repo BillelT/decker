@@ -31,6 +31,9 @@ export interface FrameWarning {
   sourceNodeId: string;
   nodeName: string;
   message: string;
+  /** Uniquement sur FONT_SUBSTITUTED — voir logEntryFlag.ts::logEntryTagText. */
+  fontOriginal?: string;
+  fontSubstitute?: string;
 }
 
 export interface FrameState extends FrameCandidate {

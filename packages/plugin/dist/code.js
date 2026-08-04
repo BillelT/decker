@@ -518,7 +518,9 @@
               severity: "info",
               sourceNodeId: node.id,
               nodeName: node.name,
-              message: `Font "${w.original}" replaced with "${w.substitute}".`
+              message: `Font "${w.original}" replaced with "${w.substitute}".`,
+              fontOriginal: w.original,
+              fontSubstitute: w.substitute
             });
           }
         }
