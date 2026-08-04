@@ -146,13 +146,12 @@ a {
    compressibles (flex: none partout), pour que sa taille ne varie plus
    selon la longueur du libellé des boutons d'action ("Select frames to
    add" vs "Add selection", "Export" vs "Create template", spinner
-   "Waiting for Google sign-in…"…) ni selon le mode deck/template.
-   Le header doit rester sur une seule ligne dans tous les cas (jamais
-   d'overlap ni de retour à la ligne qui empilerait le header sur deux
-   lignes) : comme .f2s-toolbar-row plus bas, on interdit le wrap et on
-   laisse défiler horizontalement si les deux groupes ne tiennent plus
-   (cas rare, ex. le libellé le plus long du flow de connexion Google)
-   plutôt que de chevaucher ou de déborder. */
+   "Waiting…"…) ni selon le mode deck/template. Le header doit rester sur
+   une seule ligne dans tous les cas, sans chevauchement ni scroll : pas
+   de flex-wrap, et chaque libellé de bouton (y compris celui du flow de
+   connexion Google) reste assez court pour que les deux groupes tiennent
+   toujours ensemble dans les 960px du panneau (largeur fixe, non
+   redimensionnable — voir figma.showUI dans code.ts). */
 .f2s-topbar {
   display: flex;
   align-items: center;
@@ -161,7 +160,6 @@ a {
   gap: 16px;
   padding: 16px 16px 0;
   flex: none;
-  overflow-x: auto;
 }
 
 .f2s-topbar-left {

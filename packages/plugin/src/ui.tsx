@@ -1130,7 +1130,7 @@ function App() {
           {authLinkClicked ? (
             <span className="f2s-btn-loading">
               <span className="f2s-spinner" aria-hidden="true" />
-              Waiting for Google sign-in…
+              Waiting…
             </span>
           ) : (
             'Sign in with Google'
