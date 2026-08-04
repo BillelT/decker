@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { findUnknownPlaceholderTag, parsePlaceholderTag } from './placeholder.js';
+import { CANONICAL_TAG_FOR_ROLE, findUnknownPlaceholderTag, parsePlaceholderTag, setPlaceholderTag } from './placeholder.js';
 
 describe('parsePlaceholderTag', () => {
   it('returns undefined for a layer name without a tag', () => {
@@ -53,5 +53,34 @@ describe('findUnknownPlaceholderTag', () => {
 
   it('ignores tag-like syntax that does not appear at the start of the name', () => {
     expect(findUnknownPlaceholderTag('Header [[wat]]')).toBeUndefined();
+  });
+});
+
+describe('setPlaceholderTag', () => {
+  it('prepends the tag to a name without one', () => {
+    expect(setPlaceholderTag('Main heading', 'title')).toBe('[[title]] Main heading');
+  });
+
+  it('replaces an existing valid tag rather than stacking it', () => {
+    expect(setPlaceholderTag('[[body]] Main heading', 'title')).toBe('[[title]] Main heading');
+  });
+
+  it('replaces an existing unknown/misspelled tag too', () => {
+    expect(setPlaceholderTag('[[titel]] Main heading', 'title')).toBe('[[title]] Main heading');
+  });
+
+  it('produces a bare tag when the name is empty otherwise', () => {
+    expect(setPlaceholderTag('', 'logo')).toBe('[[logo]]');
+    expect(setPlaceholderTag('[[logo]]', 'image')).toBe('[[image]]');
+  });
+});
+
+describe('CANONICAL_TAG_FOR_ROLE', () => {
+  it('round-trips through parsePlaceholderTag for every known role', () => {
+    for (const tag of ['title', 'subtitle', 'body', 'image', 'logo', 'custom'] as const) {
+      const role = parsePlaceholderTag(`[[${tag}]] X`)!.role;
+      expect(CANONICAL_TAG_FOR_ROLE[role]).toBeDefined();
+      expect(parsePlaceholderTag(`[[${CANONICAL_TAG_FOR_ROLE[role]}]] X`)!.role).toBe(role);
+    }
   });
 });

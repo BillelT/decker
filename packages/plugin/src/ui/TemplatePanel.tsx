@@ -1,39 +1,74 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { logEntryFlag } from './logEntryFlag.js';
+import { logEntryFlag, logEntryTagText } from './logEntryFlag.js';
+import { placeholderRoleTagsFor } from './placeholderRoleOptions.js';
 import { moveToIndex } from './reorderFrames.js';
 import { RetroExportPreview } from './RetroExportPreview.js';
 import { TemplateStylePanel, type TemplateStylePanelProps } from './TemplateStylePanel.js';
 import type { ExportCursor } from './exportCursor.js';
 import { postToPlugin, selectSourceNodes, type TemplateLayoutState, type TemplateWarning } from './types.js';
+import { CANONICAL_TAG_FOR_ROLE, parsePlaceholderTag } from '../serialize/placeholder.js';
+
+function setPlaceholderRole(sourceNodeId: string, tag: string): void {
+  postToPlugin({ type: 'set-placeholder-role', sourceNodeId, tag });
+}
 
 /**
  * Rendu d'une liste de warnings (bloquants ou non) au même aspect que le
- * panneau Logs du mode deck (DeckPanel.tsx) — même structure de bouton, même
- * troncature sur une ligne pour le nom de calque + message.
+ * panneau Content du mode deck (DeckPanel.tsx) — même structure de bouton,
+ * même troncature sur une ligne pour le nom de calque, tag à droite.
+ *
+ * `roleSelectable` n'ajoute le sélecteur de rôle de placeholder qu'à la
+ * liste "Content" (pas à "Fix before creating the template" juste
+ * au-dessus) : assigner un rôle à un calque encore bloquant n'a pas de sens
+ * tant que le blocage lui-même n'est pas réglé.
  */
-function TemplateLogList({ warnings }: { warnings: TemplateWarning[] }) {
+function TemplateLogList({
+  warnings,
+  fontOverrides,
+  roleSelectable,
+}: {
+  warnings: TemplateWarning[];
+  fontOverrides: Record<string, string>;
+  roleSelectable?: boolean;
+}) {
   return (
     <ul className="f2s-tmpl-list">
       {warnings.map((w, i) => {
         const flag = logEntryFlag(w.code);
+        const tagText = flag ? logEntryTagText(w, fontOverrides) : undefined;
+        const currentRole = parsePlaceholderTag(w.nodeName)?.role;
         return (
-          <li key={i}>
-            <button
-              type="button"
-              className={`f2s-log-entry${w.severity === 'blocking' ? ' f2s-log-entry--blocking' : ''}${flag ? ` f2s-log-entry--${flag}` : ''}`}
-              title={`${w.nodeName} — ${w.message}`}
-              onClick={() => selectSourceNodes([w.sourceNodeId])}
-            >
-              {flag && (
-                <span className={`f2s-log-entry-flag f2s-log-entry-flag--${flag}`}>
-                  {flag === 'rasterized' ? 'Rasterized' : 'Approximated'}
-                </span>
-              )}
+          <li key={i} className={`f2s-log-entry${w.severity === 'blocking' ? ' f2s-log-entry--blocking' : ''}${flag ? ` f2s-log-entry--${flag}` : ''}`}>
+            <button type="button" className="f2s-log-entry-clickarea" title={`${w.nodeName} — ${tagText ?? w.message}`} onClick={() => selectSourceNodes([w.sourceNodeId])}>
+              {/* Le nom du calque (nodeName) vient de Figma, où le nom par défaut d'un
+                  calque texte est son contenu entier : sur un long paragraphe, ça
+                  déborde. Tronqué en priorité sur une ligne, à gauche — le tag (la
+                  raison) reste entier à droite, le libellé complet reste dans `title`.
+                  Le message n'est affiché que si l'entrée n'a pas de tag (ex.
+                  placeholder inconnu) : sinon la raison est déjà dans le tag. */}
               <span className="f2s-log-entry-text">
                 <strong className="f2s-log-entry-name">{w.nodeName}</strong>
-                <span className="f2s-log-entry-message">— {w.message}</span>
+                {!tagText && <span className="f2s-log-entry-message">— {w.message}</span>}
               </span>
+              {tagText && <span className={`f2s-log-entry-flag f2s-log-entry-flag--${flag}`}>{tagText}</span>}
             </button>
+            {roleSelectable && (
+              <select
+                className="f2s-log-entry-role"
+                value={currentRole ? CANONICAL_TAG_FOR_ROLE[currentRole] : ''}
+                title="Assign this content to a Slides template placeholder role"
+                onChange={(e) => setPlaceholderRole(w.sourceNodeId, (e.target as HTMLSelectElement).value)}
+              >
+                <option value="" disabled>
+                  Set placeholder role…
+                </option>
+                {placeholderRoleTagsFor(w.code).map((tag) => (
+                  <option key={tag} value={tag}>
+                    [[{tag}]]
+                  </option>
+                ))}
+              </select>
+            )}
           </li>
         );
       })}
@@ -83,6 +118,7 @@ export function TemplatePanel({
   notice,
   onRemove,
   onRename,
+  fontOverrides,
   exportCursor,
   colors,
   fonts,
@@ -205,6 +241,11 @@ export function TemplatePanel({
   if (order.length === 0) {
     return (
       <div className="f2s-body">
+        {notice && (
+          <div className="f2s-toast" role="status">
+            {notice}
+          </div>
+        )}
         <main className="f2s-canvas">
           <p className="f2s-empty">
             Click "Select layout to add", then select the frames
@@ -216,6 +257,7 @@ export function TemplatePanel({
           <TemplateStylePanel
             colors={colors}
             fonts={fonts}
+            fontOverrides={fontOverrides}
             colorRoles={colorRoles}
             setColorRoles={setColorRoles}
           />
@@ -226,8 +268,12 @@ export function TemplatePanel({
 
   return (
     <div className="f2s-body">
+      {notice && (
+        <div className="f2s-toast" role="status">
+          {notice}
+        </div>
+      )}
       <aside className="f2s-sidebar">
-        {notice && <p className="f2s-error">{notice}</p>}
         {selecting && !hasCanvasSelection && (
           <p className="f2s-toolbar-muted">Select one or more frames on the Figma canvas, then click "Add selection".</p>
         )}
@@ -339,7 +385,7 @@ export function TemplatePanel({
                   <div className="f2s-logs-header">
                     <h3 className="f2s-tmpl-heading">Fix before creating the template</h3>
                   </div>
-                  <TemplateLogList warnings={previewedLayout.warnings.filter((w) => w.severity === 'blocking')} />
+                  <TemplateLogList warnings={previewedLayout.warnings.filter((w) => w.severity === 'blocking')} fontOverrides={fontOverrides} />
                 </div>
               )}
 
@@ -348,7 +394,7 @@ export function TemplatePanel({
                   <div className="f2s-logs-header">
                     <h3 className="f2s-tmpl-heading">Content</h3>
                   </div>
-                  <TemplateLogList warnings={previewedLayout.warnings.filter((w) => w.severity !== 'blocking')} />
+                  <TemplateLogList warnings={previewedLayout.warnings.filter((w) => w.severity !== 'blocking')} fontOverrides={fontOverrides} roleSelectable />
                 </div>
               )}
             </div>
@@ -361,6 +407,7 @@ export function TemplatePanel({
         <TemplateStylePanel
           colors={colors}
           fonts={fonts}
+          fontOverrides={fontOverrides}
           colorRoles={colorRoles}
           setColorRoles={setColorRoles}
         />

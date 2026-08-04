@@ -432,6 +432,13 @@
     return ROLE_ALIASES[match[1].toLowerCase()] ? void 0 : match[1];
   }
   var KNOWN_ROLE_TAGS = ["title", "subtitle", "body", "image", "logo", "custom"];
+  var CANONICAL_TAG_FOR_ROLE = Object.fromEntries(
+    KNOWN_ROLE_TAGS.map((tag) => [ROLE_ALIASES[tag], tag])
+  );
+  function setPlaceholderTag(layerName, tag) {
+    const rest = layerName.replace(TAG_PATTERN, "").trimStart();
+    return rest.length > 0 ? `[[${tag}]] ${rest}` : `[[${tag}]]`;
+  }
 
   // src/serialize/serializeFrame.ts
   function evaluateStroke(node) {
@@ -549,7 +556,9 @@
               severity: "info",
               sourceNodeId: node.id,
               nodeName: node.name,
-              message: `Font "${w.original}" replaced with "${w.substitute}".`
+              message: `Font "${w.original}" replaced with "${w.substitute}".`,
+              fontOriginal: w.original,
+              fontSubstitute: w.substitute
             });
           }
         }
@@ -1142,16 +1151,17 @@
     return [...byKey.values()];
   }
   function summarizeFonts(elements) {
-    const byFamily = /* @__PURE__ */ new Map();
+    const byKey = /* @__PURE__ */ new Map();
     for (const el of elements) {
       if (el.kind !== "text") continue;
       for (const run of el.runs) {
-        const weights = byFamily.get(run.fontFamily) ?? /* @__PURE__ */ new Set();
-        weights.add(run.fontWeight);
-        byFamily.set(run.fontFamily, weights);
+        const key = run.originalFontFamily ?? run.fontFamily;
+        const entry = byKey.get(key) ?? { family: run.fontFamily, weights: /* @__PURE__ */ new Set(), original: run.originalFontFamily };
+        entry.weights.add(run.fontWeight);
+        byKey.set(key, entry);
       }
     }
-    return [...byFamily.entries()].map(([family, weights]) => ({ family, weights: [...weights].sort((a, b) => a - b) }));
+    return [...byKey.values()].map(({ family, weights, original }) => ({ family, weights: [...weights].sort((a, b) => a - b), original }));
   }
   function summarizePlaceholders(elements) {
     const result = [];
@@ -1274,6 +1284,7 @@
   var SLIDES_READY_KEY = "slidesExportReady";
   var DECK_TAG = "true";
   var TEMPLATE_TAG = "template";
+  var TRACKED_KEY = "slidesTracked";
   var LINT_GROUP_ID_KEY = "slidesLintGroupId";
   var LINT_STROKE_MAX = 8;
   var LINT_STROKE_MIN = 1.5;
@@ -1301,6 +1312,12 @@
   }
   function isTemplateReady(node) {
     return readyTagOf(node) === TEMPLATE_TAG;
+  }
+  function isTracked(node) {
+    return node.getPluginData(TRACKED_KEY) === DECK_TAG;
+  }
+  function isTemplateTracked(node) {
+    return node.getPluginData(TRACKED_KEY) === TEMPLATE_TAG;
   }
   function stripReadyPrefix(name) {
     if (name.startsWith(SLIDES_READY_PREFIX)) return name.slice(SLIDES_READY_PREFIX.length);
@@ -1384,6 +1401,7 @@
       const previewDataUrl = await generatePreview(frame);
       const { slide, nodesToRaster } = await serializeFrame(frame, { nextId: idGen });
       pending.push({ frame, slide, nodesToRaster });
+      if (!isSlidesReady(frame)) frame.setPluginData(TRACKED_KEY, DECK_TAG);
       postCandidateMessage("candidate-added", frame, previewDataUrl, slide);
       await yieldToUi();
     }
@@ -1408,9 +1426,9 @@
     await addFrames(selected, pending, idGen);
   }
   async function loadTaggedFrames(pending, templatePending, idGen) {
-    const deckTagged = figma.currentPage.findAll((n) => isExportable(n) && isSlidesReady(n));
+    const deckTagged = figma.currentPage.findAll((n) => isExportable(n) && (isSlidesReady(n) || isTracked(n)));
     if (deckTagged.length > 0) await addFrames(deckTagged, pending, idGen);
-    const templateTagged = figma.currentPage.findAll((n) => isExportable(n) && isTemplateReady(n));
+    const templateTagged = figma.currentPage.findAll((n) => isExportable(n) && (isTemplateReady(n) || isTemplateTracked(n)));
     if (templateTagged.length > 0) await addTemplateLayoutNodes(templateTagged, templatePending, idGen);
   }
   function flattenAutoLayout(node) {
@@ -1427,6 +1445,18 @@
     const group = await figma.getNodeByIdAsync(groupId);
     if (group && !group.removed) group.remove();
     copy.setPluginData(LINT_GROUP_ID_KEY, "");
+  }
+  async function removeFromPending(id, pending) {
+    const idx = pending.findIndex((p) => p.frame.id === id);
+    if (idx === -1) return;
+    const frame = pending[idx].frame;
+    pending.splice(idx, 1);
+    if (frame.removed) return;
+    frame.setPluginData(TRACKED_KEY, "");
+    if (readyTagOf(frame)) {
+      await removeLintAnnotations(frame);
+      frame.setPluginData(SLIDES_READY_KEY, "");
+    }
   }
   async function addLintAnnotations(copy, warnings) {
     await removeLintAnnotations(copy);
@@ -1497,6 +1527,7 @@
         await refreshPendingEntry(copy, pending, idGen);
       } else {
         newlyCreated.push(copy);
+        frame.setPluginData(TRACKED_KEY, "");
         const rawIdx = pending.findIndex((p) => p.frame.id === frame.id);
         if (rawIdx !== -1) {
           pending.splice(rawIdx, 1);
@@ -1544,6 +1575,7 @@
       const { slide, nodesToRaster } = await serializeFrame(frame, { nextId: idGen });
       slide.warnings = enforceTemplateStrictness(slide.warnings);
       pending.push({ frame, slide, nodesToRaster });
+      if (!isTemplateReady(frame)) frame.setPluginData(TRACKED_KEY, TEMPLATE_TAG);
       postTemplateCandidateMessage("template-candidate-added", frame, previewDataUrl, slide);
       await yieldToUi();
     }
@@ -1591,6 +1623,7 @@
         await refreshTemplateEntry(copy, pending, idGen);
       } else {
         newlyCreated.push(copy);
+        frame.setPluginData(TRACKED_KEY, "");
         const rawIdx = pending.findIndex((p) => p.frame.id === frame.id);
         if (rawIdx !== -1) {
           pending.splice(rawIdx, 1);
@@ -1780,6 +1813,14 @@
         }
         return;
       }
+      if (msg.type === "remove-frame") {
+        try {
+          await removeFromPending(msg.id, pending);
+        } catch (err) {
+          console.error(err);
+        }
+        return;
+      }
       if (msg.type === "prepare-for-slides") {
         try {
           await handlePrepareForSlides(pending, idGen, msg.fontOverrides ?? {}, msg.deckFrameIds ?? []);
@@ -1795,6 +1836,14 @@
         } catch (err) {
           console.error(err);
           figma.ui.postMessage({ type: "export-error", message: err.message });
+        }
+        return;
+      }
+      if (msg.type === "remove-template-layout") {
+        try {
+          await removeFromPending(msg.id, templatePending);
+        } catch (err) {
+          console.error(err);
         }
         return;
       }
@@ -1822,6 +1871,18 @@
       }
       if (msg.type === "notify") {
         figma.notify(String(msg.message));
+        return;
+      }
+      if (msg.type === "set-placeholder-role") {
+        try {
+          const tag = msg.tag;
+          const node = await figma.getNodeByIdAsync(msg.sourceNodeId);
+          if (node && "name" in node) {
+            node.name = setPlaceholderTag(node.name, tag);
+          }
+        } catch (err) {
+          console.error(err);
+        }
         return;
       }
       if (msg.type === "request-export") {

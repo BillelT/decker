@@ -74,3 +74,19 @@ export function findUnknownPlaceholderTag(layerName: string): string | undefined
 
 /** Rôles proposés dans les messages d'aide (UI + warning de tag inconnu). */
 export const KNOWN_ROLE_TAGS = ['title', 'subtitle', 'body', 'image', 'logo', 'custom'] as const;
+
+/** Tag canonique (premier alias listé dans KNOWN_ROLE_TAGS) pour un rôle donné — sert à présélectionner le sélecteur de rôle du rapport de contenu (TemplatePanel) sur un calque déjà tagué. */
+export const CANONICAL_TAG_FOR_ROLE: Record<PlaceholderRole, (typeof KNOWN_ROLE_TAGS)[number]> = Object.fromEntries(
+  KNOWN_ROLE_TAGS.map((tag) => [ROLE_ALIASES[tag], tag]),
+) as Record<PlaceholderRole, (typeof KNOWN_ROLE_TAGS)[number]>;
+
+/**
+ * Pose (ou remplace) le tag `[[role]]` en tête du nom de calque — utilisé
+ * quand le créateur de template assigne un rôle depuis le sélecteur du
+ * rapport de contenu plutôt qu'en renommant le calque à la main dans Figma.
+ * Idempotent : un tag déjà présent (valide ou non) est remplacé, pas empilé.
+ */
+export function setPlaceholderTag(layerName: string, tag: (typeof KNOWN_ROLE_TAGS)[number]): string {
+  const rest = layerName.replace(TAG_PATTERN, '').trimStart();
+  return rest.length > 0 ? `[[${tag}]] ${rest}` : `[[${tag}]]`;
+}

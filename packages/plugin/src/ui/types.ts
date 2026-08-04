@@ -31,6 +31,9 @@ export interface FrameWarning {
   sourceNodeId: string;
   nodeName: string;
   message: string;
+  /** Uniquement sur FONT_SUBSTITUTED — voir logEntryFlag.ts::logEntryTagText. */
+  fontOriginal?: string;
+  fontSubstitute?: string;
 }
 
 export interface FrameState extends FrameCandidate {
@@ -67,6 +70,8 @@ export interface TemplateColorSwatch {
 export interface TemplateFontUsage {
   family: string;
   weights: number[];
+  /** Police d'origine Figma si `family` vient d'une substitution — voir serialize/templateSummary.ts::summarizeFonts. */
+  original?: string;
 }
 
 export interface TemplateLayoutState extends FrameCandidate {
