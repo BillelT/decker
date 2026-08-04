@@ -103,7 +103,7 @@ function GearIcon() {
 function TitleBar({ mode }: { mode: AppMode }) {
   return (
     <div className="f2s-titlebar">
-      <span className="f2s-titlebar-text">Figma → Slides — {mode === 'deck' ? 'Deck export' : 'Template creation'}</span>
+      <span className="f2s-titlebar-text">Decker — {mode === 'deck' ? 'Deck export' : 'Template creation'}</span>
       {/* Seule case classique qui ait un équivalent réel côté Figma
           (`figma.closePlugin()`) — pas de réduire/agrandir décoratifs. */}
       <button
@@ -1068,7 +1068,7 @@ function App() {
       includedFrameIds: order,
       order,
       options,
-      presentationTitle: deckTitle.trim() || 'Figma → Slides export',
+      presentationTitle: deckTitle.trim() || 'Decker export',
       fontOverrides,
     });
   }
@@ -1195,7 +1195,7 @@ function App() {
               <input
                 type="text"
                 className="f2s-title-input"
-                placeholder="Figma → Slides export"
+                placeholder="Decker export"
                 value={deckTitle}
                 onInput={(e) => setDeckTitle((e.target as HTMLInputElement).value)}
               />

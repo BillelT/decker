@@ -1,5 +1,5 @@
 {
-  "name": "Figma → Google Slides",
+  "name": "Decker",
   "id": "figma-to-slides-dev",
   "api": "1.0.0",
   "main": "dist/code.js",
