@@ -983,6 +983,11 @@ function App() {
   }
 
   function removeFrame(id: string) {
+    // Sans ce message, code.ts gardait l'entrée dans son `pending` interne
+    // (le retrait ci-dessous n'est que local à l'UI) : tout ré-ajout de
+    // cette même frame était alors silencieusement ignoré (dédoublonnage par
+    // id côté sandbox) jusqu'à fermer/rouvrir le plugin.
+    postToPlugin({ type: 'remove-frame', id });
     setOrder((prev) => prev.filter((x) => x !== id));
     setFrames((prev) => {
       const next = { ...prev };
@@ -1003,6 +1008,8 @@ function App() {
   }
 
   function removeTemplateLayout(id: string) {
+    // Voir le commentaire équivalent dans `removeFrame`.
+    postToPlugin({ type: 'remove-template-layout', id });
     setTemplateOrder((prev) => prev.filter((x) => x !== id));
     setTemplateLayouts((prev) => {
       const next = { ...prev };
