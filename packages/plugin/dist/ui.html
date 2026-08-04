@@ -399,7 +399,7 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   z-index: 10;
   max-width: calc(100% - 32px);
   padding: 8px 14px;
-  background: var(--color-surface);
+  background: var(--color-bg);
   border: 1px solid var(--color-border);
   border-radius: 8px;
   box-shadow: 0 8px 20px rgba(18, 15, 13, 0.18);
@@ -3687,6 +3687,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
     }, [suppressShiftTransition]);
     if (order.length === 0) {
       return /* @__PURE__ */ u3("div", { className: "f2s-body", children: [
+        notice && /* @__PURE__ */ u3("div", { className: "f2s-toast", role: "status", children: notice }),
         /* @__PURE__ */ u3("main", { className: "f2s-canvas", children: /* @__PURE__ */ u3("p", { className: "f2s-empty", children: [
           'Click "Select layout to add", then select the frames',
           /* @__PURE__ */ u3("br", {}),
@@ -3707,8 +3708,8 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
       ] });
     }
     return /* @__PURE__ */ u3("div", { className: "f2s-body", children: [
+      notice && /* @__PURE__ */ u3("div", { className: "f2s-toast", role: "status", children: notice }),
       /* @__PURE__ */ u3("aside", { className: "f2s-sidebar", children: [
-        notice && /* @__PURE__ */ u3("p", { className: "f2s-error", children: notice }),
         selecting && !hasCanvasSelection && /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: 'Select one or more frames on the Figma canvas, then click "Add selection".' }),
         order.map((id, index) => {
           const layout = layouts[id];
@@ -4084,6 +4085,19 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
     const [activeTemplateId, setActiveTemplateId] = d2();
     const [templateSelecting, setTemplateSelecting] = d2(false);
     const [templateSelectionNotice, setTemplateSelectionNotice] = d2();
+    const templateSelectionNoticeTimerRef = A2();
+    function showTemplateSelectionNotice(message) {
+      if (templateSelectionNoticeTimerRef.current !== void 0) clearTimeout(templateSelectionNoticeTimerRef.current);
+      setTemplateSelectionNotice(message);
+      templateSelectionNoticeTimerRef.current = setTimeout(() => setTemplateSelectionNotice(void 0), SELECTION_NOTICE_MS);
+    }
+    function clearTemplateSelectionNotice() {
+      if (templateSelectionNoticeTimerRef.current !== void 0) {
+        clearTimeout(templateSelectionNoticeTimerRef.current);
+        templateSelectionNoticeTimerRef.current = void 0;
+      }
+      setTemplateSelectionNotice(void 0);
+    }
     const [selecting, setSelecting] = d2(false);
     const [selectionNotice, setSelectionNotice] = d2();
     const selectionNoticeTimerRef = A2();
@@ -4102,6 +4116,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
     h2(
       () => () => {
         if (selectionNoticeTimerRef.current !== void 0) clearTimeout(selectionNoticeTimerRef.current);
+        if (templateSelectionNoticeTimerRef.current !== void 0) clearTimeout(templateSelectionNoticeTimerRef.current);
       },
       []
     );
@@ -4352,14 +4367,14 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
             break;
           case "no-frames-selected":
             if (modeRef.current === "template") {
-              setTemplateSelectionNotice("Select at least one frame on the Figma canvas before clicking.");
+              showTemplateSelectionNotice("Select at least one frame on the Figma canvas before clicking.");
             } else {
               showSelectionNotice("Select at least one frame on the Figma canvas before clicking.");
             }
             break;
           case "too-many-frames":
             if (modeRef.current === "template") {
-              setTemplateSelectionNotice(`${msg.count} layouts selected \u2014 a template is capped at ${msg.max} to stay focused.`);
+              showTemplateSelectionNotice(`${msg.count} layouts selected \u2014 a template is capped at ${msg.max} to stay focused.`);
             } else {
               showSelectionNotice(`${msg.count} frames selected \u2014 beyond ${msg.max}, export may become slow.`);
             }
@@ -4687,6 +4702,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
       setSelecting(false);
     }
     function removeFrame(id) {
+      postToPlugin({ type: "remove-frame", id });
       setOrder((prev) => prev.filter((x2) => x2 !== id));
       setFrames((prev) => {
         const next = { ...prev };
@@ -4696,7 +4712,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
       setActiveId((prev) => prev === id ? void 0 : prev);
     }
     function handleAddTemplateLayoutClick() {
-      setTemplateSelectionNotice(void 0);
+      clearTemplateSelectionNotice();
       if (!templateSelecting) {
         setTemplateSelecting(true);
         return;
@@ -4705,6 +4721,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
       setTemplateSelecting(false);
     }
     function removeTemplateLayout(id) {
+      postToPlugin({ type: "remove-template-layout", id });
       setTemplateOrder((prev) => prev.filter((x2) => x2 !== id));
       setTemplateLayouts((prev) => {
         const next = { ...prev };
