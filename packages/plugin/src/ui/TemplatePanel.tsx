@@ -205,6 +205,11 @@ export function TemplatePanel({
   if (order.length === 0) {
     return (
       <div className="f2s-body">
+        {notice && (
+          <div className="f2s-toast" role="status">
+            {notice}
+          </div>
+        )}
         <main className="f2s-canvas">
           <p className="f2s-empty">
             Click "Select layout to add", then select the frames
@@ -229,8 +234,12 @@ export function TemplatePanel({
 
   return (
     <div className="f2s-body">
+      {notice && (
+        <div className="f2s-toast" role="status">
+          {notice}
+        </div>
+      )}
       <aside className="f2s-sidebar">
-        {notice && <p className="f2s-error">{notice}</p>}
         {selecting && !hasCanvasSelection && (
           <p className="f2s-toolbar-muted">Select one or more frames on the Figma canvas, then click "Add selection".</p>
         )}

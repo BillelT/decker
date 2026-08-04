@@ -161,11 +161,31 @@ function App() {
   const [templateOrder, setTemplateOrder] = useState<string[]>([]);
   const [activeTemplateId, setActiveTemplateId] = useState<string | undefined>();
   const [templateSelecting, setTemplateSelecting] = useState(false);
+  // Notice de sélection du mode template ("no-frames-selected" / "too-many-frames") :
+  // même toast absolu que le mode deck (voir `selectionNotice` ci-dessous) —
+  // avant, c'était un texte rouge inline en tête du rail, incohérent avec le
+  // mode deck et sans auto-dismiss.
   const [templateSelectionNotice, setTemplateSelectionNotice] = useState<string | undefined>();
+  const templateSelectionNoticeTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>();
+
+  function showTemplateSelectionNotice(message: string) {
+    if (templateSelectionNoticeTimerRef.current !== undefined) clearTimeout(templateSelectionNoticeTimerRef.current);
+    setTemplateSelectionNotice(message);
+    templateSelectionNoticeTimerRef.current = setTimeout(() => setTemplateSelectionNotice(undefined), SELECTION_NOTICE_MS);
+  }
+
+  function clearTemplateSelectionNotice() {
+    if (templateSelectionNoticeTimerRef.current !== undefined) {
+      clearTimeout(templateSelectionNoticeTimerRef.current);
+      templateSelectionNoticeTimerRef.current = undefined;
+    }
+    setTemplateSelectionNotice(undefined);
+  }
+
   const [selecting, setSelecting] = useState(false);
   // Notice de sélection du mode deck ("no-frames-selected" / "too-many-frames") :
   // affichée en toast absolu par DeckPanel (pas de zone dédiée dans le layout
-  // du rail, contrairement au mode template) — auto-dismiss après SELECTION_NOTICE_MS.
+  // du rail) — auto-dismiss après SELECTION_NOTICE_MS.
   const [selectionNotice, setSelectionNotice] = useState<string | undefined>();
   const selectionNoticeTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>();
 
@@ -186,6 +206,7 @@ function App() {
   useEffect(
     () => () => {
       if (selectionNoticeTimerRef.current !== undefined) clearTimeout(selectionNoticeTimerRef.current);
+      if (templateSelectionNoticeTimerRef.current !== undefined) clearTimeout(templateSelectionNoticeTimerRef.current);
     },
     [],
   );
@@ -527,14 +548,14 @@ function App() {
           break;
         case 'no-frames-selected':
           if (modeRef.current === 'template') {
-            setTemplateSelectionNotice('Select at least one frame on the Figma canvas before clicking.');
+            showTemplateSelectionNotice('Select at least one frame on the Figma canvas before clicking.');
           } else {
             showSelectionNotice('Select at least one frame on the Figma canvas before clicking.');
           }
           break;
         case 'too-many-frames':
           if (modeRef.current === 'template') {
-            setTemplateSelectionNotice(`${msg.count} layouts selected — a template is capped at ${msg.max} to stay focused.`);
+            showTemplateSelectionNotice(`${msg.count} layouts selected — a template is capped at ${msg.max} to stay focused.`);
           } else {
             showSelectionNotice(`${msg.count} frames selected — beyond ${msg.max}, export may become slow.`);
           }
@@ -998,7 +1019,7 @@ function App() {
   }
 
   function handleAddTemplateLayoutClick() {
-    setTemplateSelectionNotice(undefined);
+    clearTemplateSelectionNotice();
     if (!templateSelecting) {
       setTemplateSelecting(true);
       return;
