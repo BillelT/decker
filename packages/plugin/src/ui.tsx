@@ -61,6 +61,8 @@ const SELECTION_NOTICE_MS = 4000;
 // Injectés au build (voir esbuild.config.mjs).
 declare const __BACKEND_URL__: string;
 declare const __LOGO_SVG__: string;
+/** Section Developer de la modale Settings (Download IR JSON) — false par défaut, à activer avec F2S_DEBUG_TOOLS=1 au build pour un usage local de mainteneur. Jamais vrai dans le build distribué aux utilisateurs. */
+declare const __DEBUG_TOOLS__: boolean;
 
 /** Le backend a répondu 401 : la session Google persistée n'est plus valide — à purger avant de relancer la connexion. */
 class AuthExpiredError extends Error {
@@ -300,8 +302,6 @@ function App() {
   // additif — un template sans aucune assignation s'exporte exactement
   // comme avant (aplats RGB statiques).
   const [colorRoles, setColorRoles] = useState<Record<string, ThemeColorRole>>({});
-  /** Hex tapé à la main pour un rôle dans l'onglet Style, prioritaire sur la couleur détectée assignée via `colorRoles` (voir `serialize/templateTheme.ts::resolveThemeRoleHexes`). */
-  const [roleColorOverrides, setRoleColorOverrides] = useState<Partial<Record<ThemeColorRole, string>>>({});
   const templateColors = useMemo(
     () => aggregateColorSwatches(templateOrder.map((id) => templateLayouts[id]?.colors ?? [])),
     [templateOrder, templateLayouts],
@@ -883,7 +883,14 @@ function App() {
     // backend est indépendant du clic qui ouvrira ensuite le navigateur, donc
     // on le lance dès le montage (voir l'effet plus bas) pour que le lien
     // soit déjà prêt — l'utilisateur n'a alors besoin que d'UN clic dessus.
-    fetch(`${backend.baseUrl}/auth/google`, { method: 'POST' })
+    // `skin` voyage jusqu'à la page /auth/callback (onglet de navigateur hors
+    // iframe Figma) pour qu'elle reprenne le même habillage que le plugin —
+    // voir routes/auth.ts côté backend.
+    fetch(`${backend.baseUrl}/auth/google`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ skin }),
+    })
       .then(async (res) => {
         if (!res.ok) {
           const body = await res.json().catch(() => undefined);
@@ -1093,7 +1100,6 @@ function App() {
       presentationTitle: templateTitle.trim() || 'Figma template',
       fontOverrides,
       colorRoles,
-      roleColorOverrides,
     });
   }
 
@@ -1131,7 +1137,7 @@ function App() {
           {authLinkClicked ? (
             <span className="f2s-btn-loading">
               <span className="f2s-spinner" aria-hidden="true" />
-              Waiting for Google sign-in…
+              Waiting…
             </span>
           ) : (
             'Sign in with Google'
@@ -1335,8 +1341,6 @@ function App() {
           fonts={templateFonts}
           colorRoles={colorRoles}
           setColorRoles={setColorRoles}
-          roleColorOverrides={roleColorOverrides}
-          setRoleColorOverrides={setRoleColorOverrides}
         />
       )}
 
@@ -1396,7 +1400,7 @@ function App() {
         signedIn={Boolean(sessionToken)}
         accountEmail={accountEmail}
         onSignOut={handleSignOut}
-        showDebugExport={mode === 'deck' && order.length > 0}
+        showDebugExport={__DEBUG_TOOLS__ && mode === 'deck' && order.length > 0}
         onExportDebugIr={handleExportDebugIr}
       />
     </>

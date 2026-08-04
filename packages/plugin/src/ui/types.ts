@@ -64,6 +64,7 @@ export interface TemplateColorSwatch {
   hex: string;
   alpha: number;
   usageCount: number;
+  variableName?: string;
 }
 
 export interface TemplateFontUsage {

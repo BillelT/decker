@@ -151,17 +151,17 @@ a {
    compressibles (flex: none partout), pour que sa taille ne varie plus
    selon la longueur du libellé des boutons d'action ("Select frames to
    add" vs "Add selection", "Export" vs "Create template", spinner
-   "Waiting for Google sign-in…"…) ni selon le mode deck/template. C'est
-   donc .f2s-topbar qui absorbe l'espace en trop : flex-wrap renvoie
-   .f2s-topbar-actions à la ligne plutôt que de chevaucher ou de déborder
-   quand les deux groupes ne tiennent plus sur une seule ligne (cas rare,
-   ex. le libellé le plus long du flow de connexion Google). */
+   "Waiting…"…) ni selon le mode deck/template. Le header doit rester sur
+   une seule ligne dans tous les cas, sans chevauchement ni scroll : pas
+   de flex-wrap, et chaque libellé de bouton (y compris celui du flow de
+   connexion Google) reste assez court pour que les deux groupes tiennent
+   toujours ensemble dans les 960px du panneau (largeur fixe, non
+   redimensionnable — voir figma.showUI dans code.ts). */
 .f2s-topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
-  row-gap: 8px;
+  flex-wrap: nowrap;
   gap: 16px;
   padding: 16px 16px 0;
   flex: none;
@@ -923,63 +923,6 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   font-weight: 700;
 }
 
-.f2s-tmpl-hex-input {
-  font-family: inherit;
-  font-variant-numeric: tabular-nums;
-  font-size: 12px;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text);
-  border-radius: 4px;
-  padding: 3px 6px;
-  width: 68px;
-  flex: none;
-}
-
-.f2s-tmpl-hex-input:focus {
-  outline: none;
-  border-color: var(--color-orange-40);
-}
-
-/* Couleurs détectées dans le template, proposées comme remplacement en un
-   clic pour le rôle de la ligne — plus rapide que taper le hex à la main
-   quand la couleur voulue existe déjà dans le deck importé. */
-.f2s-tmpl-suggestions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
-}
-
-.f2s-tmpl-suggestion {
-  width: 18px;
-  height: 18px;
-  padding: 0;
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  overflow: hidden;
-  flex: none;
-  background-image: linear-gradient(45deg, rgba(127, 127, 127, 0.25) 25%, transparent 25%, transparent 75%, rgba(127, 127, 127, 0.25) 75%),
-    linear-gradient(45deg, rgba(127, 127, 127, 0.25) 25%, transparent 25%, transparent 75%, rgba(127, 127, 127, 0.25) 75%);
-  background-size: 8px 8px;
-  background-position: 0 0, 4px 4px;
-}
-
-.f2s-tmpl-suggestion span {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.f2s-tmpl-suggestion:hover {
-  border-color: var(--color-orange);
-}
-
-.f2s-tmpl-suggestion.is-selected {
-  border-color: var(--color-orange);
-  box-shadow: 0 0 0 1px var(--color-orange);
-}
-
 /* ---- Aside "Styles" : liste compacte façon Figma (Color/Text styles) ---- */
 
 .f2s-style-panel {
@@ -1018,18 +961,40 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
 .f2s-style-swatch {
   width: 24px;
   height: 24px;
-  border-radius: 4px;
+  border-radius: 50%;
   border: 1px solid var(--color-border);
   flex: none;
 }
 
+/* Le damier ne s'affiche que pour une couleur détectée semi-transparente
+   (rend son alpha visible plutôt que de la faire fondre dans le fond du
+   panneau) — une couleur opaque n'a pas de raison de l'afficher. */
+.f2s-style-swatch--transparent {
+  background-image: linear-gradient(45deg, rgba(127, 127, 127, 0.25) 25%, transparent 25%, transparent 75%, rgba(127, 127, 127, 0.25) 75%),
+    linear-gradient(45deg, rgba(127, 127, 127, 0.25) 25%, transparent 25%, transparent 75%, rgba(127, 127, 127, 0.25) 75%);
+  background-size: 8px 8px;
+  background-position: 0 0, 4px 4px;
+  background-origin: border-box;
+}
+
+/* min-width couvre au moins un hex complet ("#XXXXXX") sans le tronquer —
+   seul un long nom de variable Figma (colorLabel dans TemplateStylePanel)
+   passe par l'ellipsis. */
 .f2s-style-label {
   flex: 1;
-  min-width: 0;
-  font-size: 12px;
+  min-width: 64px;
+  font-size: 11px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Largeur fixe : tous les selects de la liste s'alignent, quelle que soit
+   la longueur du libellé de couleur sur leur ligne. */
+.f2s-style-role-select {
+  flex: none;
+  width: 130px;
+  font-size: 11px;
 }
 
 .f2s-style-font-swatch {
@@ -2831,6 +2796,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
         const existing = byKey.get(key);
         if (existing) {
           existing.usageCount += c3.usageCount;
+          if (!existing.variableName && c3.variableName) existing.variableName = c3.variableName;
         } else {
           byKey.set(key, { ...c3 });
         }
@@ -3372,20 +3338,6 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
   }
 
   // src/serialize/templateTheme.ts
-  var DEFAULT_THEME_ROLE_COLORS = {
-    DARK1: { r: 0, g: 0, b: 0 },
-    LIGHT1: { r: 1, g: 1, b: 1 },
-    DARK2: { r: 0.26, g: 0.26, b: 0.26 },
-    LIGHT2: { r: 0.94, g: 0.94, b: 0.94 },
-    ACCENT1: { r: 0.26, g: 0.52, b: 0.96 },
-    ACCENT2: { r: 0.86, g: 0.2, b: 0.18 },
-    ACCENT3: { r: 0.98, g: 0.74, b: 0.02 },
-    ACCENT4: { r: 0.06, g: 0.62, b: 0.35 },
-    ACCENT5: { r: 1, g: 0.6, b: 0 },
-    ACCENT6: { r: 0.4, g: 0.4, b: 0.4 },
-    HYPERLINK: { r: 0.06, g: 0.4, b: 0.84 },
-    FOLLOWED_HYPERLINK: { r: 0.4, g: 0.24, b: 0.6 }
-  };
   var THEME_ROLES = [
     "DARK1",
     "LIGHT1",
@@ -3415,120 +3367,79 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
     FOLLOWED_HYPERLINK: "Followed hyperlink"
   };
   var VISIBLE_THEME_ROLES = THEME_ROLES.filter((role) => role !== "FOLLOWED_HYPERLINK");
-  function rgbToHex({ r: r3, g: g2, b: b2 }) {
-    const channel = (v3) => Math.round(Math.min(1, Math.max(0, v3)) * 255).toString(16).padStart(2, "0").toUpperCase();
-    return `#${channel(r3)}${channel(g2)}${channel(b2)}`;
-  }
-  var DEFAULT_THEME_ROLE_HEX = THEME_ROLES.reduce(
-    (acc, role) => ({ ...acc, [role]: rgbToHex(DEFAULT_THEME_ROLE_COLORS[role]) }),
-    {}
-  );
-  function resolveThemeRoleHexes(colorRoles, colors, roleColorOverrides = {}) {
-    const byKey = new Map(colors.map((c3) => [colorKey(c3.hex, c3.alpha), c3]));
-    const assignedHexByRole = /* @__PURE__ */ new Map();
-    for (const [key, role] of Object.entries(colorRoles)) {
-      const swatch = byKey.get(key);
-      if (swatch) assignedHexByRole.set(role, swatch.hex);
-    }
-    return THEME_ROLES.reduce(
-      (acc, role) => ({ ...acc, [role]: roleColorOverrides[role] ?? assignedHexByRole.get(role) ?? DEFAULT_THEME_ROLE_HEX[role] }),
-      {}
-    );
-  }
 
   // src/ui/TemplateStylePanel.tsx
-  var HEX_RE = /^#[0-9a-fA-F]{6}$/;
-  function HexField({ value, onCommit }) {
-    return /* @__PURE__ */ u3(
-      "input",
-      {
-        type: "text",
-        className: "f2s-tmpl-hex-input",
-        defaultValue: value,
-        spellcheck: false,
-        maxLength: 7,
-        "aria-label": "Hex color",
-        onInput: (e3) => {
-          const raw = e3.target.value.trim();
-          const hex = raw.startsWith("#") ? raw : `#${raw}`;
-          if (HEX_RE.test(hex)) onCommit(hex.toUpperCase());
-        }
-      },
-      value
-    );
+  function colorLabel(c3) {
+    return c3.variableName ?? c3.hex;
   }
-  function TemplateStylePanel({ colors, fonts, fontOverrides, colorRoles, setColorRoles, roleColorOverrides, setRoleColorOverrides }) {
-    const roleHexes = resolveThemeRoleHexes(colorRoles, colors, roleColorOverrides);
+  function TemplateStylePanel({ colors, fonts, fontOverrides, colorRoles, setColorRoles }) {
     const assignedKeyByRole = /* @__PURE__ */ new Map();
     for (const [key, role] of Object.entries(colorRoles)) assignedKeyByRole.set(role, key);
     const sortedColors = [...colors].sort((a3, b2) => b2.usageCount - a3.usageCount);
-    function assignDetectedColor(role, key) {
+    const byKey = new Map(colors.map((c3) => [colorKey(c3.hex, c3.alpha), c3]));
+    function handleRoleChange(key, value) {
+      if (!value) {
+        setColorRoles((prev) => {
+          const next = { ...prev };
+          delete next[key];
+          return next;
+        });
+        return;
+      }
+      const role = value;
+      const previousKey = assignedKeyByRole.get(role);
+      if (previousKey && previousKey !== key) {
+        const stolenFrom = byKey.get(previousKey);
+        postToPlugin({
+          type: "notify",
+          message: `"${THEME_ROLE_LABELS[role]}" was already used by ${stolenFrom ? colorLabel(stolenFrom) : previousKey} \u2014 reassigned.`
+        });
+      }
       setColorRoles((prev) => {
         const next = {};
         for (const [k3, r3] of Object.entries(prev)) {
-          if (r3 === role || k3 === key) continue;
+          if (r3 === role) continue;
           next[k3] = r3;
         }
         next[key] = role;
         return next;
       });
-      setRoleColorOverrides((prev) => {
-        if (!(role in prev)) return prev;
-        const next = { ...prev };
-        delete next[role];
-        return next;
-      });
-    }
-    function setRoleHex(role, hex) {
-      setRoleColorOverrides((prev) => ({ ...prev, [role]: hex }));
     }
     return /* @__PURE__ */ u3("div", { className: "f2s-style-panel", children: [
       /* @__PURE__ */ u3("section", { className: "f2s-tmpl-section", children: [
         /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading f2s-style-heading", children: "Colors" }),
-        /* @__PURE__ */ u3("ul", { className: "f2s-style-list", children: VISIBLE_THEME_ROLES.map((role) => {
-          const hex = roleHexes[role];
-          const assignedKey = assignedKeyByRole.get(role);
-          return /* @__PURE__ */ u3("li", { className: "f2s-style-row", children: [
-            /* @__PURE__ */ u3("div", { className: "f2s-style-row-main", children: [
-              /* @__PURE__ */ u3("span", { className: "f2s-style-swatch", style: { backgroundColor: hex } }),
-              /* @__PURE__ */ u3("span", { className: "f2s-style-label", title: THEME_ROLE_LABELS[role], children: THEME_ROLE_LABELS[role] }),
-              /* @__PURE__ */ u3(HexField, { value: hex, onCommit: (next) => setRoleHex(role, next) }),
-              hex !== DEFAULT_THEME_ROLE_HEX[role] && /* @__PURE__ */ u3(
-                "button",
-                {
-                  type: "button",
-                  className: "f2s-icon-btn",
-                  title: "Reset to default",
-                  onClick: () => {
-                    if (assignedKey) setColorRoles((prev) => Object.fromEntries(Object.entries(prev).filter(([k3]) => k3 !== assignedKey)));
-                    setRoleColorOverrides((prev) => {
-                      if (!(role in prev)) return prev;
-                      const next = { ...prev };
-                      delete next[role];
-                      return next;
-                    });
-                  },
-                  children: "\u2715"
-                }
-              )
-            ] }),
-            sortedColors.length > 0 && /* @__PURE__ */ u3("span", { className: "f2s-tmpl-suggestions", children: sortedColors.map((c3) => {
-              const key = colorKey(c3.hex, c3.alpha);
-              return /* @__PURE__ */ u3(
-                "button",
-                {
-                  type: "button",
-                  className: `f2s-tmpl-suggestion${key === assignedKey ? " is-selected" : ""}`,
-                  title: `Use ${c3.hex}${c3.alpha < 1 ? ` \xB7 ${Math.round(c3.alpha * 100)}%` : ""} \xB7 used ${c3.usageCount}\xD7`,
-                  onClick: () => assignDetectedColor(role, key),
-                  children: /* @__PURE__ */ u3("span", { style: { backgroundColor: c3.hex, opacity: c3.alpha } })
-                },
-                key
-              );
-            }) })
-          ] }, role);
-        }) }),
-        colors.length === 0 && /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: "No color detected yet \u2014 add layouts first." })
+        colors.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: "No color detected yet \u2014 add layouts first." }) : /* @__PURE__ */ u3("ul", { className: "f2s-style-list", children: sortedColors.map((c3) => {
+          const key = colorKey(c3.hex, c3.alpha);
+          const label = colorLabel(c3);
+          return /* @__PURE__ */ u3("li", { className: "f2s-style-row", children: /* @__PURE__ */ u3("div", { className: "f2s-style-row-main", children: [
+            /* @__PURE__ */ u3(
+              "span",
+              {
+                className: `f2s-style-swatch${c3.alpha < 1 ? " f2s-style-swatch--transparent" : ""}`,
+                style: { backgroundColor: c3.hex, opacity: c3.alpha }
+              }
+            ),
+            /* @__PURE__ */ u3("span", { className: "f2s-style-label", title: label, children: label }),
+            /* @__PURE__ */ u3(
+              "select",
+              {
+                className: "f2s-font-dropdown f2s-style-role-select",
+                value: colorRoles[key] ?? "",
+                onChange: (e3) => handleRoleChange(key, e3.target.value),
+                children: [
+                  /* @__PURE__ */ u3("option", { value: "", children: "No role" }),
+                  VISIBLE_THEME_ROLES.map((role) => {
+                    const takenByOther = assignedKeyByRole.get(role) && assignedKeyByRole.get(role) !== key;
+                    return /* @__PURE__ */ u3("option", { value: role, children: [
+                      THEME_ROLE_LABELS[role],
+                      takenByOther ? " (in use)" : ""
+                    ] }, role);
+                  })
+                ]
+              }
+            )
+          ] }) }, key);
+        }) })
       ] }),
       /* @__PURE__ */ u3("section", { className: "f2s-tmpl-section", children: [
         /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading f2s-style-heading", children: "Typography" }),
@@ -3608,9 +3519,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
     colors,
     fonts,
     colorRoles,
-    setColorRoles,
-    roleColorOverrides,
-    setRoleColorOverrides
+    setColorRoles
   }) {
     const [dragId, setDragId] = d2();
     const [dragOffsetY, setDragOffsetY] = d2(0);
@@ -3700,9 +3609,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
             fonts,
             fontOverrides,
             colorRoles,
-            setColorRoles,
-            roleColorOverrides,
-            setRoleColorOverrides
+            setColorRoles
           }
         ) })
       ] });
@@ -3818,9 +3725,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
           fonts,
           fontOverrides,
           colorRoles,
-          setColorRoles,
-          roleColorOverrides,
-          setRoleColorOverrides
+          setColorRoles
         }
       ) })
     ] });
@@ -4173,7 +4078,6 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
     }, [templateOrder, templateLayouts]);
     const templateHasBlockingLayout = templateOrder.some((id) => templateLayouts[id]?.blocking);
     const [colorRoles, setColorRoles] = d2({});
-    const [roleColorOverrides, setRoleColorOverrides] = d2({});
     const templateColors = T2(
       () => aggregateColorSwatches(templateOrder.map((id) => templateLayouts[id]?.colors ?? [])),
       [templateOrder, templateLayouts]
@@ -4624,7 +4528,11 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
       setLoginError(void 0);
       setAuthUrl(void 0);
       setAuthLinkClicked(false);
-      fetch(`${backend.baseUrl}/auth/google`, { method: "POST" }).then(async (res) => {
+      fetch(`${backend.baseUrl}/auth/google`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ skin })
+      }).then(async (res) => {
         if (!res.ok) {
           const body = await res.json().catch(() => void 0);
           throw new Error(body?.message ?? `Backend responded ${res.status}`);
@@ -4775,8 +4683,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
         order: templateOrder,
         presentationTitle: templateTitle.trim() || "Figma template",
         fontOverrides,
-        colorRoles,
-        roleColorOverrides
+        colorRoles
       });
     }
     const exporting = exportState === "exporting";
@@ -4798,7 +4705,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
             onClick: () => setAuthLinkClicked(true),
             children: authLinkClicked ? /* @__PURE__ */ u3("span", { className: "f2s-btn-loading", children: [
               /* @__PURE__ */ u3("span", { className: "f2s-spinner", "aria-hidden": "true" }),
-              "Waiting for Google sign-in\u2026"
+              "Waiting\u2026"
             ] }) : "Sign in with Google"
           }
         );
@@ -4974,9 +4881,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
           colors: templateColors,
           fonts: templateFonts,
           colorRoles,
-          setColorRoles,
-          roleColorOverrides,
-          setRoleColorOverrides
+          setColorRoles
         }
       ),
       /* @__PURE__ */ u3("footer", { className: "f2s-footer", children: [
@@ -5013,7 +4918,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
           signedIn: Boolean(sessionToken),
           accountEmail,
           onSignOut: handleSignOut,
-          showDebugExport: mode === "deck" && order.length > 0,
+          showDebugExport: false,
           onExportDebugIr: handleExportDebugIr
         }
       )

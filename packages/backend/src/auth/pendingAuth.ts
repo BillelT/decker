@@ -24,6 +24,28 @@ export async function popCodeVerifier(state: string): Promise<string | undefined
 }
 
 /**
+ * Skin actif du plugin au moment du clic "Sign in", gardé sous le même
+ * `state` que le code_verifier ci-dessus — pour que GET /auth/callback (qui
+ * n'a que `state` en main, sur une instance serverless potentiellement
+ * différente de celle qui a démarré le flow) sache quel habillage rendre
+ * pour cet onglet de navigateur. Stash séparé plutôt que d'étendre
+ * stashCodeVerifier : évite de faire porter deux responsabilités à un même
+ * store déjà couvert par pendingAuth.test.ts sur sa forme actuelle.
+ */
+const SKIN_TTL_SEC = 10 * 60;
+const skinKey = (state: string) => `f2s:pkce:skin:${state}`;
+
+export async function stashSkin(state: string, skin: string): Promise<void> {
+  await getRedis().set(skinKey(state), skin, { ex: SKIN_TTL_SEC });
+}
+
+/** Pas single-use comme popCodeVerifier : /auth/callback peut avoir besoin de relire le skin après un premier échec (retry), rien de sensible à protéger ici. */
+export async function popSkin(state: string): Promise<string | undefined> {
+  const skin = await getRedis().get<string>(skinKey(state));
+  return skin ?? undefined;
+}
+
+/**
  * Résultat du callback OAuth, gardé sous le même `state` que le
  * code_verifier ci-dessus, pour que l'iframe du plugin (qui a démarré le
  * flow et connaît donc ce `state`) puisse le récupérer par polling une fois
