@@ -151,20 +151,22 @@ a {
    compressibles (flex: none partout), pour que sa taille ne varie plus
    selon la longueur du libellé des boutons d'action ("Select frames to
    add" vs "Add selection", "Export" vs "Create template", spinner
-   "Waiting for Google sign-in…"…) ni selon le mode deck/template. C'est
-   donc .f2s-topbar qui absorbe l'espace en trop : flex-wrap renvoie
-   .f2s-topbar-actions à la ligne plutôt que de chevaucher ou de déborder
-   quand les deux groupes ne tiennent plus sur une seule ligne (cas rare,
-   ex. le libellé le plus long du flow de connexion Google). */
+   "Waiting for Google sign-in…"…) ni selon le mode deck/template.
+   Le header doit rester sur une seule ligne dans tous les cas (jamais
+   d'overlap ni de retour à la ligne qui empilerait le header sur deux
+   lignes) : comme .f2s-toolbar-row plus bas, on interdit le wrap et on
+   laisse défiler horizontalement si les deux groupes ne tiennent plus
+   (cas rare, ex. le libellé le plus long du flow de connexion Google)
+   plutôt que de chevaucher ou de déborder. */
 .f2s-topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
-  row-gap: 8px;
+  flex-wrap: nowrap;
   gap: 16px;
   padding: 16px 16px 0;
   flex: none;
+  overflow-x: auto;
 }
 
 .f2s-topbar-left {
