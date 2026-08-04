@@ -146,10 +146,22 @@ a {
 
 /* ---- Top bar ---- */
 
+/* Le champ nom (.f2s-title-input) a une largeur FIXE : ni lui ni ses
+   ancêtres (.f2s-topbar-left, .f2s-topbar-title-group) ne sont plus
+   compressibles (flex: none partout), pour que sa taille ne varie plus
+   selon la longueur du libellé des boutons d'action ("Select frames to
+   add" vs "Add selection", "Export" vs "Create template", spinner
+   "Waiting for Google sign-in…"…) ni selon le mode deck/template. C'est
+   donc .f2s-topbar qui absorbe l'espace en trop : flex-wrap renvoie
+   .f2s-topbar-actions à la ligne plutôt que de chevaucher ou de déborder
+   quand les deux groupes ne tiennent plus sur une seule ligne (cas rare,
+   ex. le libellé le plus long du flow de connexion Google). */
 .f2s-topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  row-gap: 8px;
   gap: 16px;
   padding: 16px 16px 0;
   flex: none;
@@ -159,27 +171,21 @@ a {
   display: flex;
   align-items: center;
   gap: 16px;
-  /* Flexible (contrairement à .f2s-topbar-actions, jamais rétréci) : c'est
-     ce qui laisse le champ nom (le seul enfant vraiment compressible, cf.
-     .f2s-topbar-title-group) céder de la place aux boutons d'action plutôt
-     que de pousser la topbar en dehors du plugin. min-width reste le défaut
-     `auto` — le rétrécissement s'arrête au contenu minimal (libellé +
-     min-width de l'input), sinon le nom se met à chevaucher les boutons au
-     lieu de simplement déclencher un débordement honnête. */
-  flex: 1;
+  flex: none;
 }
 
 .f2s-topbar-title-group {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex: 1;
+  flex: none;
 }
 
 .f2s-topbar-actions {
   display: flex;
   align-items: center;
   gap: 16px;
+  flex: none;
 }
 
 .f2s-logo {
@@ -256,8 +262,9 @@ a {
   color: var(--color-black-70);
 }
 
-/* Champ de nommage du deck/template (toolbar) — même gabarit que le select
-   de polices, un peu plus large pour un vrai titre. */
+/* Champ de nommage du deck/template (topbar) — largeur fixe (voir le
+   commentaire sur .f2s-topbar) : ne se redimensionne plus jamais selon
+   l'état des boutons d'action ou le mode deck/template. */
 .f2s-title-input {
   font-family: inherit;
   font-size: 12px;
@@ -266,9 +273,8 @@ a {
   color: var(--color-text);
   border-radius: 4px;
   padding: 3px 8px;
-  flex: 1;
-  min-width: 60px;
-  max-width: 220px;
+  flex: none;
+  width: 160px;
 }
 
 .f2s-title-input:focus {
