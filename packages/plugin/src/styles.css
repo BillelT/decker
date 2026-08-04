@@ -269,7 +269,7 @@ a {
   border-radius: 4px;
   padding: 3px 8px;
   flex: none;
-  width: 160px;
+  width: 170px;
 }
 
 .f2s-title-input:focus {
@@ -1220,10 +1220,7 @@ html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-icon-
 .f2s-modal {
   width: 100%;
   max-width: 480px;
-  /* Surface (et non --color-bg) : le panneau doit se détacher du fond de
-     l'app derrière l'overlay, y compris en thème sombre où bordure et ombre
-     seules suffisent à peine. */
-  background: var(--color-surface);
+  background: var(--color-bg);
   border: 1px solid var(--color-border);
   border-radius: 12px;
   box-shadow: 0 12px 32px rgba(18, 15, 13, 0.18);
@@ -1331,7 +1328,7 @@ html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-icon-
 }
 
 .f2s-tab.is-active {
-  background: var(--color-surface);
+  background: var(--color-bg);
   color: var(--color-text);
   box-shadow: 0 1px 2px rgba(18, 15, 13, 0.16);
 }
