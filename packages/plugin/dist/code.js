@@ -832,7 +832,7 @@
             nodeId: node.id,
             nodeName: node.name,
             code: "FONT_SUBSTITUTED",
-            message: `Font "${w.original}" replaced with "${w.substitute}" \u2014 text may look different.`,
+            message: `Font "${w.original}" \u2192 "${w.substitute}".`,
             category: "visual-diff"
           });
         }
@@ -1473,7 +1473,7 @@
     figma.viewport.scrollAndZoomIntoView(copies);
     const label = copies.length === 1 ? "frame" : "frames";
     figma.notify(
-      totalWarnings === 0 ? `Prepared ${copies.length} ${label} for Slides \u2014 no issues found.` : `Prepared ${copies.length} ${label} for Slides \u2014 ${totalWarnings} issue(s) flagged on canvas (red = rasterized, orange = may look different).`
+      totalWarnings === 0 ? `Prepared ${copies.length} ${label} for Slides \u2014 no issues found.` : `Prepared ${copies.length} ${label} for Slides \u2014 ${totalWarnings} issue(s) flagged on canvas (red = rasterized, orange = approximated).`
     );
     await addFrames(newlyCreated, pending, idGen);
   }
@@ -1567,7 +1567,7 @@
     figma.viewport.scrollAndZoomIntoView(copies);
     const label = copies.length === 1 ? "layout" : "layouts";
     figma.notify(
-      totalWarnings === 0 ? `Prepared ${copies.length} ${label} for Slides \u2014 no issues found.` : `Prepared ${copies.length} ${label} for Slides \u2014 ${totalWarnings} issue(s) flagged on canvas (red = rasterized, orange = may look different).`
+      totalWarnings === 0 ? `Prepared ${copies.length} ${label} for Slides \u2014 no issues found.` : `Prepared ${copies.length} ${label} for Slides \u2014 ${totalWarnings} issue(s) flagged on canvas (red = rasterized, orange = approximated).`
     );
     await addTemplateLayoutNodes(newlyCreated, pending, idGen);
   }

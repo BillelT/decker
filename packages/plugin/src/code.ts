@@ -443,7 +443,7 @@ async function handlePrepareForSlides(
   figma.notify(
     totalWarnings === 0
       ? `Prepared ${copies.length} ${label} for Slides — no issues found.`
-      : `Prepared ${copies.length} ${label} for Slides — ${totalWarnings} issue(s) flagged on canvas (red = rasterized, orange = may look different).`,
+      : `Prepared ${copies.length} ${label} for Slides — ${totalWarnings} issue(s) flagged on canvas (red = rasterized, orange = approximated).`,
   );
 
   await addFrames(newlyCreated, pending, idGen);
@@ -594,7 +594,7 @@ async function handlePrepareTemplateForSlides(
   figma.notify(
     totalWarnings === 0
       ? `Prepared ${copies.length} ${label} for Slides — no issues found.`
-      : `Prepared ${copies.length} ${label} for Slides — ${totalWarnings} issue(s) flagged on canvas (red = rasterized, orange = may look different).`,
+      : `Prepared ${copies.length} ${label} for Slides — ${totalWarnings} issue(s) flagged on canvas (red = rasterized, orange = approximated).`,
   );
 
   await addTemplateLayoutNodes(newlyCreated, pending, idGen);
