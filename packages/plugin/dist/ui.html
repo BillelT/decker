@@ -692,6 +692,42 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   border-color: var(--color-orange);
 }
 
+/* Mode template uniquement (TemplatePanel.tsx) : `.f2s-log-entry` y est un
+   `<li>` plutôt qu'un `<button>` (le deck garde le bouton simple), pour
+   pouvoir loger un `<select>` de rôle de placeholder à côté de la zone
+   cliquable — un `<select>` posé DANS un `<button>` serait du HTML
+   invalide et son clic serait intercepté par le bouton englobant. */
+.f2s-log-entry-clickarea {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+/* Sélecteur de rôle de placeholder (audit — associer un contenu à
+   [[title]]/[[body]]/[[image]]… directement depuis le rapport, sans
+   renommer le calque à la main dans Figma). Volontairement discret : ce
+   n'est pas le repère principal de la ligne, juste une action disponible. */
+.f2s-log-entry-role {
+  flex: none;
+  font-size: 10px;
+  font-family: inherit;
+  color: var(--color-black-70);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 2px 4px;
+  max-width: 110px;
+}
+
 /* Une seule ligne, tronquée : voir le commentaire sur `f2s-log-entry-text`
    dans DeckPanel.tsx — un nom de calque texte peut être un paragraphe
    entier, seul compte de pouvoir identifier l'élément et cliquer dessus.
@@ -734,13 +770,15 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   border-color: var(--color-error);
 }
 
-/* Contient désormais la raison précise ("Font replacement "Zodiak" into
-   "Inter"", "Gradients are not supported by Slides"…) plutôt qu'un mot
-   générique — plus long, donc tronqué en ellipsis comme le nom de calque
-   plutôt qu'en majuscules (qui rendrait les noms de police entre guillemets
-   illisibles) ; le texte complet reste dans `title`. */
+/* Contient désormais la raison précise ("Font "Zodiak" → "Inter"",
+   "Gradients are not supported by Slides"…) plutôt qu'un mot générique —
+   sans majuscules (qui rendrait les noms de police entre guillemets
+   illisibles). Posé à droite, sans rétrécir (`flex: 0 0 auto`) : c'est le
+   nom du calque (`.f2s-log-entry-name`, à gauche) qui cède toujours la
+   place et se tronque en premier — `max-width`+ellipsis ne sert qu'en
+   filet de sécurité si le tag seul dépasse déjà la largeur de la ligne. */
 .f2s-log-entry-flag {
-  flex: 0 1 auto;
+  flex: 0 0 auto;
   min-width: 0;
   max-width: 70%;
   overflow: hidden;
@@ -2854,7 +2892,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
   function logEntryTagText(w3, fontOverrides) {
     if (w3.code === "FONT_SUBSTITUTED" && w3.fontOriginal) {
       const resolved = fontOverrides[w3.fontOriginal] ?? w3.fontSubstitute ?? w3.fontOriginal;
-      return `Font replacement "${w3.fontOriginal}" into "${resolved}"`;
+      return `Font "${w3.fontOriginal}" \u2192 "${resolved}"`;
     }
     const dashIndex = w3.message.indexOf(" \u2014 ");
     const reason = dashIndex === -1 ? w3.message : w3.message.slice(0, dashIndex);
@@ -3229,7 +3267,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
         ] }),
         /* @__PURE__ */ u3("div", { className: "f2s-logs", children: [
           /* @__PURE__ */ u3("div", { className: "f2s-logs-header", children: [
-            /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Logs" }),
+            /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Content" }),
             previewedFrame.nativeCount !== void 0 && previewedFrame.rasterCount !== void 0 && /* @__PURE__ */ u3("span", { className: "f2s-toolbar-muted", children: [
               previewedFrame.nativeCount,
               " native \xB7 ",
@@ -3248,14 +3286,14 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
                 title: `${w3.nodeName} \u2014 ${tagText ?? w3.message}`,
                 onClick: () => selectSourceNodes([w3.sourceNodeId]),
                 children: [
-                  tagText && /* @__PURE__ */ u3("span", { className: `f2s-log-entry-flag f2s-log-entry-flag--${flag}`, children: tagText }),
                   /* @__PURE__ */ u3("span", { className: "f2s-log-entry-text", children: [
                     /* @__PURE__ */ u3("strong", { className: "f2s-log-entry-name", children: w3.nodeName }),
                     !tagText && /* @__PURE__ */ u3("span", { className: "f2s-log-entry-message", children: [
                       "\u2014 ",
                       w3.message
                     ] })
-                  ] })
+                  ] }),
+                  tagText && /* @__PURE__ */ u3("span", { className: `f2s-log-entry-flag f2s-log-entry-flag--${flag}`, children: tagText })
                 ]
               }
             ) }, i3);
@@ -3263,6 +3301,74 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
         ] })
       ] }) : /* @__PURE__ */ u3("p", { className: "f2s-canvas-empty", children: "Select a frame on the left to preview it." }) })
     ] });
+  }
+
+  // src/serialize/placeholder.ts
+  var TAG_PATTERN = /^\s*\[\[\s*([a-zA-Z]+)\s*(?::\s*([^\]]+))?\]\]/;
+  var ROLE_ALIASES = {
+    title: "TITLE",
+    titre: "TITLE",
+    heading: "TITLE",
+    subtitle: "SUBTITLE",
+    soustitre: "SUBTITLE",
+    body: "BODY",
+    texte: "BODY",
+    corps: "BODY",
+    text: "BODY",
+    image: "IMAGE",
+    photo: "IMAGE",
+    picture: "IMAGE",
+    logo: "LOGO",
+    custom: "CUSTOM"
+  };
+  function defaultLabel(role) {
+    switch (role) {
+      case "TITLE":
+        return "Title";
+      case "SUBTITLE":
+        return "Subtitle";
+      case "BODY":
+        return "Body text";
+      case "IMAGE":
+        return "Image";
+      case "LOGO":
+        return "Logo";
+      case "CUSTOM":
+        return "Custom placeholder";
+    }
+  }
+  function parsePlaceholderTag(layerName) {
+    const match = TAG_PATTERN.exec(layerName);
+    if (!match) return void 0;
+    const role = ROLE_ALIASES[match[1].toLowerCase()];
+    if (!role) return void 0;
+    const label = match[2]?.trim();
+    return { role, label: label && label.length > 0 ? label : defaultLabel(role) };
+  }
+  var KNOWN_ROLE_TAGS = ["title", "subtitle", "body", "image", "logo", "custom"];
+  var CANONICAL_TAG_FOR_ROLE = Object.fromEntries(
+    KNOWN_ROLE_TAGS.map((tag) => [ROLE_ALIASES[tag], tag])
+  );
+
+  // src/ui/placeholderRoleOptions.ts
+  var TEXT_WARNING_CODES = /* @__PURE__ */ new Set(["FONT_SUBSTITUTED", "FONT_MISSING", "LETTER_SPACING_LOST"]);
+  var IMAGE_WARNING_CODES = /* @__PURE__ */ new Set([
+    "GRADIENT_RASTERIZED",
+    "EFFECT_RASTERIZED",
+    "BLEND_MODE_RASTERIZED",
+    "MASK_RASTERIZED",
+    "VECTOR_RASTERIZED",
+    "LINE_RASTERIZED",
+    "CORNER_RADIUS_RASTERIZED",
+    "MULTIPLE_FILLS_RASTERIZED",
+    "CONTAINER_BACKGROUND_RASTERIZED"
+  ]);
+  var TEXT_ROLE_TAGS = KNOWN_ROLE_TAGS.filter((tag) => tag !== "image" && tag !== "logo");
+  var IMAGE_ROLE_TAGS = KNOWN_ROLE_TAGS.filter((tag) => tag !== "title" && tag !== "subtitle" && tag !== "body");
+  function placeholderRoleTagsFor(code) {
+    if (TEXT_WARNING_CODES.has(code)) return TEXT_ROLE_TAGS;
+    if (IMAGE_WARNING_CODES.has(code)) return IMAGE_ROLE_TAGS;
+    return KNOWN_ROLE_TAGS;
   }
 
   // src/serialize/templateTheme.ts
@@ -3441,29 +3547,47 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
   }
 
   // src/ui/TemplatePanel.tsx
-  function TemplateLogList({ warnings, fontOverrides }) {
+  function setPlaceholderRole(sourceNodeId, tag) {
+    postToPlugin({ type: "set-placeholder-role", sourceNodeId, tag });
+  }
+  function TemplateLogList({
+    warnings,
+    fontOverrides,
+    roleSelectable
+  }) {
     return /* @__PURE__ */ u3("ul", { className: "f2s-tmpl-list", children: warnings.map((w3, i3) => {
       const flag = logEntryFlag(w3.code);
       const tagText = flag ? logEntryTagText(w3, fontOverrides) : void 0;
-      return /* @__PURE__ */ u3("li", { children: /* @__PURE__ */ u3(
-        "button",
-        {
-          type: "button",
-          className: `f2s-log-entry${w3.severity === "blocking" ? " f2s-log-entry--blocking" : ""}${flag ? ` f2s-log-entry--${flag}` : ""}`,
-          title: `${w3.nodeName} \u2014 ${tagText ?? w3.message}`,
-          onClick: () => selectSourceNodes([w3.sourceNodeId]),
-          children: [
-            tagText && /* @__PURE__ */ u3("span", { className: `f2s-log-entry-flag f2s-log-entry-flag--${flag}`, children: tagText }),
-            /* @__PURE__ */ u3("span", { className: "f2s-log-entry-text", children: [
-              /* @__PURE__ */ u3("strong", { className: "f2s-log-entry-name", children: w3.nodeName }),
-              !tagText && /* @__PURE__ */ u3("span", { className: "f2s-log-entry-message", children: [
-                "\u2014 ",
-                w3.message
-              ] })
+      const currentRole = parsePlaceholderTag(w3.nodeName)?.role;
+      return /* @__PURE__ */ u3("li", { className: `f2s-log-entry${w3.severity === "blocking" ? " f2s-log-entry--blocking" : ""}${flag ? ` f2s-log-entry--${flag}` : ""}`, children: [
+        /* @__PURE__ */ u3("button", { type: "button", className: "f2s-log-entry-clickarea", title: `${w3.nodeName} \u2014 ${tagText ?? w3.message}`, onClick: () => selectSourceNodes([w3.sourceNodeId]), children: [
+          /* @__PURE__ */ u3("span", { className: "f2s-log-entry-text", children: [
+            /* @__PURE__ */ u3("strong", { className: "f2s-log-entry-name", children: w3.nodeName }),
+            !tagText && /* @__PURE__ */ u3("span", { className: "f2s-log-entry-message", children: [
+              "\u2014 ",
+              w3.message
             ] })
-          ]
-        }
-      ) }, i3);
+          ] }),
+          tagText && /* @__PURE__ */ u3("span", { className: `f2s-log-entry-flag f2s-log-entry-flag--${flag}`, children: tagText })
+        ] }),
+        roleSelectable && /* @__PURE__ */ u3(
+          "select",
+          {
+            className: "f2s-log-entry-role",
+            value: currentRole ? CANONICAL_TAG_FOR_ROLE[currentRole] : "",
+            title: "Assign this content to a Slides template placeholder role",
+            onChange: (e3) => setPlaceholderRole(w3.sourceNodeId, e3.target.value),
+            children: [
+              /* @__PURE__ */ u3("option", { value: "", disabled: true, children: "Set placeholder role\u2026" }),
+              placeholderRoleTagsFor(w3.code).map((tag) => /* @__PURE__ */ u3("option", { value: tag, children: [
+                "[[",
+                tag,
+                "]]"
+              ] }, tag))
+            ]
+          }
+        )
+      ] }, i3);
     }) });
   }
   var DRAG_THRESHOLD_PX2 = 3;
@@ -3682,7 +3806,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
           ] }),
           previewedLayout.warnings.filter((w3) => w3.severity !== "blocking").length > 0 && /* @__PURE__ */ u3("div", { className: "f2s-logs", children: [
             /* @__PURE__ */ u3("div", { className: "f2s-logs-header", children: /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Content" }) }),
-            /* @__PURE__ */ u3(TemplateLogList, { warnings: previewedLayout.warnings.filter((w3) => w3.severity !== "blocking"), fontOverrides })
+            /* @__PURE__ */ u3(TemplateLogList, { warnings: previewedLayout.warnings.filter((w3) => w3.severity !== "blocking"), fontOverrides, roleSelectable: true })
           ] })
         ] })
       ] }) : /* @__PURE__ */ u3("p", { className: "f2s-canvas-empty", children: "Select a layout on the left to see its report." }) }),

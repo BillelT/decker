@@ -425,6 +425,13 @@
     return ROLE_ALIASES[match[1].toLowerCase()] ? void 0 : match[1];
   }
   var KNOWN_ROLE_TAGS = ["title", "subtitle", "body", "image", "logo", "custom"];
+  var CANONICAL_TAG_FOR_ROLE = Object.fromEntries(
+    KNOWN_ROLE_TAGS.map((tag) => [ROLE_ALIASES[tag], tag])
+  );
+  function setPlaceholderTag(layerName, tag) {
+    const rest = layerName.replace(TAG_PATTERN, "").trimStart();
+    return rest.length > 0 ? `[[${tag}]] ${rest}` : `[[${tag}]]`;
+  }
 
   // src/serialize/serializeFrame.ts
   function evaluateStroke(node) {
@@ -1785,6 +1792,18 @@
         const nodes = resolved.filter((n) => n !== null && "x" in n);
         figma.currentPage.selection = nodes;
         figma.viewport.scrollAndZoomIntoView(nodes);
+        return;
+      }
+      if (msg.type === "set-placeholder-role") {
+        try {
+          const tag = msg.tag;
+          const node = await figma.getNodeByIdAsync(msg.sourceNodeId);
+          if (node && "name" in node) {
+            node.name = setPlaceholderTag(node.name, tag);
+          }
+        } catch (err) {
+          console.error(err);
+        }
         return;
       }
       if (msg.type === "request-export") {

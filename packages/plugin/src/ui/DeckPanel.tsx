@@ -285,7 +285,7 @@ export function DeckPanel({
 
             <div className="f2s-logs">
               <div className="f2s-logs-header">
-                <h3 className="f2s-tmpl-heading">Logs</h3>
+                <h3 className="f2s-tmpl-heading">Content</h3>
                 {previewedFrame.nativeCount !== undefined && previewedFrame.rasterCount !== undefined && (
                   <span className="f2s-toolbar-muted">
                     {previewedFrame.nativeCount} native · {previewedFrame.rasterCount} rasterized
@@ -311,16 +311,17 @@ export function DeckPanel({
                           title={`${w.nodeName} — ${tagText ?? w.message}`}
                           onClick={() => selectSourceNodes([w.sourceNodeId])}
                         >
-                          {tagText && <span className={`f2s-log-entry-flag f2s-log-entry-flag--${flag}`}>{tagText}</span>}
                           {/* Le nom du calque (nodeName) vient de Figma, où le nom par défaut d'un
                               calque texte est son contenu entier : sur un long paragraphe, ça
-                              déborde. Tronqué en priorité sur une ligne — le libellé complet reste
-                              dans `title`. Le message n'est affiché que si l'entrée n'a pas de tag
-                              (ex. placeholder inconnu) : sinon la raison est déjà dans le tag. */}
+                              déborde. Tronqué en priorité sur une ligne, à gauche — le tag (la
+                              raison) reste entier à droite, le libellé complet reste dans `title`.
+                              Le message n'est affiché que si l'entrée n'a pas de tag (ex.
+                              placeholder inconnu) : sinon la raison est déjà dans le tag. */}
                           <span className="f2s-log-entry-text">
                             <strong className="f2s-log-entry-name">{w.nodeName}</strong>
                             {!tagText && <span className="f2s-log-entry-message">— {w.message}</span>}
                           </span>
+                          {tagText && <span className={`f2s-log-entry-flag f2s-log-entry-flag--${flag}`}>{tagText}</span>}
                         </button>
                       </li>
                     );

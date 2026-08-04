@@ -7,6 +7,7 @@ import { enforceTemplateStrictness, hasBlockingWarnings } from './serialize/temp
 import { aggregateColorSwatches, summarizeColors, summarizeFonts, summarizePlaceholders } from './serialize/templateSummary.js';
 import { applyThemeRolesToElements, buildTemplateTheme } from './serialize/templateTheme.js';
 import { applyPlaceholderText } from './serialize/templatePlaceholderText.js';
+import { KNOWN_ROLE_TAGS, setPlaceholderTag } from './serialize/placeholder.js';
 
 const MAX_FRAMES_WARNING = 20;
 /**
@@ -926,6 +927,25 @@ async function main(): Promise<void> {
       const nodes = resolved.filter((n): n is SceneNode => n !== null && 'x' in n);
       figma.currentPage.selection = nodes;
       figma.viewport.scrollAndZoomIntoView(nodes);
+      return;
+    }
+
+    // Sélecteur de rôle du rapport de contenu (TemplatePanel, mode template) :
+    // pose le tag `[[role]]` directement sur le calque source plutôt que de
+    // demander à l'utilisateur de le taper à la main dans Figma. Ne pousse
+    // aucun message de retour ici — renommer déclenche un `nodechange` que
+    // `templateLiveRefresh` (voir `watchFramesForLiveRefresh`) capte tout
+    // seul pour re-sérialiser le layout et rafraîchir le rapport.
+    if (msg.type === 'set-placeholder-role') {
+      try {
+        const tag = msg.tag as (typeof KNOWN_ROLE_TAGS)[number];
+        const node = await figma.getNodeByIdAsync(msg.sourceNodeId as string);
+        if (node && 'name' in node) {
+          node.name = setPlaceholderTag(node.name, tag);
+        }
+      } catch (err) {
+        console.error(err);
+      }
       return;
     }
 
