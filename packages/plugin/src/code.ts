@@ -7,6 +7,7 @@ import { enforceTemplateStrictness, hasBlockingWarnings } from './serialize/temp
 import { aggregateColorSwatches, summarizeColors, summarizeFonts, summarizePlaceholders } from './serialize/templateSummary.js';
 import { applyThemeRolesToElements, buildTemplateTheme } from './serialize/templateTheme.js';
 import { applyPlaceholderText } from './serialize/templatePlaceholderText.js';
+import { KNOWN_ROLE_TAGS, setPlaceholderTag } from './serialize/placeholder.js';
 
 const MAX_FRAMES_WARNING = 20;
 /**
@@ -30,6 +31,16 @@ const PREVIEW_WIDTH = 960;
 const SLIDES_READY_KEY = 'slidesExportReady';
 const DECK_TAG = 'true';
 const TEMPLATE_TAG = 'template';
+// Suivi des frames simplement AJOUTÉES au panneau (pas encore "Prepare for
+// Slides") — sans ce tag, seules les copies `[Slides Ready]`/`[Template
+// Ready]` survivaient à la fermeture du plugin (`loadTaggedFrames` ne
+// retrouvait qu'elles) : une frame brute tout juste ajoutée disparaissait du
+// rail à la moindre réouverture. Mêmes valeurs que `SLIDES_READY_KEY`
+// ('true'/'template') pour distinguer deck et template, mais une clé à part :
+// une frame ne porte JAMAIS les deux à la fois (voir `addFrames`/
+// `addTemplateLayoutNodes`, qui ne posent celui-ci que sur une frame pas
+// encore prête).
+const TRACKED_KEY = 'slidesTracked';
 const LINT_GROUP_ID_KEY = 'slidesLintGroupId';
 /**
  * Repère de lint sur le canvas : un contour épais plutôt qu'un petit badge,
@@ -89,6 +100,14 @@ function isSlidesReady(node: SceneNode): boolean {
 
 function isTemplateReady(node: SceneNode): boolean {
   return readyTagOf(node) === TEMPLATE_TAG;
+}
+
+function isTracked(node: SceneNode): boolean {
+  return node.getPluginData(TRACKED_KEY) === DECK_TAG;
+}
+
+function isTemplateTracked(node: SceneNode): boolean {
+  return node.getPluginData(TRACKED_KEY) === TEMPLATE_TAG;
 }
 
 function stripReadyPrefix(name: string): string {
@@ -214,6 +233,11 @@ async function addFrames(nodes: ExportableNode[], pending: PendingSlide[], idGen
     const previewDataUrl = await generatePreview(frame);
     const { slide, nodesToRaster } = await serializeFrame(frame, { nextId: idGen });
     pending.push({ frame, slide, nodesToRaster });
+    // Tague la frame BRUTE dès son ajout (pas seulement une copie
+    // `[Slides Ready]`, déjà taguée par `prepareFrameForSlides`) : c'est ce
+    // qui la fait retrouver par `loadTaggedFrames` à la prochaine ouverture
+    // du plugin, sans attendre un clic sur "Prepare for Slides".
+    if (!isSlidesReady(frame)) frame.setPluginData(TRACKED_KEY, DECK_TAG);
     postCandidateMessage('candidate-added', frame, previewDataUrl, slide);
     await yieldToUi();
   }
@@ -264,12 +288,17 @@ async function addSelectedFrames(pending: PendingSlide[], idGen: ReturnType<type
  * canvas puis plugin fermé/rouvert).
  */
 async function loadTaggedFrames(pending: PendingSlide[], templatePending: PendingSlide[], idGen: ReturnType<typeof createIdGenerator>): Promise<void> {
-  const deckTagged = figma.currentPage.findAll((n) => isExportable(n) && isSlidesReady(n)) as ExportableNode[];
+  // `isSlidesReady` (copie `[Slides Ready]`) ET `isTracked` (frame brute
+  // juste ajoutée au rail, jamais préparée) : les deux doivent repeupler le
+  // panneau à la réouverture, pas seulement la première — voir le
+  // commentaire de `TRACKED_KEY`.
+  const deckTagged = figma.currentPage.findAll((n) => isExportable(n) && (isSlidesReady(n) || isTracked(n))) as ExportableNode[];
   if (deckTagged.length > 0) await addFrames(deckTagged, pending, idGen);
 
   // Même reprise de session pour le mode template : les copies `[Template
-  // Ready]` d'une session précédente repeuplent la liste de layouts.
-  const templateTagged = figma.currentPage.findAll((n) => isExportable(n) && isTemplateReady(n)) as ExportableNode[];
+  // Ready]` ET les layouts bruts pas encore préparés d'une session
+  // précédente repeuplent la liste de layouts.
+  const templateTagged = figma.currentPage.findAll((n) => isExportable(n) && (isTemplateReady(n) || isTemplateTracked(n))) as ExportableNode[];
   if (templateTagged.length > 0) await addTemplateLayoutNodes(templateTagged, templatePending, idGen);
 }
 
@@ -298,6 +327,31 @@ async function removeLintAnnotations(copy: ExportableNode): Promise<void> {
   const group = await figma.getNodeByIdAsync(groupId);
   if (group && !group.removed) group.remove();
   copy.setPluginData(LINT_GROUP_ID_KEY, '');
+}
+
+/**
+ * Retire une frame du panneau (bouton "Remove" du rail, deck ou template) —
+ * miroir côté sandbox du retrait purement local fait par
+ * `removeFrame`/`removeTemplateLayout` (ui.tsx). Indispensable : sans lui,
+ * `pending`/`templatePending` gardaient une entrée fantôme que
+ * `addFrames`/`addTemplateLayoutNodes` continuaient de voir "connue"
+ * (dédoublonnage par id), donc tout ré-ajout de cette même frame restait
+ * silencieusement sans effet jusqu'à fermer/rouvrir le plugin (qui repart
+ * d'un `pending` vide). Efface aussi le(s) tag(s) de suivi posés sur le
+ * nœud Figma lui-même — sinon une frame retirée du rail réapparaîtrait quand
+ * même à la prochaine réouverture (voir `loadTaggedFrames`).
+ */
+async function removeFromPending(id: string, pending: PendingSlide[]): Promise<void> {
+  const idx = pending.findIndex((p) => p.frame.id === id);
+  if (idx === -1) return;
+  const frame = pending[idx].frame;
+  pending.splice(idx, 1);
+  if (frame.removed) return;
+  frame.setPluginData(TRACKED_KEY, '');
+  if (readyTagOf(frame)) {
+    await removeLintAnnotations(frame);
+    frame.setPluginData(SLIDES_READY_KEY, '');
+  }
 }
 
 /**
@@ -424,6 +478,11 @@ async function handlePrepareForSlides(
       await refreshPendingEntry(copy, pending, idGen);
     } else {
       newlyCreated.push(copy);
+      // La frame BRUTE d'origine (`frame`, distincte de `copy` dans cette
+      // branche) perd son tag de suivi : sinon elle réapparaîtrait, en plus
+      // de sa copie `[Slides Ready]`, à la prochaine réouverture du plugin
+      // (voir `loadTaggedFrames`/`TRACKED_KEY`).
+      frame.setPluginData(TRACKED_KEY, '');
       // La frame BRUTE d'origine était déjà dans le panneau (ex. ajoutée via
       // "Select frames to add" avant d'être préparée) : remplacée par sa
       // copie prête pour Slides plutôt que doublée dans la liste.
@@ -497,6 +556,8 @@ async function addTemplateLayoutNodes(nodes: ExportableNode[], pending: PendingS
     const { slide, nodesToRaster } = await serializeFrame(frame, { nextId: idGen });
     slide.warnings = enforceTemplateStrictness(slide.warnings);
     pending.push({ frame, slide, nodesToRaster });
+    // Même suivi que `addFrames` côté deck — voir le commentaire là-bas.
+    if (!isTemplateReady(frame)) frame.setPluginData(TRACKED_KEY, TEMPLATE_TAG);
     postTemplateCandidateMessage('template-candidate-added', frame, previewDataUrl, slide);
     await yieldToUi();
   }
@@ -578,6 +639,8 @@ async function handlePrepareTemplateForSlides(
       await refreshTemplateEntry(copy, pending, idGen);
     } else {
       newlyCreated.push(copy);
+      // Voir le commentaire équivalent dans `handlePrepareForSlides`.
+      frame.setPluginData(TRACKED_KEY, '');
       const rawIdx = pending.findIndex((p) => p.frame.id === frame.id);
       if (rawIdx !== -1) {
         pending.splice(rawIdx, 1);
@@ -884,6 +947,16 @@ async function main(): Promise<void> {
       return;
     }
 
+    // Miroir sandbox du bouton "Remove" du rail deck — voir `removeFromPending`.
+    if (msg.type === 'remove-frame') {
+      try {
+        await removeFromPending(msg.id as string, pending);
+      } catch (err) {
+        console.error(err);
+      }
+      return;
+    }
+
     if (msg.type === 'prepare-for-slides') {
       try {
         await handlePrepareForSlides(pending, idGen, (msg.fontOverrides as Record<string, string> | undefined) ?? {}, (msg.deckFrameIds as string[] | undefined) ?? []);
@@ -900,6 +973,16 @@ async function main(): Promise<void> {
       } catch (err) {
         console.error(err);
         figma.ui.postMessage({ type: 'export-error', message: (err as Error).message });
+      }
+      return;
+    }
+
+    // Miroir sandbox du bouton "Remove" du rail template — voir `removeFromPending`.
+    if (msg.type === 'remove-template-layout') {
+      try {
+        await removeFromPending(msg.id as string, templatePending);
+      } catch (err) {
+        console.error(err);
       }
       return;
     }
@@ -932,6 +1015,25 @@ async function main(): Promise<void> {
     if (msg.type === 'notify') {
       // Onglet Style : signale un changement fait au clavier/souris que l'UI seule ne peut pas rendre assez visible (ex. un rôle de thème volé à une autre couleur).
       figma.notify(String(msg.message));
+      return;
+    }
+
+    // Sélecteur de rôle du rapport de contenu (TemplatePanel, mode template) :
+    // pose le tag `[[role]]` directement sur le calque source plutôt que de
+    // demander à l'utilisateur de le taper à la main dans Figma. Ne pousse
+    // aucun message de retour ici — renommer déclenche un `nodechange` que
+    // `templateLiveRefresh` (voir `watchFramesForLiveRefresh`) capte tout
+    // seul pour re-sérialiser le layout et rafraîchir le rapport.
+    if (msg.type === 'set-placeholder-role') {
+      try {
+        const tag = msg.tag as (typeof KNOWN_ROLE_TAGS)[number];
+        const node = await figma.getNodeByIdAsync(msg.sourceNodeId as string);
+        if (node && 'name' in node) {
+          node.name = setPlaceholderTag(node.name, tag);
+        }
+      } catch (err) {
+        console.error(err);
+      }
       return;
     }
 

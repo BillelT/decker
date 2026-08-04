@@ -221,6 +221,15 @@ export interface IRWarning {
   sourceNodeId: string;
   nodeName: string;
   message: string; // formulé pour un designer, pas pour un dev
+  /**
+   * Uniquement sur FONT_SUBSTITUTED — police d'origine et police résolue au
+   * moment du serialize, à part du texte de `message` pour que l'UI puisse
+   * recalculer l'affichage si l'utilisateur choisit ensuite une autre police
+   * de remplacement dans le sélecteur "Fonts" (voir logEntryFlag.ts côté
+   * plugin) sans devoir reparser `message`.
+   */
+  fontOriginal?: string;
+  fontSubstitute?: string;
 }
 
 export interface ExportOptions {

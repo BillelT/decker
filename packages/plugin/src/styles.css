@@ -394,7 +394,7 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   z-index: 10;
   max-width: calc(100% - 32px);
   padding: 8px 14px;
-  background: var(--color-surface);
+  background: var(--color-bg);
   border: 1px solid var(--color-border);
   border-radius: 8px;
   box-shadow: 0 8px 20px rgba(18, 15, 13, 0.18);
@@ -687,6 +687,42 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   border-color: var(--color-orange);
 }
 
+/* Mode template uniquement (TemplatePanel.tsx) : `.f2s-log-entry` y est un
+   `<li>` plutôt qu'un `<button>` (le deck garde le bouton simple), pour
+   pouvoir loger un `<select>` de rôle de placeholder à côté de la zone
+   cliquable — un `<select>` posé DANS un `<button>` serait du HTML
+   invalide et son clic serait intercepté par le bouton englobant. */
+.f2s-log-entry-clickarea {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+/* Sélecteur de rôle de placeholder (audit — associer un contenu à
+   [[title]]/[[body]]/[[image]]… directement depuis le rapport, sans
+   renommer le calque à la main dans Figma). Volontairement discret : ce
+   n'est pas le repère principal de la ligne, juste une action disponible. */
+.f2s-log-entry-role {
+  flex: none;
+  font-size: 10px;
+  font-family: inherit;
+  color: var(--color-black-70);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 2px 4px;
+  max-width: 110px;
+}
+
 /* Une seule ligne, tronquée : voir le commentaire sur `f2s-log-entry-text`
    dans DeckPanel.tsx — un nom de calque texte peut être un paragraphe
    entier, seul compte de pouvoir identifier l'élément et cliquer dessus.
@@ -729,16 +765,26 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   border-color: var(--color-error);
 }
 
+/* Contient désormais la raison précise ("Font "Zodiak" → "Inter"",
+   "Gradients are not supported by Slides"…) plutôt qu'un mot générique —
+   sans majuscules (qui rendrait les noms de police entre guillemets
+   illisibles). Posé à droite, sans rétrécir (`flex: 0 0 auto`) : c'est le
+   nom du calque (`.f2s-log-entry-name`, à gauche) qui cède toujours la
+   place et se tronque en premier — `max-width`+ellipsis ne sert qu'en
+   filet de sécurité si le tag seul dépasse déjà la largeur de la ligne. */
 .f2s-log-entry-flag {
-  flex: none;
+  flex: 0 0 auto;
+  min-width: 0;
+  max-width: 70%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 9px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.01em;
   padding: 2px 6px;
   border-radius: 4px;
   color: #fff;
-  white-space: nowrap;
 }
 
 .f2s-log-entry-flag--rasterized {
