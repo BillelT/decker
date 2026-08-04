@@ -18,6 +18,14 @@ export interface TemplateColorSwatch {
 export interface TemplateFontUsage {
   family: string;
   weights: number[];
+  /**
+   * Police d'origine Figma si `family` vient d'une substitution (absent
+   * pour une police nativement disponible dans Slides). Permet à l'UI
+   * (TemplateStylePanel) de recalculer `family` à l'affichage à partir du
+   * choix courant du sélecteur "Fonts" (`fontOverrides`) plutôt que de
+   * rester figée sur la résolution par défaut du moment du serialize.
+   */
+  original?: string;
 }
 
 export interface TemplatePlaceholderSummary {
@@ -81,20 +89,29 @@ export function summarizeColors(elements: IRElement[]): TemplateColorSwatch[] {
   return [...byKey.values()];
 }
 
-/** Familles de police distinctes utilisées, avec l'ensemble des graisses employées pour chacune. */
+/**
+ * Familles de police distinctes utilisées, avec l'ensemble des graisses
+ * employées pour chacune. Groupé par police D'ORIGINE quand la police a été
+ * substituée (`run.originalFontFamily`), pas par la police résolue par
+ * défaut : deux polices manquantes différentes retombant toutes deux sur
+ * "Inter" par défaut restent deux entrées distinctes, chacune capable de
+ * suivre son propre choix dans le sélecteur "Fonts" (même granularité que
+ * `collectFontSubstitutions` côté deck).
+ */
 export function summarizeFonts(elements: IRElement[]): TemplateFontUsage[] {
-  const byFamily = new Map<string, Set<number>>();
+  const byKey = new Map<string, { family: string; weights: Set<number>; original?: string }>();
 
   for (const el of elements) {
     if (el.kind !== 'text') continue;
     for (const run of el.runs) {
-      const weights = byFamily.get(run.fontFamily) ?? new Set<number>();
-      weights.add(run.fontWeight);
-      byFamily.set(run.fontFamily, weights);
+      const key = run.originalFontFamily ?? run.fontFamily;
+      const entry = byKey.get(key) ?? { family: run.fontFamily, weights: new Set<number>(), original: run.originalFontFamily };
+      entry.weights.add(run.fontWeight);
+      byKey.set(key, entry);
     }
   }
 
-  return [...byFamily.entries()].map(([family, weights]) => ({ family, weights: [...weights].sort((a, b) => a - b) }));
+  return [...byKey.values()].map(({ family, weights, original }) => ({ family, weights: [...weights].sort((a, b) => a - b), original }));
 }
 
 /** Éléments tagués comme placeholder (convention `[[role]]`, cf. placeholder.ts), dans l'ordre d'apparition dans l'arbre aplati. */
@@ -130,15 +147,16 @@ export function aggregateColorSwatches(perLayoutColors: TemplateColorSwatch[][])
   return [...byKey.values()];
 }
 
-/** Même principe que `aggregateColorSwatches`, pour les polices. */
+/** Même principe que `aggregateColorSwatches`, pour les polices — même clé de regroupement que `summarizeFonts` (police d'origine si substituée). */
 export function aggregateFontUsages(perLayoutFonts: TemplateFontUsage[][]): TemplateFontUsage[] {
-  const byFamily = new Map<string, Set<number>>();
+  const byKey = new Map<string, { family: string; weights: Set<number>; original?: string }>();
   for (const fonts of perLayoutFonts) {
     for (const f of fonts) {
-      const weights = byFamily.get(f.family) ?? new Set<number>();
-      for (const w of f.weights) weights.add(w);
-      byFamily.set(f.family, weights);
+      const key = f.original ?? f.family;
+      const entry = byKey.get(key) ?? { family: f.family, weights: new Set<number>(), original: f.original };
+      for (const w of f.weights) entry.weights.add(w);
+      byKey.set(key, entry);
     }
   }
-  return [...byFamily.entries()].map(([family, weights]) => ({ family, weights: [...weights].sort((a, b) => a - b) }));
+  return [...byKey.values()].map(({ family, weights, original }) => ({ family, weights: [...weights].sort((a, b) => a - b), original }));
 }

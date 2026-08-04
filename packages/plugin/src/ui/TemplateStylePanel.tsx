@@ -6,6 +6,8 @@ import type { TemplateColorSwatch, TemplateFontUsage } from './types.js';
 export interface TemplateStylePanelProps {
   colors: TemplateColorSwatch[];
   fonts: TemplateFontUsage[];
+  /** Choix manuel de police (bandeau "Fonts") — voir logEntryFlag.ts pour le même besoin côté Logs. */
+  fontOverrides: Record<string, string>;
   colorRoles: Record<string, ThemeColorRole>;
   setColorRoles: (updater: (prev: Record<string, ThemeColorRole>) => Record<string, ThemeColorRole>) => void;
   roleColorOverrides: Partial<Record<ThemeColorRole, string>>;
@@ -52,7 +54,7 @@ function HexField({ value, onCommit }: { value: string; onCommit: (hex: string) 
  * assigné reste un aplat RGB statique par élément comme avant : ce
  * panneau est strictement additif, jamais requis pour créer un template.
  */
-export function TemplateStylePanel({ colors, fonts, colorRoles, setColorRoles, roleColorOverrides, setRoleColorOverrides }: TemplateStylePanelProps) {
+export function TemplateStylePanel({ colors, fonts, fontOverrides, colorRoles, setColorRoles, roleColorOverrides, setRoleColorOverrides }: TemplateStylePanelProps) {
   const roleHexes = resolveThemeRoleHexes(colorRoles, colors, roleColorOverrides);
   const assignedKeyByRole = new Map<ThemeColorRole, string>();
   for (const [key, role] of Object.entries(colorRoles)) assignedKeyByRole.set(role, key);
@@ -147,19 +149,25 @@ export function TemplateStylePanel({ colors, fonts, colorRoles, setColorRoles, r
           <p className="f2s-toolbar-muted">No text detected yet.</p>
         ) : (
           <ul className="f2s-style-list">
-            {fonts.map((f) => (
-              <li key={f.family} className="f2s-style-row">
-                <div className="f2s-style-row-main">
-                  <span className="f2s-style-font-swatch" style={{ fontFamily: f.family }}>
-                    Aa
-                  </span>
-                  <span className="f2s-style-font-info">
-                    <span className="f2s-tmpl-font-family">{f.family}</span>
-                    <span className="f2s-toolbar-muted">{f.weights.join(', ')}</span>
-                  </span>
-                </div>
-              </li>
-            ))}
+            {fonts.map((f) => {
+              // Reflète le choix courant du sélecteur "Fonts" plutôt que la
+              // résolution par défaut figée au moment du serialize — voir
+              // logEntryFlag.ts::logEntryTagText pour le même besoin côté Logs.
+              const family = f.original ? (fontOverrides[f.original] ?? f.family) : f.family;
+              return (
+                <li key={f.original ?? f.family} className="f2s-style-row">
+                  <div className="f2s-style-row-main">
+                    <span className="f2s-style-font-swatch" style={{ fontFamily: family }}>
+                      Aa
+                    </span>
+                    <span className="f2s-style-font-info">
+                      <span className="f2s-tmpl-font-family">{family}</span>
+                      <span className="f2s-toolbar-muted">{f.weights.join(', ')}</span>
+                    </span>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>

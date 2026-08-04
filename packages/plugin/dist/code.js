@@ -1098,16 +1098,17 @@
     return [...byKey.values()];
   }
   function summarizeFonts(elements) {
-    const byFamily = /* @__PURE__ */ new Map();
+    const byKey = /* @__PURE__ */ new Map();
     for (const el of elements) {
       if (el.kind !== "text") continue;
       for (const run of el.runs) {
-        const weights = byFamily.get(run.fontFamily) ?? /* @__PURE__ */ new Set();
-        weights.add(run.fontWeight);
-        byFamily.set(run.fontFamily, weights);
+        const key = run.originalFontFamily ?? run.fontFamily;
+        const entry = byKey.get(key) ?? { family: run.fontFamily, weights: /* @__PURE__ */ new Set(), original: run.originalFontFamily };
+        entry.weights.add(run.fontWeight);
+        byKey.set(key, entry);
       }
     }
-    return [...byFamily.entries()].map(([family, weights]) => ({ family, weights: [...weights].sort((a, b) => a - b) }));
+    return [...byKey.values()].map(({ family, weights, original }) => ({ family, weights: [...weights].sort((a, b) => a - b), original }));
   }
   function summarizePlaceholders(elements) {
     const result = [];

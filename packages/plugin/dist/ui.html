@@ -2801,15 +2801,16 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
     return [...byKey.values()];
   }
   function aggregateFontUsages(perLayoutFonts) {
-    const byFamily = /* @__PURE__ */ new Map();
+    const byKey = /* @__PURE__ */ new Map();
     for (const fonts of perLayoutFonts) {
       for (const f4 of fonts) {
-        const weights = byFamily.get(f4.family) ?? /* @__PURE__ */ new Set();
-        for (const w3 of f4.weights) weights.add(w3);
-        byFamily.set(f4.family, weights);
+        const key = f4.original ?? f4.family;
+        const entry = byKey.get(key) ?? { family: f4.family, weights: /* @__PURE__ */ new Set(), original: f4.original };
+        for (const w3 of f4.weights) entry.weights.add(w3);
+        byKey.set(key, entry);
       }
     }
-    return [...byFamily.entries()].map(([family, weights]) => ({ family, weights: [...weights].sort((a3, b2) => a3 - b2) }));
+    return [...byKey.values()].map(({ family, weights, original }) => ({ family, weights: [...weights].sort((a3, b2) => a3 - b2), original }));
   }
 
   // src/ui/types.ts
@@ -3350,7 +3351,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
       value
     );
   }
-  function TemplateStylePanel({ colors, fonts, colorRoles, setColorRoles, roleColorOverrides, setRoleColorOverrides }) {
+  function TemplateStylePanel({ colors, fonts, fontOverrides, colorRoles, setColorRoles, roleColorOverrides, setRoleColorOverrides }) {
     const roleHexes = resolveThemeRoleHexes(colorRoles, colors, roleColorOverrides);
     const assignedKeyByRole = /* @__PURE__ */ new Map();
     for (const [key, role] of Object.entries(colorRoles)) assignedKeyByRole.set(role, key);
@@ -3425,13 +3426,16 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
       ] }),
       /* @__PURE__ */ u3("section", { className: "f2s-tmpl-section", children: [
         /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading f2s-style-heading", children: "Typography" }),
-        fonts.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: "No text detected yet." }) : /* @__PURE__ */ u3("ul", { className: "f2s-style-list", children: fonts.map((f4) => /* @__PURE__ */ u3("li", { className: "f2s-style-row", children: /* @__PURE__ */ u3("div", { className: "f2s-style-row-main", children: [
-          /* @__PURE__ */ u3("span", { className: "f2s-style-font-swatch", style: { fontFamily: f4.family }, children: "Aa" }),
-          /* @__PURE__ */ u3("span", { className: "f2s-style-font-info", children: [
-            /* @__PURE__ */ u3("span", { className: "f2s-tmpl-font-family", children: f4.family }),
-            /* @__PURE__ */ u3("span", { className: "f2s-toolbar-muted", children: f4.weights.join(", ") })
-          ] })
-        ] }) }, f4.family)) })
+        fonts.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: "No text detected yet." }) : /* @__PURE__ */ u3("ul", { className: "f2s-style-list", children: fonts.map((f4) => {
+          const family = f4.original ? fontOverrides[f4.original] ?? f4.family : f4.family;
+          return /* @__PURE__ */ u3("li", { className: "f2s-style-row", children: /* @__PURE__ */ u3("div", { className: "f2s-style-row-main", children: [
+            /* @__PURE__ */ u3("span", { className: "f2s-style-font-swatch", style: { fontFamily: family }, children: "Aa" }),
+            /* @__PURE__ */ u3("span", { className: "f2s-style-font-info", children: [
+              /* @__PURE__ */ u3("span", { className: "f2s-tmpl-font-family", children: family }),
+              /* @__PURE__ */ u3("span", { className: "f2s-toolbar-muted", children: f4.weights.join(", ") })
+            ] })
+          ] }) }, f4.original ?? f4.family);
+        }) })
       ] })
     ] });
   }
@@ -3569,6 +3573,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
           {
             colors,
             fonts,
+            fontOverrides,
             colorRoles,
             setColorRoles,
             roleColorOverrides,
@@ -3686,6 +3691,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
         {
           colors,
           fonts,
+          fontOverrides,
           colorRoles,
           setColorRoles,
           roleColorOverrides,

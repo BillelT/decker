@@ -69,6 +69,8 @@ export interface TemplateColorSwatch {
 export interface TemplateFontUsage {
   family: string;
   weights: number[];
+  /** Police d'origine Figma si `family` vient d'une substitution — voir serialize/templateSummary.ts::summarizeFonts. */
+  original?: string;
 }
 
 export interface TemplateLayoutState extends FrameCandidate {
