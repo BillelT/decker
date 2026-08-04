@@ -118,6 +118,27 @@ html.f2s-skin--hybrid .f2s-tmpl-section {
   box-shadow: var(--hyb-etched);
 }
 
+/* Boîte en creux façon win95 : le padding du conteneur parent (aside
+   Styles / canvas du mode template) est reporté sur la section elle-même,
+   pour un total inchangé — sinon le contenu touchait le biseau etched
+   ci-dessus, contrairement au skin win95 qui pousse ce padding depuis
+   toujours sur `.f2s-tmpl-section` (cf. styles.win95.css). */
+html.f2s-skin--hybrid .f2s-style-aside {
+  padding: 8px;
+}
+
+html.f2s-skin--hybrid .f2s-style-panel .f2s-tmpl-section {
+  padding: 8px;
+}
+
+html.f2s-skin--hybrid .f2s-canvas--template {
+  padding: 12px;
+}
+
+html.f2s-skin--hybrid .f2s-tmpl-panel .f2s-tmpl-section {
+  padding: 8px 12px;
+}
+
 /* Entrées de liste cliquables : biseau sortant/enfoncé plutôt que puces
    arrondies, l'accent orange au survol reste celui du skin moderne. */
 html.f2s-skin--hybrid .f2s-log-entry,
