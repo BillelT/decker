@@ -4044,7 +4044,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
   function TitleBar({ mode }) {
     return /* @__PURE__ */ u3("div", { className: "f2s-titlebar", children: [
       /* @__PURE__ */ u3("span", { className: "f2s-titlebar-text", children: [
-        "Figma \u2192 Slides \u2014 ",
+        "Decker \u2014 ",
         mode === "deck" ? "Deck export" : "Template creation"
       ] }),
       /* @__PURE__ */ u3(
@@ -4757,7 +4757,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
         includedFrameIds: order,
         order,
         options,
-        presentationTitle: deckTitle.trim() || "Figma \u2192 Slides export",
+        presentationTitle: deckTitle.trim() || "Decker export",
         fontOverrides
       });
     }
@@ -4851,7 +4851,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
               {
                 type: "text",
                 className: "f2s-title-input",
-                placeholder: "Figma \u2192 Slides export",
+                placeholder: "Decker export",
                 value: deckTitle,
                 onInput: (e3) => setDeckTitle(e3.target.value)
               }
