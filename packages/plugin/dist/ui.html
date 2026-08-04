@@ -734,16 +734,24 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   border-color: var(--color-error);
 }
 
+/* Contient désormais la raison précise ("Font replacement "Zodiak" into
+   "Inter"", "Gradients are not supported by Slides"…) plutôt qu'un mot
+   générique — plus long, donc tronqué en ellipsis comme le nom de calque
+   plutôt qu'en majuscules (qui rendrait les noms de police entre guillemets
+   illisibles) ; le texte complet reste dans `title`. */
 .f2s-log-entry-flag {
-  flex: none;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 70%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 9px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.01em;
   padding: 2px 6px;
   border-radius: 4px;
   color: #fff;
-  white-space: nowrap;
 }
 
 .f2s-log-entry-flag--rasterized {
@@ -2842,6 +2850,15 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
     if (VISUAL_DIFF_WARNING_CODES.has(code)) return "visual-diff";
     return void 0;
   }
+  function logEntryTagText(w3, fontOverrides) {
+    if (w3.code === "FONT_SUBSTITUTED" && w3.fontOriginal) {
+      const resolved = fontOverrides[w3.fontOriginal] ?? w3.fontSubstitute ?? w3.fontOriginal;
+      return `Font replacement "${w3.fontOriginal}" into "${resolved}"`;
+    }
+    const dashIndex = w3.message.indexOf(" \u2014 ");
+    const reason = dashIndex === -1 ? w3.message : w3.message.slice(0, dashIndex);
+    return reason.endsWith(".") ? reason.slice(0, -1) : reason;
+  }
 
   // src/ui/reorderFrames.ts
   function moveToIndex(order, id, targetIndex) {
@@ -3057,6 +3074,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
     selecting,
     hasCanvasSelection,
     onRemove,
+    fontOverrides,
     exportCursor,
     notice
   }) {
@@ -3220,18 +3238,19 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
           ] }),
           previewedFrame.warnings && previewedFrame.warnings.length > 0 ? /* @__PURE__ */ u3("ul", { className: "f2s-tmpl-list", children: [...previewedFrame.warnings].sort((a3, b2) => (logEntryFlag(a3.code) === "rasterized" ? 0 : 1) - (logEntryFlag(b2.code) === "rasterized" ? 0 : 1)).map((w3, i3) => {
             const flag = logEntryFlag(w3.code);
+            const tagText = flag ? logEntryTagText(w3, fontOverrides) : void 0;
             return /* @__PURE__ */ u3("li", { children: /* @__PURE__ */ u3(
               "button",
               {
                 type: "button",
                 className: `f2s-log-entry${w3.severity === "blocking" ? " f2s-log-entry--blocking" : ""}${flag ? ` f2s-log-entry--${flag}` : ""}`,
-                title: `${w3.nodeName} \u2014 ${w3.message}`,
+                title: `${w3.nodeName} \u2014 ${tagText ?? w3.message}`,
                 onClick: () => selectSourceNodes([w3.sourceNodeId]),
                 children: [
-                  flag && /* @__PURE__ */ u3("span", { className: `f2s-log-entry-flag f2s-log-entry-flag--${flag}`, children: flag === "rasterized" ? "Rasterized" : "Approximated" }),
+                  tagText && /* @__PURE__ */ u3("span", { className: `f2s-log-entry-flag f2s-log-entry-flag--${flag}`, children: tagText }),
                   /* @__PURE__ */ u3("span", { className: "f2s-log-entry-text", children: [
                     /* @__PURE__ */ u3("strong", { className: "f2s-log-entry-name", children: w3.nodeName }),
-                    /* @__PURE__ */ u3("span", { className: "f2s-log-entry-message", children: [
+                    !tagText && /* @__PURE__ */ u3("span", { className: "f2s-log-entry-message", children: [
                       "\u2014 ",
                       w3.message
                     ] })
@@ -3418,21 +3437,22 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
   }
 
   // src/ui/TemplatePanel.tsx
-  function TemplateLogList({ warnings }) {
+  function TemplateLogList({ warnings, fontOverrides }) {
     return /* @__PURE__ */ u3("ul", { className: "f2s-tmpl-list", children: warnings.map((w3, i3) => {
       const flag = logEntryFlag(w3.code);
+      const tagText = flag ? logEntryTagText(w3, fontOverrides) : void 0;
       return /* @__PURE__ */ u3("li", { children: /* @__PURE__ */ u3(
         "button",
         {
           type: "button",
           className: `f2s-log-entry${w3.severity === "blocking" ? " f2s-log-entry--blocking" : ""}${flag ? ` f2s-log-entry--${flag}` : ""}`,
-          title: `${w3.nodeName} \u2014 ${w3.message}`,
+          title: `${w3.nodeName} \u2014 ${tagText ?? w3.message}`,
           onClick: () => selectSourceNodes([w3.sourceNodeId]),
           children: [
-            flag && /* @__PURE__ */ u3("span", { className: `f2s-log-entry-flag f2s-log-entry-flag--${flag}`, children: flag === "rasterized" ? "Rasterized" : "Approximated" }),
+            tagText && /* @__PURE__ */ u3("span", { className: `f2s-log-entry-flag f2s-log-entry-flag--${flag}`, children: tagText }),
             /* @__PURE__ */ u3("span", { className: "f2s-log-entry-text", children: [
               /* @__PURE__ */ u3("strong", { className: "f2s-log-entry-name", children: w3.nodeName }),
-              /* @__PURE__ */ u3("span", { className: "f2s-log-entry-message", children: [
+              !tagText && /* @__PURE__ */ u3("span", { className: "f2s-log-entry-message", children: [
                 "\u2014 ",
                 w3.message
               ] })
@@ -3455,6 +3475,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
     notice,
     onRemove,
     onRename,
+    fontOverrides,
     exportCursor,
     colors,
     fonts,
@@ -3652,11 +3673,11 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
           ] }),
           previewedLayout.warnings.filter((w3) => w3.severity === "blocking").length > 0 && /* @__PURE__ */ u3("div", { className: "f2s-logs f2s-tmpl-section--blocking", children: [
             /* @__PURE__ */ u3("div", { className: "f2s-logs-header", children: /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Fix before creating the template" }) }),
-            /* @__PURE__ */ u3(TemplateLogList, { warnings: previewedLayout.warnings.filter((w3) => w3.severity === "blocking") })
+            /* @__PURE__ */ u3(TemplateLogList, { warnings: previewedLayout.warnings.filter((w3) => w3.severity === "blocking"), fontOverrides })
           ] }),
           previewedLayout.warnings.filter((w3) => w3.severity !== "blocking").length > 0 && /* @__PURE__ */ u3("div", { className: "f2s-logs", children: [
             /* @__PURE__ */ u3("div", { className: "f2s-logs-header", children: /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Content" }) }),
-            /* @__PURE__ */ u3(TemplateLogList, { warnings: previewedLayout.warnings.filter((w3) => w3.severity !== "blocking") })
+            /* @__PURE__ */ u3(TemplateLogList, { warnings: previewedLayout.warnings.filter((w3) => w3.severity !== "blocking"), fontOverrides })
           ] })
         ] })
       ] }) : /* @__PURE__ */ u3("p", { className: "f2s-canvas-empty", children: "Select a layout on the left to see its report." }) }),
@@ -4784,6 +4805,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
           selecting,
           hasCanvasSelection,
           onRemove: removeFrame,
+          fontOverrides,
           exportCursor: exporting && exportSource === "deck" ? exportCursor : void 0,
           notice: selectionNotice
         }
@@ -4800,6 +4822,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
           notice: templateSelectionNotice,
           onRemove: removeTemplateLayout,
           onRename: renameTemplateLayout,
+          fontOverrides,
           exportCursor: exporting && exportSource === "template" ? exportCursor : void 0,
           colors: templateColors,
           fonts: templateFonts,

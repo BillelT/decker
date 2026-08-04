@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { logEntryFlag } from './logEntryFlag.js';
+import { logEntryFlag, logEntryTagText } from './logEntryFlag.js';
 import { moveToIndex } from './reorderFrames.js';
 import { RetroExportPreview } from './RetroExportPreview.js';
 import { TemplateStylePanel, type TemplateStylePanelProps } from './TemplateStylePanel.js';
@@ -11,27 +11,24 @@ import { postToPlugin, selectSourceNodes, type TemplateLayoutState, type Templat
  * panneau Logs du mode deck (DeckPanel.tsx) — même structure de bouton, même
  * troncature sur une ligne pour le nom de calque + message.
  */
-function TemplateLogList({ warnings }: { warnings: TemplateWarning[] }) {
+function TemplateLogList({ warnings, fontOverrides }: { warnings: TemplateWarning[]; fontOverrides: Record<string, string> }) {
   return (
     <ul className="f2s-tmpl-list">
       {warnings.map((w, i) => {
         const flag = logEntryFlag(w.code);
+        const tagText = flag ? logEntryTagText(w, fontOverrides) : undefined;
         return (
           <li key={i}>
             <button
               type="button"
               className={`f2s-log-entry${w.severity === 'blocking' ? ' f2s-log-entry--blocking' : ''}${flag ? ` f2s-log-entry--${flag}` : ''}`}
-              title={`${w.nodeName} — ${w.message}`}
+              title={`${w.nodeName} — ${tagText ?? w.message}`}
               onClick={() => selectSourceNodes([w.sourceNodeId])}
             >
-              {flag && (
-                <span className={`f2s-log-entry-flag f2s-log-entry-flag--${flag}`}>
-                  {flag === 'rasterized' ? 'Rasterized' : 'Approximated'}
-                </span>
-              )}
+              {tagText && <span className={`f2s-log-entry-flag f2s-log-entry-flag--${flag}`}>{tagText}</span>}
               <span className="f2s-log-entry-text">
                 <strong className="f2s-log-entry-name">{w.nodeName}</strong>
-                <span className="f2s-log-entry-message">— {w.message}</span>
+                {!tagText && <span className="f2s-log-entry-message">— {w.message}</span>}
               </span>
             </button>
           </li>
@@ -62,6 +59,8 @@ export interface TemplatePanelProps extends TemplateStylePanelProps {
   notice: string | undefined;
   onRemove: (id: string) => void;
   onRename: (id: string, name: string) => void;
+  /** Choix manuel de police (bandeau "Fonts") — reflété dans le tag des entrées FONT_SUBSTITUTED, voir logEntryFlag.ts. */
+  fontOverrides: Record<string, string>;
   /** Layout dont le lot est en cours d'application côté backend, s'il y a une création de template en cours. */
   exportCursor?: ExportCursor;
 }
@@ -83,6 +82,7 @@ export function TemplatePanel({
   notice,
   onRemove,
   onRename,
+  fontOverrides,
   exportCursor,
   colors,
   fonts,
@@ -343,7 +343,7 @@ export function TemplatePanel({
                   <div className="f2s-logs-header">
                     <h3 className="f2s-tmpl-heading">Fix before creating the template</h3>
                   </div>
-                  <TemplateLogList warnings={previewedLayout.warnings.filter((w) => w.severity === 'blocking')} />
+                  <TemplateLogList warnings={previewedLayout.warnings.filter((w) => w.severity === 'blocking')} fontOverrides={fontOverrides} />
                 </div>
               )}
 
@@ -352,7 +352,7 @@ export function TemplatePanel({
                   <div className="f2s-logs-header">
                     <h3 className="f2s-tmpl-heading">Content</h3>
                   </div>
-                  <TemplateLogList warnings={previewedLayout.warnings.filter((w) => w.severity !== 'blocking')} />
+                  <TemplateLogList warnings={previewedLayout.warnings.filter((w) => w.severity !== 'blocking')} fontOverrides={fontOverrides} />
                 </div>
               )}
             </div>

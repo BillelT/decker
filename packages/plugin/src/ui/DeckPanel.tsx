@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { logEntryFlag } from './logEntryFlag.js';
+import { logEntryFlag, logEntryTagText } from './logEntryFlag.js';
 import { moveToIndex } from './reorderFrames.js';
 import { RetroExportPreview } from './RetroExportPreview.js';
 import type { ExportCursor } from './exportCursor.js';
@@ -24,6 +24,8 @@ export interface DeckPanelProps {
   selecting: boolean;
   hasCanvasSelection: boolean;
   onRemove: (id: string) => void;
+  /** Choix manuel de police (bandeau "Fonts") — reflété dans le tag des entrées FONT_SUBSTITUTED, voir logEntryFlag.ts. */
+  fontOverrides: Record<string, string>;
   /** Frame dont le lot est en cours d'application côté backend, s'il y a un export en cours. */
   exportCursor?: ExportCursor;
   /**
@@ -51,6 +53,7 @@ export function DeckPanel({
   selecting,
   hasCanvasSelection,
   onRemove,
+  fontOverrides,
   exportCursor,
   notice,
 }: DeckPanelProps) {
@@ -299,26 +302,24 @@ export function DeckPanel({
                     .sort((a, b) => (logEntryFlag(a.code) === 'rasterized' ? 0 : 1) - (logEntryFlag(b.code) === 'rasterized' ? 0 : 1))
                     .map((w, i) => {
                     const flag = logEntryFlag(w.code);
+                    const tagText = flag ? logEntryTagText(w, fontOverrides) : undefined;
                     return (
                       <li key={i}>
                         <button
                           type="button"
                           className={`f2s-log-entry${w.severity === 'blocking' ? ' f2s-log-entry--blocking' : ''}${flag ? ` f2s-log-entry--${flag}` : ''}`}
-                          title={`${w.nodeName} — ${w.message}`}
+                          title={`${w.nodeName} — ${tagText ?? w.message}`}
                           onClick={() => selectSourceNodes([w.sourceNodeId])}
                         >
-                          {flag && (
-                            <span className={`f2s-log-entry-flag f2s-log-entry-flag--${flag}`}>
-                              {flag === 'rasterized' ? 'Rasterized' : 'Approximated'}
-                            </span>
-                          )}
+                          {tagText && <span className={`f2s-log-entry-flag f2s-log-entry-flag--${flag}`}>{tagText}</span>}
                           {/* Le nom du calque (nodeName) vient de Figma, où le nom par défaut d'un
                               calque texte est son contenu entier : sur un long paragraphe, ça
-                              déborde. Tronqué en priorité sur une ligne — le message (ce qui a
-                              été fait) reste lisible, le libellé complet reste dans `title`. */}
+                              déborde. Tronqué en priorité sur une ligne — le libellé complet reste
+                              dans `title`. Le message n'est affiché que si l'entrée n'a pas de tag
+                              (ex. placeholder inconnu) : sinon la raison est déjà dans le tag. */}
                           <span className="f2s-log-entry-text">
                             <strong className="f2s-log-entry-name">{w.nodeName}</strong>
-                            <span className="f2s-log-entry-message">— {w.message}</span>
+                            {!tagText && <span className="f2s-log-entry-message">— {w.message}</span>}
                           </span>
                         </button>
                       </li>

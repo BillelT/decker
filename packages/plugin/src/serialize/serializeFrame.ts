@@ -140,6 +140,8 @@ async function walk(node: SceneNode, state: WalkState): Promise<void> {
             sourceNodeId: node.id,
             nodeName: node.name,
             message: `Font "${w.original}" replaced with "${w.substitute}".`,
+            fontOriginal: w.original,
+            fontSubstitute: w.substitute,
           });
         }
       }
