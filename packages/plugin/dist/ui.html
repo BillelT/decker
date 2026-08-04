@@ -4563,6 +4563,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
       setSelecting(false);
     }
     function removeFrame(id) {
+      postToPlugin({ type: "remove-frame", id });
       setOrder((prev) => prev.filter((x2) => x2 !== id));
       setFrames((prev) => {
         const next = { ...prev };
@@ -4581,6 +4582,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
       setTemplateSelecting(false);
     }
     function removeTemplateLayout(id) {
+      postToPlugin({ type: "remove-template-layout", id });
       setTemplateOrder((prev) => prev.filter((x2) => x2 !== id));
       setTemplateLayouts((prev) => {
         const next = { ...prev };
