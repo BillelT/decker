@@ -61,6 +61,8 @@ const SELECTION_NOTICE_MS = 4000;
 // Injectés au build (voir esbuild.config.mjs).
 declare const __BACKEND_URL__: string;
 declare const __LOGO_SVG__: string;
+/** Section Developer de la modale Settings (Download IR JSON) — false par défaut, à activer avec F2S_DEBUG_TOOLS=1 au build pour un usage local de mainteneur. Jamais vrai dans le build distribué aux utilisateurs. */
+declare const __DEBUG_TOOLS__: boolean;
 
 /** Le backend a répondu 401 : la session Google persistée n'est plus valide — à purger avant de relancer la connexion. */
 class AuthExpiredError extends Error {
@@ -1391,7 +1393,7 @@ function App() {
         signedIn={Boolean(sessionToken)}
         accountEmail={accountEmail}
         onSignOut={handleSignOut}
-        showDebugExport={mode === 'deck' && order.length > 0}
+        showDebugExport={__DEBUG_TOOLS__ && mode === 'deck' && order.length > 0}
         onExportDebugIr={handleExportDebugIr}
       />
     </>
