@@ -872,63 +872,6 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   font-weight: 700;
 }
 
-.f2s-tmpl-hex-input {
-  font-family: inherit;
-  font-variant-numeric: tabular-nums;
-  font-size: 12px;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text);
-  border-radius: 4px;
-  padding: 3px 6px;
-  width: 68px;
-  flex: none;
-}
-
-.f2s-tmpl-hex-input:focus {
-  outline: none;
-  border-color: var(--color-orange-40);
-}
-
-/* Couleurs détectées dans le template, proposées comme remplacement en un
-   clic pour le rôle de la ligne — plus rapide que taper le hex à la main
-   quand la couleur voulue existe déjà dans le deck importé. */
-.f2s-tmpl-suggestions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
-}
-
-.f2s-tmpl-suggestion {
-  width: 18px;
-  height: 18px;
-  padding: 0;
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  overflow: hidden;
-  flex: none;
-  background-image: linear-gradient(45deg, rgba(127, 127, 127, 0.25) 25%, transparent 25%, transparent 75%, rgba(127, 127, 127, 0.25) 75%),
-    linear-gradient(45deg, rgba(127, 127, 127, 0.25) 25%, transparent 25%, transparent 75%, rgba(127, 127, 127, 0.25) 75%);
-  background-size: 8px 8px;
-  background-position: 0 0, 4px 4px;
-}
-
-.f2s-tmpl-suggestion span {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.f2s-tmpl-suggestion:hover {
-  border-color: var(--color-orange);
-}
-
-.f2s-tmpl-suggestion.is-selected {
-  border-color: var(--color-orange);
-  box-shadow: 0 0 0 1px var(--color-orange);
-}
-
 /* ---- Aside "Styles" : liste compacte façon Figma (Color/Text styles) ---- */
 
 .f2s-style-panel {
@@ -964,12 +907,18 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   gap: 6px;
 }
 
+/* Le damier sous-jacent rend visible l'alpha d'une couleur détectée semi-transparente, plutôt que de la faire fondre dans le fond du panneau. */
 .f2s-style-swatch {
   width: 24px;
   height: 24px;
-  border-radius: 4px;
+  border-radius: 50%;
   border: 1px solid var(--color-border);
   flex: none;
+  background-image: linear-gradient(45deg, rgba(127, 127, 127, 0.25) 25%, transparent 25%, transparent 75%, rgba(127, 127, 127, 0.25) 75%),
+    linear-gradient(45deg, rgba(127, 127, 127, 0.25) 25%, transparent 25%, transparent 75%, rgba(127, 127, 127, 0.25) 75%);
+  background-size: 8px 8px;
+  background-position: 0 0, 4px 4px;
+  background-origin: border-box;
 }
 
 .f2s-style-label {
@@ -979,6 +928,11 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.f2s-style-role-select {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .f2s-style-font-swatch {

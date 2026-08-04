@@ -13,6 +13,8 @@ export interface TemplateColorSwatch {
   hex: string;
   alpha: number;
   usageCount: number;
+  /** Nom de la variable Figma liée à cette couleur, si au moins une occurrence en référence une (`IRColor.variableName`) — affiché à la place du hex dans l'onglet Style. */
+  variableName?: string;
 }
 
 export interface TemplateFontUsage {
@@ -56,8 +58,9 @@ export function summarizeColors(elements: IRElement[]): TemplateColorSwatch[] {
     const existing = byKey.get(key);
     if (existing) {
       existing.usageCount++;
+      if (!existing.variableName && color.variableName) existing.variableName = color.variableName;
     } else {
-      byKey.set(key, { hex, alpha: color.a, usageCount: 1 });
+      byKey.set(key, { hex, alpha: color.a, usageCount: 1, variableName: color.variableName });
     }
   };
 
@@ -122,6 +125,7 @@ export function aggregateColorSwatches(perLayoutColors: TemplateColorSwatch[][])
       const existing = byKey.get(key);
       if (existing) {
         existing.usageCount += c.usageCount;
+        if (!existing.variableName && c.variableName) existing.variableName = c.variableName;
       } else {
         byKey.set(key, { ...c });
       }

@@ -197,6 +197,8 @@ export interface IRColor {
   a: number; // r/g/b/a tous 0..1
   /** Si renseigné, l'élément est lié à ce rôle de thème plutôt qu'à un RGB figé — voir `ThemeColorRole`. */
   themeRole?: ThemeColorRole;
+  /** Nom de la variable Figma liée à cette couleur (ex. "color/brand/primary"), si le fill/stroke/texte source en référence une — voir `serializeFrame.ts`. Purement informatif côté rapport de template (onglet Style) : jamais lu par le mapper Slides. */
+  variableName?: string;
 }
 
 export interface IRWarning {
