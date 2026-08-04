@@ -53,7 +53,7 @@ authRouter.get('/auth/callback', async (req, res) => {
       sameSite: 'none',
       maxAge: 90 * 24 * 3600 * 1000,
     });
-    res.type('html').send(renderSuccessPage(accessToken, expiresInSec));
+    res.type('html').send(renderSuccessPage());
   } catch (err) {
     const message = (err as Error).message;
     await stashAuthResult(state, { status: 'error', message });
@@ -68,42 +68,159 @@ authRouter.get('/auth/session/:pollId', async (req, res) => {
 });
 
 /**
- * L'iframe du plugin récupère le jeton toute seule par polling (voir
- * /auth/session/:pollId) — le copier-coller ci-dessous n'est là que pour
- * `npm run calibrate` (spec §4), qui a besoin d'un access token Google brut
- * en variable d'env et n'a pas d'autre moyen d'en obtenir un dans ce dépôt.
- * Google expire ce token après `expiresInSec` (~1h) : largement suffisant
- * pour lancer le script juste après, mais il faudra se reconnecter pour un
- * nouveau run plus tard.
+ * Habillage partagé des pages /auth/callback (succès et erreur) — reprend la
+ * DA du plugin (orange #F06800, fond crème, pastille logo arrondie) pour que
+ * cet onglet de navigateur, seul moment où l'utilisateur quitte l'iframe
+ * Figma, ne détonne pas visuellement. Nom et logo sont des placeholders (le
+ * plugin s'appelle encore "Figma → Google Slides" côté manifest) : à
+ * remplacer une fois la marque définitive choisie.
+ *
+ * Ne montre plus le token brut : l'iframe du plugin récupère le jeton de
+ * session toute seule par polling (voir /auth/session/:pollId), donc cette
+ * page n'a plus besoin d'exposer de secret à l'utilisateur. `npm run
+ * calibrate` (spec §4) a une méthode d'obtention distincte du token, voir
+ * printMissingCredentialsHelp() dans calibration/calibrate.ts.
  */
-function renderSuccessPage(accessToken: string, expiresInSec: number): string {
-  const escapedToken = accessToken.replace(/&/g, '&amp;').replace(/</g, '&lt;');
-  const expiresMin = Math.round(expiresInSec / 60);
+function renderPage(opts: {
+  title: string;
+  accent: 'success' | 'error';
+  heading: string;
+  body: string;
+}): string {
+  const iconPath =
+    opts.accent === 'success'
+      ? '<path d="M20 34 L29 43 L46 24" stroke="#F2ECE8" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>'
+      : '<path d="M24 24 L42 42 M42 24 L24 42" stroke="#F2ECE8" stroke-width="4.5" stroke-linecap="round"/>';
+  const accentColor = opts.accent === 'success' ? '#F06800' : '#E00000';
+
   return `<!doctype html>
 <html lang="en">
-<head><meta charset="utf-8" /><title>Signed in</title></head>
-<body style="font-family: system-ui, sans-serif; max-width: 640px; margin: 3rem auto; padding: 0 1rem;">
-  <h2>✅ Signed in with Google</h2>
-  <p>You're all set — you can close this tab and go back to Figma. The plugin will pick this up automatically.</p>
-  <details style="margin-top: 2rem;">
-    <summary style="cursor: pointer; color: #555;">Access token for <code>npm run calibrate</code> (dev only)</summary>
-    <p style="color: #555; font-size: 0.9em;">Expires in ~${expiresMin} min. Do not share this — treat it like a password.</p>
-    <textarea readonly rows="4" style="width: 100%; font-family: monospace; font-size: 0.85em; padding: 0.5rem;" onclick="this.select()">${escapedToken}</textarea>
-  </details>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>${opts.title}</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'><rect width='80' height='80' rx='40' fill='%23F06800'/><path d='M48.6887 47.1716C50.2508 48.7337 50.2508 51.2664 48.6887 52.8285L44.2034 57.3138C41.6836 59.8336 37.375 58.049 37.375 54.4854L37.375 45.5148C37.375 41.9512 41.6836 40.1665 44.2034 42.6864L48.6887 47.1716Z' fill='%23F2ECE8'/><path d='M48.6887 27.1715C50.2508 28.7335 50.2508 31.2662 48.6887 32.8283L44.2034 37.3136C41.6836 39.8334 37.375 38.0488 37.375 34.4852L37.375 25.5146C37.375 21.951 41.6836 20.1663 44.2034 22.6862L48.6887 27.1715Z' fill='%23F2ECE8'/><rect x='30.6235' y='21.0001' width='3' height='37' rx='1.5' fill='%23F2ECE8'/></svg>" />
+<style>
+  :root {
+    color-scheme: light;
+    --f2s-orange: #f06800;
+    --f2s-bg: #fff9f5;
+    --f2s-surface: #ffffff;
+    --f2s-border: #eeeeee;
+    --f2s-text: #120f0d;
+    --f2s-text-muted: rgba(18, 15, 13, 0.7);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background: var(--f2s-bg);
+    color: var(--f2s-text);
+    font-family: 'Cabinet Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+  .card {
+    width: 100%;
+    max-width: 400px;
+    background: var(--f2s-surface);
+    border: 1px solid var(--f2s-border);
+    border-radius: 20px;
+    padding: 2.5rem 2rem;
+    text-align: center;
+    box-shadow: 0 12px 32px rgba(18, 15, 13, 0.08);
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+  }
+  .brand-mark { width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0; }
+  .brand-name {
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+  .status-icon { width: 64px; height: 64px; margin: 0 auto 1.5rem; }
+  h1 {
+    margin: 0 0 0.75rem;
+    font-size: 1.3rem;
+    font-weight: 700;
+  }
+  p.body {
+    margin: 0 0 2rem;
+    color: var(--f2s-text-muted);
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 0.75rem 1.25rem;
+    border-radius: 10px;
+    background: var(--f2s-orange);
+    color: #fff9f5;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+  }
+  .fallback {
+    margin: 1rem 0 0;
+    font-size: 0.8rem;
+    color: var(--f2s-text-muted);
+  }
+</style>
+</head>
+<body>
+  <main class="card">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect width="80" height="80" rx="40" fill="#F06800"/>
+        <path d="M48.6887 47.1716C50.2508 48.7337 50.2508 51.2664 48.6887 52.8285L44.2034 57.3138C41.6836 59.8336 37.375 58.049 37.375 54.4854L37.375 45.5148C37.375 41.9512 41.6836 40.1665 44.2034 42.6864L48.6887 47.1716Z" fill="#F2ECE8"/>
+        <path d="M48.6887 27.1715C50.2508 28.7335 50.2508 31.2662 48.6887 32.8283L44.2034 37.3136C41.6836 39.8334 37.375 38.0488 37.375 34.4852L37.375 25.5146C37.375 21.951 41.6836 20.1663 44.2034 22.6862L48.6887 27.1715Z" fill="#F2ECE8"/>
+        <rect x="30.6235" y="21.0001" width="3" height="37" rx="1.5" fill="#F2ECE8"/>
+      </svg>
+      <!-- Placeholder — nom de marque à figer -->
+      <span class="brand-name">Figma to Slides</span>
+    </div>
+    <svg class="status-icon" viewBox="0 0 66 66" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <circle cx="33" cy="33" r="33" fill="${accentColor}"/>
+      ${iconPath}
+    </svg>
+    <h1>${opts.heading}</h1>
+    <p class="body">${opts.body}</p>
+    <a class="btn" href="figma://">Back to Figma</a>
+    <p class="fallback">If nothing happens, just close this tab.</p>
+  </main>
 </body>
 </html>`;
 }
 
+function renderSuccessPage(): string {
+  return renderPage({
+    title: 'Signed in',
+    accent: 'success',
+    heading: "You're signed in",
+    body: 'You can close this tab and go back to Figma — the plugin will pick this up automatically.',
+  });
+}
+
 function renderErrorPage(message: string): string {
   const escaped = message.replace(/&/g, '&amp;').replace(/</g, '&lt;');
-  return `<!doctype html>
-<html lang="en">
-<head><meta charset="utf-8" /><title>Sign-in failed</title></head>
-<body style="font-family: system-ui, sans-serif; max-width: 480px; margin: 3rem auto; padding: 0 1rem;">
-  <h2>❌ Google sign-in failed</h2>
-  <p>${escaped}</p>
-</body>
-</html>`;
+  return renderPage({
+    title: 'Sign-in failed',
+    accent: 'error',
+    heading: 'Google sign-in failed',
+    body: escaped,
+  });
 }
 
 /** GET /auth/me → email du compte connecté, pour la section Compte de la modale Settings du plugin. */
