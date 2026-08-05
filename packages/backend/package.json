@@ -19,6 +19,7 @@
     "spike:theme": "tsx src/spikes/masterThemeSpike.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1104.0",
     "@figma-to-slides/shared": "0.1.0",
     "@upstash/redis": "^1.38.0",
     "@vercel/blob": "^2.6.1",

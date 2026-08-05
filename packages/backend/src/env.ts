@@ -47,5 +47,28 @@ export const env = {
     localDir: process.env.ASSET_LOCAL_DIR ?? '.data/assets',
   },
 
+  // Driver `s3` — testé contre Cloudflare R2 (compatible API S3, egress
+  // gratuit). `region` vaut toujours 'auto' pour R2. `publicBaseUrl` est le
+  // domaine servant le contenu du bucket publiquement (dev URL r2.dev ou
+  // domaine custom) — voir .env.example pour la procédure de setup R2.
+  s3: {
+    get endpoint() {
+      return required('S3_ENDPOINT');
+    },
+    get bucket() {
+      return required('S3_BUCKET');
+    },
+    get accessKeyId() {
+      return required('S3_ACCESS_KEY_ID');
+    },
+    get secretAccessKey() {
+      return required('S3_SECRET_ACCESS_KEY');
+    },
+    get publicBaseUrl() {
+      return required('S3_PUBLIC_BASE_URL');
+    },
+    region: process.env.S3_REGION ?? 'auto',
+  },
+
   allowedOrigins: (process.env.PLUGIN_ALLOWED_ORIGINS ?? '').split(',').filter(Boolean),
 };

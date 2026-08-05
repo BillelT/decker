@@ -1,10 +1,12 @@
 import { env } from '../env.js';
 import type { AssetStore } from './assetStore.js';
 import { LocalDiskAssetStore } from './localDiskAssetStore.js';
+import { S3AssetStore } from './s3AssetStore.js';
 import { VercelBlobAssetStore } from './vercelBlobAssetStore.js';
 
 export * from './assetStore.js';
 export { LocalDiskAssetStore } from './localDiskAssetStore.js';
+export { S3AssetStore } from './s3AssetStore.js';
 export { VercelBlobAssetStore } from './vercelBlobAssetStore.js';
 
 let instance: AssetStore | undefined;
@@ -19,10 +21,8 @@ export function getAssetStore(): AssetStore {
       instance = new VercelBlobAssetStore();
       return instance;
     case 's3':
-      throw new Error(
-        'ASSET_STORAGE_DRIVER=s3 is not implemented yet — implement S3AssetStore against the AssetStore ' +
-          'interface (spec §5.3) and wire it in here before using this driver.',
-      );
+      instance = new S3AssetStore();
+      return instance;
     default:
       throw new Error(`Unknown ASSET_STORAGE_DRIVER: ${env.assets.driver}`);
   }
