@@ -86,9 +86,15 @@ a { color: inherit; }
 .cta {
   gap: var(--b-space-16); padding: var(--b-space-8) var(--b-space-16); border: 0;
   border-radius: var(--b-radius-md); color: var(--b-ink); font-size: var(--b-text-base);
-  font-weight: var(--b-font-medium); background-color: var(--b-accent);
+  font-weight: var(--b-font-semibold); background-color: var(--b-accent);
 }
 .cta:hover { background-color: var(--b-accent-red); }
+.tertiary {
+  gap: var(--b-space-16); padding: var(--b-space-8) var(--b-space-16); border: 1px solid var(--b-border);
+  border-radius: var(--b-radius-md); color: var(--b-ink); font-size: var(--b-text-base);
+  font-weight: var(--b-font-semibold); background-color: transparent;
+}
+.tertiary:hover { background-color: var(--b-surface-muted); }
 
 /* ---------- Links (b-button) ---------- */
 .nav-link {
@@ -103,18 +109,6 @@ a { color: inherit; }
 .text-link:hover { text-decoration: underline; }
 .nav-link:focus-visible, .text-link:focus-visible {
   outline: var(--b-focus-outline); outline-offset: var(--b-focus-offset); border-radius: var(--b-radius-2xs);
-}
-
-/* ---------- Pill (b-marker) ---------- */
-.pill {
-  display: inline-flex; align-items: center; gap: var(--b-space-4);
-  padding: var(--b-space-4) var(--b-space-12); border-radius: var(--b-radius-full);
-  background-color: var(--b-ink); color: var(--b-white); font-size: var(--b-text-xs);
-  font-weight: var(--b-font-semibold); line-height: var(--b-leading-snug);
-}
-.pill--light {
-  background-color: var(--b-surface-muted); color: var(--b-text-control);
-  font-weight: var(--b-font-medium); border: 1px solid var(--b-border);
 }
 
 /* ---------- Signature (b-signature) ---------- */
@@ -144,7 +138,6 @@ a { color: inherit; }
   gap: var(--b-space-20); width: 100%; max-width: 880px; margin-inline: auto;
   padding: var(--b-space-64) var(--b-space-24) var(--b-space-96);
 }
-.hero__eyebrow { display: flex; justify-content: center; }
 .hero__title {
   margin: 0; font-size: var(--b-text-6xl); font-weight: var(--b-font-bold);
   line-height: var(--b-leading-none); letter-spacing: var(--b-tracking-tighter); color: var(--b-ink);
