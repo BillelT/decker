@@ -170,7 +170,7 @@ export function RetroExportPreview({ src, frameName, index, total }: RetroExport
   const deckProgress = total > 0 ? Math.min(1, (index + reveal) / total) : 0;
 
   return (
-    <div className="f2s-retro">
+    <div className={`f2s-retro${src ? '' : ' f2s-retro--no-signal'}`}>
       <div className="f2s-retro-titlebar">
         <span className="f2s-retro-title">Exporting — {frameName}</span>
         <span className="f2s-retro-window-buttons" aria-hidden="true">

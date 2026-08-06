@@ -262,13 +262,15 @@ export function DeckPanel({
         {previewedFrame ? (
           <>
             {exportingFrame && exportCursor ? (
-              <RetroExportPreview
-                key={exportCursor.frameId}
-                src={exportingFrame.previewDataUrl}
-                frameName={exportingFrame.name}
-                index={exportCursor.index}
-                total={exportCursor.total}
-              />
+              <div className="f2s-canvas-preview f2s-canvas-preview--retro">
+                <RetroExportPreview
+                  key={exportCursor.frameId}
+                  src={exportingFrame.previewDataUrl}
+                  frameName={exportingFrame.name}
+                  index={exportCursor.index}
+                  total={exportCursor.total}
+                />
+              </div>
             ) : (
               <div className="f2s-canvas-preview">
                 {previewedFrame.previewDataUrl && <img src={previewedFrame.previewDataUrl} alt={previewedFrame.name} />}
