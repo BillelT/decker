@@ -7,7 +7,7 @@ measures already in place in the backend service.
 ## Reporting a vulnerability
 
 If you find a security issue in Decker (the Figma plugin or its backend
-at `figma-to-slide-backend.vercel.app`), please report it privately
+at `decker-gamma.vercel.app`), please report it privately
 rather than opening a public GitHub issue:
 
 - **Email:** bibi33.bt@gmail.com
