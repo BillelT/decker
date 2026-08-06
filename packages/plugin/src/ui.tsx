@@ -1366,8 +1366,8 @@ function App() {
               {exportError}
             </p>
           )}
-          <a href="https://ko-fi.com/billelt" target="_blank" rel="noreferrer" className="f2s-btn f2s-btn--tertiary">
-            Support me with Ko-fi
+          <a href="https://buymeacoffee.com/billelt" target="_blank" rel="noreferrer" className="f2s-btn f2s-btn--tertiary">
+            Support me with Buy Me a Coffee
           </a>
           {/* Reprise ciblée (backend jobs/runner.ts `retryExportJob`) : ne
               rejoue QUE les slides encore en échec, jamais tout le deck — la
