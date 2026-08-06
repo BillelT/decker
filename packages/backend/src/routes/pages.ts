@@ -29,6 +29,7 @@ function shell(title: string, bodyHtml: string, maxWidth = '440px'): string {
   :root {
     color-scheme: light;
     --f2s-orange: #f06800;
+    --f2s-orange-red: #f04000;
     --f2s-bg: #fff9f5;
     --f2s-surface: #ffffff;
     --f2s-text: #120f0d;
@@ -74,17 +75,20 @@ function shell(title: string, bodyHtml: string, maxWidth = '440px'): string {
     display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; width: 100%;
     padding: 0.85rem 1.25rem; border-radius: 0; background: var(--f2s-orange); color: #fff9f5;
     font-size: 0.95rem; font-weight: 700; text-decoration: none; border: none; cursor: pointer;
-    box-shadow: var(--hyb-out);
+    box-shadow: var(--hyb-out); transition: background-color 0.15s ease;
   }
+  .btn:hover { background: var(--f2s-orange-red); }
   .btn:active { box-shadow: var(--hyb-pressed); }
   .icon-row { display: flex; align-items: center; justify-content: center; gap: 0.9rem; margin-top: 1.5rem; }
   .icon-row a {
-    display: flex; align-items: center; justify-content: center; width: 40px; height: 40px;
+    display: flex; align-items: center; justify-content: center; gap: 0.45rem; height: 40px; padding: 0 0.85rem;
     background: var(--f2s-surface); color: var(--f2s-text); box-shadow: var(--hyb-out);
+    text-decoration: none; font-size: 0.82rem; font-weight: 600; white-space: nowrap;
   }
+  .icon-row a.icon-only { width: 40px; padding: 0; }
   .icon-row a:hover { color: var(--f2s-orange); }
-  .icon-row svg { width: 18px; height: 18px; }
-  .icon-row img { width: 20px; height: 20px; border-radius: 50%; display: block; }
+  .icon-row svg { width: 18px; height: 18px; flex-shrink: 0; }
+  .icon-row img { width: 18px; height: 18px; border-radius: 50%; display: block; flex-shrink: 0; }
   .footer-nav { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.5rem 1rem; font-size: 0.82rem; }
   .footer-nav a { color: var(--f2s-text-muted); text-decoration: none; }
   .footer-nav a:hover { color: var(--f2s-orange); }
@@ -117,9 +121,9 @@ pagesRouter.get('/', (_req, res) => {
     <p class="tagline">Exporte une maquette Figma en présentation Google Slides — mise en page, styles et thème conservés.</p>
     <a class="btn" href="${PLUGIN_URL}" target="_blank" rel="noopener">Voir le plugin sur Figma</a>
     <div class="icon-row">
-      <a href="${FOLIO_URL}" target="_blank" rel="noreferrer" title="billeltighidet.fr">${PERSONAL_MARK_SVG.replace('<svg ', '<svg style="width:40px;height:40px" ')}</a>
-      <a href="${TWITTER_URL}" target="_blank" rel="noreferrer" title="@billel_tighidet">${X_MARK_SVG}</a>
-      <a href="${COFFEE_URL}" target="_blank" rel="noreferrer" title="Buy me a coffee">${COFFEE_MARK_SVG}</a>
+      <a class="icon-only" href="${FOLIO_URL}" target="_blank" rel="noreferrer" title="billeltighidet.fr">${PERSONAL_MARK_SVG}</a>
+      <a class="icon-only" href="${TWITTER_URL}" target="_blank" rel="noreferrer" title="@billel_tighidet">${X_MARK_SVG}</a>
+      <a href="${COFFEE_URL}" target="_blank" rel="noreferrer" title="Buy me a coffee">${COFFEE_MARK_SVG}<span>Support me</span></a>
     </div>
     ${footerNav()}
   `;
