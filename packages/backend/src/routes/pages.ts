@@ -5,6 +5,8 @@ export const pagesRouter = Router();
 
 const LAST_UPDATED = 'August 6, 2026';
 const CONTACT_EMAIL = 'b.tighidet0@gmail.com';
+/** Absolue plutôt que relative sur tous les liens vers /privacy et /terms : le check Google Branding ("App Homepage" guidance) compare cette URL telle quelle à celle configurée sur l'écran de consentement OAuth — une URL relative comme "/privacy" risque de ne pas matcher. */
+const SITE_URL = 'https://decker-gamma.vercel.app';
 const PLUGIN_URL = 'https://www.figma.com/community/plugin/1666774362264403763';
 const FOLIO_URL = 'https://billeltighidet.fr';
 const TWITTER_URL = 'https://x.com/billel_tighidet';
@@ -112,8 +114,8 @@ function shell(title: string, description: string, bodyHtml: string, maxWidth = 
 
 function footerNav(): string {
   return `<nav class="footer-nav" style="margin-top: 1.75rem;">
-    <a href="/privacy">Privacy Policy</a>
-    <a href="/terms">Terms of Use</a>
+    <a href="${SITE_URL}/privacy">Privacy Policy</a>
+    <a href="${SITE_URL}/terms">Terms of Use</a>
     <a href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a>
   </nav>`;
 }
@@ -127,7 +129,10 @@ pagesRouter.get('/', (_req, res) => {
     <p>Decker is a free Figma plugin that converts a Figma design into a real Google Slides presentation — text, shapes, images, colors, and typography are recreated as native Slides objects, not a flattened screenshot.</p>
 
     <h2>How it works</h2>
-    <p>From inside Figma, you pick the frames to export and sign in with your Google account. Decker then creates the presentation directly in your own Google Drive using the Slides and Drive APIs — nothing is published anywhere else, and no Figma or Google data is stored beyond what's needed to run that export (see the <a class="link" href="/privacy">Privacy Policy</a>).</p>
+    <p>From inside Figma, you pick the frames to export and sign in with your Google account. Decker then creates the presentation directly in your own Google Drive.</p>
+
+    <h2>Why Decker asks for Google access</h2>
+    <p>When you sign in, Decker requests three things, and nothing more: the <strong>Google Slides API</strong> and <strong>Drive API (<code>drive.file</code> scope)</strong> to create the presentation in your own Drive, and your <strong>email address</strong> to show which account is connected inside the plugin. Nothing is published anywhere else, and no data is stored beyond what's needed to run that export — full details in the <a class="link" href="${SITE_URL}/privacy">Privacy Policy</a>.</p>
 
     <a class="btn" href="${PLUGIN_URL}" target="_blank" rel="noopener">View the plugin on Figma</a>
     <div class="icon-row">
@@ -183,7 +188,7 @@ pagesRouter.get('/terms', (_req, res) => {
     <h1>Terms of Use</h1>
     <p class="meta" style="margin-bottom: 1.5rem;">Last updated: ${LAST_UPDATED}</p>
     <p>Decker is a free plugin, provided "as is" without warranty of any kind, built as a personal project. You remain solely responsible for the content you export through the plugin.</p>
-    <p>Using the plugin requires using your Google account via the OAuth authentication described in the <a class="link" href="/privacy">Privacy Policy</a>.</p>
+    <p>Using the plugin requires using your Google account via the OAuth authentication described in the <a class="link" href="${SITE_URL}/privacy">Privacy Policy</a>.</p>
     <p>Decker is free — if the plugin saves you time, a donation via <a class="link" href="${COFFEE_URL}" target="_blank" rel="noopener">Buy Me a Coffee</a> is appreciated but never required.</p>
     <p>For any question, contact <a class="link" href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a>.</p>
     ${footerNav()}
