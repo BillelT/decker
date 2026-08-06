@@ -163,9 +163,9 @@ a { color: inherit; }
 
 /* ---------- Footer (b-footer, compo marketing) ---------- */
 .footer {
-  width: 100%; max-width: 1200px; margin-inline: auto; padding: var(--b-space-48) var(--b-space-24);
-  border-top: 1px solid var(--b-border);
+  width: 100%; border-top: 1px solid var(--b-border);
 }
+.footer__inner { max-width: 1200px; margin-inline: auto; padding: var(--b-space-48) var(--b-space-24); }
 .footer__top { display: flex; justify-content: space-between; gap: var(--b-space-48); margin-bottom: var(--b-space-64); flex-wrap: wrap; }
 .footer__brand { display: flex; flex-direction: column; align-items: flex-start; gap: var(--b-space-16); }
 .footer__brand-row { display: flex; align-items: center; gap: var(--b-space-12); }

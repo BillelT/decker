@@ -89,6 +89,7 @@ function header(currentPath: string): string {
 
 function footer(): string {
   return `<footer class="footer">
+  <div class="footer__inner">
   <div class="footer__top">
     <div class="footer__brand">
       <div class="footer__brand-row">
@@ -121,6 +122,7 @@ function footer(): string {
       <a class="nav-link" href="/privacy">Privacy Policy</a>
       <a class="nav-link" href="/terms">Terms of Use</a>
     </nav>
+  </div>
   </div>
 </footer>`;
 }
