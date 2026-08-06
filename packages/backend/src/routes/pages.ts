@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { COFFEE_MARK_SVG, DECKER_FAVICON, DECKER_MARK_SVG, PERSONAL_MARK_SVG, X_MARK_SVG, escapeHtml } from './brand.js';
+import { DECKER_FAVICON, DECKER_MARK_SVG, PERSONAL_MARK_SVG, X_MARK_SVG, escapeHtml } from './brand.js';
 
 export const pagesRouter = Router();
 
@@ -89,6 +89,7 @@ function shell(title: string, bodyHtml: string, maxWidth = '440px'): string {
   .icon-row a:hover { color: var(--f2s-orange); }
   .icon-row svg { width: 18px; height: 18px; flex-shrink: 0; }
   .icon-row img { width: 18px; height: 18px; border-radius: 50%; display: block; flex-shrink: 0; }
+  .icon-row .personal-mark { width: 21px; height: 21px; }
   .footer-nav { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.5rem 1rem; font-size: 0.82rem; }
   .footer-nav a { color: var(--f2s-text-muted); text-decoration: none; }
   .footer-nav a:hover { color: var(--f2s-orange); }
@@ -121,9 +122,9 @@ pagesRouter.get('/', (_req, res) => {
     <p class="tagline">Exporte une maquette Figma en présentation Google Slides — mise en page, styles et thème conservés.</p>
     <a class="btn" href="${PLUGIN_URL}" target="_blank" rel="noopener">Voir le plugin sur Figma</a>
     <div class="icon-row">
-      <a class="icon-only" href="${FOLIO_URL}" target="_blank" rel="noreferrer" title="billeltighidet.fr">${PERSONAL_MARK_SVG}</a>
+      <a class="icon-only" href="${FOLIO_URL}" target="_blank" rel="noreferrer" title="billeltighidet.fr">${PERSONAL_MARK_SVG.replace('<svg ', '<svg class="personal-mark" ')}</a>
       <a class="icon-only" href="${TWITTER_URL}" target="_blank" rel="noreferrer" title="@billel_tighidet">${X_MARK_SVG}</a>
-      <a href="${COFFEE_URL}" target="_blank" rel="noreferrer" title="Buy me a coffee">${COFFEE_MARK_SVG}<span>Support me</span></a>
+      <a href="${COFFEE_URL}" target="_blank" rel="noreferrer" title="Buy me a coffee">Support me</a>
     </div>
     ${footerNav()}
   `;
