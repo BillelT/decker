@@ -642,6 +642,13 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   height: auto;
 }
 
+/* Le chrome win95 de .f2s-retro (bevels + barre de titre) est déjà un cadre
+   à lui seul — le fin liseré gris de .f2s-canvas-preview par-dessus
+   dédoublait la bordure autour de la fenêtre "Exporting". */
+.f2s-canvas-preview--retro {
+  border: none;
+}
+
 /* ---- Logs (rapport de fidélité) : sous la preview + dimensions du deck ----
    Les données (nativeCount/rasterCount/warnings) arrivent déjà avec
    `candidate-added`/`candidate-updated` (code.ts) mais étaient ignorées côté
@@ -1369,7 +1376,20 @@ html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-icon-
    en cours d'application côté backend, en la "générant" bande par bande
    (voir ui/RetroExportPreview.tsx). Les couleurs de cette fenêtre sont
    volontairement figées (ni thème clair ni thème sombre) : c'est une
-   citation littérale du chrome 95, gris #c0c0c0 et biseaux 1 px compris. */
+   citation littérale du chrome 95, gris #c0c0c0 et biseaux 1 px compris.
+
+   La taille, elle, n'est PAS figée : `.f2s-retro` n'a plus de largeur à lui
+   (ni `width`, ni `max-width` en dur) — il est toujours monté dans le MÊME
+   conteneur `.f2s-canvas-preview` (DeckPanel/TemplatePanel) que l'aperçu
+   normal (`<img>`), et se dimensionne par le même mécanisme "shrink-to-fit"
+   qu'un `<img>` sans largeur forcée : la taille intrinsèque du `<canvas>`
+   (`.f2s-retro-canvas`, cf. plus bas) remonte à travers les divs de chrome
+   jusqu'à `.f2s-canvas-preview`, qui applique alors ses propres plafonds
+   (640px / 65% de hauteur — identiques à l'aperçu normal). Avant ce
+   changement, `.f2s-retro` avait son propre `max-width: 640px` indépendant
+   du conteneur réel de l'aperçu (pleine largeur en mode Template), d'où un
+   redimensionnement brusque de l'aperçu au lancement de l'export (bug
+   constaté). */
 
 .f2s-retro {
   --w95-face: #c0c0c0;
@@ -1379,9 +1399,13 @@ html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-icon-
   --w95-title: #000080;
   --w95-title-fade: #1084d0;
 
-  flex: none;
-  width: 100%;
-  max-width: 640px;
+  display: flex;
+  flex-direction: column;
+  /* Résout contre la hauteur (déjà plafonnée à 65%) de `.f2s-canvas-preview`,
+     le parent direct — cf. note ci-dessus. Sans ça, le chrome (barre de
+     titre + barre de statut, hauteur fixe) pourrait pousser la fenêtre plus
+     haut que ne l'aurait permis l'aperçu normal. */
+  max-height: 100%;
   padding: 3px;
   background: var(--w95-face);
   color: #000000;
@@ -1395,7 +1419,16 @@ html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-icon-
   box-shadow: inset -1px -1px 0 var(--w95-shadow);
 }
 
+/* Sans image à mesurer (chargement pas encore arrivé), rien ne fournit de
+   largeur intrinsèque au shrink-to-fit ci-dessus : la fenêtre "NO SIGNAL"
+   retomberait à la largeur de son texte. On retrouve alors le comportement
+   pleine largeur de l'ancien `.f2s-retro` pour ce cas précis. */
+.f2s-retro--no-signal {
+  width: 100%;
+}
+
 .f2s-retro-titlebar {
+  flex: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1435,9 +1468,15 @@ html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-icon-
   border-bottom: 1px solid var(--w95-dark);
 }
 
-/* Biseau rentrant : l'écran est "enfoncé" dans la fenêtre. */
+/* Biseau rentrant : l'écran est "enfoncé" dans la fenêtre. `flex: 1 1 auto`
+   + `min-height: 0` : c'est LUI qui doit céder si le chrome (titre + statut,
+   hauteur fixe) ne tient plus dans le `max-height: 100%` de `.f2s-retro`,
+   pas les barres — même pattern que .f2s-retro-titlebar/-status ci-dessus
+   en `flex: none`. */
 .f2s-retro-screen {
   position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
   margin-top: 3px;
   overflow: hidden;
   background: #008080;
@@ -1447,9 +1486,16 @@ html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-icon-
   border-bottom: 1px solid var(--w95-light);
 }
 
+/* Comme `.f2s-canvas-preview img` : jamais agrandi au-delà de sa taille
+   intrinsèque (déjà limitée à MAX_CANVAS_WIDTH côté JS), seulement réduit
+   si le plafond hérité de `.f2s-canvas-preview` est plus étroit/bas. C'est
+   cette taille intrinsèque qui remonte en shrink-to-fit jusqu'à
+   `.f2s-canvas-preview` (cf. note en tête de fichier sur `.f2s-retro`). */
 .f2s-retro-canvas {
   display: block;
-  width: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
   height: auto;
   /* Le tramage VGA de la passe grossière ne survivrait pas à un lissage. */
   image-rendering: pixelated;
@@ -1487,6 +1533,7 @@ html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-icon-
 }
 
 .f2s-retro-status {
+  flex: none;
   display: flex;
   align-items: center;
   gap: 8px;

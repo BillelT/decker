@@ -343,7 +343,7 @@ export function TemplatePanel({
         {previewedLayout ? (
           <div className="f2s-tmpl-report">
             {exportingLayout && exportCursor ? (
-              <div className="f2s-tmpl-preview">
+              <div className="f2s-canvas-preview f2s-canvas-preview--retro f2s-tmpl-preview">
                 <RetroExportPreview
                   key={exportCursor.frameId}
                   src={exportingLayout.previewDataUrl}
