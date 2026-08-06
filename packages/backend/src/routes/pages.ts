@@ -120,6 +120,13 @@ pagesRouter.get('/', (_req, res) => {
   const body = `
     <h1>Decker</h1>
     <p class="tagline">Export a Figma design straight to Google Slides — layout, styles, and theme preserved.</p>
+
+    <h2>What Decker does</h2>
+    <p>Decker is a free Figma plugin that converts a Figma design into a real Google Slides presentation — text, shapes, images, colors, and typography are recreated as native Slides objects, not a flattened screenshot.</p>
+
+    <h2>How it works</h2>
+    <p>From inside Figma, you pick the frames to export and sign in with your Google account. Decker then creates the presentation directly in your own Google Drive using the Slides and Drive APIs — nothing is published anywhere else, and no Figma or Google data is stored beyond what's needed to run that export (see the <a class="link" href="/privacy">Privacy Policy</a>).</p>
+
     <a class="btn" href="${PLUGIN_URL}" target="_blank" rel="noopener">View the plugin on Figma</a>
     <div class="icon-row">
       <a class="icon-only" href="${FOLIO_URL}" target="_blank" rel="noreferrer" title="billeltighidet.fr">${PERSONAL_MARK_SVG.replace('<svg ', '<svg class="personal-mark" ')}</a>
@@ -128,7 +135,7 @@ pagesRouter.get('/', (_req, res) => {
     </div>
     ${footerNav()}
   `;
-  res.type('html').send(shell('Decker — Figma to Google Slides', body, '420px'));
+  res.type('html').send(shell('Decker — Figma to Google Slides', body, '480px'));
 });
 
 pagesRouter.get('/privacy', (_req, res) => {
