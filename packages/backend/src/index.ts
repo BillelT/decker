@@ -17,6 +17,7 @@ import { env } from './env.js';
 import { authRouter } from './routes/auth.js';
 import { assetsRouter } from './routes/assets.js';
 import { exportRouter } from './routes/export.js';
+import { pagesRouter } from './routes/pages.js';
 
 /**
  * Vérification au démarrage plutôt qu'un crash silencieux au premier appel
@@ -100,6 +101,7 @@ app.use(express.json({ limit: '10mb' }));
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
 
+app.use(pagesRouter);
 app.use(authRouter);
 app.use(assetsRouter);
 app.use(exportRouter);
