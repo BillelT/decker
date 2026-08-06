@@ -1402,6 +1402,7 @@ function App() {
         onSignOut={handleSignOut}
         showDebugExport={__DEBUG_TOOLS__ && mode === 'deck' && order.length > 0}
         onExportDebugIr={handleExportDebugIr}
+        backendUrl={backend.baseUrl}
       />
     </>
   );
