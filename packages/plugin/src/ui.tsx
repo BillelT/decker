@@ -226,7 +226,7 @@ function App() {
   // (jusqu'à 10 min de polling, pollAuthSession) — sans ça le bouton reste
   // muet sur ces deux moments d'attente très différents.
   const [authLinkClicked, setAuthLinkClicked] = useState(false);
-  const [backend] = useState<BackendConfig>({ baseUrl: typeof __BACKEND_URL__ === 'string' ? __BACKEND_URL__ : 'https://figma-to-slide-backend.vercel.app' });
+  const [backend] = useState<BackendConfig>({ baseUrl: typeof __BACKEND_URL__ === 'string' ? __BACKEND_URL__ : 'https://decker-gamma.vercel.app' });
 
   /** Titres saisis par l'utilisateur — deviennent le nom du fichier créé dans Drive (un titre figé rendait chaque export indistinguable du précédent). */
   const [deckTitle, setDeckTitle] = useState('');
