@@ -36,6 +36,8 @@ interface SettingsModalProps {
   /** Section Developer visible seulement en mode deck avec au moins une frame (voir ui.tsx). */
   showDebugExport: boolean;
   onExportDebugIr: () => void;
+  /** Base URL du backend (voir ui.tsx §backend) — sert à pointer les liens légaux vers /privacy et /terms. */
+  backendUrl: string;
 }
 
 const THEME_TABS: { value: ThemePreference; label: string; hint: string }[] = [
@@ -69,6 +71,7 @@ export function SettingsModal({
   onSignOut,
   showDebugExport,
   onExportDebugIr,
+  backendUrl,
 }: SettingsModalProps) {
   // La modale reste montée le temps de l'animation de sortie : la démonter dès
   // `open === false` couperait la transition net (rien à animer une fois le
@@ -224,6 +227,15 @@ export function SettingsModal({
             </section>
           )}
         </div>
+
+        <footer className="f2s-modal-footer">
+          <a href={`${backendUrl}/privacy`} target="_blank" rel="noreferrer">
+            Privacy Policy
+          </a>
+          <a href={`${backendUrl}/terms`} target="_blank" rel="noreferrer">
+            Terms of Use
+          </a>
+        </footer>
       </div>
     </div>
   );

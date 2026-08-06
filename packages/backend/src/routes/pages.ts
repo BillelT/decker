@@ -4,7 +4,7 @@ import { COFFEE_MARK_SVG, DECKER_FAVICON, DECKER_MARK_SVG, PERSONAL_MARK_SVG, X_
 export const pagesRouter = Router();
 
 const LAST_UPDATED = '6 août 2026';
-const CONTACT_EMAIL = 'bibi33.bt@gmail.com';
+const CONTACT_EMAIL = 'b.tighidet0@gmail.com';
 const PLUGIN_URL = 'https://www.figma.com/community/plugin/1666774362264403763';
 const FOLIO_URL = 'https://billeltighidet.fr';
 const TWITTER_URL = 'https://x.com/billel_tighidet';

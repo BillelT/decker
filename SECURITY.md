@@ -10,7 +10,7 @@ If you find a security issue in Decker (the Figma plugin or its backend
 at `decker-gamma.vercel.app`), please report it privately
 rather than opening a public GitHub issue:
 
-- **Email:** bibi33.bt@gmail.com
+- **Email:** b.tighidet0@gmail.com
 - **What to include:** steps to reproduce, affected endpoint/component,
   and impact if known.
 - **Response time:** acknowledgement within a few business days.
