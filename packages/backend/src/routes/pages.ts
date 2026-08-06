@@ -81,6 +81,7 @@ function header(currentPath: string): string {
     </nav>
   </div>
   <div class="header__actions">
+    <a class="btn tertiary" href="${COFFEE_URL}" target="_blank" rel="${REL_THIRD_PARTY}">Buy me a coffee</a>
     <a class="btn cta" href="${PLUGIN_URL}" target="_blank" rel="${REL_THIRD_PARTY}">View on Figma</a>
   </div>
 </header>`;
@@ -92,7 +93,6 @@ function footer(): string {
     <div class="footer__brand">
       <div class="footer__brand-row">
         <svg class="footer__brand-mark" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${brandMarkInline()}</svg>
-        <span class="pill pill--light">Free plugin</span>
       </div>
       <p class="footer__meta">&copy; 2026 Decker<br>
         Made by <a class="text-link" href="${FOLIO_URL}" target="_blank" rel="${REL_OWN}">Billel</a>
@@ -105,7 +105,7 @@ function footer(): string {
       <nav class="footer__col" aria-label="Product">
         <h2 class="footer__col-title">Product</h2>
         <a class="nav-link" href="${PLUGIN_URL}" target="_blank" rel="${REL_THIRD_PARTY}">View on Figma</a>
-        <a class="nav-link" href="${COFFEE_URL}" target="_blank" rel="${REL_THIRD_PARTY}">Support me</a>
+        <a class="nav-link" href="${COFFEE_URL}" target="_blank" rel="${REL_THIRD_PARTY}">Buy me a coffee</a>
       </nav>
       <nav class="footer__col" aria-label="Connect">
         <h2 class="footer__col-title">Connect</h2>
@@ -128,7 +128,6 @@ function footer(): string {
 pagesRouter.get('/', (_req, res) => {
   const main = `
     <section class="hero">
-      <div class="hero__eyebrow"><span class="pill">Free Figma plugin</span></div>
       <h1 class="hero__title">Decker</h1>
       <p class="hero__lede">Export a Figma design straight to Google Slides — layout, styles, and theme preserved.</p>
       <div class="hero__actions">
@@ -216,7 +215,7 @@ pagesRouter.get('/terms', (_req, res) => {
         <p class="meta">Last updated: ${LAST_UPDATED}</p>
         <p>Decker is a free plugin, provided "as is" without warranty of any kind, built as a personal project. You remain solely responsible for the content you export through the plugin.</p>
         <p>Using the plugin requires using your Google account via the OAuth authentication described in the <a class="text-link" href="${SITE_URL}/privacy">Privacy Policy</a>.</p>
-        <p>Decker is free — if the plugin saves you time, a donation via <a class="text-link" href="${COFFEE_URL}" target="_blank" rel="${REL_THIRD_PARTY}">Buy Me a Coffee</a> is appreciated but never required.</p>
+        <p>Decker is free — if the plugin saves you time, a donation via <a class="text-link" href="${COFFEE_URL}" target="_blank" rel="${REL_THIRD_PARTY}">Buy me a coffee</a> is appreciated but never required.</p>
         <p>For any question, contact <a class="text-link" href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a>.</p>
       </section>
     </div>
