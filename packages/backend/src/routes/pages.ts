@@ -23,6 +23,7 @@ function shell(title: string, bodyHtml: string, maxWidth = '440px'): string {
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="google-site-verification" content="bsri34RXa34pqM8rsNoUtVcV_jX0TmUwegbbFWpVLwQ" />
 <title>${escapeHtml(title)}</title>
 <link rel="icon" type="image/svg+xml" href="${DECKER_FAVICON}" />
 <style>
