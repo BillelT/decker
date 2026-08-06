@@ -5006,7 +5006,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
         ),
         /* @__PURE__ */ u3("div", { className: "f2s-footer-actions", children: [
           exportState === "error" && exportSource === mode && exportError && /* @__PURE__ */ u3("p", { className: "f2s-error f2s-footer-error", title: exportError, children: exportError }),
-          /* @__PURE__ */ u3("a", { href: "https://buymeacoffee.com/billelt", target: "_blank", rel: "noreferrer", className: "f2s-btn f2s-btn--tertiary", children: "Support me with Buy Me a Coffee" }),
+          /* @__PURE__ */ u3("a", { href: "https://buymeacoffee.com/billelt", target: "_blank", rel: "noreferrer", className: "f2s-btn f2s-btn--tertiary", children: "Buy me a coffee" }),
           exportState === "error" && exportSource === mode && retryable && /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--secondary", disabled: retrying, onClick: handleRetryFailedSlides, children: retrying ? "Retrying\u2026" : `Retry ${failedFrameIds.length} failed slide${failedFrameIds.length === 1 ? "" : "s"}` }),
           (exportState === "done" || exportState === "error") && exportSource === mode && resultUrl && /* @__PURE__ */ u3("a", { href: resultUrl, target: "_blank", rel: "noreferrer", className: "f2s-btn f2s-btn--primary", children: "Open presentation" })
         ] })
