@@ -17,13 +17,14 @@ const COFFEE_URL = 'https://buymeacoffee.com/billelt';
  * sans le chrome fenêtre rétro du skin win95, plus adaptée à un document
  * légal lu par un reviewer externe (Google) ou un visiteur hors plugin.
  */
-function shell(title: string, bodyHtml: string, maxWidth = '440px'): string {
+function shell(title: string, description: string, bodyHtml: string, maxWidth = '440px'): string {
   return `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="google-site-verification" content="bsri34RXa34pqM8rsNoUtVcV_jX0TmUwegbbFWpVLwQ" />
+<meta name="description" content="${escapeHtml(description)}" />
 <title>${escapeHtml(title)}</title>
 <link rel="icon" type="image/svg+xml" href="${DECKER_FAVICON}" />
 <style>
@@ -136,7 +137,14 @@ pagesRouter.get('/', (_req, res) => {
     </div>
     ${footerNav()}
   `;
-  res.type('html').send(shell('Decker — Figma to Google Slides', body, '480px'));
+  res.type('html').send(
+    shell(
+      'Decker',
+      'Decker is a free Figma plugin that exports a Figma design straight to Google Slides, preserving layout, styles, and theme.',
+      body,
+      '480px',
+    ),
+  );
 });
 
 pagesRouter.get('/privacy', (_req, res) => {
@@ -165,7 +173,9 @@ pagesRouter.get('/privacy', (_req, res) => {
 
     ${footerNav()}
   `;
-  res.type('html').send(shell('Decker — Privacy Policy', body, '620px'));
+  res.type('html').send(
+    shell('Decker — Privacy Policy', 'How Decker, a free Figma-to-Google-Slides plugin, handles your data.', body, '620px'),
+  );
 });
 
 pagesRouter.get('/terms', (_req, res) => {
@@ -178,5 +188,7 @@ pagesRouter.get('/terms', (_req, res) => {
     <p>For any question, contact <a class="link" href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a>.</p>
     ${footerNav()}
   `;
-  res.type('html').send(shell('Decker — Terms of Use', body, '620px'));
+  res.type('html').send(
+    shell('Decker — Terms of Use', 'Terms of use for Decker, a free Figma-to-Google-Slides plugin.', body, '620px'),
+  );
 });
