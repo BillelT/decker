@@ -111,12 +111,6 @@ a { color: inherit; }
   outline: var(--b-focus-outline); outline-offset: var(--b-focus-offset); border-radius: var(--b-radius-2xs);
 }
 
-/* ---------- Signature (b-signature) ---------- */
-.signature { display: inline-block; line-height: 0; border-radius: var(--b-radius-2xs); transition: opacity var(--b-duration) var(--b-ease); }
-.signature:hover { opacity: .7; }
-.signature:focus-visible { outline: var(--b-focus-outline); outline-offset: var(--b-focus-offset); }
-.signature__mark { display: block; width: 40px; height: 40px; }
-
 /* ---------- Header (b-header, compo marketing) ---------- */
 .header {
   display: flex; align-items: center; justify-content: space-between; gap: var(--b-space-32);
