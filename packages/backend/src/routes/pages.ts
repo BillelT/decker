@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { DECKER_FAVICON, DECKER_MARK_SVG, PERSONAL_MARK_SVG, escapeHtml } from './brand.js';
+import { DECKER_FAVICON, DECKER_MARK_SVG, escapeHtml } from './brand.js';
 import { MARKETING_CSS } from './marketingStyles.js';
 
 export const pagesRouter = Router();
@@ -18,7 +18,6 @@ const REL_OWN = 'noopener';
 const REL_THIRD_PARTY = 'noopener noreferrer';
 
 const brandMarkInline = (): string => DECKER_MARK_SVG.replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '');
-const personalMarkInline = (): string => PERSONAL_MARK_SVG.replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '');
 
 /**
  * DA "Billel" (design system perso, repo billel-skill, archétype b-marketing) :
@@ -98,9 +97,6 @@ function footer(): string {
       <p class="footer__meta">&copy; 2026 Decker<br>
         Made by <a class="text-link" href="${FOLIO_URL}" target="_blank" rel="${REL_OWN}">Billel</a>
       </p>
-      <a class="signature" href="${FOLIO_URL}" target="_blank" rel="${REL_OWN}" aria-label="Billel — ${FOLIO_URL} (new tab)">
-        <svg class="signature__mark" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${personalMarkInline()}</svg>
-      </a>
     </div>
     <div class="footer__cols">
       <nav class="footer__col" aria-label="Product">
@@ -110,9 +106,8 @@ function footer(): string {
       </nav>
       <nav class="footer__col" aria-label="Connect">
         <h2 class="footer__col-title">Connect</h2>
-        <a class="nav-link" href="${TWITTER_URL}" target="_blank" rel="${REL_THIRD_PARTY}">@billel_tighidet</a>
-        <a class="nav-link" href="${FOLIO_URL}" target="_blank" rel="${REL_OWN}">billeltighidet.fr</a>
-        <a class="nav-link" href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a>
+        <a class="nav-link" href="${TWITTER_URL}" target="_blank" rel="${REL_THIRD_PARTY}">Twitter</a>
+        <a class="nav-link" href="mailto:${CONTACT_EMAIL}">Email</a>
       </nav>
     </div>
   </div>
