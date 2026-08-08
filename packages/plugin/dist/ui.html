@@ -3857,7 +3857,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
     onSignOut,
     showDebugExport,
     onExportDebugIr,
-    backendUrl
+    siteUrl
   }) {
     const [mounted, setMounted] = d2(open);
     const [entered, setEntered] = d2(false);
@@ -3974,8 +3974,8 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
                 ] })
               ] }),
               /* @__PURE__ */ u3("footer", { className: "f2s-modal-footer", children: [
-                /* @__PURE__ */ u3("a", { href: `${backendUrl}/privacy`, target: "_blank", rel: "noreferrer", children: "Privacy Policy" }),
-                /* @__PURE__ */ u3("a", { href: `${backendUrl}/terms`, target: "_blank", rel: "noreferrer", children: "Terms of Use" })
+                /* @__PURE__ */ u3("a", { href: `${siteUrl}/privacy`, target: "_blank", rel: "noreferrer", children: "Privacy Policy" }),
+                /* @__PURE__ */ u3("a", { href: `${siteUrl}/terms`, target: "_blank", rel: "noreferrer", children: "Terms of Use" })
               ] })
             ]
           }
@@ -4025,6 +4025,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
   var POLL_INTERVAL_MS = 1e3;
   var POLL_TIMEOUT_MS = 3 * 60 * 1e3;
   var SELECTION_NOTICE_MS = 4e3;
+  var SITE_URL = "https://decker.billeltighidet.fr";
   var AuthExpiredError = class extends Error {
     constructor() {
       super("Your Google session has expired \u2014 sign in again, then retry.");
@@ -5025,7 +5026,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
           onSignOut: handleSignOut,
           showDebugExport: false,
           onExportDebugIr: handleExportDebugIr,
-          backendUrl: backend.baseUrl
+          siteUrl: SITE_URL
         }
       )
     ] });
