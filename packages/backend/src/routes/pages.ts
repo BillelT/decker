@@ -7,7 +7,7 @@ export const pagesRouter = Router();
 const LAST_UPDATED = 'August 6, 2026';
 const CONTACT_EMAIL = 'b.tighidet0@gmail.com';
 /** Absolue plutôt que relative sur tous les liens vers /privacy et /terms : le check Google Branding ("App Homepage" guidance) compare cette URL telle quelle à celle configurée sur l'écran de consentement OAuth — une URL relative comme "/privacy" risque de ne pas matcher. */
-const SITE_URL = 'https://decker-gamma.vercel.app';
+const SITE_URL = 'https://decker.billeltighidet.fr';
 const PLUGIN_URL = 'https://www.figma.com/community/plugin/1666774362264403763';
 const FOLIO_URL = 'https://billeltighidet.fr';
 const TWITTER_URL = 'https://x.com/billel_tighidet';
