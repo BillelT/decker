@@ -58,6 +58,9 @@ const POLL_TIMEOUT_MS = 3 * 60 * 1000;
 /** Durée d'affichage d'une notice de sélection (toast deck) avant auto-dismiss. */
 const SELECTION_NOTICE_MS = 4000;
 
+/** Domaine public (Privacy Policy / Terms) — distinct du backend d'API (`backend.baseUrl`), voir CLAUDE.md. */
+const SITE_URL = 'https://decker.billeltighidet.fr';
+
 // Injectés au build (voir esbuild.config.mjs).
 declare const __BACKEND_URL__: string;
 declare const __LOGO_SVG__: string;
@@ -1402,7 +1405,7 @@ function App() {
         onSignOut={handleSignOut}
         showDebugExport={__DEBUG_TOOLS__ && mode === 'deck' && order.length > 0}
         onExportDebugIr={handleExportDebugIr}
-        backendUrl={backend.baseUrl}
+        siteUrl={SITE_URL}
       />
     </>
   );
