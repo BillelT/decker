@@ -157,15 +157,16 @@ body {
 
 /* Badge "type de produit" façon tag 95 : mêmes biseaux que les boutons de la
    barre de titre, coins droits — Windows 95 n'a pas de coin arrondi, une
-   pilule y aurait détonné. Fond blanc plutôt que le gris moyen du chrome
-   (--w95-face) : le noir dessus y gagne en contraste sans sortir de la
-   palette système (c'est le blanc des biseaux, --w95-white), alors que le
-   bleu marine essayé avant détonnait avec le reste de la carte, qui ne
-   contient aucune autre touche de couleur que l'orange de la marque. */
+   pilule y aurait détonné. Fond au gris système --w95-face, le même que la
+   barre d'état tout en bas de la carte : un blanc pur ou un bleu marine
+   auraient introduit une teinte que rien d'autre sur la carte ne porte.
+   Ce qui manquait à la lisibilité n'était pas le contraste texte/fond (déjà
+   ~9:1, noir sur ce gris) mais la taille — 19px et un padding généreux
+   au lieu des 17px du premier essai. */
 .eyebrow {
   align-self: flex-start;
   padding: 10px 20px 11px;
-  background: var(--w95-white);
+  background: var(--w95-face);
   box-shadow: var(--w95-out);
   font-family: var(--chrome-font);
   font-size: 19px;
