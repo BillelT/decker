@@ -174,14 +174,72 @@ pagesRouter.get('/', (_req, res) => {
       <p class="hero__note">Free to use. Sign in with Google only when you're ready to export.</p>
     </section>
 
-    <section class="section">
-      <h2 class="section__title">What Decker does</h2>
-      <p>Decker is a free Figma plugin that converts a Figma design into a real Google Slides presentation — text, shapes, images, colors, and typography are recreated as native Slides objects, not a flattened screenshot.</p>
+    <section class="section section--wide">
+      <h2 class="section__title section__title--center">What Decker does</h2>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <svg class="feature-card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="17" r="2.5"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+          <h3 class="feature-card__title">100% free</h3>
+          <p class="feature-card__desc">No paywall, no subscription, no trial. Free to use, today and tomorrow.</p>
+        </div>
+        <div class="feature-card">
+          <svg class="feature-card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="14" height="10" rx="1.5"/><line x1="7" y1="19" x2="13" y2="19"/><line x1="10" y1="15" x2="10" y2="19"/><path d="M18 8 L21 11 L18 14"/></svg>
+          <h3 class="feature-card__title">Full deck export</h3>
+          <p class="feature-card__desc">Export a whole Figma file frame by frame into a real Slides deck, not one slide at a time.</p>
+        </div>
+        <div class="feature-card">
+          <svg class="feature-card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="1.5"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="9" x2="9" y2="21"/></svg>
+          <h3 class="feature-card__title">Template export</h3>
+          <p class="feature-card__desc">Export a single frame as a ready-to-reuse Slides template, theme and layout included.</p>
+        </div>
+        <div class="feature-card">
+          <svg class="feature-card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><line x1="6" y1="4" x2="6" y2="20"/><circle cx="6" cy="9" r="2"/><line x1="14" y1="4" x2="14" y2="20"/><circle cx="14" cy="15" r="2"/></svg>
+          <h3 class="feature-card__title">Pick what you export</h3>
+          <p class="feature-card__desc">Choose exactly which frames to send, right from inside Figma, before you sign in.</p>
+        </div>
+        <div class="feature-card">
+          <svg class="feature-card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="9" width="10" height="10" rx="1.5"/><circle cx="16" cy="8" r="5"/></svg>
+          <h3 class="feature-card__title">Real Slides objects</h3>
+          <p class="feature-card__desc">Text, shapes, colors, and typography are recreated as native, editable objects — not a flattened screenshot.</p>
+        </div>
+        <div class="feature-card">
+          <svg class="feature-card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 L20 6 V11 C20 16 16.5 19.5 12 21 C7.5 19.5 4 16 4 11 V6 Z"/><path d="M8.5 12 L11 14.5 L16 9.5"/></svg>
+          <h3 class="feature-card__title">Private by default</h3>
+          <p class="feature-card__desc">Nothing is stored beyond what's needed to run the export. No tracking, no analytics.</p>
+        </div>
+      </div>
     </section>
 
     <section class="section section--muted">
-      <h2 class="section__title">How it works</h2>
-      <p>From inside Figma, you pick the frames to export and sign in with your Google account. Decker then creates the presentation directly in your own Google Drive — nothing is published anywhere else.</p>
+      <div class="section__inner">
+        <h2 class="section__title">How it works</h2>
+        <ol class="steps">
+          <li class="steps__item">
+            <span class="steps__num">1</span>
+            <div>
+              <h3 class="steps__title">Pick your frames</h3>
+              <p class="steps__desc">From inside Figma, select the frames you want to export.</p>
+            </div>
+          </li>
+          <li class="steps__item">
+            <span class="steps__num">2</span>
+            <div>
+              <h3 class="steps__title">Sign in with Google</h3>
+              <p class="steps__desc">Connect your Google account — only when you're ready to export.</p>
+            </div>
+          </li>
+          <li class="steps__item">
+            <span class="steps__num">3</span>
+            <div>
+              <h3 class="steps__title">Get your deck</h3>
+              <p class="steps__desc">Decker creates the presentation directly in your own Google Drive — nothing is published anywhere else.</p>
+            </div>
+          </li>
+        </ol>
+        <div class="section__cta">
+          <a class="btn cta" href="${PLUGIN_URL}" target="_blank" rel="${REL_THIRD_PARTY}">Try it on Figma</a>
+        </div>
+      </div>
     </section>
 
     <section class="section">

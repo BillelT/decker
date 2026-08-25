@@ -103,10 +103,8 @@ a { color: inherit; }
 }
 .nav-link:hover, .nav-link[aria-current="page"] { color: var(--b-ink); }
 .text-link {
-  color: var(--b-ink); font-size: var(--b-text-xs); font-weight: var(--b-font-medium);
-  text-decoration: none;
+  color: var(--b-ink); font: inherit; text-decoration: underline;
 }
-.text-link:hover { text-decoration: underline; }
 .nav-link:focus-visible, .text-link:focus-visible {
   outline: var(--b-focus-outline); outline-offset: var(--b-focus-offset); border-radius: var(--b-radius-2xs);
 }
@@ -141,19 +139,49 @@ a { color: inherit; }
 .hero__note { margin: 0; font-size: var(--b-text-sm); color: var(--b-text-faint); }
 
 /* ---------- Content sections (prose — pas un composant Billel, besoin propre à cette page) ---------- */
-.section { width: 100%; max-width: 720px; margin-inline: auto; padding: var(--b-space-48) var(--b-space-24); }
+.section { width: 100%; max-width: 720px; margin-inline: auto; padding: var(--b-space-64) var(--b-space-24); }
+.section--wide { max-width: 960px; }
 .section__title {
   margin: 0 0 var(--b-space-16); font-size: var(--b-text-3xl); font-weight: var(--b-font-bold);
   letter-spacing: var(--b-tracking-tight); color: var(--b-ink);
 }
+.section__title--center { text-align: center; }
 .section p { margin: 0 0 var(--b-space-16); font-size: var(--b-text-base); line-height: var(--b-leading-relaxed); color: var(--b-text-muted); }
 .section p:last-child { margin-bottom: 0; }
 .section ul { margin: var(--b-space-8) 0 var(--b-space-16); padding-left: var(--b-space-24); }
 .section li { font-size: var(--b-text-base); line-height: var(--b-leading-relaxed); color: var(--b-text-muted); margin-bottom: var(--b-space-8); }
-.section--muted { background: var(--b-surface-muted); }
 .legal .section { max-width: 680px; }
 .legal .section__title--page { font-size: var(--b-text-3xl); text-align: center; padding-top: var(--b-space-32); }
 .legal .meta { text-align: center; font-size: var(--b-text-xs); color: var(--b-text-faint); margin: 0 0 var(--b-space-48); }
+
+/* ---------- Feature grid (prose — cartes des points forts, pas un compo Billel) ---------- */
+.feature-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--b-space-20);
+  margin-top: var(--b-space-32);
+}
+.feature-card {
+  display: flex; flex-direction: column; gap: var(--b-space-12);
+  background: var(--b-surface-muted); border-radius: var(--b-radius-md); padding: var(--b-space-24);
+}
+.feature-card__icon { width: 24px; height: 24px; color: var(--b-text-muted); }
+.feature-card__title { margin: 0; font-size: var(--b-text-base); font-weight: var(--b-font-bold); color: var(--b-ink); }
+.feature-card__desc { margin: 0; font-size: var(--b-text-sm); line-height: var(--b-leading-relaxed); color: var(--b-text-muted); }
+
+/* ---------- How it works — section pleine largeur (prose) ---------- */
+.section--muted {
+  width: 100%; max-width: none; padding: 0; background: var(--b-surface-muted);
+}
+.section--muted .section__inner { max-width: 960px; margin-inline: auto; padding: var(--b-space-64) var(--b-space-24); }
+.steps { display: flex; gap: var(--b-space-32); flex-wrap: wrap; margin: var(--b-space-32) 0 0; padding: 0; list-style: none; }
+.steps__item { flex: 1 1 200px; display: flex; gap: var(--b-space-16); align-items: flex-start; }
+.steps__num {
+  flex: 0 0 auto; display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border-radius: var(--b-radius-full);
+  background: var(--b-accent); color: var(--b-ink); font-size: var(--b-text-sm); font-weight: var(--b-font-bold);
+}
+.steps__title { margin: 0 0 var(--b-space-4); font-size: var(--b-text-lg); font-weight: var(--b-font-bold); color: var(--b-ink); }
+.steps__desc { margin: 0; font-size: var(--b-text-base); line-height: var(--b-leading-relaxed); color: var(--b-text-muted); }
+.section__cta { margin-top: var(--b-space-32); }
 
 /* ---------- Footer (b-footer, compo marketing) ---------- */
 .footer {
@@ -175,10 +203,17 @@ a { color: inherit; }
 .footer__note { margin: 0; font-size: var(--b-text-xs); color: var(--b-text-muted); }
 .footer__legal { display: flex; gap: var(--b-space-24); }
 
+@media (max-width: 960px) {
+  .feature-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
 @media (max-width: 720px) {
   .hero__title { font-size: 48px; }
   .header { flex-wrap: wrap; }
   .footer__top { flex-direction: column; }
   .footer__bottom { flex-direction: column; align-items: flex-start; }
+  .feature-grid { grid-template-columns: 1fr; }
+  .steps { flex-direction: column; }
+  .steps__item { flex: 1 1 auto; }
 }
 `;
