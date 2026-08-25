@@ -15,17 +15,26 @@
  * quatre ombres internes, barre de titre bleu marine, barre d'état) habillé
  * de la palette et de la typo de marque (orange #f06800, Cabinet Grotesk).
  *
+ * La fenêtre est à fond perdu, ses biseaux collés aux quatre bords : une
+ * fenêtre posée sur un bureau coloré aurait demandé de justifier ce bureau
+ * (il n'existe nulle part ailleurs dans le produit) et aurait rétréci
+ * d'autant la surface utile de la carte. À fond perdu, la carte EST la
+ * fenêtre.
+ *
  * Contraintes de la carte de partage, qui expliquent les valeurs ci-dessous :
  * - 1200x630 (ratio 1.91:1), la seule taille sûre sur Facebook/LinkedIn/X ;
  * - tout le contenu qui doit rester lisible tient dans la zone centrale
  *   1080x600 (marges de 60px), les bords pouvant être rognés selon la
- *   plateforme — seul le chrome décoratif de la fenêtre y déborde ;
- * - typo volumineuse (76px pour l'accroche, 27px pour la phrase dessous) : la
- *   carte est vue en vignette, tout ce qui passe sous ~24px n'y est plus
- *   qu'une texture — d'où le chrome 95, seul élément écrit plus petit, qui
- *   ne porte aucune information ;
- * - texte noir sur papier crème, contraste maximal, et peu de mots :
- *   une accroche, une phrase, une URL.
+ *   plateforme — seul le chrome de la fenêtre y déborde, et il ne porte
+ *   aucune information ;
+ * - typo volumineuse (80px pour l'accroche, 28px pour la phrase dessous) :
+ *   la carte est vue en vignette, tout ce qui passe sous ~24px n'y est plus
+ *   qu'une texture ;
+ * - texte noir sur papier crème, contraste maximal ;
+ * - trois éléments dans la zone de contenu, pas un de plus : l'accroche, la
+ *   phrase qui la précise, la marque. Une carte de partage est lue en une
+ *   seconde et n'est pas cliquable élément par élément — tout ce qui s'y
+ *   ajoute (badge, bouton, second logo) ne fait que diluer l'accroche.
  */
 
 import { CABINET_GROTESK_BASE64 } from '../routes/fontData.js';
@@ -86,22 +95,9 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Bureau : aplat orange de marque tramé d'un damier 3px, clin d'oeil au
-   dithering des fonds 256 couleurs. Motif régulier = quelques octets de
-   plus en PNG, la carte reste très en dessous des 300 Ko visés. */
-.desktop {
+.window {
   width: 1200px;
   height: 630px;
-  padding: 40px;
-  background-color: var(--b-accent);
-  background-image:
-    conic-gradient(#dd6000 25%, transparent 0 50%, #dd6000 0 75%, transparent 0);
-  background-size: 6px 6px;
-}
-
-.window {
-  width: 100%;
-  height: 100%;
   padding: 4px;
   display: flex;
   flex-direction: column;
@@ -110,12 +106,12 @@ body {
 }
 
 .titlebar {
-  height: 52px;
+  height: 56px;
   flex: none;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 0 4px 0 8px;
+  padding: 0 4px 0 10px;
   background: linear-gradient(90deg, var(--w95-navy) 0%, var(--w95-navy-light) 100%);
 }
 .titlebar__icon { width: 32px; height: 32px; flex: none; display: block; }
@@ -153,10 +149,10 @@ body {
 }
 .paper {
   height: 100%;
-  padding: 40px 56px;
+  padding: 48px 56px;
   display: flex;
   align-items: center;
-  gap: 40px;
+  gap: 48px;
   background: var(--b-paper);
 }
 .paper__text {
@@ -164,88 +160,46 @@ body {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 26px;
 }
 /* La marque en grand plutôt qu'un aplat vide : elle équilibre la colonne de
    texte, et c'est le seul repère qui reste identifiable quand la carte est
    rognée au carré par une plateforme. */
-.paper__mark { width: 208px; height: 208px; flex: none; display: block; }
-
-.lockup { display: flex; align-items: center; gap: 14px; }
-.lockup__name {
-  font-size: 38px;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-}
-.lockup__tag {
-  margin-left: 4px;
-  padding: 7px 14px 8px;
-  background: var(--w95-face);
-  box-shadow: var(--w95-out);
-  font-family: var(--chrome-font);
-  font-size: 17px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
+.paper__mark { width: 216px; height: 216px; flex: none; display: block; }
 
 .headline {
   display: flex;
   align-items: center;
   gap: 24px;
-  font-size: 76px;
+  font-size: 80px;
   font-weight: 800;
   line-height: 1.02;
   letter-spacing: -0.035em;
   white-space: nowrap;
 }
-.headline__arrow { width: 60px; height: 42px; flex: none; color: var(--b-accent); }
+.headline__arrow { width: 62px; height: 44px; flex: none; color: var(--b-accent); }
 
 .subline {
-  max-width: 960px;
-  font-size: 27px;
+  font-size: 28px;
   font-weight: 500;
   line-height: 1.35;
   color: var(--b-muted);
 }
 
-/* Appel à l'action dessiné comme un bouton 95, mais à l'orange de marque :
-   une carte de partage n'est pas cliquable, il sert à dire d'un coup d'oeil
-   où va le lien — c'est aussi le seul élément de la carte qui ne soit pas
-   du texte à lire. */
-.cta {
-  margin-top: 6px;
-  align-self: flex-start;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 16px 24px 18px;
-  background: var(--b-accent);
-  box-shadow: inset -2px -2px var(--w95-dark), inset 2px 2px rgba(255, 255, 255, 0.75),
-    inset -4px -4px rgba(18, 15, 13, 0.35), inset 4px 4px rgba(255, 255, 255, 0.35);
-  font-size: 25px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  color: var(--b-ink);
-}
-.cta__arrow { width: 26px; height: 18px; display: block; color: var(--b-ink); }
-
+/* Barre d'état réduite au domaine : la plateforme affiche déjà le nom de
+   domaine sous la carte, celui-ci n'est là que comme élément de chrome. */
 .statusbar {
-  height: 42px;
+  height: 44px;
   flex: none;
   margin-top: 4px;
   display: flex;
-  gap: 4px;
+  align-items: center;
+  padding: 0 14px;
+  box-shadow: inset -1px -1px var(--w95-white), inset 1px 1px var(--w95-shadow);
   font-family: var(--chrome-font);
   font-size: 18px;
+  font-weight: 700;
 }
-.statusbar__field {
-  display: flex;
-  align-items: center;
-  padding: 0 12px;
-  box-shadow: inset -1px -1px var(--w95-white), inset 1px 1px var(--w95-shadow);
-}
-.statusbar__field--url { flex: 1; font-weight: 700; }
 `;
 
 /** HTML autonome (police et images incluses) prêt à être rasterisé. */
@@ -264,40 +218,30 @@ export function renderOgImageHtml(content: OgImageContent): string {
 <style>${CSS}</style>
 </head>
 <body>
-<div class="desktop">
-  <div class="window">
-    <div class="titlebar">
-      ${iconInline}
-      <span class="titlebar__label">${content.windowTitle}</span>
-      <span class="titlebar__buttons">
-        <span class="titlebar__btn"><span></span></span>
-        <span class="titlebar__btn titlebar__btn--box"><span></span></span>
-        <span class="titlebar__btn titlebar__btn--close">
-          <svg viewBox="0 0 16 16" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">
-            <path d="M2 2h3v2h2v2h2V4h2V2h3v3h-2v2h-2v2h2v2h2v3h-3v-2h-2v-2H7v2H5v2H2v-3h2V9h2V7H4V5H2z" fill="#000"/>
-          </svg>
-        </span>
+<div class="window">
+  <div class="titlebar">
+    ${iconInline}
+    <span class="titlebar__label">${content.windowTitle}</span>
+    <span class="titlebar__buttons">
+      <span class="titlebar__btn"><span></span></span>
+      <span class="titlebar__btn titlebar__btn--box"><span></span></span>
+      <span class="titlebar__btn titlebar__btn--close">
+        <svg viewBox="0 0 16 16" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">
+          <path d="M2 2h3v2h2v2h2V4h2V2h3v3h-2v2h-2v2h2v2h2v3h-3v-2h-2v-2H7v2H5v2H2v-3h2V9h2V7H4V5H2z" fill="#000"/>
+        </svg>
       </span>
-    </div>
-    <div class="client">
-      <div class="paper">
-        <div class="paper__text">
-        <div class="lockup">
-          <span class="lockup__name">Decker</span>
-          <span class="lockup__tag">Figma plugin</span>
-        </div>
+    </span>
+  </div>
+  <div class="client">
+    <div class="paper">
+      <div class="paper__text">
         <h1 class="headline">${headline}</h1>
         <p class="subline">${content.subline}</p>
-        <span class="cta">${content.cta}${PIXEL_ARROW.replace('headline__arrow', 'cta__arrow')}</span>
-        </div>
-        ${markInline}
       </div>
-    </div>
-    <div class="statusbar">
-      <span class="statusbar__field statusbar__field--url">decker.billeltighidet.fr</span>
-      <span class="statusbar__field">Free &amp; open</span>
+      ${markInline}
     </div>
   </div>
+  <div class="statusbar">decker.billeltighidet.fr</div>
 </div>
 </body>
 </html>`;
