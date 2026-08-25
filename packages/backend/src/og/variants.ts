@@ -26,11 +26,11 @@ export interface OgImageContent {
  */
 export const OG_IMAGE = {
   file: 'og.png',
-  alt: 'Decker, a free Figma plugin: export a Figma design to pixel-perfect, editable Google Slides. Shown as a Windows 95 window.',
+  alt: 'Decker, a free Figma plugin: pixel-perfect, editable decks and templates, from Figma to Google Slides. Shown as a Windows 95 window.',
   content: {
     eyebrow: 'Figma plugin',
     windowTitle: 'Decker.exe',
     headline: 'Decker',
-    subline: 'Export a Figma design to pixel-perfect, editable Google Slides.',
+    subline: 'Pixel-perfect, editable decks and templates — from Figma to Google Slides.',
   },
 } as const satisfies { file: string; alt: string; content: OgImageContent };
