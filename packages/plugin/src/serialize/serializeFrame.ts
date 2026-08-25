@@ -368,8 +368,9 @@ function shapeInfo(node: SceneNode, kind: NodeKind): DecisionInput['shape'] {
   }
 
   const polygonSides = kind === 'POLYGON' && 'pointCount' in node ? node.pointCount : undefined;
+  const starPoints = kind === 'STAR' && 'pointCount' in node ? node.pointCount : undefined;
 
-  return { visibleFillCount: visibleFills.length, fillIsGradient, fillIsImage, hasMultipleOrOffCenterStroke, radiusDecision, polygonSides };
+  return { visibleFillCount: visibleFills.length, fillIsGradient, fillIsImage, hasMultipleOrOffCenterStroke, radiusDecision, polygonSides, starPoints };
 }
 
 // Terminaisons cosmétiques (arrondi/carré, pas de décoration) qu'on peut
@@ -532,6 +533,8 @@ function presetShapeType(node: SceneNode): IRShape['shapeType'] {
     case 'ELLIPSE':
       return 'ELLIPSE';
     case 'STAR':
+      // decisionTree.ts rastérise déjà tout STAR dont pointCount !== 5
+      // (STAR_POINTS_UNSUPPORTED) — seul un vrai 5-branches atteint ce cas.
       return 'STAR_5';
     case 'POLYGON':
       return POLYGON_SIDES_TO_SHAPE_TYPE[node.pointCount] ?? 'HEXAGON';

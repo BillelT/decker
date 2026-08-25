@@ -40,6 +40,8 @@ export interface DecisionInput {
     radiusDecision?: RadiusDecision;
     /** Nombre de côtés d'un POLYGON régulier (Figma `PolygonNode.pointCount`) — absent pour les autres kinds. */
     polygonSides?: number;
+    /** Nombre de branches d'un STAR (Figma `StarNode.pointCount`) — absent pour les autres kinds. */
+    starPoints?: number;
   };
   line?: {
     visibleStrokeCount: number;
@@ -76,6 +78,7 @@ export type WarningCode =
   | 'MASK_RASTERIZED'
   | 'VECTOR_RASTERIZED'
   | 'POLYGON_SIDES_UNSUPPORTED'
+  | 'STAR_POINTS_UNSUPPORTED'
   | 'LINE_RASTERIZED'
   | 'LETTER_SPACING_LOST'
   | 'RADIUS_APPROXIMATED'
@@ -179,6 +182,17 @@ export function classifyNode(input: DecisionInput): Decision {
         action: 'raster',
         warningCode: 'POLYGON_SIDES_UNSUPPORTED',
         message: `Slides has no native preset for a ${s.polygonSides}-sided polygon (only 3–6) — converted to an image.`,
+      };
+    }
+    // Même logique que POLYGON ci-dessus, mais pour STAR : seul le préréglage
+    // Slides STAR_5 est calibré/vérifié dans ce projet (voir
+    // calibration/fixtures/shapes.ts) — un autre nombre de branches est
+    // rastérisé plutôt que de deviner un nom d'enum Slides non vérifié.
+    if (input.kind === 'STAR' && s?.starPoints !== undefined && s.starPoints !== 5) {
+      return {
+        action: 'raster',
+        warningCode: 'STAR_POINTS_UNSUPPORTED',
+        message: `Slides has no verified native preset for a ${s.starPoints}-point star (only 5) — converted to an image.`,
       };
     }
     if (input.kind === 'RECTANGLE' && s?.radiusDecision) {

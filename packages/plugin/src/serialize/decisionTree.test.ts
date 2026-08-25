@@ -137,6 +137,16 @@ describe('classifyNode — shape branch', () => {
     );
     expect(d).toMatchObject({ action: 'raster', warningCode: 'POLYGON_SIDES_UNSUPPORTED' });
   });
+
+  it('goes native preset for a 5-point STAR', () => {
+    const d = classifyNode(base({ kind: 'STAR', shape: { visibleFillCount: 1, fillIsGradient: false, fillIsImage: false, hasMultipleOrOffCenterStroke: false, starPoints: 5 } }));
+    expect(d).toEqual({ action: 'native-shape-preset' });
+  });
+
+  it('rasters a STAR with a point count other than 5 instead of forcing STAR_5', () => {
+    const d = classifyNode(base({ kind: 'STAR', shape: { visibleFillCount: 1, fillIsGradient: false, fillIsImage: false, hasMultipleOrOffCenterStroke: false, starPoints: 8 } }));
+    expect(d).toMatchObject({ action: 'raster', warningCode: 'STAR_POINTS_UNSUPPORTED' });
+  });
 });
 
 describe('classifyNode — LINE', () => {
