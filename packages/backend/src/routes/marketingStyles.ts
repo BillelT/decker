@@ -84,15 +84,15 @@ a { color: inherit; }
 .btn:focus-visible { outline: var(--b-focus-outline); outline-offset: var(--b-focus-offset); }
 .btn:active { transform: translateY(0.5px); }
 .cta {
-  gap: var(--b-space-16); padding: var(--b-space-8) var(--b-space-16); border: 0;
+  gap: var(--b-space-16); padding: var(--b-space-6) var(--b-space-12); border: 0;
   border-radius: var(--b-radius-md); color: var(--b-ink); font-size: var(--b-text-base);
-  font-weight: var(--b-font-semibold); background-color: var(--b-accent);
+  font-weight: var(--b-font-bold); background-color: var(--b-accent);
 }
 .cta:hover { background-color: var(--b-accent-red); }
 .tertiary {
-  gap: var(--b-space-16); padding: var(--b-space-8) var(--b-space-16); border: 1px solid var(--b-border);
+  gap: var(--b-space-16); padding: var(--b-space-6) var(--b-space-12); border: 1px solid var(--b-border);
   border-radius: var(--b-radius-md); color: var(--b-ink); font-size: var(--b-text-base);
-  font-weight: var(--b-font-semibold); background-color: transparent;
+  font-weight: var(--b-font-bold); background-color: transparent;
 }
 .tertiary:hover { background-color: var(--b-surface-muted); }
 
@@ -123,7 +123,6 @@ a { color: inherit; }
   text-decoration: none;
 }
 .header__brand-mark { width: 24px; height: 24px; flex: 0 0 auto; display: block; }
-.header__nav { display: flex; align-items: center; gap: var(--b-space-24); }
 .header__actions { display: flex; align-items: center; gap: var(--b-space-20); }
 
 /* ---------- Hero (b-hero) ---------- */
@@ -138,6 +137,7 @@ a { color: inherit; }
 }
 .hero__lede { margin: 0; max-width: 560px; font-size: var(--b-text-xl); line-height: var(--b-leading-relaxed); color: var(--b-text-muted); }
 .hero__actions { display: flex; align-items: center; justify-content: center; gap: var(--b-space-16); margin-top: var(--b-space-16); }
+.hero__actions .btn { padding: var(--b-space-12) var(--b-space-16); }
 .hero__note { margin: 0; font-size: var(--b-text-sm); color: var(--b-text-faint); }
 
 /* ---------- Content sections (prose — pas un composant Billel, besoin propre à cette page) ---------- */

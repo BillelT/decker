@@ -103,7 +103,7 @@ function shell(opts: {
 <style>${MARKETING_CSS}</style>
 </head>
 <body>
-${header(opts.path)}
+${header()}
 <main>
 ${opts.main}
 </main>
@@ -112,19 +112,13 @@ ${footer()}
 </html>`;
 }
 
-function header(currentPath: string): string {
-  const navItem = (href: string, label: string): string =>
-    `<a class="nav-link" href="${href}"${currentPath === href ? ' aria-current="page"' : ''}>${label}</a>`;
+function header(): string {
   return `<header class="header">
   <div class="header__lead">
     <a class="header__brand" href="/">
       <svg class="header__brand-mark" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${brandMarkInline()}</svg>
       Decker
     </a>
-    <nav class="header__nav" aria-label="Primary">
-      ${navItem('/privacy', 'Privacy')}
-      ${navItem('/terms', 'Terms')}
-    </nav>
   </div>
   <div class="header__actions">
     <a class="btn tertiary" href="${COFFEE_URL}" target="_blank" rel="${REL_THIRD_PARTY}">Buy me a coffee</a>
