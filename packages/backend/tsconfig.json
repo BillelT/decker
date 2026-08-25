@@ -8,6 +8,13 @@
     "types": ["node"]
   },
   "include": ["src"],
-  "exclude": ["src/**/*.test.ts"],
+  "exclude": [
+    "src/**/*.test.ts",
+    // Script de maintenance lancé à la main (voir son en-tête) : il importe
+    // playwright, volontairement absent des dépendances du dépôt, et manipule
+    // le DOM de la page rendue — deux choses que ce projet de compilation, qui
+    // ne cible que le serveur, ne sait pas typer.
+    "src/og/render.ts"
+  ],
   "references": [{ "path": "../shared" }]
 }
