@@ -155,20 +155,23 @@ body {
   gap: 18px;
 }
 
-/* Badge "type de produit" façon pilule 95 : mêmes biseaux que les boutons de
-   la barre de titre, coins arrondis (seul élément non anguleux de la carte,
-   volontaire — une pilule EST arrondie sur n'importe quel skin). */
+/* Badge "type de produit" façon tag 95 : mêmes biseaux que les boutons de la
+   barre de titre, coins droits — Windows 95 n'a pas de coin arrondi, une
+   pilule y aurait détonné. Bleu marine sur fond clair (au lieu du noir
+   partout ailleurs sur la carte) pour qu'il se détache immédiatement comme
+   un élément de chrome distinct du texte de contenu, plutôt que de se noyer
+   dans le gris du biseau à la taille où une vignette le rend. */
 .eyebrow {
   align-self: flex-start;
-  padding: 8px 18px 9px;
-  border-radius: 999px;
+  padding: 10px 20px 11px;
   background: var(--w95-face);
   box-shadow: var(--w95-out);
   font-family: var(--chrome-font);
-  font-size: 17px;
+  font-size: 19px;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.01em;
   text-transform: uppercase;
+  color: var(--w95-navy);
 }
 /* La marque en grand plutôt qu'un aplat vide : elle équilibre la colonne de
    texte, et c'est le seul repère qui reste identifiable quand la carte est
