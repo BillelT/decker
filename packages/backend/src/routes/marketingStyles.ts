@@ -201,7 +201,7 @@ a { color: inherit; }
 .steps__title { margin: 0 0 var(--b-space-4); font-size: var(--b-text-lg); font-weight: var(--b-font-bold); color: var(--b-ink); }
 .steps__desc { margin: 0; font-size: var(--b-text-base); line-height: var(--b-leading-relaxed); color: var(--b-text-muted); }
 .how-it-works__demo { grid-column: 2; grid-row: 1; }
-.section__cta { grid-column: 1; grid-row: 2; align-self: start; }
+.section__cta { grid-column: 1; grid-row: 2; align-self: start; justify-self: end; }
 
 /* ---------- Démo win95 (illustration animée "how it works") ---------- */
 .win95-window {
@@ -309,6 +309,6 @@ a { color: inherit; }
   .how-it-works { grid-template-columns: 1fr; }
   .steps { grid-column: 1; grid-row: 1; }
   .how-it-works__demo { grid-column: 1; grid-row: 2; height: 280px; }
-  .section__cta { grid-column: 1; grid-row: 3; }
+  .section__cta { grid-column: 1; grid-row: 3; justify-self: start; }
 }
 `;
