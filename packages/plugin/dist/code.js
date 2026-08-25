@@ -65,6 +65,20 @@
       if (s?.hasMultipleOrOffCenterStroke) {
         return { action: "raster", warningCode: "EFFECT_RASTERIZED", message: "Multiple or off-center stroke beyond tolerance \u2014 converted to an image." };
       }
+      if (input.kind === "POLYGON" && s?.polygonSides !== void 0 && ![3, 4, 5, 6].includes(s.polygonSides)) {
+        return {
+          action: "raster",
+          warningCode: "POLYGON_SIDES_UNSUPPORTED",
+          message: `Slides has no native preset for a ${s.polygonSides}-sided polygon (only 3\u20136) \u2014 converted to an image.`
+        };
+      }
+      if (input.kind === "STAR" && s?.starPoints !== void 0 && s.starPoints !== 5) {
+        return {
+          action: "raster",
+          warningCode: "STAR_POINTS_UNSUPPORTED",
+          message: `Slides has no verified native preset for a ${s.starPoints}-point star (only 5) \u2014 converted to an image.`
+        };
+      }
       if (input.kind === "RECTANGLE" && s?.radiusDecision) {
         const rd = s.radiusDecision;
         if (rd.kind === "raster") {
@@ -715,7 +729,9 @@
         node.height
       );
     }
-    return { visibleFillCount: visibleFills.length, fillIsGradient, fillIsImage, hasMultipleOrOffCenterStroke, radiusDecision };
+    const polygonSides = kind === "POLYGON" && "pointCount" in node ? node.pointCount : void 0;
+    const starPoints = kind === "STAR" && "pointCount" in node ? node.pointCount : void 0;
+    return { visibleFillCount: visibleFills.length, fillIsGradient, fillIsImage, hasMultipleOrOffCenterStroke, radiusDecision, polygonSides, starPoints };
   }
   var SUPPORTED_LINE_CAPS = /* @__PURE__ */ new Set(["NONE", "ROUND", "SQUARE"]);
   function lineInfo(node) {
@@ -806,6 +822,12 @@
     }
     return "SOLID";
   }
+  var POLYGON_SIDES_TO_SHAPE_TYPE = {
+    3: "TRIANGLE",
+    4: "DIAMOND",
+    5: "PENTAGON",
+    6: "HEXAGON"
+  };
   function presetShapeType(node) {
     switch (node.type) {
       case "ELLIPSE":
@@ -813,8 +835,7 @@
       case "STAR":
         return "STAR_5";
       case "POLYGON":
-        return "HEXAGON";
-      // approximation raisonnable ; à affiner par nombre de côtés réel
+        return POLYGON_SIDES_TO_SHAPE_TYPE[node.pointCount] ?? "HEXAGON";
       default:
         return "RECTANGLE";
     }
@@ -1092,6 +1113,8 @@
     "BLEND_MODE_RASTERIZED",
     "MASK_RASTERIZED",
     "VECTOR_RASTERIZED",
+    "POLYGON_SIDES_UNSUPPORTED",
+    "STAR_POINTS_UNSUPPORTED",
     "LINE_RASTERIZED",
     "LETTER_SPACING_LOST",
     "CORNER_RADIUS_RASTERIZED",
