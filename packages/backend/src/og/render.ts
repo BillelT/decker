@@ -20,7 +20,7 @@ import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { renderOgImageHtml } from './ogTemplate.js';
-import { OG_IMAGE_VARIANTS, type OgImageVariant } from './variants.js';
+import { OG_IMAGE } from './variants.js';
 
 const OUT_FILE = join(dirname(fileURLToPath(import.meta.url)), 'ogImageData.ts');
 
@@ -48,20 +48,13 @@ async function main(): Promise<void> {
   // chrome 95 et tripler le poids du fichier.
   const page = await browser.newPage({ viewport: { width: WIDTH, height: HEIGHT }, deviceScaleFactor: 1 });
 
-  const encoded: Record<string, string> = {};
-  for (const [key, variant] of Object.entries(OG_IMAGE_VARIANTS)) {
-    await page.setContent(renderOgImageHtml(variant.content), { waitUntil: 'load' });
-    await page.evaluate(() => document.fonts.ready);
-    const png = await page.screenshot({ type: 'png' });
-    encoded[key] = png.toString('base64');
-    // eslint-disable-next-line no-console
-    console.log(`[og] ${variant.file} — ${(png.byteLength / 1024).toFixed(1)} Ko`);
-  }
+  await page.setContent(renderOgImageHtml(OG_IMAGE.content), { waitUntil: 'load' });
+  await page.evaluate(() => document.fonts.ready);
+  const png = await page.screenshot({ type: 'png' });
+  // eslint-disable-next-line no-console
+  console.log(`[og] ${OG_IMAGE.file} — ${(png.byteLength / 1024).toFixed(1)} Ko`);
   await browser.close();
 
-  const entries = (Object.keys(OG_IMAGE_VARIANTS) as OgImageVariant[])
-    .map((key) => `  ${key}: '${encoded[key]}',`)
-    .join('\n');
   writeFileSync(
     OUT_FILE,
     `/* eslint-disable */
@@ -70,16 +63,12 @@ async function main(): Promise<void> {
  * Produit par \`src/og/render.ts\` à partir de \`src/og/ogTemplate.ts\`
  * (voir l'en-tête de render.ts pour la commande).
  *
- * Les PNG sont inlinés en base64 pour la même raison que la police des pages
+ * Le PNG est inliné en base64 pour la même raison que la police des pages
  * publiques (routes/fontData.ts) : le build du backend est un simple \`tsc\`,
  * qui ne recopie aucun binaire vers dist/ — un fichier .png posé dans src/
  * n'existerait tout simplement pas dans la fonction serverless déployée.
  */
-import type { OgImageVariant } from './variants.js';
-
-export const OG_IMAGE_PNG_BASE64: Record<OgImageVariant, string> = {
-${entries}
-};
+export const OG_IMAGE_PNG_BASE64 = '${png.toString('base64')}';
 `,
     'utf8',
   );

@@ -31,26 +31,18 @@
  *   la carte est vue en vignette, tout ce qui passe sous ~24px n'y est plus
  *   qu'une texture ;
  * - texte noir sur papier crème, contraste maximal ;
- * - trois éléments dans la zone de contenu, pas un de plus : l'accroche, la
- *   phrase qui la précise, la marque. Une carte de partage est lue en une
- *   seconde et n'est pas cliquable élément par élément — tout ce qui s'y
- *   ajoute (badge, bouton, second logo) ne fait que diluer l'accroche.
+ * - peu d'éléments dans la zone de contenu : un badge "type de produit", le
+ *   nom du produit, la phrase qui le précise, la marque. Une carte de
+ *   partage est lue en une seconde et n'est pas cliquable élément par
+ *   élément — tout ce qui s'y ajoute au-delà ne fait que diluer l'accroche ;
+ * - une seule carte pour tout le site (voir variants.ts) : les pages
+ *   légales (privacy, terms) n'ont pas de propos propre à raconter en
+ *   vignette, les distinguer n'aurait décrit que leur titre, pas le produit.
  */
 
 import { CABINET_GROTESK_BASE64 } from '../routes/fontData.js';
 import { DECKER_MARK_SVG } from '../routes/brand.js';
 import type { OgImageContent } from './variants.js';
-
-/** Flèche "→" dessinée en SVG blocky plutôt qu'en glyphe : Cabinet Grotesk
- *  n'a pas de flèche, un fallback système en poserait une d'une autre fonte
- *  au milieu du titre. En pixels francs, elle passe pour un élément 95. */
-const PIXEL_ARROW = `<svg class="headline__arrow" viewBox="0 0 20 14" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">
-  <rect x="0" y="6" width="12" height="2" fill="currentColor"/>
-  <rect x="12" y="0" width="2" height="14" fill="currentColor"/>
-  <rect x="14" y="2" width="2" height="10" fill="currentColor"/>
-  <rect x="16" y="4" width="2" height="6" fill="currentColor"/>
-  <rect x="18" y="6" width="2" height="2" fill="currentColor"/>
-</svg>`;
 
 const CSS = `
 @font-face {
@@ -160,7 +152,23 @@ body {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 26px;
+  gap: 18px;
+}
+
+/* Badge "type de produit" façon pilule 95 : mêmes biseaux que les boutons de
+   la barre de titre, coins arrondis (seul élément non anguleux de la carte,
+   volontaire — une pilule EST arrondie sur n'importe quel skin). */
+.eyebrow {
+  align-self: flex-start;
+  padding: 8px 18px 9px;
+  border-radius: 999px;
+  background: var(--w95-face);
+  box-shadow: var(--w95-out);
+  font-family: var(--chrome-font);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 /* La marque en grand plutôt qu'un aplat vide : elle équilibre la colonne de
    texte, et c'est le seul repère qui reste identifiable quand la carte est
@@ -168,21 +176,17 @@ body {
 .paper__mark { width: 216px; height: 216px; flex: none; display: block; }
 
 .headline {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  font-size: 80px;
+  font-size: 84px;
   font-weight: 800;
   line-height: 1.02;
   letter-spacing: -0.035em;
-  white-space: nowrap;
 }
-.headline__arrow { width: 62px; height: 44px; flex: none; color: var(--b-accent); }
 
 .subline {
+  max-width: 560px;
   font-size: 28px;
   font-weight: 500;
-  line-height: 1.35;
+  line-height: 1.4;
   color: var(--b-muted);
 }
 
@@ -206,11 +210,6 @@ body {
 export function renderOgImageHtml(content: OgImageContent): string {
   const markInline = DECKER_MARK_SVG.replace(/^<svg/, '<svg class="paper__mark"');
   const iconInline = DECKER_MARK_SVG.replace(/^<svg/, '<svg class="titlebar__icon"');
-  const [before, after] = content.headline.split('->');
-  const headline =
-    after === undefined
-      ? `<span>${before}</span>`
-      : `<span>${before.trim()}</span>${PIXEL_ARROW}<span>${after.trim()}</span>`;
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -235,7 +234,8 @@ export function renderOgImageHtml(content: OgImageContent): string {
   <div class="client">
     <div class="paper">
       <div class="paper__text">
-        <h1 class="headline">${headline}</h1>
+        <span class="eyebrow">${content.eyebrow}</span>
+        <h1 class="headline">${content.headline}</h1>
         <p class="subline">${content.subline}</p>
       </div>
       ${markInline}
