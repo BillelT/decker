@@ -59,6 +59,20 @@ export const MARKETING_CSS = `
   --b-ease: cubic-bezier(.16, 1, .3, 1);
   --b-ease-default: cubic-bezier(.4, 0, .2, 1);
   --b-duration-instant: .05s; --b-duration-fast: .12s; --b-duration: .15s; --b-duration-slow: .2s;
+
+  /* Chrome Windows 95, repris tel quel de src/og/ogTemplate.ts pour la démo
+     "how it works" — seul endroit de la page marketing qui cite cette DA. */
+  --w95-face: #c0c0c0;
+  --w95-shadow: #808080;
+  --w95-dark: #0a0a0a;
+  --w95-light: #dfdfdf;
+  --w95-white: #ffffff;
+  --w95-navy: #000080;
+  --w95-navy-light: #1084d0;
+  --w95-out: inset -2px -2px var(--w95-dark), inset 2px 2px var(--w95-white),
+    inset -4px -4px var(--w95-shadow), inset 4px 4px var(--w95-light);
+  --w95-in: inset -2px -2px var(--w95-white), inset 2px 2px var(--w95-shadow),
+    inset -4px -4px var(--w95-light), inset 4px 4px var(--w95-dark);
 }
 
 * { box-sizing: border-box; }
@@ -127,7 +141,7 @@ a { color: inherit; }
 .hero {
   display: flex; flex-direction: column; align-items: center; text-align: center;
   gap: var(--b-space-20); width: 100%; max-width: 880px; margin-inline: auto;
-  padding: var(--b-space-64) var(--b-space-24) var(--b-space-96);
+  padding: var(--b-space-96) var(--b-space-24);
 }
 .hero__title {
   margin: 0; font-size: var(--b-text-6xl); font-weight: var(--b-font-bold);
@@ -172,8 +186,11 @@ a { color: inherit; }
   width: 100%; max-width: none; padding: 0; background: var(--b-surface-muted);
 }
 .section--muted .section__inner { max-width: 960px; margin-inline: auto; padding: var(--b-space-64) var(--b-space-24); }
-.steps { display: flex; gap: var(--b-space-32); flex-wrap: wrap; margin: var(--b-space-32) 0 0; padding: 0; list-style: none; }
-.steps__item { flex: 1 1 200px; display: flex; gap: var(--b-space-16); align-items: flex-start; }
+.how-it-works { display: flex; align-items: center; gap: var(--b-space-48); margin-top: var(--b-space-32); }
+.how-it-works__content { flex: 1 1 380px; }
+.how-it-works__demo { flex: 1 1 380px; }
+.steps { display: flex; flex-direction: column; gap: var(--b-space-32); margin: 0; padding: 0; list-style: none; }
+.steps__item { display: flex; gap: var(--b-space-16); align-items: flex-start; }
 .steps__num {
   flex: 0 0 auto; display: flex; align-items: center; justify-content: center;
   width: 32px; height: 32px; border-radius: var(--b-radius-full);
@@ -182,6 +199,55 @@ a { color: inherit; }
 .steps__title { margin: 0 0 var(--b-space-4); font-size: var(--b-text-lg); font-weight: var(--b-font-bold); color: var(--b-ink); }
 .steps__desc { margin: 0; font-size: var(--b-text-base); line-height: var(--b-leading-relaxed); color: var(--b-text-muted); }
 .section__cta { margin-top: var(--b-space-32); }
+
+/* ---------- Démo win95 (illustration "how it works") ---------- */
+.win95-window {
+  width: 100%; max-width: 380px; margin-inline: auto; padding: 4px;
+  display: flex; flex-direction: column; background: var(--w95-face); box-shadow: var(--w95-out);
+}
+.win95-titlebar {
+  height: 32px; flex: none; display: flex; align-items: center; gap: 8px; padding: 0 4px 0 8px;
+  background: linear-gradient(90deg, var(--w95-navy) 0%, var(--w95-navy-light) 100%);
+}
+.win95-titlebar__icon { width: 18px; height: 18px; flex: none; display: block; }
+.win95-titlebar__label { flex: 1; font-family: Tahoma, "Segoe UI", Arial, sans-serif; font-size: 13px; font-weight: 700; color: #fff; }
+.win95-titlebar__buttons { display: flex; gap: 3px; }
+.win95-titlebar__btn {
+  width: 18px; height: 16px; display: flex; align-items: flex-end; justify-content: center;
+  padding-bottom: 3px; background: var(--w95-face); box-shadow: var(--w95-out);
+}
+.win95-titlebar__btn span { display: block; width: 8px; height: 2px; background: #000; }
+.win95-titlebar__btn--box span { height: 6px; border: 1px solid #000; border-top-width: 2px; background: none; }
+.win95-titlebar__btn--close { align-items: center; padding-bottom: 0; }
+.win95-titlebar__btn--close svg { width: 9px; height: 9px; display: block; }
+.win95-client { margin-top: 4px; padding: 4px; background: var(--w95-face); box-shadow: var(--w95-in); }
+.win95-paper { padding: var(--b-space-16); background: var(--b-white); display: flex; flex-direction: column; gap: var(--b-space-12); }
+.win95-label {
+  margin: 0; font-size: var(--b-text-xs); font-weight: var(--b-font-semibold); color: var(--b-text-muted);
+  text-transform: uppercase; letter-spacing: var(--b-tracking-wide);
+}
+.win95-list { display: flex; flex-direction: column; gap: var(--b-space-8); margin: 0; padding: 0; list-style: none; }
+.win95-list__item { display: flex; align-items: center; gap: var(--b-space-8); font-size: var(--b-text-sm); color: var(--b-ink); }
+.win95-checkbox { width: 14px; height: 14px; flex: none; position: relative; background: var(--b-white); box-shadow: var(--w95-in); }
+.win95-checkbox--checked::after {
+  content: ""; position: absolute; left: 3px; top: 3px; width: 8px; height: 8px; background: var(--w95-navy);
+}
+.win95-divider { height: 1px; margin: var(--b-space-4) 0; background: var(--w95-shadow); box-shadow: 0 1px var(--w95-white); }
+.win95-row { display: flex; align-items: center; gap: var(--b-space-8); }
+.win95-avatar {
+  width: 22px; height: 22px; flex: none; border-radius: var(--b-radius-full); background: var(--b-accent);
+  color: #fff; font-size: var(--b-text-xs); font-weight: var(--b-font-bold); display: flex; align-items: center; justify-content: center;
+}
+.win95-row__text { font-size: var(--b-text-xs); color: var(--b-text-muted); }
+.win95-btn {
+  align-self: flex-start; margin-top: var(--b-space-4); padding: var(--b-space-6) var(--b-space-16);
+  background: var(--w95-face); box-shadow: var(--w95-out); font-size: var(--b-text-sm); font-weight: var(--b-font-bold); color: #000;
+}
+.win95-statusbar {
+  height: 22px; flex: none; margin-top: 4px; display: flex; align-items: center; padding: 0 8px;
+  box-shadow: inset -1px -1px var(--w95-white), inset 1px 1px var(--w95-shadow);
+  font-family: Tahoma, "Segoe UI", Arial, sans-serif; font-size: 11px; font-weight: 700; color: #000;
+}
 
 /* ---------- Footer (b-footer, compo marketing) ---------- */
 .footer {
@@ -213,7 +279,6 @@ a { color: inherit; }
   .footer__top { flex-direction: column; }
   .footer__bottom { flex-direction: column; align-items: flex-start; }
   .feature-grid { grid-template-columns: 1fr; }
-  .steps { flex-direction: column; }
-  .steps__item { flex: 1 1 auto; }
+  .how-it-works { flex-direction: column; align-items: stretch; }
 }
 `;
