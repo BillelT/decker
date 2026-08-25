@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { DECKER_FAVICON, DECKER_MARK_SVG, escapeHtml } from './brand.js';
 import { MARKETING_CSS } from './marketingStyles.js';
+import { OG_IMAGE_PNG_BASE64 } from '../og/ogImageData.js';
+import { OG_IMAGE_VARIANTS, type OgImageVariant } from '../og/variants.js';
 
 export const pagesRouter = Router();
 
@@ -12,6 +14,36 @@ const PLUGIN_URL = 'https://www.figma.com/community/plugin/1666774362264403763';
 const FOLIO_URL = 'https://billeltighidet.fr';
 const TWITTER_URL = 'https://x.com/billel_tighidet';
 const COFFEE_URL = 'https://buymeacoffee.com/billelt';
+
+/**
+ * Facebook, LinkedIn et X mettent la carte de partage en cache la première
+ * fois qu'ils voient une URL, parfois pour des semaines, et rien ne garantit
+ * qu'un passage dans leur debugger la purge partout. Incrémenter ce numéro
+ * après avoir regénéré les PNG (`npm run og:build`) change l'URL de l'image,
+ * donc force un nouveau téléchargement partout, y compris là où le cache
+ * n'est pas purgeable à la main. C'est aussi ce qui autorise le
+ * `Cache-Control: immutable` d'un an posé plus bas.
+ */
+const OG_IMAGE_VERSION = '1';
+
+/** Dimensions du PNG généré (cf. src/og/render.ts) — annoncées dans les
+ *  balises `og:image:width/height` pour que les plateformes réservent la
+ *  bonne place avant même d'avoir téléchargé l'image. */
+const OG_IMAGE_WIDTH = 1200;
+const OG_IMAGE_HEIGHT = 630;
+
+/**
+ * Absolue et non relative : la plupart des robots sociaux ne résolvent pas une
+ * URL relative dans `og:image` et affichent alors une carte sans image.
+ *
+ * À noter, côté balises posées par `shell()` : la carte est annoncée en
+ * `twitter:card = summary_large_image` et non `summary`, qui la rognerait au
+ * carré pour n'en garder qu'une vignette. Seule l'image est répétée en
+ * `twitter:*` — X et LinkedIn retombent sur les `og:*` pour le titre et la
+ * description, mais certains clients ne lisent que `twitter:image`.
+ */
+const ogImageUrl = (variant: OgImageVariant): string =>
+  `${SITE_URL}/${OG_IMAGE_VARIANTS[variant].file}?v=${OG_IMAGE_VERSION}`;
 
 /** rel des liens sortants (convention b-signature du DS Billel) : mon domaine → noopener ; tiers → noopener noreferrer. */
 const REL_OWN = 'noopener';
@@ -25,7 +57,14 @@ const brandMarkInline = (): string => DECKER_MARK_SVG.replace(/^<svg[^>]*>/, '')
  * remplace l'ancienne DA "hybrid" (une carte étroite unique, jugée pas assez
  * "vraie page web" par la revue Branding OAuth de Google — voir historique).
  */
-function shell(opts: { title: string; description: string; path: string; jsonLdType: 'WebSite' | 'WebPage'; main: string }): string {
+function shell(opts: {
+  title: string;
+  description: string;
+  path: string;
+  jsonLdType: 'WebSite' | 'WebPage';
+  ogImage: OgImageVariant;
+  main: string;
+}): string {
   const canonical = `${SITE_URL}${opts.path}`;
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -33,6 +72,7 @@ function shell(opts: { title: string; description: string; path: string; jsonLdT
     name: opts.title,
     url: canonical,
     description: opts.description,
+    image: ogImageUrl(opts.ogImage),
   };
   return `<!doctype html>
 <html lang="en">
@@ -46,10 +86,19 @@ function shell(opts: { title: string; description: string; path: string; jsonLdT
 <link rel="icon" type="image/svg+xml" href="${DECKER_FAVICON}" />
 
 <meta property="og:type" content="website" />
+<meta property="og:site_name" content="Decker" />
+<meta property="og:locale" content="en_US" />
 <meta property="og:title" content="${escapeHtml(opts.title)}" />
 <meta property="og:description" content="${escapeHtml(opts.description)}" />
 <meta property="og:url" content="${canonical}" />
-<meta name="twitter:card" content="summary" />
+<meta property="og:image" content="${ogImageUrl(opts.ogImage)}" />
+<meta property="og:image:type" content="image/png" />
+<meta property="og:image:width" content="${OG_IMAGE_WIDTH}" />
+<meta property="og:image:height" content="${OG_IMAGE_HEIGHT}" />
+<meta property="og:image:alt" content="${escapeHtml(OG_IMAGE_VARIANTS[opts.ogImage].alt)}" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:image" content="${ogImageUrl(opts.ogImage)}" />
+<meta name="twitter:image:alt" content="${escapeHtml(OG_IMAGE_VARIANTS[opts.ogImage].alt)}" />
 
 <script type="application/ld+json">${JSON.stringify(jsonLd)}</script>
 
@@ -160,6 +209,7 @@ pagesRouter.get('/', (_req, res) => {
       description: 'Decker is a free Figma plugin that exports a Figma design straight to Google Slides, preserving layout, styles, and theme.',
       path: '/',
       jsonLdType: 'WebSite',
+      ogImage: 'home',
       main,
     }),
   );
@@ -199,6 +249,7 @@ pagesRouter.get('/privacy', (_req, res) => {
       description: 'How Decker, a free Figma-to-Google-Slides plugin, handles your data.',
       path: '/privacy',
       jsonLdType: 'WebPage',
+      ogImage: 'privacy',
       main,
     }),
   );
@@ -223,10 +274,27 @@ pagesRouter.get('/terms', (_req, res) => {
       description: 'Terms of use for Decker, a free Figma-to-Google-Slides plugin.',
       path: '/terms',
       jsonLdType: 'WebPage',
+      ogImage: 'terms',
       main,
     }),
   );
 });
+
+/**
+ * Les PNG sont servis par la fonction elle-même, décodés depuis le base64 de
+ * `og/ogImageData.ts` : Vercel réécrit ici toutes les routes (voir
+ * vercel.json), il n'y a pas de dossier statique devant. Le cache d'un an est
+ * sûr parce que l'URL porte un numéro de version (OG_IMAGE_VERSION) — un
+ * nouveau visuel = une nouvelle URL.
+ */
+for (const [key, variant] of Object.entries(OG_IMAGE_VARIANTS)) {
+  pagesRouter.get(`/${variant.file}`, (_req, res) => {
+    res
+      .type('png')
+      .set('Cache-Control', 'public, max-age=31536000, immutable')
+      .send(Buffer.from(OG_IMAGE_PNG_BASE64[key as OgImageVariant], 'base64'));
+  });
+}
 
 pagesRouter.get('/robots.txt', (_req, res) => {
   res.type('text/plain').send(`User-agent: *\nAllow: /\nSitemap: ${SITE_URL}/sitemap.xml\n`);

@@ -16,7 +16,8 @@
     "lint": "tsc -p tsconfig.json --noEmit",
     "precalibrate": "npm --prefix ../shared run build",
     "calibrate": "tsx src/calibration/calibrate.ts",
-    "spike:theme": "tsx src/spikes/masterThemeSpike.ts"
+    "spike:theme": "tsx src/spikes/masterThemeSpike.ts",
+    "og:build": "tsx src/og/render.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1104.0",
