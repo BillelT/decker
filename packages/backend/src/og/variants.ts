@@ -13,8 +13,6 @@ export interface OgImageContent {
   headline: string;
   /** Phrase de contexte sous l'accroche, une seule ligne. */
   subline: string;
-  /** Libellé du bouton d'appel à l'action (2 à 4 mots). */
-  cta: string;
 }
 
 /**
@@ -33,7 +31,6 @@ export const OG_IMAGE_VARIANTS = {
       windowTitle: 'Decker.exe',
       headline: 'Figma -> Google Slides',
       subline: 'Native, editable slides — layout, styles and theme preserved.',
-      cta: 'Get the plugin on Figma',
     },
   },
   privacy: {
@@ -43,7 +40,6 @@ export const OG_IMAGE_VARIANTS = {
       windowTitle: 'Decker.exe — Privacy',
       headline: 'Privacy Policy',
       subline: 'What Decker accesses, and what it never touches.',
-      cta: 'Read the policy',
     },
   },
   terms: {
@@ -53,7 +49,6 @@ export const OG_IMAGE_VARIANTS = {
       windowTitle: 'Decker.exe — Terms',
       headline: 'Terms of Use',
       subline: 'A free plugin, provided as is, as a personal project.',
-      cta: 'Read the terms',
     },
   },
 } as const satisfies Record<string, { file: string; alt: string; content: OgImageContent }>;
