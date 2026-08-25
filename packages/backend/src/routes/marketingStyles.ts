@@ -133,7 +133,7 @@ a { color: inherit; }
 .header--scrolled { border-bottom-color: var(--b-border); }
 .header__inner {
   display: flex; align-items: center; justify-content: space-between; gap: var(--b-space-32);
-  width: 100%; max-width: 960px; margin-inline: auto; padding: var(--b-space-20) var(--b-space-24);
+  width: 100%; max-width: 960px; margin-inline: auto; padding: var(--b-space-16) var(--b-space-24);
 }
 .header__lead { display: flex; align-items: center; gap: var(--b-space-32); }
 .header__brand {
