@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { DECKER_FAVICON, DECKER_MARK_SVG, escapeHtml } from './brand.js';
 import { MARKETING_CSS } from './marketingStyles.js';
 import { OG_IMAGE_PNG_BASE64 } from '../og/ogImageData.js';
-import { OG_IMAGE_VARIANTS, type OgImageVariant } from '../og/variants.js';
+import { OG_IMAGE } from '../og/variants.js';
 
 export const pagesRouter = Router();
 
@@ -42,8 +42,7 @@ const OG_IMAGE_HEIGHT = 630;
  * `twitter:*` — X et LinkedIn retombent sur les `og:*` pour le titre et la
  * description, mais certains clients ne lisent que `twitter:image`.
  */
-const ogImageUrl = (variant: OgImageVariant): string =>
-  `${SITE_URL}/${OG_IMAGE_VARIANTS[variant].file}?v=${OG_IMAGE_VERSION}`;
+const OG_IMAGE_URL = `${SITE_URL}/${OG_IMAGE.file}?v=${OG_IMAGE_VERSION}`;
 
 /** rel des liens sortants (convention b-signature du DS Billel) : mon domaine → noopener ; tiers → noopener noreferrer. */
 const REL_OWN = 'noopener';
@@ -62,7 +61,6 @@ function shell(opts: {
   description: string;
   path: string;
   jsonLdType: 'WebSite' | 'WebPage';
-  ogImage: OgImageVariant;
   main: string;
 }): string {
   const canonical = `${SITE_URL}${opts.path}`;
@@ -72,7 +70,7 @@ function shell(opts: {
     name: opts.title,
     url: canonical,
     description: opts.description,
-    image: ogImageUrl(opts.ogImage),
+    image: OG_IMAGE_URL,
   };
   return `<!doctype html>
 <html lang="en">
@@ -91,14 +89,14 @@ function shell(opts: {
 <meta property="og:title" content="${escapeHtml(opts.title)}" />
 <meta property="og:description" content="${escapeHtml(opts.description)}" />
 <meta property="og:url" content="${canonical}" />
-<meta property="og:image" content="${ogImageUrl(opts.ogImage)}" />
+<meta property="og:image" content="${OG_IMAGE_URL}" />
 <meta property="og:image:type" content="image/png" />
 <meta property="og:image:width" content="${OG_IMAGE_WIDTH}" />
 <meta property="og:image:height" content="${OG_IMAGE_HEIGHT}" />
-<meta property="og:image:alt" content="${escapeHtml(OG_IMAGE_VARIANTS[opts.ogImage].alt)}" />
+<meta property="og:image:alt" content="${escapeHtml(OG_IMAGE.alt)}" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:image" content="${ogImageUrl(opts.ogImage)}" />
-<meta name="twitter:image:alt" content="${escapeHtml(OG_IMAGE_VARIANTS[opts.ogImage].alt)}" />
+<meta name="twitter:image" content="${OG_IMAGE_URL}" />
+<meta name="twitter:image:alt" content="${escapeHtml(OG_IMAGE.alt)}" />
 
 <script type="application/ld+json">${JSON.stringify(jsonLd)}</script>
 
@@ -209,7 +207,6 @@ pagesRouter.get('/', (_req, res) => {
       description: 'Decker is a free Figma plugin that exports a Figma design straight to Google Slides, preserving layout, styles, and theme.',
       path: '/',
       jsonLdType: 'WebSite',
-      ogImage: 'home',
       main,
     }),
   );
@@ -249,7 +246,6 @@ pagesRouter.get('/privacy', (_req, res) => {
       description: 'How Decker, a free Figma-to-Google-Slides plugin, handles your data.',
       path: '/privacy',
       jsonLdType: 'WebPage',
-      ogImage: 'privacy',
       main,
     }),
   );
@@ -274,27 +270,24 @@ pagesRouter.get('/terms', (_req, res) => {
       description: 'Terms of use for Decker, a free Figma-to-Google-Slides plugin.',
       path: '/terms',
       jsonLdType: 'WebPage',
-      ogImage: 'terms',
       main,
     }),
   );
 });
 
 /**
- * Les PNG sont servis par la fonction elle-même, décodés depuis le base64 de
+ * Le PNG est servi par la fonction elle-même, décodé depuis le base64 de
  * `og/ogImageData.ts` : Vercel réécrit ici toutes les routes (voir
  * vercel.json), il n'y a pas de dossier statique devant. Le cache d'un an est
  * sûr parce que l'URL porte un numéro de version (OG_IMAGE_VERSION) — un
  * nouveau visuel = une nouvelle URL.
  */
-for (const [key, variant] of Object.entries(OG_IMAGE_VARIANTS)) {
-  pagesRouter.get(`/${variant.file}`, (_req, res) => {
-    res
-      .type('png')
-      .set('Cache-Control', 'public, max-age=31536000, immutable')
-      .send(Buffer.from(OG_IMAGE_PNG_BASE64[key as OgImageVariant], 'base64'));
-  });
-}
+pagesRouter.get(`/${OG_IMAGE.file}`, (_req, res) => {
+  res
+    .type('png')
+    .set('Cache-Control', 'public, max-age=31536000, immutable')
+    .send(Buffer.from(OG_IMAGE_PNG_BASE64, 'base64'));
+});
 
 pagesRouter.get('/robots.txt', (_req, res) => {
   res.type('text/plain').send(`User-agent: *\nAllow: /\nSitemap: ${SITE_URL}/sitemap.xml\n`);

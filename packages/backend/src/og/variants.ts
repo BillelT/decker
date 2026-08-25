@@ -1,56 +1,36 @@
 /**
- * Contenu des cartes Open Graph, une par page publique.
+ * Contenu de la carte Open Graph, partagée par toutes les pages publiques.
  *
  * Module volontairement sans dépendance : il est lu à la fois par le script
  * de rendu (`render.ts`, hors ligne) et par `routes/pages.ts` à l'exécution,
- * qui n'a besoin que des noms de fichiers et des textes alternatifs — pas du
+ * qui n'a besoin que du nom de fichier et du texte alternatif — pas du
  * gabarit HTML ni de la police inlinée que trimballe `ogTemplate.ts`.
  */
 export interface OgImageContent {
+  /** Libellé du badge "type de produit", posé au-dessus du titre. */
+  eyebrow: string;
   /** Libellé de la barre de titre de la fenêtre (chrome, décoratif). */
   windowTitle: string;
-  /** Accroche principale — 3 à 4 mots, c'est ce qu'on lit en vignette. */
+  /** Accroche principale — le nom du produit, c'est ce qu'on lit en vignette. */
   headline: string;
-  /** Phrase de contexte sous l'accroche, une seule ligne. */
+  /** Phrase de contexte sous l'accroche, une à deux lignes. */
   subline: string;
 }
 
 /**
- * Une carte par page publique plutôt qu'une seule image générique : c'est la
- * recommandation constante des guides og:image (une carte qui décrit
- * exactement la page partagée est bien plus cliquée qu'un logo réutilisé
- * partout), et ça reste peu coûteux ici — trois PNG d'aplats, quelques
- * dizaines de Ko chacun. `alt` sert de `og:image:alt` (lu par les lecteurs
- * d'écran des réseaux, et par les moteurs).
+ * Une seule carte pour tout le site plutôt qu'une par page : privacy et
+ * terms sont des pages légales pures, sans propos propre à raconter en
+ * vignette — les distinguer n'aurait décrit que leur titre, pas le produit.
+ * `alt` sert de `og:image:alt` (lu par les lecteurs d'écran des réseaux, et
+ * par les moteurs).
  */
-export const OG_IMAGE_VARIANTS = {
-  home: {
-    file: 'og.png',
-    alt: 'Decker, a free Figma plugin: export a Figma design to Google Slides. Shown as a Windows 95 window.',
-    content: {
-      windowTitle: 'Decker.exe',
-      headline: 'Figma -> Google Slides',
-      subline: 'Native, editable slides — layout, styles and theme preserved.',
-    },
+export const OG_IMAGE = {
+  file: 'og.png',
+  alt: 'Decker, a free Figma plugin: export a Figma design to pixel-perfect, editable Google Slides. Shown as a Windows 95 window.',
+  content: {
+    eyebrow: 'Figma plugin',
+    windowTitle: 'Decker.exe',
+    headline: 'Decker',
+    subline: 'Export a Figma design to pixel-perfect, editable Google Slides.',
   },
-  privacy: {
-    file: 'og-privacy.png',
-    alt: 'Decker privacy policy: what Decker accesses in your Google account, and what it never touches.',
-    content: {
-      windowTitle: 'Decker.exe — Privacy',
-      headline: 'Privacy Policy',
-      subline: 'What Decker accesses, and what it never touches.',
-    },
-  },
-  terms: {
-    file: 'og-terms.png',
-    alt: 'Decker terms of use: a free plugin, provided as is, built as a personal project.',
-    content: {
-      windowTitle: 'Decker.exe — Terms',
-      headline: 'Terms of Use',
-      subline: 'A free plugin, provided as is, as a personal project.',
-    },
-  },
-} as const satisfies Record<string, { file: string; alt: string; content: OgImageContent }>;
-
-export type OgImageVariant = keyof typeof OG_IMAGE_VARIANTS;
+} as const satisfies { file: string; alt: string; content: OgImageContent };
