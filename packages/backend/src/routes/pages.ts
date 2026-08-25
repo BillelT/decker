@@ -214,34 +214,29 @@ pagesRouter.get('/', (_req, res) => {
       <div class="section__inner">
         <h2 class="section__title">How it works</h2>
         <div class="how-it-works">
-          <div class="how-it-works__content">
-            <ol class="steps">
-              <li class="steps__item">
-                <span class="steps__num">1</span>
-                <div>
-                  <h3 class="steps__title">Pick your frames</h3>
-                  <p class="steps__desc">From inside Figma, select the frames you want to export.</p>
-                </div>
-              </li>
-              <li class="steps__item">
-                <span class="steps__num">2</span>
-                <div>
-                  <h3 class="steps__title">Sign in with Google</h3>
-                  <p class="steps__desc">Connect your Google account — only when you're ready to export.</p>
-                </div>
-              </li>
-              <li class="steps__item">
-                <span class="steps__num">3</span>
-                <div>
-                  <h3 class="steps__title">Get your deck</h3>
-                  <p class="steps__desc">Decker creates the presentation directly in your own Google Drive — nothing is published anywhere else.</p>
-                </div>
-              </li>
-            </ol>
-            <div class="section__cta">
-              <a class="btn cta" href="${PLUGIN_URL}" target="_blank" rel="${REL_THIRD_PARTY}">Try it on Figma</a>
-            </div>
-          </div>
+          <ol class="steps">
+            <li class="steps__item">
+              <span class="steps__num">1</span>
+              <div>
+                <h3 class="steps__title">Pick your frames</h3>
+                <p class="steps__desc">From inside Figma, select the frames you want to export.</p>
+              </div>
+            </li>
+            <li class="steps__item">
+              <span class="steps__num">2</span>
+              <div>
+                <h3 class="steps__title">Sign in with Google</h3>
+                <p class="steps__desc">Connect your Google account — only when you're ready to export.</p>
+              </div>
+            </li>
+            <li class="steps__item">
+              <span class="steps__num">3</span>
+              <div>
+                <h3 class="steps__title">Get a pixel-perfect deck</h3>
+                <p class="steps__desc">Decker creates the presentation directly in your own Google Drive, layout and styles preserved exactly.</p>
+              </div>
+            </li>
+          </ol>
           <div class="how-it-works__demo">
             <div class="win95-window" aria-hidden="true">
               <div class="win95-titlebar">
@@ -259,22 +254,40 @@ pagesRouter.get('/', (_req, res) => {
               </div>
               <div class="win95-client">
                 <div class="win95-paper">
-                  <p class="win95-label">Select frames to export</p>
-                  <ul class="win95-list">
-                    <li class="win95-list__item"><span class="win95-checkbox win95-checkbox--checked"></span>Cover</li>
-                    <li class="win95-list__item"><span class="win95-checkbox win95-checkbox--checked"></span>Agenda</li>
-                    <li class="win95-list__item"><span class="win95-checkbox"></span>Appendix</li>
-                  </ul>
-                  <div class="win95-divider"></div>
-                  <div class="win95-row">
-                    <span class="win95-avatar">G</span>
-                    <span class="win95-row__text">you@gmail.com — connected</span>
+                  <div class="win95-scene win95-scene--1">
+                    <p class="win95-label">1. Select frames to export</p>
+                    <ul class="win95-list">
+                      <li class="win95-list__item"><span class="win95-checkbox win95-checkbox--checked"></span>Cover</li>
+                      <li class="win95-list__item"><span class="win95-checkbox win95-checkbox--checked"></span>Agenda</li>
+                      <li class="win95-list__item"><span class="win95-checkbox"></span>Appendix</li>
+                    </ul>
                   </div>
-                  <div class="win95-btn">Export 2 frames</div>
+                  <div class="win95-scene win95-scene--2">
+                    <p class="win95-label">2. Sign in with Google</p>
+                    <div class="win95-row">
+                      <span class="win95-avatar">G</span>
+                      <span class="win95-row__text">you@gmail.com — connected</span>
+                    </div>
+                  </div>
+                  <div class="win95-scene win95-scene--3">
+                    <p class="win95-label">3. Pixel-perfect export</p>
+                    <div class="win95-row">
+                      <span class="win95-checkbox win95-checkbox--checked"></span>
+                      <span class="win95-row__text">2 frames exported as native Slides</span>
+                    </div>
+                    <div class="win95-btn">Open in Google Slides</div>
+                  </div>
                 </div>
               </div>
-              <div class="win95-statusbar">2 frames ready in Google Drive</div>
+              <div class="win95-statusbar">
+                <span class="win95-statusbar__text win95-statusbar__text--1">Selecting frames…</span>
+                <span class="win95-statusbar__text win95-statusbar__text--2">Signing in with Google…</span>
+                <span class="win95-statusbar__text win95-statusbar__text--3">2 frames ready in Google Drive</span>
+              </div>
             </div>
+          </div>
+          <div class="section__cta">
+            <a class="btn cta" href="${PLUGIN_URL}" target="_blank" rel="${REL_THIRD_PARTY}">Try it on Figma</a>
           </div>
         </div>
       </div>
