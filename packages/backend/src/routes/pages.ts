@@ -108,21 +108,34 @@ ${header()}
 ${opts.main}
 </main>
 ${footer()}
+<script>
+(function () {
+  var header = document.querySelector('.header');
+  if (!header) return;
+  var onScroll = function () {
+    header.classList.toggle('header--scrolled', window.scrollY > 0);
+  };
+  onScroll();
+  document.addEventListener('scroll', onScroll, { passive: true });
+})();
+</script>
 </body>
 </html>`;
 }
 
 function header(): string {
   return `<header class="header">
-  <div class="header__lead">
-    <a class="header__brand" href="/">
-      <svg class="header__brand-mark" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${brandMarkInline()}</svg>
-      Decker
-    </a>
-  </div>
-  <div class="header__actions">
-    <a class="btn tertiary" href="${COFFEE_URL}" target="_blank" rel="${REL_THIRD_PARTY}">Buy me a coffee</a>
-    <a class="btn cta" href="${PLUGIN_URL}" target="_blank" rel="${REL_THIRD_PARTY}">View on Figma</a>
+  <div class="header__inner">
+    <div class="header__lead">
+      <a class="header__brand" href="/">
+        <svg class="header__brand-mark" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${brandMarkInline()}</svg>
+        Decker
+      </a>
+    </div>
+    <div class="header__actions">
+      <a class="btn tertiary" href="${COFFEE_URL}" target="_blank" rel="${REL_THIRD_PARTY}">Buy me a coffee</a>
+      <a class="btn cta" href="${PLUGIN_URL}" target="_blank" rel="${REL_THIRD_PARTY}">View on Figma</a>
+    </div>
   </div>
 </header>`;
 }
@@ -174,7 +187,7 @@ pagesRouter.get('/', (_req, res) => {
       <p class="hero__note">Free to use. Sign in with Google only when you're ready to export.</p>
     </section>
 
-    <section class="section section--wide">
+    <section class="section">
       <h2 class="section__title section__title--center">What Decker does</h2>
       <div class="feature-grid">
         <div class="feature-card">
