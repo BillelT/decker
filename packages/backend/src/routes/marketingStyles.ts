@@ -119,7 +119,7 @@ a { color: inherit; }
 .header--scrolled { border-bottom-color: var(--b-border); }
 .header__inner {
   display: flex; align-items: center; justify-content: space-between; gap: var(--b-space-32);
-  width: 100%; max-width: 960px; margin-inline: auto; padding: var(--b-space-16) var(--b-space-24);
+  width: 100%; max-width: 1200px; margin-inline: auto; padding: var(--b-space-16) var(--b-space-24);
 }
 .header__lead { display: flex; align-items: center; gap: var(--b-space-32); }
 .header__brand {
@@ -146,7 +146,7 @@ a { color: inherit; }
 .hero__note { margin: 0; font-size: var(--b-text-sm); color: var(--b-text-faint); }
 
 /* ---------- Content sections (prose — pas un composant Billel, besoin propre à cette page) ---------- */
-.section { width: 100%; max-width: 960px; margin-inline: auto; padding: var(--b-space-64) var(--b-space-24); }
+.section { width: 100%; max-width: 1200px; margin-inline: auto; padding: var(--b-space-64) var(--b-space-24); }
 .section__title {
   margin: 0 0 var(--b-space-16); font-size: var(--b-text-3xl); font-weight: var(--b-font-bold);
   letter-spacing: var(--b-tracking-tight); color: var(--b-ink);
@@ -177,7 +177,7 @@ a { color: inherit; }
 .section--muted {
   width: 100%; max-width: none; padding: 0; background: var(--b-surface-muted);
 }
-.section--muted .section__inner { max-width: 960px; margin-inline: auto; padding: var(--b-space-64) var(--b-space-24); }
+.section--muted .section__inner { max-width: 1200px; margin-inline: auto; padding: var(--b-space-64) var(--b-space-24); }
 .how-it-works {
   display: grid; grid-template-columns: 1fr 1fr; align-items: stretch;
   column-gap: var(--b-space-48); row-gap: var(--b-space-32); margin-top: var(--b-space-32);
@@ -205,7 +205,7 @@ a { color: inherit; }
 .footer {
   width: 100%; border-top: 1px solid var(--b-border);
 }
-.footer__inner { max-width: 960px; margin-inline: auto; padding: var(--b-space-48) var(--b-space-24); }
+.footer__inner { max-width: 1200px; margin-inline: auto; padding: var(--b-space-48) var(--b-space-24); }
 .footer__top { display: flex; justify-content: space-between; gap: var(--b-space-48); margin-bottom: var(--b-space-64); flex-wrap: wrap; }
 .footer__brand { display: flex; flex-direction: column; align-items: flex-start; gap: var(--b-space-16); }
 .footer__brand-row { display: flex; align-items: center; gap: var(--b-space-12); }
