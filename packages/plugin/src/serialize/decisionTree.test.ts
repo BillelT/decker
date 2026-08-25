@@ -121,6 +121,22 @@ describe('classifyNode — shape branch', () => {
     );
     expect(d).toMatchObject({ action: 'raster', warningCode: 'CORNER_RADIUS_RASTERIZED' });
   });
+
+  it('goes native preset for a POLYGON with a supported side count (3–6)', () => {
+    for (const sides of [3, 4, 5, 6]) {
+      const d = classifyNode(
+        base({ kind: 'POLYGON', shape: { visibleFillCount: 1, fillIsGradient: false, fillIsImage: false, hasMultipleOrOffCenterStroke: false, polygonSides: sides } }),
+      );
+      expect(d).toEqual({ action: 'native-shape-preset' });
+    }
+  });
+
+  it('rasters a POLYGON with a side count Slides has no preset for (e.g. a heptagon) instead of forcing an incorrect preset', () => {
+    const d = classifyNode(
+      base({ kind: 'POLYGON', shape: { visibleFillCount: 1, fillIsGradient: false, fillIsImage: false, hasMultipleOrOffCenterStroke: false, polygonSides: 7 } }),
+    );
+    expect(d).toMatchObject({ action: 'raster', warningCode: 'POLYGON_SIDES_UNSUPPORTED' });
+  });
 });
 
 describe('classifyNode — LINE', () => {
