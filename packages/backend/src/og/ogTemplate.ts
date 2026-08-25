@@ -157,21 +157,22 @@ body {
 
 /* Badge "type de produit" façon tag 95 : mêmes biseaux que les boutons de la
    barre de titre, coins droits — Windows 95 n'a pas de coin arrondi, une
-   pilule y aurait détonné. Bleu marine sur fond clair (au lieu du noir
-   partout ailleurs sur la carte) pour qu'il se détache immédiatement comme
-   un élément de chrome distinct du texte de contenu, plutôt que de se noyer
-   dans le gris du biseau à la taille où une vignette le rend. */
+   pilule y aurait détonné. Fond blanc plutôt que le gris moyen du chrome
+   (--w95-face) : le noir dessus y gagne en contraste sans sortir de la
+   palette système (c'est le blanc des biseaux, --w95-white), alors que le
+   bleu marine essayé avant détonnait avec le reste de la carte, qui ne
+   contient aucune autre touche de couleur que l'orange de la marque. */
 .eyebrow {
   align-self: flex-start;
   padding: 10px 20px 11px;
-  background: var(--w95-face);
+  background: var(--w95-white);
   box-shadow: var(--w95-out);
   font-family: var(--chrome-font);
   font-size: 19px;
   font-weight: 700;
   letter-spacing: 0.01em;
   text-transform: uppercase;
-  color: var(--w95-navy);
+  color: #000;
 }
 /* La marque en grand plutôt qu'un aplat vide : elle équilibre la colonne de
    texte, et c'est le seul repère qui reste identifiable quand la carte est
