@@ -179,7 +179,7 @@ function footer(): string {
 pagesRouter.get('/', (_req, res) => {
   const main = `
     <section class="hero">
-      <h1 class="hero__title">Decker</h1>
+      <h1 class="hero__title">Editable &amp; pixel perfect export</h1>
       <p class="hero__lede">Export a Figma design straight to Google Slides — layout, styles, and theme preserved.</p>
       <div class="hero__actions">
         <a class="btn cta" href="${PLUGIN_URL}" target="_blank" rel="${REL_THIRD_PARTY}">View the plugin on Figma</a>
