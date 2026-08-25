@@ -38,6 +38,8 @@ export interface DecisionInput {
     fillIsImage: boolean;
     hasMultipleOrOffCenterStroke: boolean;
     radiusDecision?: RadiusDecision;
+    /** Nombre de côtés d'un POLYGON régulier (Figma `PolygonNode.pointCount`) — absent pour les autres kinds. */
+    polygonSides?: number;
   };
   line?: {
     visibleStrokeCount: number;
@@ -73,6 +75,7 @@ export type WarningCode =
   | 'BLEND_MODE_RASTERIZED'
   | 'MASK_RASTERIZED'
   | 'VECTOR_RASTERIZED'
+  | 'POLYGON_SIDES_UNSUPPORTED'
   | 'LINE_RASTERIZED'
   | 'LETTER_SPACING_LOST'
   | 'RADIUS_APPROXIMATED'
@@ -166,6 +169,17 @@ export function classifyNode(input: DecisionInput): Decision {
     }
     if (s?.hasMultipleOrOffCenterStroke) {
       return { action: 'raster', warningCode: 'EFFECT_RASTERIZED', message: 'Multiple or off-center stroke beyond tolerance — converted to an image.' };
+    }
+    // Slides n'a de préréglage natif que pour 3/4/5/6 côtés (TRIANGLE,
+    // DIAMOND, PENTAGON, HEXAGON) — au-delà, forcer un de ces préréglages
+    // dessinerait une forme visiblement différente (constaté : un heptagone
+    // ou plus rendait un gros hexagone mal centré). Rastériser reste fidèle.
+    if (input.kind === 'POLYGON' && s?.polygonSides !== undefined && ![3, 4, 5, 6].includes(s.polygonSides)) {
+      return {
+        action: 'raster',
+        warningCode: 'POLYGON_SIDES_UNSUPPORTED',
+        message: `Slides has no native preset for a ${s.polygonSides}-sided polygon (only 3–6) — converted to an image.`,
+      };
     }
     if (input.kind === 'RECTANGLE' && s?.radiusDecision) {
       const rd = s.radiusDecision;

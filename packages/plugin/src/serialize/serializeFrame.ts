@@ -367,7 +367,9 @@ function shapeInfo(node: SceneNode, kind: NodeKind): DecisionInput['shape'] {
     );
   }
 
-  return { visibleFillCount: visibleFills.length, fillIsGradient, fillIsImage, hasMultipleOrOffCenterStroke, radiusDecision };
+  const polygonSides = kind === 'POLYGON' && 'pointCount' in node ? node.pointCount : undefined;
+
+  return { visibleFillCount: visibleFills.length, fillIsGradient, fillIsImage, hasMultipleOrOffCenterStroke, radiusDecision, polygonSides };
 }
 
 // Terminaisons cosmétiques (arrondi/carré, pas de décoration) qu'on peut
@@ -510,6 +512,21 @@ function dashStyleOf(node: SceneNode): 'SOLID' | 'DASH' | 'DOT' {
   return 'SOLID';
 }
 
+/**
+ * Un POLYGON Figma régulier n'a de préréglage Slides natif que pour 3 à 6
+ * côtés — `decisionTree.ts` rastérise déjà tout le reste (voir
+ * POLYGON_SIDES_UNSUPPORTED), donc les seules valeurs qui atteignent cette
+ * fonction sont dans cette table. Un ancien bug ici mappait TOUT polygone
+ * vers HEXAGON sans regarder `pointCount` — un triangle (3 côtés) sortait
+ * donc en hexagone dans Slides, visiblement plus gros/mal formé que prévu.
+ */
+const POLYGON_SIDES_TO_SHAPE_TYPE: Record<number, IRShape['shapeType']> = {
+  3: 'TRIANGLE',
+  4: 'DIAMOND',
+  5: 'PENTAGON',
+  6: 'HEXAGON',
+};
+
 function presetShapeType(node: SceneNode): IRShape['shapeType'] {
   switch (node.type) {
     case 'ELLIPSE':
@@ -517,7 +534,7 @@ function presetShapeType(node: SceneNode): IRShape['shapeType'] {
     case 'STAR':
       return 'STAR_5';
     case 'POLYGON':
-      return 'HEXAGON'; // approximation raisonnable ; à affiner par nombre de côtés réel
+      return POLYGON_SIDES_TO_SHAPE_TYPE[node.pointCount] ?? 'HEXAGON';
     default:
       return 'RECTANGLE';
   }
