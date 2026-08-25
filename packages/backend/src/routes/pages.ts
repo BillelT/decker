@@ -3,6 +3,7 @@ import { DECKER_FAVICON, DECKER_MARK_SVG, escapeHtml } from './brand.js';
 import { MARKETING_CSS } from './marketingStyles.js';
 import { OG_IMAGE_PNG_BASE64 } from '../og/ogImageData.js';
 import { OG_IMAGE } from '../og/variants.js';
+import { DEMO_VIDEO_WEBM_BASE64 } from './demoVideoData.js';
 
 export const pagesRouter = Router();
 
@@ -43,6 +44,10 @@ const OG_IMAGE_HEIGHT = 630;
  * description, mais certains clients ne lisent que `twitter:image`.
  */
 const OG_IMAGE_URL = `${SITE_URL}/${OG_IMAGE.file}?v=${OG_IMAGE_VERSION}`;
+
+/** Même logique de version que OG_IMAGE_VERSION : incrémenter à chaque nouvel export du fichier pour casser le cache d'un an. */
+const DEMO_VIDEO_VERSION = '1';
+const DEMO_VIDEO_FILE = 'how-it-works-demo.webm';
 
 /** rel des liens sortants (convention b-signature du DS Billel) : mon domaine → noopener ; tiers → noopener noreferrer. */
 const REL_OWN = 'noopener';
@@ -117,6 +122,11 @@ ${footer()}
   };
   onScroll();
   document.addEventListener('scroll', onScroll, { passive: true });
+
+  var demoVideo = document.querySelector('.demo-video');
+  if (demoVideo && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    demoVideo.play().catch(function () {});
+  }
 })();
 </script>
 </body>
@@ -238,66 +248,22 @@ pagesRouter.get('/', (_req, res) => {
             <li class="steps__item">
               <span class="steps__num">2</span>
               <div>
-                <h3 class="steps__title">Sign in with Google</h3>
-                <p class="steps__desc">Connect your Google account — only when you're ready to export.</p>
+                <h3 class="steps__title">Matched, pixel for pixel</h3>
+                <p class="steps__desc">Every layer, font, and color is mapped precisely into native Slides objects.</p>
               </div>
             </li>
             <li class="steps__item">
               <span class="steps__num">3</span>
               <div>
-                <h3 class="steps__title">Get a pixel-perfect deck</h3>
-                <p class="steps__desc">Decker creates the presentation directly in your own Google Drive, layout and styles preserved exactly.</p>
+                <h3 class="steps__title">Get your deck</h3>
+                <p class="steps__desc">Decker creates the presentation directly in your own Google Drive, ready to edit.</p>
               </div>
             </li>
           </ol>
           <div class="how-it-works__demo">
-            <div class="win95-window" aria-hidden="true">
-              <div class="win95-titlebar">
-                <svg class="win95-titlebar__icon" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">${brandMarkInline()}</svg>
-                <span class="win95-titlebar__label">Export to Slides</span>
-                <span class="win95-titlebar__buttons">
-                  <span class="win95-titlebar__btn"><span></span></span>
-                  <span class="win95-titlebar__btn win95-titlebar__btn--box"><span></span></span>
-                  <span class="win95-titlebar__btn win95-titlebar__btn--close">
-                    <svg viewBox="0 0 16 16" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M2 2h3v2h2v2h2V4h2V2h3v3h-2v2h-2v2h2v2h2v3h-3v-2h-2v-2H7v2H5v2H2v-3h2V9h2V7H4V5H2z" fill="#000"/>
-                    </svg>
-                  </span>
-                </span>
-              </div>
-              <div class="win95-client">
-                <div class="win95-paper">
-                  <div class="win95-scene win95-scene--1">
-                    <p class="win95-label">1. Select frames to export</p>
-                    <ul class="win95-list">
-                      <li class="win95-list__item"><span class="win95-checkbox win95-checkbox--checked"></span>Cover</li>
-                      <li class="win95-list__item"><span class="win95-checkbox win95-checkbox--checked"></span>Agenda</li>
-                      <li class="win95-list__item"><span class="win95-checkbox"></span>Appendix</li>
-                    </ul>
-                  </div>
-                  <div class="win95-scene win95-scene--2">
-                    <p class="win95-label">2. Sign in with Google</p>
-                    <div class="win95-row">
-                      <span class="win95-avatar">G</span>
-                      <span class="win95-row__text">you@gmail.com — connected</span>
-                    </div>
-                  </div>
-                  <div class="win95-scene win95-scene--3">
-                    <p class="win95-label">3. Pixel-perfect export</p>
-                    <div class="win95-row">
-                      <span class="win95-checkbox win95-checkbox--checked"></span>
-                      <span class="win95-row__text">2 frames exported as native Slides</span>
-                    </div>
-                    <div class="win95-btn">Open in Google Slides</div>
-                  </div>
-                </div>
-              </div>
-              <div class="win95-statusbar">
-                <span class="win95-statusbar__text win95-statusbar__text--1">Selecting frames…</span>
-                <span class="win95-statusbar__text win95-statusbar__text--2">Signing in with Google…</span>
-                <span class="win95-statusbar__text win95-statusbar__text--3">2 frames ready in Google Drive</span>
-              </div>
-            </div>
+            <video class="demo-video" loop muted playsinline aria-label="Screen recording of Decker exporting a Figma deck to Google Slides">
+              <source src="/${DEMO_VIDEO_FILE}?v=${DEMO_VIDEO_VERSION}" type="video/webm" />
+            </video>
           </div>
           <div class="section__cta">
             <a class="btn cta" href="${PLUGIN_URL}" target="_blank" rel="${REL_THIRD_PARTY}">Try it on Figma</a>
@@ -403,6 +369,14 @@ pagesRouter.get(`/${OG_IMAGE.file}`, (_req, res) => {
     .type('png')
     .set('Cache-Control', 'public, max-age=31536000, immutable')
     .send(Buffer.from(OG_IMAGE_PNG_BASE64, 'base64'));
+});
+
+/** Même raison que la route og:image ci-dessus : pas de dossier statique devant, servi par la fonction. */
+pagesRouter.get(`/${DEMO_VIDEO_FILE}`, (_req, res) => {
+  res
+    .type('webm')
+    .set('Cache-Control', 'public, max-age=31536000, immutable')
+    .send(Buffer.from(DEMO_VIDEO_WEBM_BASE64, 'base64'));
 });
 
 pagesRouter.get('/robots.txt', (_req, res) => {
