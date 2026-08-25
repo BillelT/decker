@@ -213,31 +213,69 @@ pagesRouter.get('/', (_req, res) => {
     <section class="section section--muted">
       <div class="section__inner">
         <h2 class="section__title">How it works</h2>
-        <ol class="steps">
-          <li class="steps__item">
-            <span class="steps__num">1</span>
-            <div>
-              <h3 class="steps__title">Pick your frames</h3>
-              <p class="steps__desc">From inside Figma, select the frames you want to export.</p>
+        <div class="how-it-works">
+          <div class="how-it-works__content">
+            <ol class="steps">
+              <li class="steps__item">
+                <span class="steps__num">1</span>
+                <div>
+                  <h3 class="steps__title">Pick your frames</h3>
+                  <p class="steps__desc">From inside Figma, select the frames you want to export.</p>
+                </div>
+              </li>
+              <li class="steps__item">
+                <span class="steps__num">2</span>
+                <div>
+                  <h3 class="steps__title">Sign in with Google</h3>
+                  <p class="steps__desc">Connect your Google account — only when you're ready to export.</p>
+                </div>
+              </li>
+              <li class="steps__item">
+                <span class="steps__num">3</span>
+                <div>
+                  <h3 class="steps__title">Get your deck</h3>
+                  <p class="steps__desc">Decker creates the presentation directly in your own Google Drive — nothing is published anywhere else.</p>
+                </div>
+              </li>
+            </ol>
+            <div class="section__cta">
+              <a class="btn cta" href="${PLUGIN_URL}" target="_blank" rel="${REL_THIRD_PARTY}">Try it on Figma</a>
             </div>
-          </li>
-          <li class="steps__item">
-            <span class="steps__num">2</span>
-            <div>
-              <h3 class="steps__title">Sign in with Google</h3>
-              <p class="steps__desc">Connect your Google account — only when you're ready to export.</p>
+          </div>
+          <div class="how-it-works__demo">
+            <div class="win95-window" aria-hidden="true">
+              <div class="win95-titlebar">
+                <svg class="win95-titlebar__icon" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">${brandMarkInline()}</svg>
+                <span class="win95-titlebar__label">Export to Slides</span>
+                <span class="win95-titlebar__buttons">
+                  <span class="win95-titlebar__btn"><span></span></span>
+                  <span class="win95-titlebar__btn win95-titlebar__btn--box"><span></span></span>
+                  <span class="win95-titlebar__btn win95-titlebar__btn--close">
+                    <svg viewBox="0 0 16 16" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M2 2h3v2h2v2h2V4h2V2h3v3h-2v2h-2v2h2v2h2v3h-3v-2h-2v-2H7v2H5v2H2v-3h2V9h2V7H4V5H2z" fill="#000"/>
+                    </svg>
+                  </span>
+                </span>
+              </div>
+              <div class="win95-client">
+                <div class="win95-paper">
+                  <p class="win95-label">Select frames to export</p>
+                  <ul class="win95-list">
+                    <li class="win95-list__item"><span class="win95-checkbox win95-checkbox--checked"></span>Cover</li>
+                    <li class="win95-list__item"><span class="win95-checkbox win95-checkbox--checked"></span>Agenda</li>
+                    <li class="win95-list__item"><span class="win95-checkbox"></span>Appendix</li>
+                  </ul>
+                  <div class="win95-divider"></div>
+                  <div class="win95-row">
+                    <span class="win95-avatar">G</span>
+                    <span class="win95-row__text">you@gmail.com — connected</span>
+                  </div>
+                  <div class="win95-btn">Export 2 frames</div>
+                </div>
+              </div>
+              <div class="win95-statusbar">2 frames ready in Google Drive</div>
             </div>
-          </li>
-          <li class="steps__item">
-            <span class="steps__num">3</span>
-            <div>
-              <h3 class="steps__title">Get your deck</h3>
-              <p class="steps__desc">Decker creates the presentation directly in your own Google Drive — nothing is published anywhere else.</p>
-            </div>
-          </li>
-        </ol>
-        <div class="section__cta">
-          <a class="btn cta" href="${PLUGIN_URL}" target="_blank" rel="${REL_THIRD_PARTY}">Try it on Figma</a>
+          </div>
         </div>
       </div>
     </section>
