@@ -4,6 +4,7 @@ import { decideRadius, type RadiusDecision } from './radius.js';
 import { extractTextRuns } from './textExtract.js';
 import { mapVerticalAlignment } from './textMapping.js';
 import { shouldRasterForStroke } from './stroke.js';
+import { isFlippedTransform } from './flip.js';
 import { findUnknownPlaceholderTag, KNOWN_ROLE_TAGS, parsePlaceholderTag } from './placeholder.js';
 import type { createIdGenerator } from './ids.js';
 
@@ -29,6 +30,13 @@ function evaluateStroke(node: SceneNode): boolean {
     weight: weight === figma.mixed ? 0 : (weight as number),
     align: align as 'CENTER' | 'INSIDE' | 'OUTSIDE',
   });
+}
+
+/** Adapte le SceneNode réel vers `flip.ts::isFlippedTransform` (voir ce module pour le pourquoi). */
+function shapeIsFlipped(node: SceneNode): boolean {
+  if (!('relativeTransform' in node)) return false;
+  const [[m00, m01], [m10, m11]] = node.relativeTransform;
+  return isFlippedTransform(m00, m01, m10, m11);
 }
 
 /**
@@ -471,6 +479,7 @@ function buildNativeShape(node: SceneNode, action: 'native-shape-preset' | 'nati
     rotation: 'rotation' in node ? node.rotation : 0,
     opacity: 'opacity' in node ? node.opacity : 1,
     shapeType,
+    flipped: shapeIsFlipped(node),
     fill,
     stroke,
     placeholder: parsePlaceholderTag(node.name),

@@ -168,6 +168,17 @@ export interface IRShape extends IRBase {
     | 'STAR_5'
     | 'RIGHT_ARROW'
     | 'TEXT_BOX';
+  /**
+   * Vrai si le node Figma source porte un miroir ("Flip Horizontal"/"Flip
+   * Vertical") — `rotation` seul (un simple angle) ne peut pas l'exprimer :
+   * un node retourné puis tourné de θ° et un node tourné de θ+180° sans
+   * miroir ont le même `rotation` rapporté par Figma. Sans ce champ, le
+   * mapper appliquait une rotation pure là où Slides doit recevoir un vrai
+   * miroir — visible sur une forme asymétrique (ex. un triangle) qui
+   * ressortait retournée sur le mauvais axe. Voir `serialize/flip.ts`
+   * (plugin) et `mapper/transform.ts::rotatedTransform` (backend).
+   */
+  flipped?: boolean;
   fill?: IRPaint;
   stroke?: { color: IRColor; weightPt: number; dash: 'SOLID' | 'DASH' | 'DOT' };
 }

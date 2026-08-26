@@ -58,6 +58,20 @@ export function identityTransform(xPt: number, yPt: number): AffineTransform {
  * Spec §3.2 — Slides applique la transform autour de l'origine haut-gauche,
  * pas du centre. On compose : translation vers le centre, rotation, puis
  * translation inverse. `degCCW` suit la convention Figma (antihoraire).
+ *
+ * `flipped` (miroir Figma — "Flip Horizontal"/"Flip Vertical", voir
+ * `IRShape.flipped`) : `degCCW` seul (un angle) ne peut pas représenter un
+ * miroir — Figma rapporte `rotation = atan2(-m10, m00)` (doc officielle),
+ * qui ne dépend QUE de la 1re colonne de la matrice source et reste donc
+ * fiable même miroir actif ; seule la 2e colonne change de signe sous un
+ * miroir (déterminant négatif plutôt que +1). Par construction, la 1re
+ * colonne de cette transform (scaleX, shearY) EST déjà cette 1re colonne
+ * Figma reconvertie — donc laissée telle quelle ; miroir n'affecte que la
+ * 2e (shearX, scaleY), qu'on négocie ici en la niant. Vérifié sur le cas
+ * limite degCCW=180°+flipped (repéré sur le motif montagne de la démo
+ * "how it works", cf commit précédent) : ça donne bien un miroir horizontal
+ * pur (scaleX=-1, scaleY=1, cisaillements nuls), pas une rotation 180°
+ * (scaleX=scaleY=-1) que l'ancien code produisait faute de ce paramètre.
  */
 export function rotatedTransform(
   xPt: number,
@@ -65,21 +79,26 @@ export function rotatedTransform(
   wPt: number,
   hPt: number,
   degCCW: number,
+  flipped = false,
 ): AffineTransform {
-  if (degCCW === 0) return identityTransform(xPt, yPt);
+  if (degCCW === 0 && !flipped) return identityTransform(xPt, yPt);
 
   const t = (-degCCW * Math.PI) / 180; // Figma CCW → Slides CW
   const cos = Math.cos(t);
   const sin = Math.sin(t);
+  const scaleX = cos;
+  const shearY = sin;
+  const shearX = flipped ? sin : -sin;
+  const scaleY = flipped ? -cos : cos;
   const cx = xPt + wPt / 2;
   const cy = yPt + hPt / 2;
   return {
-    scaleX: cos,
-    scaleY: cos,
-    shearX: -sin,
-    shearY: sin,
-    translateX: roundForSerialization(cx - cos * (wPt / 2) + sin * (hPt / 2)),
-    translateY: roundForSerialization(cy - sin * (wPt / 2) - cos * (hPt / 2)),
+    scaleX,
+    scaleY,
+    shearX,
+    shearY,
+    translateX: roundForSerialization(cx - scaleX * (wPt / 2) - shearX * (hPt / 2)),
+    translateY: roundForSerialization(cy - shearY * (wPt / 2) - scaleY * (hPt / 2)),
     unit: 'PT',
   };
 }

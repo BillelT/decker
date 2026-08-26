@@ -398,6 +398,11 @@
     return deviation > STROKE_OFFCENTER_TOLERANCE_PT;
   }
 
+  // src/serialize/flip.ts
+  function isFlippedTransform(m00, m01, m10, m11) {
+    return m00 * m11 - m01 * m10 < 0;
+  }
+
   // src/serialize/placeholder.ts
   var TAG_PATTERN = /^\s*\[\[\s*([a-zA-Z]+)\s*(?::\s*([^\]]+))?\]\]/;
   var ROLE_ALIASES = {
@@ -466,6 +471,11 @@
       weight: weight === figma.mixed ? 0 : weight,
       align
     });
+  }
+  function shapeIsFlipped(node) {
+    if (!("relativeTransform" in node)) return false;
+    const [[m00, m01], [m10, m11]] = node.relativeTransform;
+    return isFlippedTransform(m00, m01, m10, m11);
   }
   async function serializeFrame(frame, ctx) {
     const elements = [];
@@ -786,6 +796,7 @@
       rotation: "rotation" in node ? node.rotation : 0,
       opacity: "opacity" in node ? node.opacity : 1,
       shapeType,
+      flipped: shapeIsFlipped(node),
       fill,
       stroke,
       placeholder: parsePlaceholderTag(node.name)

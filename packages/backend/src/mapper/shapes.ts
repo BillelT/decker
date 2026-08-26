@@ -29,7 +29,7 @@ export function mapShape(
         elementProperties: {
           pageObjectId,
           size: { width: pt(wPt), height: pt(hPt) },
-          transform: rotatedTransform(xPt, yPt, wPt, hPt, shape.rotation),
+          transform: rotatedTransform(xPt, yPt, wPt, hPt, shape.rotation, shape.flipped ?? false),
         },
       },
     },

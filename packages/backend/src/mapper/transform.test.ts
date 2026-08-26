@@ -96,6 +96,63 @@ describe('rotatedTransform', () => {
     expect((Math.min(...xs) + Math.max(...xs)) / 2).toBeCloseTo(x + w / 2, 2);
     expect((Math.min(...ys) + Math.max(...ys)) / 2).toBeCloseTo(y + h / 2, 2);
   });
+
+  describe('flipped (Figma "Flip Horizontal"/"Flip Vertical")', () => {
+    // Bug reproduced on the "how it works" demo's mountain motif: a
+    // triangle flipped horizontally in Figma (which Figma reports as
+    // rotation=180°, since a single angle can't express a mirror) came out
+    // rotated 180° in Slides — visually a DOUBLE flip (both axes), not the
+    // single horizontal flip the artist actually made.
+
+    it('at 180°, produces a pure horizontal mirror — not a 180° rotation', () => {
+      const t = rotatedTransform(0, 0, 100, 40, 180, true);
+      expect(t.scaleX).toBeCloseTo(-1, 5);
+      expect(t.scaleY).toBeCloseTo(1, 5);
+      expect(t.shearX).toBeCloseTo(0, 5);
+      expect(t.shearY).toBeCloseTo(0, 5);
+    });
+
+    it('at 0°, produces a pure vertical mirror', () => {
+      const t = rotatedTransform(0, 0, 100, 40, 0, true);
+      expect(t.scaleX).toBeCloseTo(1, 5);
+      expect(t.scaleY).toBeCloseTo(-1, 5);
+      expect(t.shearX).toBeCloseTo(0, 5);
+      expect(t.shearY).toBeCloseTo(0, 5);
+    });
+
+    it('at 180°, swaps left/right edge midpoints (a real mirror, not a same-point rotation)', () => {
+      const x = 10;
+      const y = 20;
+      const w = 100;
+      const h = 40;
+      const t = rotatedTransform(x, y, w, h, 180, true);
+      const leftMid = applyAffine(t, 0, h / 2);
+      const rightMid = applyAffine(t, w, h / 2);
+      // A horizontal mirror sends the local left-edge midpoint to the
+      // absolute RIGHT edge, and vice-versa — top edge stays on top.
+      expect(leftMid.x).toBeCloseTo(x + w, 2);
+      expect(leftMid.y).toBeCloseTo(y + h / 2, 2);
+      expect(rightMid.x).toBeCloseTo(x, 2);
+      expect(rightMid.y).toBeCloseTo(y + h / 2, 2);
+    });
+
+    it.each([15, 45, 90, -30, 180])('keeps the rectangle center fixed at %s degrees even when flipped', (deg) => {
+      const x = 10;
+      const y = 20;
+      const w = 100;
+      const h = 40;
+      const t = rotatedTransform(x, y, w, h, deg, true);
+      const center = applyAffine(t, w / 2, h / 2);
+      expect(center.x).toBeCloseTo(x + w / 2, 2);
+      expect(center.y).toBeCloseTo(y + h / 2, 2);
+    });
+
+    it('leaves the non-flipped transform at the same angle untouched (regression safety)', () => {
+      const withoutFlipArg = rotatedTransform(10, 20, 100, 40, 37);
+      const explicitlyNotFlipped = rotatedTransform(10, 20, 100, 40, 37, false);
+      expect(withoutFlipArg).toEqual(explicitlyNotFlipped);
+    });
+  });
 });
 
 describe('applyTextInset', () => {
