@@ -153,7 +153,7 @@ body {
 }
 .paper {
   height: 100%;
-  padding: 48px 0 48px 56px;
+  padding: 48px 32px 48px 56px;
   display: flex;
   align-items: center;
   gap: 40px;
@@ -164,7 +164,7 @@ body {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 50px;
+  gap: 28px;
 }
 
 /* Badge "type de produit" façon tag 95 : mêmes biseaux que les boutons de la
@@ -193,13 +193,19 @@ body {
    statique. Capture fournie directement (assets/tool-preview-source.png,
    voir toolPreviewData.ts) cadrée sur le seul panneau du plugin — pas sa
    propre fenêtre 95 ni le canvas Figma autour, qui auraient fait un chrome
-   dans le chrome. Essai : sans mat/biseau autour (le fond de la capture se
-   fondait dans le crème --b-paper d'origine) — le papier passe en blanc
-   pur juste au-dessus à la place, pour voir si le contraste blanc/crème de
-   la capture suffit sans avoir besoin d'un cadre. */
+   dans le chrome. Mat --w95-face + biseau --w95-out + une bordure pleine
+   par-dessus (le blanc pur du papier ne suffisait pas à démarquer le fond
+   crème de la capture, il fallait un cadre franc) ; padding généreux
+   (14px) pour que ce cadre soit assumé plutôt qu'un liseré. Petite marge
+   droite sur .paper (32px, contre 0 avant) pour que le cadre ne touche
+   plus le bord de la carte — il respire un peu plus vers le centre. */
 .paper__preview {
-  width: 560px;
+  width: 610px;
   flex: none;
+  padding: 14px;
+  background: var(--w95-face);
+  border: 2px solid var(--w95-dark);
+  box-shadow: var(--w95-out);
 }
 .paper__preview img { display: block; width: 100%; height: auto; }
 
@@ -216,7 +222,7 @@ body {
 }
 
 .subline {
-  max-width: 460px;
+  max-width: 420px;
   font-family: var(--chrome-font);
   font-size: 28px;
   font-weight: 400;
@@ -273,7 +279,7 @@ export function renderOgImageHtml(content: OgImageContent): string {
         <p class="subline">${content.subline}</p>
       </div>
       <div class="paper__preview">
-        <img src="data:image/png;base64,${TOOL_PREVIEW_PNG_BASE64}" width="560" height="370" alt="" />
+        <img src="data:image/png;base64,${TOOL_PREVIEW_PNG_BASE64}" width="582" height="385" alt="" />
       </div>
     </div>
   </div>
