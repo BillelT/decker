@@ -43,6 +43,7 @@
 import { CABINET_GROTESK_BASE64 } from '../routes/fontData.js';
 import { DECKER_MARK_SVG } from '../routes/brand.js';
 import { TOOL_PREVIEW_PNG_BASE64 } from './toolPreviewData.js';
+import { W95FA_BASE64 } from './w95faFontData.js';
 import type { OgImageContent } from './variants.js';
 
 const CSS = `
@@ -50,6 +51,18 @@ const CSS = `
   font-family: "Cabinet Grotesk";
   src: url("data:font/woff2;base64,${CABINET_GROTESK_BASE64}") format("woff2-variations");
   font-weight: 400 900;
+  font-style: normal;
+}
+
+/* Recréation vectorielle de MS Sans Serif (assets/w95fa, SIL OFL 1.1) —
+   contrairement à Tahoma/MS Sans Serif (qui n'existent pas sur la machine
+   de rendu et retombaient sur Liberation Sans, un grotesk générique sans
+   rapport avec Windows 95), celle-ci est inlinée comme Cabinet Grotesk et
+   donne le vrai rendu pixel-art du chrome système. */
+@font-face {
+  font-family: "W95FA";
+  src: url("data:font/woff2;base64,${W95FA_BASE64}") format("woff2");
+  font-weight: 400 700;
   font-style: normal;
 }
 
@@ -72,9 +85,7 @@ const CSS = `
   --b-paper: #fff9f5;
   --b-muted: #575757;
   --b-accent: #f06800;
-  /* Police de chrome : MS Sans Serif/Tahoma n'existent pas sur la machine de
-     rendu, Liberation Sans (métriques Arial) est le substitut le plus proche. */
-  --chrome-font: "Liberation Sans", Tahoma, "MS Sans Serif", Arial, sans-serif;
+  --chrome-font: "W95FA", "Liberation Sans", Tahoma, "MS Sans Serif", Arial, sans-serif;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -179,23 +190,24 @@ body {
 /* Aperçu du produit plutôt que la marque en grand : montrer un moment du
    flow (le panneau du plugin en train de préparer un export, deux frames
    déjà marquées [Slides Ready] derrière lui) parle plus qu'une icône
-   statique. En grand (620px, pas 480 comme au premier essai) et sans
-   padding — bord droit collé à celui du papier, marge droite du .paper
-   retirée en conséquence — pour que ça se lise comme une fenêtre qui déborde
-   du cadre plutôt qu'une vignette flottant dans la marge. Biseaux --w95-out
-   repris du reste du chrome, appliqués à même l'image (pas de padding) pour
-   qu'ils dessinent un cadre plutôt qu'un espace vide autour. */
+   statique. Capture fournie directement (assets/tool-preview-source.png,
+   voir toolPreviewData.ts), en grand (640px) et sans padding — bord droit
+   collé à celui du papier, marge droite du .paper retirée en conséquence —
+   pour que ça se lise comme une fenêtre qui déborde du cadre plutôt qu'une
+   vignette flottant dans la marge. Biseaux --w95-out repris du reste du
+   chrome, appliqués à même l'image (pas de padding) pour qu'ils dessinent
+   un cadre plutôt qu'un espace vide autour. */
 .paper__preview {
-  width: 620px;
+  width: 640px;
   flex: none;
   box-shadow: var(--w95-out);
 }
 .paper__preview img { display: block; width: 100%; height: auto; }
 
-/* Essai : accroche composée dans la police de chrome système (le même
-   empilement Tahoma/MS Sans Serif que la barre de titre) plutôt que Cabinet
-   Grotesk, pour comparer le rendu "vraie fenêtre 95" au wordmark de marque
-   habituel. */
+/* Accroche composée dans la police de chrome système (W95FA, la même que
+   la barre de titre) plutôt que Cabinet Grotesk — plus cohérent avec le
+   parti pris "vraie fenêtre 95" du reste de la carte que le wordmark de
+   marque habituel. */
 .headline {
   font-family: var(--chrome-font);
   font-size: 92px;
@@ -261,7 +273,7 @@ export function renderOgImageHtml(content: OgImageContent): string {
         <p class="subline">${content.subline}</p>
       </div>
       <div class="paper__preview">
-        <img src="data:image/png;base64,${TOOL_PREVIEW_PNG_BASE64}" width="620" height="317" alt="" />
+        <img src="data:image/png;base64,${TOOL_PREVIEW_PNG_BASE64}" width="640" height="362" alt="" />
       </div>
     </div>
   </div>
