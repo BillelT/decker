@@ -155,7 +155,7 @@ body {
   height: 100%;
   padding: 48px 0 48px 56px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 40px;
   background: var(--b-paper);
 }
@@ -164,7 +164,7 @@ body {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 50px;
 }
 
 /* Badge "type de produit" façon tag 95 : mêmes biseaux que les boutons de la
@@ -193,15 +193,15 @@ body {
    statique. Capture fournie directement (assets/tool-preview-source.png,
    voir toolPreviewData.ts) cadrée sur le seul panneau du plugin — pas sa
    propre fenêtre 95 ni le canvas Figma autour, qui auraient fait un chrome
-   dans le chrome. En grand (620px) et sans padding — bord droit collé à
-   celui du papier, marge droite du .paper retirée en conséquence — pour
-   que ça se lise comme une fenêtre qui déborde du cadre plutôt qu'une
-   vignette flottant dans la marge. Biseaux --w95-out repris du reste du
-   chrome, appliqués à même l'image (pas de padding) pour qu'ils dessinent
-   un cadre plutôt qu'un espace vide autour. */
+   dans le chrome. Fond --w95-face + biseaux --w95-out en cadre (pas
+   appliqués à même l'image comme au premier essai) : le fond de la capture
+   est le même crème que celui du papier, un cadre à même l'image s'y
+   fondait complètement — il fallait un mat qui contraste avec les deux. */
 .paper__preview {
-  width: 620px;
+  width: 560px;
   flex: none;
+  padding: 10px;
+  background: var(--w95-face);
   box-shadow: var(--w95-out);
 }
 .paper__preview img { display: block; width: 100%; height: auto; }
@@ -212,16 +212,16 @@ body {
    wordmark de marque habituel. */
 .headline {
   font-family: var(--chrome-font);
-  font-size: 92px;
+  font-size: 118px;
   font-weight: 700;
   line-height: 1.05;
   letter-spacing: -0.01em;
 }
 
 .subline {
-  max-width: 560px;
+  max-width: 460px;
   font-family: var(--chrome-font);
-  font-size: 26px;
+  font-size: 28px;
   font-weight: 400;
   line-height: 1.5;
   letter-spacing: 0.003em;
@@ -276,7 +276,7 @@ export function renderOgImageHtml(content: OgImageContent): string {
         <p class="subline">${content.subline}</p>
       </div>
       <div class="paper__preview">
-        <img src="data:image/png;base64,${TOOL_PREVIEW_PNG_BASE64}" width="620" height="410" alt="" />
+        <img src="data:image/png;base64,${TOOL_PREVIEW_PNG_BASE64}" width="540" height="357" alt="" />
       </div>
     </div>
   </div>
