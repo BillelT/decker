@@ -142,10 +142,10 @@ body {
 }
 .paper {
   height: 100%;
-  padding: 48px 56px;
+  padding: 48px 0 48px 56px;
   display: flex;
   align-items: center;
-  gap: 48px;
+  gap: 40px;
   background: var(--b-paper);
 }
 .paper__text {
@@ -177,17 +177,17 @@ body {
   color: #000;
 }
 /* Aperçu du produit plutôt que la marque en grand : montrer un moment du
-   flow (le panneau du plugin en train de préparer un export) parle plus
-   qu'une icône statique, et équilibre la colonne de texte comme le faisait
-   la marque avant elle. Recadrée serrée sur la fenêtre du plugin (pas de
-   marge grise du canvas Figma), d'où le ratio proche de 2:1 plutôt que
-   carré. Biseaux --w95-out repris du reste du chrome pour que l'aperçu se
-   lise comme un élément posé sur le bureau, pas une image collée. */
+   flow (le panneau du plugin en train de préparer un export, deux frames
+   déjà marquées [Slides Ready] derrière lui) parle plus qu'une icône
+   statique. En grand (620px, pas 480 comme au premier essai) et sans
+   padding — bord droit collé à celui du papier, marge droite du .paper
+   retirée en conséquence — pour que ça se lise comme une fenêtre qui déborde
+   du cadre plutôt qu'une vignette flottant dans la marge. Biseaux --w95-out
+   repris du reste du chrome, appliqués à même l'image (pas de padding) pour
+   qu'ils dessinent un cadre plutôt qu'un espace vide autour. */
 .paper__preview {
-  width: 480px;
+  width: 620px;
   flex: none;
-  padding: 6px;
-  background: var(--w95-face);
   box-shadow: var(--w95-out);
 }
 .paper__preview img { display: block; width: 100%; height: auto; }
@@ -261,7 +261,7 @@ export function renderOgImageHtml(content: OgImageContent): string {
         <p class="subline">${content.subline}</p>
       </div>
       <div class="paper__preview">
-        <img src="data:image/png;base64,${TOOL_PREVIEW_PNG_BASE64}" width="480" height="246" alt="" />
+        <img src="data:image/png;base64,${TOOL_PREVIEW_PNG_BASE64}" width="620" height="317" alt="" />
       </div>
     </div>
   </div>
