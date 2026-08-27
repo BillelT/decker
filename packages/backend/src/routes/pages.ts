@@ -25,7 +25,7 @@ const COFFEE_URL = 'https://buymeacoffee.com/billelt';
  * n'est pas purgeable à la main. C'est aussi ce qui autorise le
  * `Cache-Control: immutable` d'un an posé plus bas.
  */
-const OG_IMAGE_VERSION = '1';
+const OG_IMAGE_VERSION = '2';
 
 /** Dimensions du PNG généré (cf. src/og/render.ts) — annoncées dans les
  *  balises `og:image:width/height` pour que les plateformes réservent la
