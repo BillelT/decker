@@ -82,7 +82,7 @@ const CSS = `
     inset -4px -4px var(--w95-light), inset 4px 4px var(--w95-dark);
 
   --b-ink: #120f0d;
-  --b-paper: #fff9f5;
+  --b-paper: #ffffff;
   --b-muted: #575757;
   --b-accent: #f06800;
   --chrome-font: "W95FA", "Liberation Sans", Tahoma, "MS Sans Serif", Arial, sans-serif;
@@ -155,7 +155,7 @@ body {
   height: 100%;
   padding: 48px 0 48px 56px;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 40px;
   background: var(--b-paper);
 }
@@ -193,16 +193,13 @@ body {
    statique. Capture fournie directement (assets/tool-preview-source.png,
    voir toolPreviewData.ts) cadrée sur le seul panneau du plugin — pas sa
    propre fenêtre 95 ni le canvas Figma autour, qui auraient fait un chrome
-   dans le chrome. Fond --w95-face + biseaux --w95-out en cadre (pas
-   appliqués à même l'image comme au premier essai) : le fond de la capture
-   est le même crème que celui du papier, un cadre à même l'image s'y
-   fondait complètement — il fallait un mat qui contraste avec les deux. */
+   dans le chrome. Essai : sans mat/biseau autour (le fond de la capture se
+   fondait dans le crème --b-paper d'origine) — le papier passe en blanc
+   pur juste au-dessus à la place, pour voir si le contraste blanc/crème de
+   la capture suffit sans avoir besoin d'un cadre. */
 .paper__preview {
   width: 560px;
   flex: none;
-  padding: 10px;
-  background: var(--w95-face);
-  box-shadow: var(--w95-out);
 }
 .paper__preview img { display: block; width: 100%; height: auto; }
 
@@ -276,7 +273,7 @@ export function renderOgImageHtml(content: OgImageContent): string {
         <p class="subline">${content.subline}</p>
       </div>
       <div class="paper__preview">
-        <img src="data:image/png;base64,${TOOL_PREVIEW_PNG_BASE64}" width="540" height="357" alt="" />
+        <img src="data:image/png;base64,${TOOL_PREVIEW_PNG_BASE64}" width="560" height="370" alt="" />
       </div>
     </div>
   </div>
