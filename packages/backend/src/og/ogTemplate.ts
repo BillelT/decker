@@ -191,23 +191,25 @@ body {
    flow (le panneau du plugin en train de préparer un export, deux frames
    déjà marquées [Slides Ready] derrière lui) parle plus qu'une icône
    statique. Capture fournie directement (assets/tool-preview-source.png,
-   voir toolPreviewData.ts), en grand (640px) et sans padding — bord droit
-   collé à celui du papier, marge droite du .paper retirée en conséquence —
-   pour que ça se lise comme une fenêtre qui déborde du cadre plutôt qu'une
+   voir toolPreviewData.ts) cadrée sur le seul panneau du plugin — pas sa
+   propre fenêtre 95 ni le canvas Figma autour, qui auraient fait un chrome
+   dans le chrome. En grand (620px) et sans padding — bord droit collé à
+   celui du papier, marge droite du .paper retirée en conséquence — pour
+   que ça se lise comme une fenêtre qui déborde du cadre plutôt qu'une
    vignette flottant dans la marge. Biseaux --w95-out repris du reste du
    chrome, appliqués à même l'image (pas de padding) pour qu'ils dessinent
    un cadre plutôt qu'un espace vide autour. */
 .paper__preview {
-  width: 640px;
+  width: 620px;
   flex: none;
   box-shadow: var(--w95-out);
 }
 .paper__preview img { display: block; width: 100%; height: auto; }
 
-/* Accroche composée dans la police de chrome système (W95FA, la même que
-   la barre de titre) plutôt que Cabinet Grotesk — plus cohérent avec le
-   parti pris "vraie fenêtre 95" du reste de la carte que le wordmark de
-   marque habituel. */
+/* Accroche et phrase composées dans la police de chrome système (W95FA, la
+   même que la barre de titre) plutôt que Cabinet Grotesk — plus cohérent
+   avec le parti pris "vraie fenêtre 95" du reste de la carte que le
+   wordmark de marque habituel. */
 .headline {
   font-family: var(--chrome-font);
   font-size: 92px;
@@ -218,8 +220,9 @@ body {
 
 .subline {
   max-width: 560px;
-  font-size: 31px;
-  font-weight: 500;
+  font-family: var(--chrome-font);
+  font-size: 26px;
+  font-weight: 400;
   line-height: 1.5;
   letter-spacing: 0.003em;
   color: var(--b-muted);
@@ -273,7 +276,7 @@ export function renderOgImageHtml(content: OgImageContent): string {
         <p class="subline">${content.subline}</p>
       </div>
       <div class="paper__preview">
-        <img src="data:image/png;base64,${TOOL_PREVIEW_PNG_BASE64}" width="640" height="362" alt="" />
+        <img src="data:image/png;base64,${TOOL_PREVIEW_PNG_BASE64}" width="620" height="410" alt="" />
       </div>
     </div>
   </div>
