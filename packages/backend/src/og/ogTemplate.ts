@@ -153,7 +153,7 @@ body {
 }
 .paper {
   height: 100%;
-  padding: 48px;
+  padding: 24px;
   display: flex;
   align-items: center;
   gap: 40px;
@@ -193,19 +193,19 @@ body {
    statique. Capture fournie directement (assets/tool-preview-source.png,
    voir toolPreviewData.ts) cadrée sur le seul panneau du plugin — pas sa
    propre fenêtre 95 ni le canvas Figma autour, qui auraient fait un chrome
-   dans le chrome. Mat --w95-face + biseau --w95-out + une bordure pleine
+   dans le chrome. Mat --w95-face + biseau --w95-out + une fine bordure
    par-dessus (le blanc pur du papier ne suffisait pas à démarquer le fond
-   crème de la capture, il fallait un cadre franc) ; padding généreux
-   (14px) pour que ce cadre soit assumé plutôt qu'un liseré. .paper a
-   maintenant le même padding des quatre côtés (48px) — marge gauche du
-   bloc de texte = marge droite du cadre, les deux colonnes respirent
-   pareil par rapport aux bords de la carte. */
+   crème de la capture, il fallait un cadre) — revu à la baisse (1px, 8px
+   de padding) après un premier essai trop épais. .paper a le même padding
+   des quatre côtés (24px) — marge gauche du bloc de texte = marge droite
+   du cadre, les deux colonnes respirent pareil par rapport aux bords de
+   la carte. */
 .paper__preview {
   width: 610px;
   flex: none;
-  padding: 14px;
+  padding: 8px;
   background: var(--w95-face);
-  border: 2px solid var(--w95-dark);
+  border: 1px solid var(--w95-dark);
   box-shadow: var(--w95-out);
 }
 .paper__preview img { display: block; width: 100%; height: auto; }
@@ -278,7 +278,7 @@ export function renderOgImageHtml(content: OgImageContent): string {
         <p class="subline">${content.subline}</p>
       </div>
       <div class="paper__preview">
-        <img src="data:image/png;base64,${TOOL_PREVIEW_PNG_BASE64}" width="582" height="385" alt="" />
+        <img src="data:image/png;base64,${TOOL_PREVIEW_PNG_BASE64}" width="592" height="391" alt="" />
       </div>
     </div>
   </div>
