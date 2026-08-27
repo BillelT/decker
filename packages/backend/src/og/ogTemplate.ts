@@ -27,14 +27,14 @@
  *   1080x600 (marges de 60px), les bords pouvant être rognés selon la
  *   plateforme — seul le chrome de la fenêtre y déborde, et il ne porte
  *   aucune information ;
- * - typo volumineuse (80px pour l'accroche, 28px pour la phrase dessous) :
+ * - typo volumineuse (92px pour l'accroche, 31px pour la phrase dessous) :
  *   la carte est vue en vignette, tout ce qui passe sous ~24px n'y est plus
  *   qu'une texture ;
  * - texte noir sur papier crème, contraste maximal ;
  * - peu d'éléments dans la zone de contenu : un badge "type de produit", le
- *   nom du produit, la phrase qui le précise, la marque. Une carte de
- *   partage est lue en une seconde et n'est pas cliquable élément par
- *   élément — tout ce qui s'y ajoute au-delà ne fait que diluer l'accroche ;
+ *   nom du produit, la phrase qui le précise, un aperçu du produit. Une
+ *   carte de partage est lue en une seconde et n'est pas cliquable élément
+ *   par élément — tout ce qui s'y ajoute au-delà ne fait que diluer l'accroche ;
  * - une seule carte pour tout le site (voir variants.ts) : les pages
  *   légales (privacy, terms) n'ont pas de propos propre à raconter en
  *   vignette, les distinguer n'aurait décrit que leur titre, pas le produit.
@@ -42,6 +42,7 @@
 
 import { CABINET_GROTESK_BASE64 } from '../routes/fontData.js';
 import { DECKER_MARK_SVG } from '../routes/brand.js';
+import { TOOL_PREVIEW_PNG_BASE64 } from './toolPreviewData.js';
 import type { OgImageContent } from './variants.js';
 
 const CSS = `
@@ -152,7 +153,7 @@ body {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 24px;
 }
 
 /* Badge "type de produit" façon tag 95 : mêmes biseaux que les boutons de la
@@ -169,29 +170,46 @@ body {
   background: var(--w95-face);
   box-shadow: var(--w95-out);
   font-family: var(--chrome-font);
-  font-size: 19px;
+  font-size: 20px;
   font-weight: 700;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
   color: #000;
 }
-/* La marque en grand plutôt qu'un aplat vide : elle équilibre la colonne de
-   texte, et c'est le seul repère qui reste identifiable quand la carte est
-   rognée au carré par une plateforme. */
-.paper__mark { width: 216px; height: 216px; flex: none; display: block; }
+/* Aperçu du produit plutôt que la marque en grand : montrer un moment du
+   flow (le panneau du plugin en train de préparer un export) parle plus
+   qu'une icône statique, et équilibre la colonne de texte comme le faisait
+   la marque avant elle. Recadrée serrée sur la fenêtre du plugin (pas de
+   marge grise du canvas Figma), d'où le ratio proche de 2:1 plutôt que
+   carré. Biseaux --w95-out repris du reste du chrome pour que l'aperçu se
+   lise comme un élément posé sur le bureau, pas une image collée. */
+.paper__preview {
+  width: 480px;
+  flex: none;
+  padding: 6px;
+  background: var(--w95-face);
+  box-shadow: var(--w95-out);
+}
+.paper__preview img { display: block; width: 100%; height: auto; }
 
+/* Essai : accroche composée dans la police de chrome système (le même
+   empilement Tahoma/MS Sans Serif que la barre de titre) plutôt que Cabinet
+   Grotesk, pour comparer le rendu "vraie fenêtre 95" au wordmark de marque
+   habituel. */
 .headline {
-  font-size: 84px;
-  font-weight: 800;
-  line-height: 1.02;
-  letter-spacing: -0.035em;
+  font-family: var(--chrome-font);
+  font-size: 92px;
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
 }
 
 .subline {
   max-width: 560px;
-  font-size: 28px;
+  font-size: 31px;
   font-weight: 500;
-  line-height: 1.4;
+  line-height: 1.5;
+  letter-spacing: 0.003em;
   color: var(--b-muted);
 }
 
@@ -213,7 +231,6 @@ body {
 
 /** HTML autonome (police et images incluses) prêt à être rasterisé. */
 export function renderOgImageHtml(content: OgImageContent): string {
-  const markInline = DECKER_MARK_SVG.replace(/^<svg/, '<svg class="paper__mark"');
   const iconInline = DECKER_MARK_SVG.replace(/^<svg/, '<svg class="titlebar__icon"');
   return `<!doctype html>
 <html lang="en">
@@ -243,7 +260,9 @@ export function renderOgImageHtml(content: OgImageContent): string {
         <h1 class="headline">${content.headline}</h1>
         <p class="subline">${content.subline}</p>
       </div>
-      ${markInline}
+      <div class="paper__preview">
+        <img src="data:image/png;base64,${TOOL_PREVIEW_PNG_BASE64}" width="480" height="246" alt="" />
+      </div>
     </div>
   </div>
   <div class="statusbar">decker.billeltighidet.fr</div>

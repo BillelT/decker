@@ -31,6 +31,6 @@ export const OG_IMAGE = {
     eyebrow: 'Figma plugin',
     windowTitle: 'Decker.exe',
     headline: 'Decker',
-    subline: 'Pixel-perfect, editable decks and templates — from Figma to Google Slides.',
+    subline: 'Pixel-perfect, editable decks and templates, from Figma to Google Slides.',
   },
 } as const satisfies { file: string; alt: string; content: OgImageContent };
