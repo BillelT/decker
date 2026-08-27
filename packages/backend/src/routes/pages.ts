@@ -7,7 +7,7 @@ import { DEMO_VIDEO_WEBM_BASE64 } from './demoVideoData.js';
 
 export const pagesRouter = Router();
 
-const LAST_UPDATED = 'August 6, 2026';
+const LAST_UPDATED = 'August 27, 2026';
 const CONTACT_EMAIL = 'b.tighidet0@gmail.com';
 /** Absolue plutôt que relative sur tous les liens vers /privacy et /terms : le check Google Branding ("App Homepage" guidance) compare cette URL telle quelle à celle configurée sur l'écran de consentement OAuth — une URL relative comme "/privacy" risque de ne pas matcher. */
 const SITE_URL = 'https://decker.billeltighidet.fr';
@@ -312,10 +312,25 @@ pagesRouter.get('/privacy', (_req, res) => {
         </ul>
 
         <h2 class="section__title">What Decker doesn't do</h2>
-        <p>Decker does not collect any data for analytics, advertising, or resale purposes. No third party has access to your data. The only processing performed is the strict technical minimum described below, needed to run the export you request.</p>
+        <p>Decker does not collect any data for analytics, advertising, or resale purposes. Decker does not sell or transfer Google user data to third parties, and does not use Google user data to train or improve AI/ML models, whether generalized or personalized. No third party has access to your data. The only processing performed is the strict technical minimum described below, needed to run the export you request.</p>
 
-        <h2 class="section__title">Data retention</h2>
-        <p>Images exported from Figma are hosted only for the duration of the export, then automatically deleted once the presentation is created (within one hour at most). Your Google refresh token is stored encrypted so you don't have to sign in again for every export; you can revoke it at any time from <a class="text-link" href="https://myaccount.google.com/permissions" target="_blank" rel="${REL_THIRD_PARTY}">myaccount.google.com/permissions</a>.</p>
+        <h2 class="section__title">How Decker protects your data</h2>
+        <ul>
+          <li><strong>Encryption in transit</strong> — every connection between the plugin, Decker's backend, and Google's APIs is made over HTTPS/TLS. Decker never transmits your credentials or tokens over an unencrypted channel.</li>
+          <li><strong>Encryption at rest</strong> — your Google refresh token is never stored in plain text. It's encrypted with AES-256-GCM before being written to storage, using a secret key that only Decker's backend holds.</li>
+          <li><strong>No standing access to your files</strong> — Decker only touches the Google Slides presentation it creates for you (via the <code>drive.file</code> scope). It cannot browse, read, or modify any other file in your Drive.</li>
+          <li><strong>Signed, time-limited URLs</strong> — images generated during an export are served through short-lived signed URLs (see retention below) so that they can't be accessed after their purpose is served.</li>
+          <li><strong>Access control</strong> — only Decker's backend service can decrypt your refresh token or access exported assets; there is no admin dashboard or bulk export of user data.</li>
+        </ul>
+
+        <h2 class="section__title">Data retention and deletion</h2>
+        <ul>
+          <li><strong>Google refresh token and account email</strong> — kept encrypted for up to 90 days of inactivity so you don't have to sign in again for every export, and deleted immediately when you sign out of the plugin or disconnect Decker from <a class="text-link" href="https://myaccount.google.com/permissions" target="_blank" rel="${REL_THIRD_PARTY}">myaccount.google.com/permissions</a>. An inactive session expires and is deleted automatically after 90 days.</li>
+          <li><strong>Exported images</strong> — hosted only for the duration of the export and automatically deleted within at most 1 hour of being generated, whether or not the export succeeds.</li>
+          <li><strong>Export job status</strong> (progress/result of a single export) — automatically deleted after 24 hours.</li>
+          <li><strong>Sign-in state</strong> (temporary OAuth data used only while you're completing the Google sign-in flow) — automatically deleted after 10 minutes.</li>
+          <li>You can request deletion of any data Decker holds about you at any time, in addition to disconnecting Decker from your Google account — see Contact below.</li>
+        </ul>
 
         <h2 class="section__title">Contact</h2>
         <p>For any question about your data or a deletion request, write to <a class="text-link" href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a>.</p>
