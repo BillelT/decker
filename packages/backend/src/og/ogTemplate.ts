@@ -153,7 +153,7 @@ body {
 }
 .paper {
   height: 100%;
-  padding: 48px 32px 48px 56px;
+  padding: 48px;
   display: flex;
   align-items: center;
   gap: 40px;
@@ -196,9 +196,10 @@ body {
    dans le chrome. Mat --w95-face + biseau --w95-out + une bordure pleine
    par-dessus (le blanc pur du papier ne suffisait pas à démarquer le fond
    crème de la capture, il fallait un cadre franc) ; padding généreux
-   (14px) pour que ce cadre soit assumé plutôt qu'un liseré. Petite marge
-   droite sur .paper (32px, contre 0 avant) pour que le cadre ne touche
-   plus le bord de la carte — il respire un peu plus vers le centre. */
+   (14px) pour que ce cadre soit assumé plutôt qu'un liseré. .paper a
+   maintenant le même padding des quatre côtés (48px) — marge gauche du
+   bloc de texte = marge droite du cadre, les deux colonnes respirent
+   pareil par rapport aux bords de la carte. */
 .paper__preview {
   width: 610px;
   flex: none;
@@ -209,23 +210,21 @@ body {
 }
 .paper__preview img { display: block; width: 100%; height: auto; }
 
-/* Accroche et phrase composées dans la police de chrome système (W95FA, la
-   même que la barre de titre) plutôt que Cabinet Grotesk — plus cohérent
-   avec le parti pris "vraie fenêtre 95" du reste de la carte que le
-   wordmark de marque habituel. */
+/* Accroche et phrase revenues à la typo de marque (Cabinet Grotesk, police
+   par défaut du body) après essai en W95FA — le chrome (barre de titre,
+   badge, barre d'état) reste en police système, lui, c'est du décor de
+   fenêtre plutôt que le message du produit. */
 .headline {
-  font-family: var(--chrome-font);
   font-size: 118px;
-  font-weight: 700;
+  font-weight: 800;
   line-height: 1.05;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.03em;
 }
 
 .subline {
-  max-width: 420px;
-  font-family: var(--chrome-font);
-  font-size: 28px;
-  font-weight: 400;
+  max-width: 438px;
+  font-size: 25px;
+  font-weight: 500;
   line-height: 1.5;
   letter-spacing: 0.003em;
   color: var(--b-muted);
