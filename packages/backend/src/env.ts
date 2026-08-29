@@ -29,8 +29,14 @@ export const env = {
     // `userinfo.email` est un scope non sensible (pas de revue Google
     // requise) : sert uniquement à afficher le compte connecté dans la
     // modale Settings du plugin (audit 2026-08, section Compte).
+    // Pas de scope `presentations` : Decker n'appelle jamais l'API Slides
+    // sur une présentation préexistante de l'utilisateur — uniquement sur le
+    // `presentationId` qu'il vient de créer lui-même via `presentations.create`
+    // (voir slides/client.ts). `drive.file` (accès aux seuls fichiers créés/
+    // ouverts par l'app) suffit pour `presentations.create`/`batchUpdate`/`get`
+    // et évite la revue de scope restreint Google (refus 2026-08, cf. justif.
+    // insuffisante sur `.../auth/presentations`).
     scopes: [
-      'https://www.googleapis.com/auth/presentations',
       'https://www.googleapis.com/auth/drive.file',
       'https://www.googleapis.com/auth/userinfo.email',
     ],

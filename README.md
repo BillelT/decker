@@ -44,9 +44,13 @@ packages/
    - Google Drive API (nécessaire pour le scope `drive.file`)
 3. **APIs & Services → OAuth consent screen** :
    - Type : External (ou Internal si Google Workspace).
-   - Scopes à déclarer : `.../auth/presentations`, `.../auth/drive.file`
-     (spec §5.2 — **ne pas** ajouter `drive` ou `drive.readonly`, cela
-     déclenche une revue CASA longue et inutile ici).
+   - Scopes à déclarer : `.../auth/drive.file` (spec §5.2 — **ne pas**
+     ajouter `drive`, `drive.readonly` ou `presentations` : Decker ne touche
+     jamais un fichier Slides préexistant de l'utilisateur, seulement ceux
+     qu'il crée lui-même via l'API, donc `drive.file` suffit. Une demande de
+     scope `presentations` a été refusée par la revue Google le 2026-08 —
+     justification insuffisante pour un scope à accès continu sur toutes
+     les présentations de l'utilisateur).
    - Tant que l'app est en mode "Testing", ajoute les comptes Google qui
      testeront le plugin dans "Test users".
 4. **APIs & Services → Credentials → Create credentials → OAuth client

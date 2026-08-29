@@ -363,11 +363,10 @@ const toAlpha = (fillOpacity = 1, nodeOpacity = 1) => fillOpacity * nodeOpacity;
 **RÈGLE — scopes minimaux :**
 
 ```
-https://www.googleapis.com/auth/presentations   # créer/modifier des présentations
-https://www.googleapis.com/auth/drive.file      # accès aux SEULS fichiers créés par l'app
+https://www.googleapis.com/auth/drive.file      # accès aux SEULS fichiers créés par l'app — suffit pour presentations.create/batchUpdate/get
 ```
 
-**N'utilise pas** `drive` ou `drive.readonly` : ce sont des scopes restreints qui imposent une revue de sécurité Google (CASA) longue et coûteuse. `drive.file` suffit et n'est pas restreint.
+**N'utilise pas** `drive`, `drive.readonly` ou `presentations` : `drive`/`drive.readonly` sont des scopes restreints qui imposent une revue de sécurité Google (CASA) longue et coûteuse ; `presentations` est un scope sensible à accès continu sur toutes les présentations de l'utilisateur (revue Google refusée le 2026-08 faute de justification suffisante). Decker ne touche jamais un fichier Slides préexistant — seulement ceux qu'il crée lui-même via l'API — donc `drive.file` seul suffit.
 
 - Flow **Authorization Code + PKCE**, `access_type=offline`, `prompt=consent` au premier passage.
 - Refresh token **chiffré au repos** (AES-256-GCM, clé en variable d'environnement), jamais renvoyé au client.

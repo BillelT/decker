@@ -25,9 +25,9 @@ addressed.
 
 - **OAuth 2.0 with PKCE** for Google sign-in — no client secret or
   password ever touches the plugin UI or the user's browser.
-- **Minimal OAuth scopes**: `presentations`, `drive.file` (access limited
-  to files the app itself creates — never full Drive access), and the
-  non-sensitive `userinfo.email`.
+- **Minimal OAuth scopes**: `drive.file` (access limited to files the app
+  itself creates — never full Drive access, and never the broader
+  `presentations` scope) and the non-sensitive `userinfo.email`.
 - **Refresh tokens encrypted at rest** (AES-256-GCM) before being stored
   server-side; never stored in plaintext.
 - **Session cookie** is `HttpOnly`, `Secure`, `SameSite=None` — not
