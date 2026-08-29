@@ -241,12 +241,12 @@ function printMissingCredentialsHelp(): void {
 Ce spike a besoin d'un vrai access token Google (PAS le token de session du
 plugin, qui est un identifiant interne à ce backend — voir
 packages/backend/src/auth/getAccessToken.ts) avec le scope :
-  - https://www.googleapis.com/auth/presentations
+  - https://www.googleapis.com/auth/drive.file
 
 Façon la plus rapide de l'obtenir, sans rien lancer en local :
   1. Ouvrir https://developers.google.com/oauthplayground
   2. Dans le champ en bas "Input your own scopes", ajouter :
-     https://www.googleapis.com/auth/presentations
+     https://www.googleapis.com/auth/drive.file
   3. "Authorize APIs" → se connecter avec le compte Google à tester → autoriser.
   4. "Exchange authorization code for tokens" → copier la valeur "Access token"
      (valide ~1h).

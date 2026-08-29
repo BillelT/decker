@@ -542,8 +542,7 @@ ceci ne peut pas être simulé sans appel réseau authentifié.
      GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET valides (voir README.md).
   2. Compléter le flow OAuth (POST /auth/google puis /auth/callback) pour
      obtenir un sessionToken, ou générer directement un access token via
-     gcloud / OAuth Playground avec les scopes :
-       - https://www.googleapis.com/auth/presentations
+     gcloud / OAuth Playground avec le scope :
        - https://www.googleapis.com/auth/drive.file
   3. Relancer avec :
        F2S_SESSION_TOKEN=<access_token> npm run calibrate
