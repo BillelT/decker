@@ -206,7 +206,7 @@ body {
    — marge gauche du bloc de texte = marge droite du cadre, les deux
    colonnes respirent pareil par rapport aux bords de la carte. */
 .paper__preview {
-  width: 610px;
+  width: 660px;
   flex: none;
   padding: 8px;
   background: var(--w95-face);
@@ -226,7 +226,7 @@ body {
 }
 
 .subline {
-  max-width: 438px;
+  max-width: 430px;
   font-size: 25px;
   font-weight: 500;
   line-height: 1.5;
@@ -282,7 +282,7 @@ export function renderOgImageHtml(content: OgImageContent): string {
         <p class="subline">${content.subline}</p>
       </div>
       <div class="paper__preview">
-        <img src="data:image/png;base64,${TOOL_PREVIEW_PNG_BASE64}" width="592" height="391" alt="" />
+        <img src="data:image/png;base64,${TOOL_PREVIEW_PNG_BASE64}" width="644" height="425" alt="" />
       </div>
     </div>
   </div>
