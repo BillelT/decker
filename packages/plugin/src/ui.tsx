@@ -318,6 +318,10 @@ function App() {
   const [fontOverrides, setFontOverrides] = useState<Record<string, string>>({});
 
   const [exportState, setExportState] = useState<ExportState>('idle');
+  // Incrémenté à chaque lancement d'export/retry — remet à zéro le rythme de
+  // l'aperçu d'export paced (usePacedExportCursor) sans dépendre de
+  // `exportJobId`, qui ne change PAS entre un export et son retry.
+  const [exportAttempt, setExportAttempt] = useState(0);
   const [exportProgress, setExportProgress] = useState(0);
   const [resultUrl, setResultUrl] = useState<string | undefined>();
   const [exportError, setExportError] = useState<string | undefined>();
@@ -682,6 +686,7 @@ function App() {
 
   async function handleExportPayload(doc: IRDocument, expectedAssetKeys: string[]) {
     setExportState('exporting');
+    setExportAttempt((n) => n + 1);
     setExportProgress(0);
     setExportError(undefined);
     try {
@@ -805,6 +810,7 @@ function App() {
     if (!exportJobId) return;
     setRetrying(true);
     setExportState('exporting');
+    setExportAttempt((n) => n + 1);
     setExportError(undefined);
     try {
       const res = await fetch(`${backend.baseUrl}/export/${exportJobId}/retry`, {
@@ -1323,7 +1329,9 @@ function App() {
           hasCanvasSelection={hasCanvasSelection}
           onRemove={removeFrame}
           fontOverrides={fontOverrides}
-          exportCursor={exporting && exportSource === 'deck' ? exportCursor : undefined}
+          exportCursor={exportSource === 'deck' ? exportCursor : undefined}
+          exportAttempt={exportSource === 'deck' ? exportAttempt : undefined}
+          exportConcluded={exportSource === 'deck' && (exportState === 'done' || exportState === 'error')}
           notice={selectionNotice}
         />
       ) : (
@@ -1339,7 +1347,9 @@ function App() {
           onRemove={removeTemplateLayout}
           onRename={renameTemplateLayout}
           fontOverrides={fontOverrides}
-          exportCursor={exporting && exportSource === 'template' ? exportCursor : undefined}
+          exportCursor={exportSource === 'template' ? exportCursor : undefined}
+          exportAttempt={exportSource === 'template' ? exportAttempt : undefined}
+          exportConcluded={exportSource === 'template' && (exportState === 'done' || exportState === 'error')}
           colors={templateColors}
           fonts={templateFonts}
           colorRoles={colorRoles}
