@@ -29,3 +29,13 @@
   `localhost` :
   `grep -o 'baseUrl: [a-z]* ? "[^"]*"' packages/plugin/dist/ui.html`
   doit afficher l'URL Vercel, jamais `http://localhost:8787`.
+- **Le plugin Figma "Decker" est déjà publié et en ligne** (Figma
+  Community, `manifest.json` a un `id` fixe). Après tout changement dans
+  `packages/plugin/` (une fois `dist/code.js` et `dist/ui.html` rebuild et
+  commités), l'utilisateur doit **publier une nouvelle version depuis
+  Figma desktop** : *Plugins → Development → Decker → Publish new
+  version...*. Ce n'est PAS un plugin en dev local uniquement — Figma ne
+  relit pas le repo GitHub tout seul, donc rebuild + commit ne suffisent
+  pas à mettre à jour ce que voient les utilisateurs. Le signaler
+  systématiquement à la fin d'une tâche qui touche `packages/plugin/`,
+  sans redemander si le plugin est publié ou en local — il l'est.
