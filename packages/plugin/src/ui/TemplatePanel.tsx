@@ -170,9 +170,10 @@ export function TemplatePanel({
     sidebarItemRefs.current.get(highlightedId)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }, [highlightedId]);
 
+  /** Voir le commentaire équivalent dans DeckPanel.selectFrame : un clic de
+   *  navigation dans le rail ne doit pas faire sauter le canvas Figma. */
   function selectLayout(id: string) {
     setActiveId(id);
-    postToPlugin({ type: 'select-nodes', nodeIds: [id] });
   }
 
   /**

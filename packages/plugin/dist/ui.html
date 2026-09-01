@@ -3245,7 +3245,6 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
     }, [highlightedId]);
     function selectFrame(id) {
       setActiveId(id);
-      postToPlugin({ type: "select-nodes", nodeIds: [id] });
     }
     function targetIndexFromOffset(offsetY) {
       const slotHeight = slotHeightRef.current;
@@ -3687,7 +3686,6 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
     }, [highlightedId]);
     function selectLayout(id) {
       setActiveId(id);
-      postToPlugin({ type: "select-nodes", nodeIds: [id] });
     }
     function targetIndexFromOffset(offsetY) {
       const slotHeight = slotHeightRef.current;
