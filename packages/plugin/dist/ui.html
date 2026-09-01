@@ -3169,6 +3169,44 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
     ] });
   }
 
+  // src/ui/pacedExportCursor.ts
+  function usePacedExportCursor(attempt, order, rawCursor, concluded) {
+    const total = order.length;
+    const [displayIndex, setDisplayIndex] = d2(0);
+    const [finished, setFinished] = d2(false);
+    const attemptRef = A2(attempt);
+    const rawIndexRef = A2(rawCursor?.index);
+    rawIndexRef.current = rawCursor?.index;
+    const sawBatchesRef = A2(false);
+    if (rawCursor) sawBatchesRef.current = true;
+    h2(() => {
+      if (attempt === attemptRef.current) return;
+      attemptRef.current = attempt;
+      sawBatchesRef.current = rawIndexRef.current !== void 0;
+      setDisplayIndex(Math.min(rawIndexRef.current ?? 0, Math.max(0, total - 1)));
+      setFinished(false);
+    }, [attempt, total]);
+    const rawIndex = rawCursor?.index;
+    const concludedWithProgress = concluded && sawBatchesRef.current;
+    const target = total === 0 ? 0 : concludedWithProgress ? total - 1 : rawIndex === void 0 ? displayIndex : Math.min(rawIndex, total - 1);
+    h2(() => {
+      if (attempt === void 0 || total === 0 || finished) return;
+      if (displayIndex < target) {
+        const t3 = setTimeout(() => setDisplayIndex((i3) => Math.min(i3 + 1, target)), REVEAL_MS);
+        return () => clearTimeout(t3);
+      }
+      if (concludedWithProgress && displayIndex >= total - 1) {
+        const t3 = setTimeout(() => setFinished(true), REVEAL_MS);
+        return () => clearTimeout(t3);
+      }
+    }, [attempt, total, finished, displayIndex, target, concludedWithProgress]);
+    if (attempt === void 0 || total === 0 || finished) return void 0;
+    if (concluded && !sawBatchesRef.current) return void 0;
+    const frameId = order[displayIndex];
+    if (!frameId) return void 0;
+    return { frameId, index: displayIndex, total };
+  }
+
   // src/ui/DeckPanel.tsx
   var DRAG_THRESHOLD_PX = 3;
   var DRAG_SWAP_MARGIN = 0.32;
@@ -3183,6 +3221,8 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
     onRemove,
     fontOverrides,
     exportCursor,
+    exportAttempt,
+    exportConcluded,
     notice
   }) {
     const [dragId, setDragId] = d2();
@@ -3195,9 +3235,10 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
     const slotHeightRef = A2(0);
     const sidebarItemRefs = A2(/* @__PURE__ */ new Map());
     const activeFrame = activeId ? frames[activeId] : void 0;
-    const exportingFrame = exportCursor ? frames[exportCursor.frameId] : void 0;
+    const pacedCursor = usePacedExportCursor(exportAttempt, order, exportCursor, exportConcluded);
+    const exportingFrame = pacedCursor ? frames[pacedCursor.frameId] : void 0;
     const previewedFrame = exportingFrame ?? activeFrame;
-    const highlightedId = exportCursor?.frameId ?? activeId;
+    const highlightedId = pacedCursor?.frameId ?? activeId;
     h2(() => {
       if (!highlightedId) return;
       sidebarItemRefs.current.get(highlightedId)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
@@ -3299,7 +3340,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
                   "button",
                   {
                     type: "button",
-                    className: `f2s-frame-preview${highlightedId === id ? " is-active" : ""}${exportCursor?.frameId === id ? " is-exporting" : ""}`,
+                    className: `f2s-frame-preview${highlightedId === id ? " is-active" : ""}${pacedCursor?.frameId === id ? " is-exporting" : ""}`,
                     onClick: () => selectFrame(id),
                     onPointerDown: (e3) => handleDragPointerDown(e3, id),
                     children: f4.previewDataUrl && /* @__PURE__ */ u3("img", { src: f4.previewDataUrl, alt: f4.name, draggable: false })
@@ -3316,15 +3357,14 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
         })
       ] }),
       /* @__PURE__ */ u3("main", { className: "f2s-canvas", children: previewedFrame ? /* @__PURE__ */ u3(S, { children: [
-        exportingFrame && exportCursor ? /* @__PURE__ */ u3("div", { className: "f2s-canvas-preview f2s-canvas-preview--retro", children: /* @__PURE__ */ u3(
+        exportingFrame && pacedCursor ? /* @__PURE__ */ u3("div", { className: "f2s-canvas-preview f2s-canvas-preview--retro", children: /* @__PURE__ */ u3(
           RetroExportPreview,
           {
             src: exportingFrame.previewDataUrl,
             frameName: exportingFrame.name,
-            index: exportCursor.index,
-            total: exportCursor.total
-          },
-          exportCursor.frameId
+            index: pacedCursor.index,
+            total: pacedCursor.total
+          }
         ) }) : /* @__PURE__ */ u3("div", { className: "f2s-canvas-preview", children: previewedFrame.previewDataUrl && /* @__PURE__ */ u3("img", { src: previewedFrame.previewDataUrl, alt: previewedFrame.name }) }),
         /* @__PURE__ */ u3("div", { className: "f2s-toolbar-group", children: [
           /* @__PURE__ */ u3("span", { className: "f2s-toolbar-label", children: "Dimensions :" }),
@@ -3620,6 +3660,8 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
     onRename,
     fontOverrides,
     exportCursor,
+    exportAttempt,
+    exportConcluded,
     colors,
     fonts,
     colorRoles,
@@ -3635,9 +3677,10 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
     const slotHeightRef = A2(0);
     const sidebarItemRefs = A2(/* @__PURE__ */ new Map());
     const activeLayout = activeId ? layouts[activeId] : void 0;
-    const exportingLayout = exportCursor ? layouts[exportCursor.frameId] : void 0;
+    const pacedCursor = usePacedExportCursor(exportAttempt, order, exportCursor, exportConcluded);
+    const exportingLayout = pacedCursor ? layouts[pacedCursor.frameId] : void 0;
     const previewedLayout = exportingLayout ?? activeLayout;
-    const highlightedId = exportCursor?.frameId ?? activeId;
+    const highlightedId = pacedCursor?.frameId ?? activeId;
     h2(() => {
       if (!highlightedId) return;
       sidebarItemRefs.current.get(highlightedId)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
@@ -3749,7 +3792,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
                   "button",
                   {
                     type: "button",
-                    className: `f2s-frame-preview${highlightedId === id ? " is-active" : ""}${layout.blocking ? " f2s-frame-preview--blocking" : ""}${exportCursor?.frameId === id ? " is-exporting" : ""}`,
+                    className: `f2s-frame-preview${highlightedId === id ? " is-active" : ""}${layout.blocking ? " f2s-frame-preview--blocking" : ""}${pacedCursor?.frameId === id ? " is-exporting" : ""}`,
                     onClick: () => selectLayout(id),
                     onPointerDown: (e3) => handleDragPointerDown(e3, id),
                     title: layout.blocking ? "Contains an element that would be rasterized \u2014 open it to see the details." : void 0,
@@ -3781,15 +3824,14 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
         })
       ] }),
       /* @__PURE__ */ u3("main", { className: "f2s-canvas f2s-canvas--template", children: previewedLayout ? /* @__PURE__ */ u3("div", { className: "f2s-tmpl-report", children: [
-        exportingLayout && exportCursor ? /* @__PURE__ */ u3("div", { className: "f2s-canvas-preview f2s-canvas-preview--retro f2s-tmpl-preview", children: /* @__PURE__ */ u3(
+        exportingLayout && pacedCursor ? /* @__PURE__ */ u3("div", { className: "f2s-canvas-preview f2s-canvas-preview--retro f2s-tmpl-preview", children: /* @__PURE__ */ u3(
           RetroExportPreview,
           {
             src: exportingLayout.previewDataUrl,
             frameName: exportingLayout.name,
-            index: exportCursor.index,
-            total: exportCursor.total
-          },
-          exportCursor.frameId
+            index: pacedCursor.index,
+            total: pacedCursor.total
+          }
         ) }) : /* @__PURE__ */ u3("div", { className: "f2s-canvas-preview f2s-tmpl-preview", children: previewedLayout.previewDataUrl && /* @__PURE__ */ u3("img", { src: previewedLayout.previewDataUrl, alt: previewedLayout.name }) }),
         /* @__PURE__ */ u3("div", { className: "f2s-tmpl-panel", children: [
           /* @__PURE__ */ u3("section", { className: "f2s-tmpl-section", children: [
@@ -4198,6 +4240,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
     );
     const [fontOverrides, setFontOverrides] = d2({});
     const [exportState, setExportState] = d2("idle");
+    const [exportAttempt, setExportAttempt] = d2(0);
     const [exportProgress, setExportProgress] = d2(0);
     const [resultUrl, setResultUrl] = d2();
     const [exportError, setExportError] = d2();
@@ -4491,6 +4534,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
     }
     async function handleExportPayload(doc, expectedAssetKeys) {
       setExportState("exporting");
+      setExportAttempt((n2) => n2 + 1);
       setExportProgress(0);
       setExportError(void 0);
       try {
@@ -4581,6 +4625,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
       if (!exportJobId) return;
       setRetrying(true);
       setExportState("exporting");
+      setExportAttempt((n2) => n2 + 1);
       setExportError(void 0);
       try {
         const res = await fetch(`${backend.baseUrl}/export/${exportJobId}/retry`, {
@@ -4970,7 +5015,9 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
           hasCanvasSelection,
           onRemove: removeFrame,
           fontOverrides,
-          exportCursor: exporting && exportSource === "deck" ? exportCursor : void 0,
+          exportCursor: exportSource === "deck" ? exportCursor : void 0,
+          exportAttempt: exportSource === "deck" ? exportAttempt : void 0,
+          exportConcluded: exportSource === "deck" && (exportState === "done" || exportState === "error"),
           notice: selectionNotice
         }
       ) : /* @__PURE__ */ u3(
@@ -4987,7 +5034,9 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
           onRemove: removeTemplateLayout,
           onRename: renameTemplateLayout,
           fontOverrides,
-          exportCursor: exporting && exportSource === "template" ? exportCursor : void 0,
+          exportCursor: exportSource === "template" ? exportCursor : void 0,
+          exportAttempt: exportSource === "template" ? exportAttempt : void 0,
+          exportConcluded: exportSource === "template" && (exportState === "done" || exportState === "error"),
           colors: templateColors,
           fonts: templateFonts,
           colorRoles,

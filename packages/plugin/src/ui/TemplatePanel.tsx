@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { logEntryFlag, logEntryTagText } from './logEntryFlag.js';
 import { placeholderRoleTagsFor } from './placeholderRoleOptions.js';
 import { moveToIndex } from './reorderFrames.js';
+import { usePacedExportCursor } from './pacedExportCursor.js';
 import { RetroExportPreview } from './RetroExportPreview.js';
 import { TemplateStylePanel, type TemplateStylePanelProps } from './TemplateStylePanel.js';
 import type { ExportCursor } from './exportCursor.js';
@@ -99,6 +100,10 @@ export interface TemplatePanelProps extends TemplateStylePanelProps {
   onRename: (id: string, name: string) => void;
   /** Layout dont le lot est en cours d'application côté backend, s'il y a une création de template en cours. */
   exportCursor?: ExportCursor;
+  /** Incrémenté à chaque lancement d'export/retry — voir usePacedExportCursor. */
+  exportAttempt?: number;
+  /** Le job en cours (celui qui a produit `exportCursor`) est-il conclu (réussi ou échoué) ? */
+  exportConcluded: boolean;
 }
 
 /**
@@ -120,6 +125,8 @@ export function TemplatePanel({
   onRename,
   fontOverrides,
   exportCursor,
+  exportAttempt,
+  exportConcluded,
   colors,
   fonts,
   colorRoles,
@@ -146,12 +153,14 @@ export function TemplatePanel({
   const sidebarItemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   const activeLayout = activeId ? layouts[activeId] : undefined;
+  // Aperçu d'export "paced" — voir DeckPanel et pacedExportCursor.ts.
+  const pacedCursor = usePacedExportCursor(exportAttempt, order, exportCursor, exportConcluded);
   // Pendant une création de template, l'aperçu suit le layout dont le lot
   // est en cours d'application plutôt que la sélection du rail — même
   // logique que DeckPanel.
-  const exportingLayout = exportCursor ? layouts[exportCursor.frameId] : undefined;
+  const exportingLayout = pacedCursor ? layouts[pacedCursor.frameId] : undefined;
   const previewedLayout = exportingLayout ?? activeLayout;
-  const highlightedId = exportCursor?.frameId ?? activeId;
+  const highlightedId = pacedCursor?.frameId ?? activeId;
 
   // Fait défiler le rail jusqu'à la vignette surlignée dès qu'elle change —
   // utile pendant une création de template plus longue que la hauteur
@@ -311,7 +320,7 @@ export function TemplatePanel({
             >
               <button
                 type="button"
-                className={`f2s-frame-preview${highlightedId === id ? ' is-active' : ''}${layout.blocking ? ' f2s-frame-preview--blocking' : ''}${exportCursor?.frameId === id ? ' is-exporting' : ''}`}
+                className={`f2s-frame-preview${highlightedId === id ? ' is-active' : ''}${layout.blocking ? ' f2s-frame-preview--blocking' : ''}${pacedCursor?.frameId === id ? ' is-exporting' : ''}`}
                 onClick={() => selectLayout(id)}
                 onPointerDown={(e) => handleDragPointerDown(e, id)}
                 title={layout.blocking ? 'Contains an element that would be rasterized — open it to see the details.' : undefined}
@@ -342,14 +351,13 @@ export function TemplatePanel({
       <main className="f2s-canvas f2s-canvas--template">
         {previewedLayout ? (
           <div className="f2s-tmpl-report">
-            {exportingLayout && exportCursor ? (
+            {exportingLayout && pacedCursor ? (
               <div className="f2s-canvas-preview f2s-canvas-preview--retro f2s-tmpl-preview">
                 <RetroExportPreview
-                  key={exportCursor.frameId}
                   src={exportingLayout.previewDataUrl}
                   frameName={exportingLayout.name}
-                  index={exportCursor.index}
-                  total={exportCursor.total}
+                  index={pacedCursor.index}
+                  total={pacedCursor.total}
                 />
               </div>
             ) : (

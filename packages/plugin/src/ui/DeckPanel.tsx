@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { logEntryFlag, logEntryTagText } from './logEntryFlag.js';
 import { moveToIndex } from './reorderFrames.js';
+import { usePacedExportCursor } from './pacedExportCursor.js';
 import { RetroExportPreview } from './RetroExportPreview.js';
 import type { ExportCursor } from './exportCursor.js';
 import { postToPlugin, selectSourceNodes, type FrameState } from './types.js';
@@ -28,6 +29,10 @@ export interface DeckPanelProps {
   fontOverrides: Record<string, string>;
   /** Frame dont le lot est en cours d'application côté backend, s'il y a un export en cours. */
   exportCursor?: ExportCursor;
+  /** Incrémenté à chaque lancement d'export/retry — voir usePacedExportCursor. */
+  exportAttempt?: number;
+  /** Le job d'export en cours (celui qui a produit `exportCursor`) est-il conclu (réussi ou échoué) ? */
+  exportConcluded: boolean;
   /**
    * Notice de sélection ("no-frames-selected" / "too-many-frames") pilotée
    * par ui.tsx, auto-dismiss inclus. Affichée en toast absolu (voir `.f2s-toast`)
@@ -55,6 +60,8 @@ export function DeckPanel({
   onRemove,
   fontOverrides,
   exportCursor,
+  exportAttempt,
+  exportConcluded,
   notice,
 }: DeckPanelProps) {
   const [dragId, setDragId] = useState<string | undefined>();
@@ -78,17 +85,22 @@ export function DeckPanel({
   const sidebarItemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   const activeFrame = activeId ? frames[activeId] : undefined;
+  // Aperçu d'export "paced" : avance d'une frame à la fois plutôt que de
+  // suivre tel quel `exportCursor` (qui peut sauter plusieurs slides, ou
+  // disparaître avant la fin de la révélation de la dernière — voir
+  // pacedExportCursor.ts).
+  const pacedCursor = usePacedExportCursor(exportAttempt, order, exportCursor, exportConcluded);
   // Pendant un export, l'aperçu suit la frame en cours de traitement plutôt
   // que la sélection du rail : c'est elle que l'utilisateur regarde
   // "s'imprimer". Dimensions et logs suivent le même repère pour ne pas
   // décrire une autre frame que celle affichée.
-  const exportingFrame = exportCursor ? frames[exportCursor.frameId] : undefined;
+  const exportingFrame = pacedCursor ? frames[pacedCursor.frameId] : undefined;
   const previewedFrame = exportingFrame ?? activeFrame;
   // Le rail suit le même repère que le grand aperçu : pendant un export, la
   // vignette "active" (bordure pleine) est celle en cours de traitement, pas
   // la sélection d'avant l'export — sans quoi les deux surlignages (actif +
   // pulsation d'export) pointent sur deux vignettes différentes.
-  const highlightedId = exportCursor?.frameId ?? activeId;
+  const highlightedId = pacedCursor?.frameId ?? activeId;
 
   // Fait défiler le rail jusqu'à la vignette surlignée dès qu'elle change —
   // utile en cours d'export sur un deck plus long que la hauteur visible du
@@ -239,7 +251,7 @@ export function DeckPanel({
             >
               <button
                 type="button"
-                className={`f2s-frame-preview${highlightedId === id ? ' is-active' : ''}${exportCursor?.frameId === id ? ' is-exporting' : ''}`}
+                className={`f2s-frame-preview${highlightedId === id ? ' is-active' : ''}${pacedCursor?.frameId === id ? ' is-exporting' : ''}`}
                 onClick={() => selectFrame(id)}
                 onPointerDown={(e) => handleDragPointerDown(e, id)}
               >
@@ -261,14 +273,13 @@ export function DeckPanel({
       <main className="f2s-canvas">
         {previewedFrame ? (
           <>
-            {exportingFrame && exportCursor ? (
+            {exportingFrame && pacedCursor ? (
               <div className="f2s-canvas-preview f2s-canvas-preview--retro">
                 <RetroExportPreview
-                  key={exportCursor.frameId}
                   src={exportingFrame.previewDataUrl}
                   frameName={exportingFrame.name}
-                  index={exportCursor.index}
-                  total={exportCursor.total}
+                  index={pacedCursor.index}
+                  total={pacedCursor.total}
                 />
               </div>
             ) : (
