@@ -142,8 +142,12 @@ body {
 .titlebar__btn--close { align-items: center; padding-bottom: 0; }
 .titlebar__btn--close svg { width: 16px; height: 16px; display: block; }
 
-/* Zone client creusée, "papier" crème : noir sur crème = le contraste le
-   plus fort de la palette, ce qui tient en vignette. */
+/* Zone client creusée, gris système --w95-face plutôt que le blanc du
+   "papier" de marque : la carte reprend ainsi le fond réel du plugin (le
+   corps de l'app est gris face, le blanc n'y sert qu'aux puits creusés —
+   vignettes, canvas), pas un fond neutre qui n'existe nulle part dans le
+   produit. Noir sur ce gris reste ~9:1 de contraste, largement lisible en
+   vignette. */
 .client {
   flex: 1;
   margin-top: 4px;
@@ -157,7 +161,7 @@ body {
   display: flex;
   align-items: center;
   gap: 40px;
-  background: var(--b-paper);
+  background: var(--w95-face);
 }
 .paper__text {
   flex: 1;
@@ -193,20 +197,20 @@ body {
    statique. Capture fournie directement (assets/tool-preview-source.png,
    voir toolPreviewData.ts) cadrée sur le seul panneau du plugin — pas sa
    propre fenêtre 95 ni le canvas Figma autour, qui auraient fait un chrome
-   dans le chrome. Mat --w95-face + biseau --w95-out + une fine bordure
-   par-dessus (le blanc pur du papier ne suffisait pas à démarquer le fond
-   crème de la capture, il fallait un cadre) — revu à la baisse (1px, 8px
-   de padding) après un premier essai trop épais. .paper a le même padding
-   des quatre côtés (24px) — marge gauche du bloc de texte = marge droite
-   du cadre, les deux colonnes respirent pareil par rapport aux bords de
-   la carte. */
+   dans le chrome. Puits creusé (biseau --w95-in) sans bordure, comme les
+   vignettes et le canvas du vrai plugin (.f2s-frame-preview) : le cadre
+   sombre + biseau en relief posés dessus dans un essai précédent donnaient
+   une image encadrée façon photo, jamais le traitement réel du produit, où
+   une image ne porte jamais de bordure — seul l'enfoncement la distingue
+   du gris qui l'entoure. .paper a le même padding des quatre côtés (24px)
+   — marge gauche du bloc de texte = marge droite du cadre, les deux
+   colonnes respirent pareil par rapport aux bords de la carte. */
 .paper__preview {
   width: 610px;
   flex: none;
   padding: 8px;
   background: var(--w95-face);
-  border: 1px solid var(--w95-dark);
-  box-shadow: var(--w95-out);
+  box-shadow: var(--w95-in);
 }
 .paper__preview img { display: block; width: 100%; height: auto; }
 
