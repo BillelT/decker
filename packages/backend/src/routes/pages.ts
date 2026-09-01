@@ -7,7 +7,7 @@ import { DEMO_VIDEO_WEBM_BASE64 } from './demoVideoData.js';
 
 export const pagesRouter = Router();
 
-const LAST_UPDATED = 'August 27, 2026';
+const LAST_UPDATED = 'September 1, 2026';
 const CONTACT_EMAIL = 'b.tighidet0@gmail.com';
 /** Absolue plutôt que relative sur tous les liens vers /privacy et /terms : le check Google Branding ("App Homepage" guidance) compare cette URL telle quelle à celle configurée sur l'écran de consentement OAuth — une URL relative comme "/privacy" risque de ne pas matcher. */
 const SITE_URL = 'https://decker.billeltighidet.fr';
@@ -274,10 +274,9 @@ pagesRouter.get('/', (_req, res) => {
 
     <section class="section">
       <h2 class="section__title">Why Decker asks for Google access</h2>
-      <p>When you sign in, Decker requests three things, and nothing more:</p>
+      <p>When you sign in, Decker requests two things, and nothing more:</p>
       <ul>
-        <li><strong>Google Slides API</strong> — to create and populate the presentation you ask to export.</li>
-        <li><strong>Google Drive API (<code>drive.file</code> scope)</strong> — limited to files created by Decker itself. Decker cannot read or modify any of your other Drive files.</li>
+        <li><strong>Google Drive API (<code>drive.file</code> scope)</strong> — limited to files created by Decker itself. This is what lets Decker create and populate the presentation you ask to export through the Google Slides API; it cannot read or modify any of your other Drive or Slides files.</li>
         <li><strong>Your email address</strong> — used only to display, inside the plugin, which Google account is currently connected.</li>
       </ul>
       <p>No data is stored beyond what's needed to run that export — full details in the <a class="text-link" href="${SITE_URL}/privacy">Privacy Policy</a>.</p>
@@ -306,8 +305,7 @@ pagesRouter.get('/privacy', (_req, res) => {
 
         <h2 class="section__title">Google data Decker accesses</h2>
         <ul>
-          <li><strong>Google Slides API</strong> — to create and populate the presentation you ask to export.</li>
-          <li><strong>Google Drive API (<code>drive.file</code> scope)</strong> — limited to files created by Decker itself. Decker cannot read or modify any of your other Drive files.</li>
+          <li><strong>Google Drive API (<code>drive.file</code> scope)</strong> — limited to files created by Decker itself. This is what lets Decker create and populate the presentation you ask to export through the Google Slides API; Decker cannot read or modify any of your other Drive or Slides files.</li>
           <li><strong>Email address</strong> — used only to display, inside the plugin, which Google account is currently connected.</li>
         </ul>
 
