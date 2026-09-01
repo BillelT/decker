@@ -190,6 +190,10 @@ body {
   letter-spacing: 0.03em;
   text-transform: uppercase;
   color: #000;
+  /* W95FA n'a qu'un seul style ("Regular") : font-weight seul ne change
+     rien à son tracé, cf. .headline plus bas. Léger -webkit-text-stroke
+     pour un rendu "medium" plutôt que la régulière brute du fichier. */
+  -webkit-text-stroke: 0.4px #000;
 }
 /* Aperçu du produit plutôt que la marque en grand : montrer un moment du
    flow (le panneau du plugin en train de préparer un export, deux frames
@@ -214,24 +218,35 @@ body {
 }
 .paper__preview img { display: block; width: 100%; height: auto; }
 
-/* Accroche et phrase revenues à la typo de marque (Cabinet Grotesk, police
-   par défaut du body) après essai en W95FA — le chrome (barre de titre,
-   badge, barre d'état) reste en police système, lui, c'est du décor de
-   fenêtre plutôt que le message du produit. */
+/* Accroche et phrase en W95FA (police du chrome), pas Cabinet Grotesk : le
+   titre porte tout le poids de marque sur cette carte, autant qu'il porte
+   la police système du produit lui-même. W95FA est une police statique (un
+   seul style "Regular") : la plage déclarée en @font-face (400 700, cf.
+   plus haut) fait croire au navigateur qu'un poids gras existe déjà dans ce
+   fichier, ce qui désactive la synthèse automatique de graisse —
+   font-weight seul ne produit donc rien de visible ici. -webkit-text-stroke
+   simule la graisse à la main : ~1px pour un rendu semibold sur le titre,
+   plus fin encore pour un simple medium sur la phrase — au lieu de
+   l'embolissement fixe (non proportionnel à la taille) que le navigateur
+   appliquerait de toute façon. */
 .headline {
-  font-size: 118px;
-  font-weight: 800;
+  font-family: var(--chrome-font);
+  font-size: 132px;
+  font-weight: 700;
   line-height: 1.05;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.01em;
+  -webkit-text-stroke: 1px var(--b-ink);
 }
 
 .subline {
+  font-family: var(--chrome-font);
   max-width: 430px;
-  font-size: 25px;
-  font-weight: 500;
+  font-size: 27px;
+  font-weight: 700;
   line-height: 1.5;
   letter-spacing: 0.003em;
   color: var(--b-muted);
+  -webkit-text-stroke: 0.5px var(--b-muted);
 }
 
 /* Barre d'état réduite au domaine : la plateforme affiche déjà le nom de
