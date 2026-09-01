@@ -110,9 +110,16 @@ export function DeckPanel({
     sidebarItemRefs.current.get(highlightedId)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }, [highlightedId]);
 
+  /**
+   * Cliquer une vignette du rail ne fait QUE changer l'aperçu affiché dans
+   * le plugin — ça reste une simple navigation entre slides, pas une
+   * demande explicite de retrouver le calque dans Figma (contrairement à un
+   * clic sur une ligne du rapport de contenu, cf. `selectSourceNodes` /
+   * spec §8.3) : select-nodes ferait sauter le canvas Figma à chaque clic,
+   * ce qui est perturbant en pratique.
+   */
   function selectFrame(id: string) {
     setActiveId(id);
-    postToPlugin({ type: 'select-nodes', nodeIds: [id] });
   }
 
   /**
