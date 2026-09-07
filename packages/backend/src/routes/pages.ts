@@ -123,9 +123,9 @@ ${footer()}
   onScroll();
   document.addEventListener('scroll', onScroll, { passive: true });
 
-  var demoVideo = document.querySelector('.demo-video');
-  if (demoVideo && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    demoVideo.play().catch(function () {});
+  var demoVideos = document.querySelectorAll('.demo-video');
+  if (demoVideos.length && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    demoVideos.forEach(function (video) { video.play().catch(function () {}); });
   }
 })();
 </script>
@@ -189,12 +189,19 @@ function footer(): string {
 pagesRouter.get('/', (_req, res) => {
   const main = `
     <section class="hero">
-      <h1 class="hero__title">Editable &amp; pixel perfect export</h1>
-      <p class="hero__lede">Export a Figma design straight to Google Slides — layout, styles, and theme preserved.</p>
-      <div class="hero__actions">
-        <a class="btn cta" href="${PLUGIN_URL}" target="_blank" rel="${REL_THIRD_PARTY}">View the plugin on Figma</a>
+      <div class="hero__content">
+        <h1 class="hero__title">Editable &amp; pixel perfect export</h1>
+        <p class="hero__lede">Export a Figma design straight to Google Slides — layout, styles, and theme preserved.</p>
+        <div class="hero__actions">
+          <a class="btn cta" href="${PLUGIN_URL}" target="_blank" rel="${REL_THIRD_PARTY}">View the plugin on Figma</a>
+        </div>
+        <p class="hero__note">Free to use. Sign in with Google only when you're ready to export.</p>
       </div>
-      <p class="hero__note">Free to use. Sign in with Google only when you're ready to export.</p>
+      <div class="hero__demo">
+        <video class="demo-video" loop muted playsinline aria-label="Screen recording of Decker exporting a Figma deck to Google Slides">
+          <source src="/${DEMO_VIDEO_FILE}?v=${DEMO_VIDEO_VERSION}" type="video/webm" />
+        </video>
+      </div>
     </section>
 
     <section class="section">
