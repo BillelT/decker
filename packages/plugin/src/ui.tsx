@@ -70,7 +70,7 @@ declare const __DEBUG_TOOLS__: boolean;
 /** Le backend a répondu 401 : la session Google persistée n'est plus valide — à purger avant de relancer la connexion. */
 class AuthExpiredError extends Error {
   constructor() {
-    super('Your Google session has expired — sign in again, then retry.');
+    super('Your Google session has expired. Sign in again, then retry.');
   }
 }
 
@@ -108,7 +108,7 @@ function GearIcon() {
 function TitleBar({ mode }: { mode: AppMode }) {
   return (
     <div className="f2s-titlebar">
-      <span className="f2s-titlebar-text">Decker — {mode === 'deck' ? 'Deck export' : 'Template creation'}</span>
+      <span className="f2s-titlebar-text">Decker - {mode === 'deck' ? 'Deck export' : 'Template creation'}</span>
       {/* Seule case classique qui ait un équivalent réel côté Figma
           (`figma.closePlugin()`) — pas de réduire/agrandir décoratifs. */}
       <button
@@ -562,9 +562,9 @@ function App() {
           break;
         case 'too-many-frames':
           if (modeRef.current === 'template') {
-            showTemplateSelectionNotice(`${msg.count} layouts selected — a template is capped at ${msg.max} to stay focused.`);
+            showTemplateSelectionNotice(`${msg.count} layouts selected. A template is capped at ${msg.max} to stay focused.`);
           } else {
-            showSelectionNotice(`${msg.count} frames selected — beyond ${msg.max}, export may become slow.`);
+            showSelectionNotice(`${msg.count} frames selected. Beyond ${msg.max}, export may become slow.`);
           }
           break;
         case 'export-payload':
@@ -681,7 +681,7 @@ function App() {
       await new Promise((r) => setTimeout(r, 25));
     }
     const missing = expectedKeys.filter((k) => !pendingAssets.has(k)).length;
-    throw new Error(`${missing} image asset(s) never arrived from Figma — close and reopen the plugin, then retry.`);
+    throw new Error(`${missing} image asset(s) never arrived from Figma. Close and reopen the plugin, then retry.`);
   }
 
   async function handleExportPayload(doc: IRDocument, expectedAssetKeys: string[]) {
@@ -784,7 +784,7 @@ function App() {
       // créée, on la propose quand même plutôt que de ne rien montrer.
       return {
         status: 'failed',
-        error: 'Export timed out after 3 minutes — the presentation may still be processing; check your Google Drive, or retry once it settles.',
+        error: 'Export timed out after 3 minutes. The presentation may still be processing; check your Google Drive, or retry once it settles.',
         resultUrl: lastPresentationUrl,
         failedFrameIds: [],
         retryable: Boolean(lastPresentationId),
@@ -871,7 +871,7 @@ function App() {
       }
       await new Promise((r) => setTimeout(r, 1500));
     }
-    setLoginError('Sign-in timed out — try again.');
+    setLoginError('Sign-in timed out. Try again.');
     setAuthUrl(undefined);
   }
 
@@ -1117,7 +1117,7 @@ function App() {
   // export à la fois, mais le mode qui n'a PAS lancé l'export en cours
   // explique pourquoi son bouton attend au lieu d'être grisé sans raison.
   const busyFromOtherMode = exporting && exportSource !== undefined && exportSource !== mode;
-  const busyTitle = exportSource === 'deck' ? 'A deck export is still running — wait for it to finish.' : 'A template creation is still running — wait for it to finish.';
+  const busyTitle = exportSource === 'deck' ? 'A deck export is still running. Wait for it to finish.' : 'A template creation is still running. Wait for it to finish.';
 
   /** Bouton d'action principal (Export / Create template) ou, si la session Google n'existe pas encore, le flow de connexion — même wording dans les deux modes : le lien dit ce qu'il fait ("Sign in with Google"), plus de bouton "Export" qui ouvre en réalité l'OAuth. */
   function renderPrimaryAction(label: string, disabled: boolean, disabledTitle: string | undefined, onClick: () => void) {
@@ -1140,7 +1140,7 @@ function App() {
           target="_blank"
           rel="noreferrer"
           className="f2s-btn f2s-btn--primary"
-          title={authLinkClicked ? 'Finish signing in with Google in the browser tab — click again to reopen it if you closed it.' : `Connect your Google account to enable "${label}".`}
+          title={authLinkClicked ? 'Finish signing in with Google in the browser tab. Click again to reopen it if you closed it.' : `Connect your Google account to enable "${label}".`}
           onClick={() => setAuthLinkClicked(true)}
         >
           {authLinkClicked ? (
@@ -1186,7 +1186,7 @@ function App() {
               aria-selected={mode === 'deck'}
               className={`f2s-tab${mode === 'deck' ? ' is-active' : ''}`}
               disabled={exporting}
-              title={exporting ? 'An export is running — wait for it to finish before switching modes.' : 'Export a one-off deck to Slides.'}
+              title={exporting ? 'An export is running. Wait for it to finish before switching modes.' : 'Export a one-off deck to Slides.'}
               onClick={() => setMode('deck')}
             >
               Deck
@@ -1197,7 +1197,7 @@ function App() {
               aria-selected={mode === 'template'}
               className={`f2s-tab${mode === 'template' ? ' is-active' : ''}`}
               disabled={exporting}
-              title={exporting ? 'An export is running — wait for it to finish before switching modes.' : 'Build a reusable Slides template with tagged placeholders.'}
+              title={exporting ? 'An export is running. Wait for it to finish before switching modes.' : 'Build a reusable Slides template with tagged placeholders.'}
               onClick={() => setMode('template')}
             >
               Templates
@@ -1231,7 +1231,7 @@ function App() {
               type="button"
               className="f2s-btn f2s-btn--tertiary"
               disabled={exporting}
-              title={exporting ? 'An export is running — wait for it to finish before changing the deck.' : undefined}
+              title={exporting ? 'An export is running. Wait for it to finish before changing the deck.' : undefined}
               onClick={handleAddFramesClick}
             >
               {selecting ? 'Add selection' : 'Select frames to add'}
@@ -1242,7 +1242,7 @@ function App() {
               disabled={exporting || (!hasCanvasSelection && order.length === 0)}
               title={
                 exporting
-                  ? 'An export is running — wait for it to finish before changing the deck.'
+                  ? 'An export is running. Wait for it to finish before changing the deck.'
                   : 'Duplicate and reformat every frame already in the deck (plus any extra selection on the Figma canvas) for Slides, so you can refine them pixel-perfect natively.'
               }
               onClick={handlePrepareForSlides}
@@ -1257,7 +1257,7 @@ function App() {
               type="button"
               className="f2s-btn f2s-btn--tertiary"
               disabled={exporting}
-              title={exporting ? 'A template creation is running — wait for it to finish before changing the layouts.' : undefined}
+              title={exporting ? 'A template creation is running. Wait for it to finish before changing the layouts.' : undefined}
               onClick={handleAddTemplateLayoutClick}
             >
               {templateSelecting ? 'Add selection' : 'Select layout to add'}
@@ -1268,8 +1268,8 @@ function App() {
               disabled={exporting || (!hasCanvasSelection && templateOrder.length === 0)}
               title={
                 exporting
-                  ? 'A template creation is running — wait for it to finish before changing the layouts.'
-                  : 'Duplicate and reformat every layout for Slides — clears most blocking issues (gradients, shadows, letter spacing…) automatically.'
+                  ? 'A template creation is running. Wait for it to finish before changing the layouts.'
+                  : 'Duplicate and reformat every layout for Slides, clearing most blocking issues (gradients, shadows, letter spacing…) automatically.'
               }
               onClick={handlePrepareTemplateForSlides}
             >
@@ -1293,7 +1293,7 @@ function App() {
               <span className="f2s-toolbar-muted">All fonts will appear here and can be replaced automatically.</span>
             ) : (
               (mode === 'deck' ? deckFontSubstitutions : templateFontSubstitutions).map((s) => (
-                <label className="f2s-font-select" key={s.original} title={`"${s.original}" isn't available in Slides — pick the replacement to use.`}>
+                <label className="f2s-font-select" key={s.original} title={`"${s.original}" isn't available in Slides. Pick the replacement to use.`}>
                   <span className="f2s-font-original">{s.original}</span>
                   <span className="f2s-font-arrow">→</span>
                   <select

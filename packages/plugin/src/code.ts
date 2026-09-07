@@ -399,13 +399,13 @@ async function addLintAnnotations(copy: ExportableNode, warnings: LintWarning[])
     if ('cornerRadius' in node && typeof node.cornerRadius === 'number') {
       badge.cornerRadius = node.cornerRadius;
     }
-    badge.name = `${w.category === 'visual-diff' ? '◐' : '⚠'} ${w.nodeName} — ${w.message}`;
+    badge.name = `${w.category === 'visual-diff' ? '◐' : '⚠'} ${w.nodeName}: ${w.message}`;
     badges.push(badge);
   }
   if (badges.length === 0) return;
 
   const group = badges.length > 1 ? figma.group(badges, figma.currentPage) : badges[0];
-  group.name = `Slides lint — ${stripReadyPrefix(copy.name)}`;
+  group.name = `Slides lint - ${stripReadyPrefix(copy.name)}`;
   group.locked = true;
   if ('expanded' in group) group.expanded = false;
   copy.setPluginData(LINT_GROUP_ID_KEY, group.id);
@@ -511,8 +511,8 @@ async function handlePrepareForSlides(
   const label = copies.length === 1 ? 'frame' : 'frames';
   figma.notify(
     totalWarnings === 0
-      ? `Prepared ${copies.length} ${label} for Slides — no issues found.`
-      : `Prepared ${copies.length} ${label} for Slides — ${totalWarnings} issue(s) flagged on canvas (red = rasterized, orange = approximated).`,
+      ? `Prepared ${copies.length} ${label} for Slides, no issues found.`
+      : `Prepared ${copies.length} ${label} for Slides: ${totalWarnings} issue(s) flagged on canvas (red = rasterized, orange = approximated).`,
   );
 
   await addFrames(newlyCreated, pending, idGen);
@@ -556,7 +556,7 @@ async function addTemplateLayoutNodes(nodes: ExportableNode[], pending: PendingS
   if (toAdd.length < candidates.length) {
     figma.ui.postMessage({ type: 'too-many-frames', count: pending.length + candidates.length, max: TEMPLATE_MAX_LAYOUTS });
     figma.notify(
-      `A template is capped at ${TEMPLATE_MAX_LAYOUTS} layouts (plugin limit to keep templates focused) — ${candidates.length - toAdd.length} frame(s) not added.`,
+      `A template is capped at ${TEMPLATE_MAX_LAYOUTS} layouts (plugin limit to keep templates focused): ${candidates.length - toAdd.length} frame(s) not added.`,
       { error: true, timeout: 6000 },
     );
   }
@@ -666,8 +666,8 @@ async function handlePrepareTemplateForSlides(
   const label = copies.length === 1 ? 'layout' : 'layouts';
   figma.notify(
     totalWarnings === 0
-      ? `Prepared ${copies.length} ${label} for Slides — no issues found.`
-      : `Prepared ${copies.length} ${label} for Slides — ${totalWarnings} issue(s) flagged on canvas (red = rasterized, orange = approximated).`,
+      ? `Prepared ${copies.length} ${label} for Slides, no issues found.`
+      : `Prepared ${copies.length} ${label} for Slides: ${totalWarnings} issue(s) flagged on canvas (red = rasterized, orange = approximated).`,
   );
 
   await addTemplateLayoutNodes(newlyCreated, pending, idGen);
@@ -1267,7 +1267,7 @@ async function handleTemplateCreateRequest(
   if (blocked) {
     figma.ui.postMessage({
       type: 'export-error',
-      message: `"${blocked.frame.name}" still contains elements that would be converted to images — fix them in Figma before creating the template.`,
+      message: `"${blocked.frame.name}" still contains elements that would be converted to images. Fix them in Figma before creating the template.`,
     });
     return;
   }

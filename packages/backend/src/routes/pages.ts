@@ -191,7 +191,7 @@ pagesRouter.get('/', (_req, res) => {
     <section class="hero">
       <div class="hero__content">
         <h1 class="hero__title">Editable &amp; pixel perfect export</h1>
-        <p class="hero__lede">Export a Figma design straight to Google Slides — layout, styles, and theme preserved.</p>
+        <p class="hero__lede">Export a Figma design straight to Google Slides, with layout, styles, and theme preserved.</p>
         <div class="hero__actions">
           <a class="btn cta" href="${PLUGIN_URL}" target="_blank" rel="${REL_THIRD_PARTY}">View the plugin on Figma</a>
         </div>
@@ -230,7 +230,7 @@ pagesRouter.get('/', (_req, res) => {
         <div class="feature-card">
           <svg class="feature-card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="9" width="10" height="10" rx="1.5"/><circle cx="16" cy="8" r="5"/></svg>
           <h3 class="feature-card__title">Real Slides objects</h3>
-          <p class="feature-card__desc">Text, shapes, colors, and typography are recreated as native, editable objects — not a flattened screenshot.</p>
+          <p class="feature-card__desc">Text, shapes, colors, and typography are recreated as native, editable objects instead of a flattened screenshot.</p>
         </div>
         <div class="feature-card">
           <svg class="feature-card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 L20 6 V11 C20 16 16.5 19.5 12 21 C7.5 19.5 4 16 4 11 V6 Z"/><path d="M8.5 12 L11 14.5 L16 9.5"/></svg>
@@ -283,10 +283,10 @@ pagesRouter.get('/', (_req, res) => {
       <h2 class="section__title">Why Decker asks for Google access</h2>
       <p>When you sign in, Decker requests two things, and nothing more:</p>
       <ul>
-        <li><strong>Google Drive API (<code>drive.file</code> scope)</strong> — limited to files created by Decker itself. This is what lets Decker create and populate the presentation you ask to export through the Google Slides API; it cannot read or modify any of your other Drive or Slides files.</li>
-        <li><strong>Your email address</strong> — used only to display, inside the plugin, which Google account is currently connected.</li>
+        <li><strong>Google Drive API (<code>drive.file</code> scope)</strong>: limited to files created by Decker itself. This is what lets Decker create and populate the presentation you ask to export through the Google Slides API; it cannot read or modify any of your other Drive or Slides files.</li>
+        <li><strong>Your email address</strong>: used only to display, inside the plugin, which Google account is currently connected.</li>
       </ul>
-      <p>No data is stored beyond what's needed to run that export — full details in the <a class="text-link" href="${SITE_URL}/privacy">Privacy Policy</a>.</p>
+      <p>No data is stored beyond what's needed to run that export. Full details are in the <a class="text-link" href="${SITE_URL}/privacy">Privacy Policy</a>.</p>
     </section>
   `;
   res.type('html').send(
@@ -312,8 +312,8 @@ pagesRouter.get('/privacy', (_req, res) => {
 
         <h2 class="section__title">Google data Decker accesses</h2>
         <ul>
-          <li><strong>Google Drive API (<code>drive.file</code> scope)</strong> — limited to files created by Decker itself. This is what lets Decker create and populate the presentation you ask to export through the Google Slides API; Decker cannot read or modify any of your other Drive or Slides files.</li>
-          <li><strong>Email address</strong> — used only to display, inside the plugin, which Google account is currently connected.</li>
+          <li><strong>Google Drive API (<code>drive.file</code> scope)</strong>: limited to files created by Decker itself. This is what lets Decker create and populate the presentation you ask to export through the Google Slides API; Decker cannot read or modify any of your other Drive or Slides files.</li>
+          <li><strong>Email address</strong>: used only to display, inside the plugin, which Google account is currently connected.</li>
         </ul>
 
         <h2 class="section__title">What Decker doesn't do</h2>
@@ -321,20 +321,20 @@ pagesRouter.get('/privacy', (_req, res) => {
 
         <h2 class="section__title">How Decker protects your data</h2>
         <ul>
-          <li><strong>Encryption in transit</strong> — every connection between the plugin, Decker's backend, and Google's APIs is made over HTTPS/TLS. Decker never transmits your credentials or tokens over an unencrypted channel.</li>
-          <li><strong>Encryption at rest</strong> — your Google refresh token is never stored in plain text. It's encrypted with AES-256-GCM before being written to storage, using a secret key that only Decker's backend holds.</li>
-          <li><strong>No standing access to your files</strong> — Decker only touches the Google Slides presentation it creates for you (via the <code>drive.file</code> scope). It cannot browse, read, or modify any other file in your Drive.</li>
-          <li><strong>Signed, time-limited URLs</strong> — images generated during an export are served through short-lived signed URLs (see retention below) so that they can't be accessed after their purpose is served.</li>
-          <li><strong>Access control</strong> — only Decker's backend service can decrypt your refresh token or access exported assets; there is no admin dashboard or bulk export of user data.</li>
+          <li><strong>Encryption in transit</strong>: every connection between the plugin, Decker's backend, and Google's APIs is made over HTTPS/TLS. Decker never transmits your credentials or tokens over an unencrypted channel.</li>
+          <li><strong>Encryption at rest</strong>: your Google refresh token is never stored in plain text. It's encrypted with AES-256-GCM before being written to storage, using a secret key that only Decker's backend holds.</li>
+          <li><strong>No standing access to your files</strong>: Decker only touches the Google Slides presentation it creates for you (via the <code>drive.file</code> scope). It cannot browse, read, or modify any other file in your Drive.</li>
+          <li><strong>Signed, time-limited URLs</strong>: images generated during an export are served through short-lived signed URLs (see retention below) so that they can't be accessed after their purpose is served.</li>
+          <li><strong>Access control</strong>: only Decker's backend service can decrypt your refresh token or access exported assets; there is no admin dashboard or bulk export of user data.</li>
         </ul>
 
         <h2 class="section__title">Data retention and deletion</h2>
         <ul>
-          <li><strong>Google refresh token and account email</strong> — kept encrypted for up to 90 days of inactivity so you don't have to sign in again for every export, and deleted immediately when you sign out of the plugin or disconnect Decker from <a class="text-link" href="https://myaccount.google.com/permissions" target="_blank" rel="${REL_THIRD_PARTY}">myaccount.google.com/permissions</a>. An inactive session expires and is deleted automatically after 90 days.</li>
-          <li><strong>Exported images</strong> — hosted only for the duration of the export and automatically deleted within at most 1 hour of being generated, whether or not the export succeeds.</li>
-          <li><strong>Export job status</strong> (progress/result of a single export) — automatically deleted after 24 hours.</li>
-          <li><strong>Sign-in state</strong> (temporary OAuth data used only while you're completing the Google sign-in flow) — automatically deleted after 10 minutes.</li>
-          <li>You can request deletion of any data Decker holds about you at any time, in addition to disconnecting Decker from your Google account — see Contact below.</li>
+          <li><strong>Google refresh token and account email</strong>: kept encrypted for up to 90 days of inactivity so you don't have to sign in again for every export, and deleted immediately when you sign out of the plugin or disconnect Decker from <a class="text-link" href="https://myaccount.google.com/permissions" target="_blank" rel="${REL_THIRD_PARTY}">myaccount.google.com/permissions</a>. An inactive session expires and is deleted automatically after 90 days.</li>
+          <li><strong>Exported images</strong>: hosted only for the duration of the export and automatically deleted within at most 1 hour of being generated, whether or not the export succeeds.</li>
+          <li><strong>Export job status</strong> (progress/result of a single export): automatically deleted after 24 hours.</li>
+          <li><strong>Sign-in state</strong> (temporary OAuth data used only while you're completing the Google sign-in flow): automatically deleted after 10 minutes.</li>
+          <li>You can request deletion of any data Decker holds about you at any time, in addition to disconnecting Decker from your Google account. See Contact below.</li>
         </ul>
 
         <h2 class="section__title">Contact</h2>
@@ -344,7 +344,7 @@ pagesRouter.get('/privacy', (_req, res) => {
   `;
   res.type('html').send(
     shell({
-      title: 'Decker — Privacy Policy',
+      title: 'Decker: Privacy Policy',
       description: 'How Decker, a free Figma-to-Google-Slides plugin, handles your data.',
       path: '/privacy',
       jsonLdType: 'WebPage',
@@ -361,14 +361,14 @@ pagesRouter.get('/terms', (_req, res) => {
         <p class="meta">Last updated: ${LAST_UPDATED}</p>
         <p>Decker is a free plugin, provided "as is" without warranty of any kind, built as a personal project. You remain solely responsible for the content you export through the plugin.</p>
         <p>Using the plugin requires using your Google account via the OAuth authentication described in the <a class="text-link" href="${SITE_URL}/privacy">Privacy Policy</a>.</p>
-        <p>Decker is free — if the plugin saves you time, a donation via <a class="text-link" href="${COFFEE_URL}" target="_blank" rel="${REL_THIRD_PARTY}">Buy me a coffee</a> is appreciated but never required.</p>
+        <p>Decker is free. If the plugin saves you time, a donation via <a class="text-link" href="${COFFEE_URL}" target="_blank" rel="${REL_THIRD_PARTY}">Buy me a coffee</a> is appreciated but never required.</p>
         <p>For any question, contact <a class="text-link" href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a>.</p>
       </section>
     </div>
   `;
   res.type('html').send(
     shell({
-      title: 'Decker — Terms of Use',
+      title: 'Decker: Terms of Use',
       description: 'Terms of use for Decker, a free Figma-to-Google-Slides plugin.',
       path: '/terms',
       jsonLdType: 'WebPage',

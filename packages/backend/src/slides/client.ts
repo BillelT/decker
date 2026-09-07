@@ -57,7 +57,7 @@ async function callApi<T>(accessToken: string, path: string, init: RequestInit =
       // code HTTP nu, sans la vraie raison du rejet (ex. quel champ précis
       // d'une requête `createImage`/`createShape` est invalide).
       const detail = (body as { error?: { message?: string } } | undefined)?.error?.message;
-      const message = detail ? `Slides API ${res.status} on ${path} — ${detail}` : `Slides API ${res.status} on ${path}`;
+      const message = detail ? `Slides API ${res.status} on ${path}: ${detail}` : `Slides API ${res.status} on ${path}`;
       throw new SlidesApiError(message, res.status, body);
     }
     return (await res.json()) as T;

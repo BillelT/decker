@@ -24,7 +24,7 @@ export function decideRadius(radii: CornerRadii, w: number, h: number, tolerance
   if (allZero) return { kind: 'rectangle' };
 
   const uniform = topLeft === topRight && topRight === bottomLeft && bottomLeft === bottomRight;
-  if (!uniform) return { kind: 'raster', reason: 'Corner radii differ between corners — not representable natively.' };
+  if (!uniform) return { kind: 'raster', reason: 'Corner radii differ between corners: not representable natively.' };
 
   const minDim = Math.min(w, h);
   if (topLeft >= minDim / 2) {

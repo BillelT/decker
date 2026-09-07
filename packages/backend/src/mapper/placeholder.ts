@@ -12,7 +12,7 @@ export const PLACEHOLDER_ALT_TEXT_PREFIX = 'f2s-placeholder';
 export function mapPlaceholderAltText(objectId: string, placeholder: IRPlaceholder): UpdatePageElementAltTextRequest {
   return {
     objectId,
-    title: `Template placeholder — ${placeholder.label}`,
+    title: `Template placeholder: ${placeholder.label}`,
     description: `${PLACEHOLDER_ALT_TEXT_PREFIX}:${placeholder.role}`,
   };
 }

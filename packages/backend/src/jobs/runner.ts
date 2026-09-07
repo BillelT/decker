@@ -31,7 +31,7 @@ async function applyBatches(jobId: string, presentationId: string, batches: Requ
 }
 
 function failureSummary(failedSlideNames: string[], verb: string): string {
-  return `${failedSlideNames.length} slide(s) ${verb} (${failedSlideNames.join(', ')}) — see the per-slide errors for details.`;
+  return `${failedSlideNames.length} slide(s) ${verb} (${failedSlideNames.join(', ')}). See the per-slide errors for details.`;
 }
 
 /**
@@ -118,7 +118,7 @@ export async function retryExportJob(
   calibration: CalibrationData,
 ): Promise<void> {
   const presentationId = job.presentationId;
-  if (!presentationId) throw new Error('retryExportJob: job has no presentationId — nothing to retry against.');
+  if (!presentationId) throw new Error('retryExportJob: job has no presentationId, nothing to retry against.');
 
   await updateJob(job.id, { status: 'running' });
 

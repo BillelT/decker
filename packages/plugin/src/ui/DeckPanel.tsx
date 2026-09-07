@@ -328,7 +328,7 @@ export function DeckPanel({
                         <button
                           type="button"
                           className={`f2s-log-entry${w.severity === 'blocking' ? ' f2s-log-entry--blocking' : ''}${flag ? ` f2s-log-entry--${flag}` : ''}`}
-                          title={`${w.nodeName} — ${tagText ?? w.message}`}
+                          title={`${w.nodeName}: ${tagText ?? w.message}`}
                           onClick={() => selectSourceNodes([w.sourceNodeId])}
                         >
                           {/* Le nom du calque (nodeName) vient de Figma, où le nom par défaut d'un
@@ -339,7 +339,7 @@ export function DeckPanel({
                               placeholder inconnu) : sinon la raison est déjà dans le tag. */}
                           <span className="f2s-log-entry-text">
                             <strong className="f2s-log-entry-name">{w.nodeName}</strong>
-                            {!tagText && <span className="f2s-log-entry-message">— {w.message}</span>}
+                            {!tagText && <span className="f2s-log-entry-message">: {w.message}</span>}
                           </span>
                           {tagText && <span className={`f2s-log-entry-flag f2s-log-entry-flag--${flag}`}>{tagText}</span>}
                         </button>

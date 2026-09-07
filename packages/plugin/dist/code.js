@@ -13,70 +13,70 @@
     if (input.opacity === 0) return { action: "ignore" };
     if (input.width < 0.5 && input.height < 0.5) return { action: "ignore" };
     if (!BLEND_MODES_EQUIVALENT_TO_NORMAL.has(input.blendMode)) {
-      return { action: "raster", warningCode: "BLEND_MODE_RASTERIZED", message: `Blend mode "${input.blendMode}" isn't supported by Slides \u2014 converted to an image.` };
+      return { action: "raster", warningCode: "BLEND_MODE_RASTERIZED", message: `Blend mode "${input.blendMode}" isn't supported by Slides: converted to an image.` };
     }
     if (input.hasVisibleShadowOrBlur) {
-      return { action: "raster", warningCode: "EFFECT_RASTERIZED", message: "Drop shadow or blur has no native Slides equivalent \u2014 converted to an image." };
+      return { action: "raster", warningCode: "EFFECT_RASTERIZED", message: "Drop shadow or blur has no native Slides equivalent: converted to an image." };
     }
     if (input.isMasked) {
-      return { action: "raster", warningCode: "MASK_RASTERIZED", message: "Layer masks have no native Slides equivalent \u2014 the masked group is flattened into an image." };
+      return { action: "raster", warningCode: "MASK_RASTERIZED", message: "Layer masks have no native Slides equivalent: the masked group is flattened into an image." };
     }
     if (input.kind === "LINE") {
       const l = input.line;
       if (!l || l.visibleStrokeCount === 0) return { action: "ignore" };
       if (l.visibleStrokeCount > 1) {
-        return { action: "raster", warningCode: "LINE_RASTERIZED", message: "Multiple strokes on a line \u2014 Slides supports only one, converted to an image." };
+        return { action: "raster", warningCode: "LINE_RASTERIZED", message: "Multiple strokes on a line: Slides supports only one, converted to an image." };
       }
       if (l.strokeIsGradient) {
-        return { action: "raster", warningCode: "GRADIENT_RASTERIZED", message: "Gradient stroke on a line is not supported by Slides \u2014 converted to an image." };
+        return { action: "raster", warningCode: "GRADIENT_RASTERIZED", message: "Gradient stroke on a line is not supported by Slides: converted to an image." };
       }
       if (l.strokeWeightIsMixed) {
-        return { action: "raster", warningCode: "LINE_RASTERIZED", message: "Non-uniform stroke weight on this line \u2014 converted to an image." };
+        return { action: "raster", warningCode: "LINE_RASTERIZED", message: "Non-uniform stroke weight on this line: converted to an image." };
       }
       if (l.hasUnsupportedCap) {
-        return { action: "raster", warningCode: "LINE_RASTERIZED", message: "Decorative line cap (arrow, diamond, circle\u2026) has no native Slides equivalent \u2014 converted to an image." };
+        return { action: "raster", warningCode: "LINE_RASTERIZED", message: "Decorative line cap (arrow, diamond, circle\u2026) has no native Slides equivalent: converted to an image." };
       }
       return { action: "native-line" };
     }
     if (input.kind === "TEXT") {
       const t = input.text;
       if (t?.fontUnavailable) {
-        return { action: "raster", warningCode: "FONT_MISSING", message: "Font not found and no substitute available \u2014 text converted to an image." };
+        return { action: "raster", warningCode: "FONT_MISSING", message: "Font not found and no substitute available: text converted to an image." };
       }
       if (t?.letterSpacingExceedsThreshold) {
-        return { action: "raster", warningCode: "LETTER_SPACING_LOST", message: "Letter spacing changes the text width by more than 2% \u2014 converted to an image." };
+        return { action: "raster", warningCode: "LETTER_SPACING_LOST", message: "Letter spacing changes the text width by more than 2%: converted to an image." };
       }
       if (t?.hasUnrepresentableMixedStyle) {
-        return { action: "raster", warningCode: "EFFECT_RASTERIZED", message: "Mixed text styling cannot be represented \u2014 converted to an image." };
+        return { action: "raster", warningCode: "EFFECT_RASTERIZED", message: "Mixed text styling cannot be represented: converted to an image." };
       }
       return { action: "native-text" };
     }
     if (input.kind === "RECTANGLE" || input.kind === "ELLIPSE" || input.kind === "POLYGON" || input.kind === "STAR") {
       const s = input.shape;
       if (s && s.visibleFillCount > 1) {
-        return { action: "raster", warningCode: "MULTIPLE_FILLS_RASTERIZED", message: "Multiple visible fills \u2014 Slides supports only one, converted to an image." };
+        return { action: "raster", warningCode: "MULTIPLE_FILLS_RASTERIZED", message: "Multiple visible fills: Slides supports only one, converted to an image." };
       }
       if (s?.fillIsGradient) {
-        return { action: "raster", warningCode: "GRADIENT_RASTERIZED", message: "Gradients are not supported by Slides \u2014 converted to an image." };
+        return { action: "raster", warningCode: "GRADIENT_RASTERIZED", message: "Gradients are not supported by Slides: converted to an image." };
       }
       if (s?.fillIsImage) {
         return { action: "image" };
       }
       if (s?.hasMultipleOrOffCenterStroke) {
-        return { action: "raster", warningCode: "EFFECT_RASTERIZED", message: "Multiple or off-center stroke beyond tolerance \u2014 converted to an image." };
+        return { action: "raster", warningCode: "EFFECT_RASTERIZED", message: "Multiple or off-center stroke beyond tolerance: converted to an image." };
       }
       if (input.kind === "POLYGON" && s?.polygonSides !== void 0 && ![3, 4, 5, 6].includes(s.polygonSides)) {
         return {
           action: "raster",
           warningCode: "POLYGON_SIDES_UNSUPPORTED",
-          message: `Slides has no native preset for a ${s.polygonSides}-sided polygon (only 3\u20136) \u2014 converted to an image.`
+          message: `Slides has no native preset for a ${s.polygonSides}-sided polygon (only 3\u20136): converted to an image.`
         };
       }
       if (input.kind === "STAR" && s?.starPoints !== void 0 && s.starPoints !== 5) {
         return {
           action: "raster",
           warningCode: "STAR_POINTS_UNSUPPORTED",
-          message: `Slides has no verified native preset for a ${s.starPoints}-point star (only 5) \u2014 converted to an image.`
+          message: `Slides has no verified native preset for a ${s.starPoints}-point star (only 5): converted to an image.`
         };
       }
       if (input.kind === "RECTANGLE" && s?.radiusDecision) {
@@ -92,11 +92,11 @@
       return { action: "native-shape-preset" };
     }
     if (input.kind === "VECTOR_LIKE") {
-      return { action: "raster", warningCode: "VECTOR_RASTERIZED", message: "Custom vector shape (icon, boolean operation, path) \u2014 converted to an image." };
+      return { action: "raster", warningCode: "VECTOR_RASTERIZED", message: "Custom vector shape (icon, boolean operation, path): converted to an image." };
     }
     if (input.kind === "GROUP_LIKE") {
       if (input.container?.clipsContentWithOverflow) {
-        return { action: "raster", warningCode: "EFFECT_RASTERIZED", message: "Group clips overflowing children \u2014 flattened into an image." };
+        return { action: "raster", warningCode: "EFFECT_RASTERIZED", message: "Group clips overflowing children: flattened into an image." };
       }
       const bg = input.container?.fill;
       if (bg && bg.visibleFillCount > 0) {
@@ -104,7 +104,7 @@
           return {
             action: "raster",
             warningCode: "CONTAINER_BACKGROUND_RASTERIZED",
-            message: "This layout frame's own background (gradient, image fill, multiple fills, or non-standard stroke) can't be combined natively with its children \u2014 the whole group is converted to an image."
+            message: "This layout frame's own background (gradient, image fill, multiple fills, or non-standard stroke) can't be combined natively with its children: the whole group is converted to an image."
           };
         }
         if (bg.radiusDecision) {
@@ -131,7 +131,7 @@
     const allZero = topLeft === 0 && topRight === 0 && bottomLeft === 0 && bottomRight === 0;
     if (allZero) return { kind: "rectangle" };
     const uniform = topLeft === topRight && topRight === bottomLeft && bottomLeft === bottomRight;
-    if (!uniform) return { kind: "raster", reason: "Corner radii differ between corners \u2014 not representable natively." };
+    if (!uniform) return { kind: "raster", reason: "Corner radii differ between corners: not representable natively." };
     const minDim = Math.min(w, h);
     if (topLeft >= minDim / 2) {
       return w === h ? { kind: "ellipse" } : { kind: "round-rectangle", approximated: true };
@@ -531,7 +531,7 @@
         severity: "warning",
         sourceNodeId: node.id,
         nodeName: node.name,
-        message: `Unknown placeholder tag "[[${unknownTag}]]" \u2014 use one of: ${KNOWN_ROLE_TAGS.map((r) => `[[${r}]]`).join(", ")}.`
+        message: `Unknown placeholder tag "[[${unknownTag}]]". Use one of: ${KNOWN_ROLE_TAGS.map((r) => `[[${r}]]`).join(", ")}.`
       });
     }
     const decision = classifyNode(toDecisionInput(node, state.maskedByAncestor ?? false));
@@ -907,7 +907,7 @@
             nodeId: node.id,
             nodeName: node.name,
             code: "LETTER_SPACING_LOST",
-            message: extraction.rasterReason ?? "Text cannot be represented \u2014 it will be converted to an image.",
+            message: extraction.rasterReason ?? "Text cannot be represented: it will be converted to an image.",
             category: "rasterized"
           });
           return;
@@ -1511,12 +1511,12 @@
       if ("cornerRadius" in node && typeof node.cornerRadius === "number") {
         badge.cornerRadius = node.cornerRadius;
       }
-      badge.name = `${w.category === "visual-diff" ? "\u25D0" : "\u26A0"} ${w.nodeName} \u2014 ${w.message}`;
+      badge.name = `${w.category === "visual-diff" ? "\u25D0" : "\u26A0"} ${w.nodeName}: ${w.message}`;
       badges.push(badge);
     }
     if (badges.length === 0) return;
     const group = badges.length > 1 ? figma.group(badges, figma.currentPage) : badges[0];
-    group.name = `Slides lint \u2014 ${stripReadyPrefix(copy.name)}`;
+    group.name = `Slides lint - ${stripReadyPrefix(copy.name)}`;
     group.locked = true;
     if ("expanded" in group) group.expanded = false;
     copy.setPluginData(LINT_GROUP_ID_KEY, group.id);
@@ -1574,7 +1574,7 @@
     figma.viewport.scrollAndZoomIntoView(copies);
     const label = copies.length === 1 ? "frame" : "frames";
     figma.notify(
-      totalWarnings === 0 ? `Prepared ${copies.length} ${label} for Slides \u2014 no issues found.` : `Prepared ${copies.length} ${label} for Slides \u2014 ${totalWarnings} issue(s) flagged on canvas (red = rasterized, orange = approximated).`
+      totalWarnings === 0 ? `Prepared ${copies.length} ${label} for Slides, no issues found.` : `Prepared ${copies.length} ${label} for Slides: ${totalWarnings} issue(s) flagged on canvas (red = rasterized, orange = approximated).`
     );
     await addFrames(newlyCreated, pending, idGen);
   }
@@ -1600,7 +1600,7 @@
     if (toAdd.length < candidates.length) {
       figma.ui.postMessage({ type: "too-many-frames", count: pending.length + candidates.length, max: TEMPLATE_MAX_LAYOUTS });
       figma.notify(
-        `A template is capped at ${TEMPLATE_MAX_LAYOUTS} layouts (plugin limit to keep templates focused) \u2014 ${candidates.length - toAdd.length} frame(s) not added.`,
+        `A template is capped at ${TEMPLATE_MAX_LAYOUTS} layouts (plugin limit to keep templates focused): ${candidates.length - toAdd.length} frame(s) not added.`,
         { error: true, timeout: 6e3 }
       );
     }
@@ -1670,7 +1670,7 @@
     figma.viewport.scrollAndZoomIntoView(copies);
     const label = copies.length === 1 ? "layout" : "layouts";
     figma.notify(
-      totalWarnings === 0 ? `Prepared ${copies.length} ${label} for Slides \u2014 no issues found.` : `Prepared ${copies.length} ${label} for Slides \u2014 ${totalWarnings} issue(s) flagged on canvas (red = rasterized, orange = approximated).`
+      totalWarnings === 0 ? `Prepared ${copies.length} ${label} for Slides, no issues found.` : `Prepared ${copies.length} ${label} for Slides: ${totalWarnings} issue(s) flagged on canvas (red = rasterized, orange = approximated).`
     );
     await addTemplateLayoutNodes(newlyCreated, pending, idGen);
   }
@@ -2027,7 +2027,7 @@
     if (blocked) {
       figma.ui.postMessage({
         type: "export-error",
-        message: `"${blocked.frame.name}" still contains elements that would be converted to images \u2014 fix them in Figma before creating the template.`
+        message: `"${blocked.frame.name}" still contains elements that would be converted to images. Fix them in Figma before creating the template.`
       });
       return;
     }

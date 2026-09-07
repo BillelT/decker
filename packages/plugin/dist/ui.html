@@ -2969,8 +2969,8 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
       const resolved = fontOverrides[w3.fontOriginal] ?? w3.fontSubstitute ?? w3.fontOriginal;
       return `Font "${w3.fontOriginal}" \u2192 "${resolved}"`;
     }
-    const dashIndex = w3.message.indexOf(" \u2014 ");
-    const reason = dashIndex === -1 ? w3.message : w3.message.slice(0, dashIndex);
+    const colonIndex = w3.message.indexOf(": ");
+    const reason = colonIndex === -1 ? w3.message : w3.message.slice(0, colonIndex);
     return reason.endsWith(".") ? reason.slice(0, -1) : reason;
   }
 
@@ -3148,7 +3148,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     return /* @__PURE__ */ u3("div", { className: `f2s-retro${src ? "" : " f2s-retro--no-signal"}`, children: [
       /* @__PURE__ */ u3("div", { className: "f2s-retro-titlebar", children: [
         /* @__PURE__ */ u3("span", { className: "f2s-retro-title", children: [
-          "Exporting \u2014 ",
+          "Exporting - ",
           frameName
         ] }),
         /* @__PURE__ */ u3("span", { className: "f2s-retro-window-buttons", "aria-hidden": "true", children: [
@@ -3397,13 +3397,13 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
               {
                 type: "button",
                 className: `f2s-log-entry${w3.severity === "blocking" ? " f2s-log-entry--blocking" : ""}${flag ? ` f2s-log-entry--${flag}` : ""}`,
-                title: `${w3.nodeName} \u2014 ${tagText ?? w3.message}`,
+                title: `${w3.nodeName}: ${tagText ?? w3.message}`,
                 onClick: () => selectSourceNodes([w3.sourceNodeId]),
                 children: [
                   /* @__PURE__ */ u3("span", { className: "f2s-log-entry-text", children: [
                     /* @__PURE__ */ u3("strong", { className: "f2s-log-entry-name", children: w3.nodeName }),
                     !tagText && /* @__PURE__ */ u3("span", { className: "f2s-log-entry-message", children: [
-                      "\u2014 ",
+                      ": ",
                       w3.message
                     ] })
                   ] }),
@@ -3542,7 +3542,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
         const stolenFrom = byKey.get(previousKey);
         postToPlugin({
           type: "notify",
-          message: `"${THEME_ROLE_LABELS[role]}" was already used by ${stolenFrom ? colorLabel(stolenFrom) : previousKey} \u2014 reassigned.`
+          message: `"${THEME_ROLE_LABELS[role]}" was already used by ${stolenFrom ? colorLabel(stolenFrom) : previousKey}. Reassigned.`
         });
       }
       setColorRoles((prev) => {
@@ -3558,7 +3558,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     return /* @__PURE__ */ u3("div", { className: "f2s-style-panel", children: [
       /* @__PURE__ */ u3("section", { className: "f2s-tmpl-section", children: [
         /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading f2s-style-heading", children: "Colors" }),
-        colors.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: "No color detected yet \u2014 add layouts first." }) : /* @__PURE__ */ u3("ul", { className: "f2s-style-list", children: sortedColors.map((c3) => {
+        colors.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: "No color detected yet. Add layouts first." }) : /* @__PURE__ */ u3("ul", { className: "f2s-style-list", children: sortedColors.map((c3) => {
           const key = colorKey(c3.hex, c3.alpha);
           const label = colorLabel(c3);
           return /* @__PURE__ */ u3("li", { className: "f2s-style-row", children: /* @__PURE__ */ u3("div", { className: "f2s-style-row-main", children: [
@@ -3621,11 +3621,11 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
       const tagText = flag ? logEntryTagText(w3, fontOverrides) : void 0;
       const currentRole = parsePlaceholderTag(w3.nodeName)?.role;
       return /* @__PURE__ */ u3("li", { className: `f2s-log-entry${w3.severity === "blocking" ? " f2s-log-entry--blocking" : ""}${flag ? ` f2s-log-entry--${flag}` : ""}`, children: [
-        /* @__PURE__ */ u3("button", { type: "button", className: "f2s-log-entry-clickarea", title: `${w3.nodeName} \u2014 ${tagText ?? w3.message}`, onClick: () => selectSourceNodes([w3.sourceNodeId]), children: [
+        /* @__PURE__ */ u3("button", { type: "button", className: "f2s-log-entry-clickarea", title: `${w3.nodeName}: ${tagText ?? w3.message}`, onClick: () => selectSourceNodes([w3.sourceNodeId]), children: [
           /* @__PURE__ */ u3("span", { className: "f2s-log-entry-text", children: [
             /* @__PURE__ */ u3("strong", { className: "f2s-log-entry-name", children: w3.nodeName }),
             !tagText && /* @__PURE__ */ u3("span", { className: "f2s-log-entry-message", children: [
-              "\u2014 ",
+              ": ",
               w3.message
             ] })
           ] }),
@@ -3800,7 +3800,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
                     className: `f2s-frame-preview${highlightedId === id ? " is-active" : ""}${layout.blocking ? " f2s-frame-preview--blocking" : ""}${pacedCursor?.frameId === id ? " is-exporting" : ""}`,
                     onClick: () => selectLayout(id),
                     onPointerDown: (e3) => handleDragPointerDown(e3, id),
-                    title: layout.blocking ? "Contains an element that would be rasterized \u2014 open it to see the details." : void 0,
+                    title: layout.blocking ? "Contains an element that would be rasterized. Open it to see the details." : void 0,
                     children: layout.previewDataUrl && /* @__PURE__ */ u3("img", { src: layout.previewDataUrl, alt: layout.name, draggable: false })
                   }
                 ),
@@ -3842,7 +3842,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
           /* @__PURE__ */ u3("section", { className: "f2s-tmpl-section", children: [
             /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Placeholders" }),
             previewedLayout.placeholders.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: [
-              "No tagged placeholder yet \u2014 prefix a layer name in Figma with ",
+              "No tagged placeholder yet. Prefix a layer name in Figma with ",
               /* @__PURE__ */ u3("code", { children: "[[title]]" }),
               ", ",
               /* @__PURE__ */ u3("code", { children: "[[body]]" }),
@@ -3890,7 +3890,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
   ];
   var SKIN_TABS = [
     { value: "modern", label: "Modern", hint: "Brand orange palette with Windows 95 bevels and square corners." },
-    { value: "win95", label: "Windows 95", hint: "Retro Windows 95 chrome \u2014 title bar, bevels, system gray." }
+    { value: "win95", label: "Windows 95", hint: "Retro Windows 95 chrome: title bar, bevels, system gray." }
   ];
   function CloseIcon() {
     return /* @__PURE__ */ u3("svg", { width: "14", height: "14", viewBox: "0 0 14 14", fill: "none", xmlns: "http://www.w3.org/2000/svg", "aria-hidden": "true", children: /* @__PURE__ */ u3("path", { d: "m3 3 8 8M11 3l-8 8", stroke: "currentColor", strokeWidth: "1.6", strokeLinecap: "round" }) });
@@ -3963,14 +3963,14 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
                       "Signed in as ",
                       /* @__PURE__ */ u3("strong", { children: accountEmail }),
                       "."
-                    ] }) : signedIn ? "Signed in (email unavailable \u2014 sign out and back in to see it)." : "Not signed in." })
+                    ] }) : signedIn ? "Signed in (email unavailable: sign out and back in to see it)." : "Not signed in." })
                   ] }),
                   signedIn && /* @__PURE__ */ u3(
                     "button",
                     {
                       type: "button",
                       className: "f2s-btn f2s-btn--secondary",
-                      title: "Sign out \u2014 you'll be asked to pick a Google account next time you sign in.",
+                      title: "Sign out. You'll be asked to pick a Google account next time you sign in.",
                       onClick: onSignOut,
                       children: "Sign out"
                     }
@@ -4018,7 +4018,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
                 showDebugExport && /* @__PURE__ */ u3("section", { className: "f2s-setting", children: [
                   /* @__PURE__ */ u3("div", { className: "f2s-setting-text", children: [
                     /* @__PURE__ */ u3("h3", { className: "f2s-setting-title", children: "Developer" }),
-                    /* @__PURE__ */ u3("p", { className: "f2s-setting-desc", children: "Download the current deck as IRDocument JSON \u2014 for building calibration fixtures (see LIMITATIONS.md). Never sent over the network." })
+                    /* @__PURE__ */ u3("p", { className: "f2s-setting-desc", children: "Download the current deck as IRDocument JSON, for building calibration fixtures (see LIMITATIONS.md). Never sent over the network." })
                   ] }),
                   /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--secondary", onClick: onExportDebugIr, children: "Download IR JSON" })
                 ] })
@@ -4078,7 +4078,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
   var SITE_URL = "https://decker.billeltighidet.fr";
   var AuthExpiredError = class extends Error {
     constructor() {
-      super("Your Google session has expired \u2014 sign in again, then retry.");
+      super("Your Google session has expired. Sign in again, then retry.");
     }
   };
   function Logo() {
@@ -4105,7 +4105,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
   function TitleBar({ mode }) {
     return /* @__PURE__ */ u3("div", { className: "f2s-titlebar", children: [
       /* @__PURE__ */ u3("span", { className: "f2s-titlebar-text", children: [
-        "Decker \u2014 ",
+        "Decker - ",
         mode === "deck" ? "Deck export" : "Template creation"
       ] }),
       /* @__PURE__ */ u3(
@@ -4434,9 +4434,9 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
             break;
           case "too-many-frames":
             if (modeRef.current === "template") {
-              showTemplateSelectionNotice(`${msg.count} layouts selected \u2014 a template is capped at ${msg.max} to stay focused.`);
+              showTemplateSelectionNotice(`${msg.count} layouts selected. A template is capped at ${msg.max} to stay focused.`);
             } else {
-              showSelectionNotice(`${msg.count} frames selected \u2014 beyond ${msg.max}, export may become slow.`);
+              showSelectionNotice(`${msg.count} frames selected. Beyond ${msg.max}, export may become slow.`);
             }
             break;
           case "export-payload":
@@ -4533,7 +4533,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
         await new Promise((r3) => setTimeout(r3, 25));
       }
       const missing = expectedKeys.filter((k3) => !pendingAssets.has(k3)).length;
-      throw new Error(`${missing} image asset(s) never arrived from Figma \u2014 close and reopen the plugin, then retry.`);
+      throw new Error(`${missing} image asset(s) never arrived from Figma. Close and reopen the plugin, then retry.`);
     }
     async function handleExportPayload(doc, expectedAssetKeys) {
       setExportState("exporting");
@@ -4609,7 +4609,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
         }
         return {
           status: "failed",
-          error: "Export timed out after 3 minutes \u2014 the presentation may still be processing; check your Google Drive, or retry once it settles.",
+          error: "Export timed out after 3 minutes. The presentation may still be processing; check your Google Drive, or retry once it settles.",
           resultUrl: lastPresentationUrl,
           failedFrameIds: [],
           retryable: Boolean(lastPresentationId)
@@ -4679,7 +4679,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
         }
         await new Promise((r3) => setTimeout(r3, 1500));
       }
-      setLoginError("Sign-in timed out \u2014 try again.");
+      setLoginError("Sign-in timed out. Try again.");
       setAuthUrl(void 0);
     }
     function startLogin() {
@@ -4846,7 +4846,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     }
     const exporting = exportState === "exporting";
     const busyFromOtherMode = exporting && exportSource !== void 0 && exportSource !== mode;
-    const busyTitle = exportSource === "deck" ? "A deck export is still running \u2014 wait for it to finish." : "A template creation is still running \u2014 wait for it to finish.";
+    const busyTitle = exportSource === "deck" ? "A deck export is still running. Wait for it to finish." : "A template creation is still running. Wait for it to finish.";
     function renderPrimaryAction(label, disabled, disabledTitle, onClick) {
       if (sessionToken) {
         return /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--primary", disabled, title: disabledTitle, onClick, children: label });
@@ -4859,7 +4859,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
             target: "_blank",
             rel: "noreferrer",
             className: "f2s-btn f2s-btn--primary",
-            title: authLinkClicked ? "Finish signing in with Google in the browser tab \u2014 click again to reopen it if you closed it." : `Connect your Google account to enable "${label}".`,
+            title: authLinkClicked ? "Finish signing in with Google in the browser tab. Click again to reopen it if you closed it." : `Connect your Google account to enable "${label}".`,
             onClick: () => setAuthLinkClicked(true),
             children: authLinkClicked ? /* @__PURE__ */ u3("span", { className: "f2s-btn-loading", children: [
               /* @__PURE__ */ u3("span", { className: "f2s-spinner", "aria-hidden": "true" }),
@@ -4889,7 +4889,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
                 "aria-selected": mode === "deck",
                 className: `f2s-tab${mode === "deck" ? " is-active" : ""}`,
                 disabled: exporting,
-                title: exporting ? "An export is running \u2014 wait for it to finish before switching modes." : "Export a one-off deck to Slides.",
+                title: exporting ? "An export is running. Wait for it to finish before switching modes." : "Export a one-off deck to Slides.",
                 onClick: () => setMode("deck"),
                 children: "Deck"
               }
@@ -4902,7 +4902,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
                 "aria-selected": mode === "template",
                 className: `f2s-tab${mode === "template" ? " is-active" : ""}`,
                 disabled: exporting,
-                title: exporting ? "An export is running \u2014 wait for it to finish before switching modes." : "Build a reusable Slides template with tagged placeholders.",
+                title: exporting ? "An export is running. Wait for it to finish before switching modes." : "Build a reusable Slides template with tagged placeholders.",
                 onClick: () => setMode("template"),
                 children: "Templates"
               }
@@ -4938,7 +4938,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
               type: "button",
               className: "f2s-btn f2s-btn--tertiary",
               disabled: exporting,
-              title: exporting ? "An export is running \u2014 wait for it to finish before changing the deck." : void 0,
+              title: exporting ? "An export is running. Wait for it to finish before changing the deck." : void 0,
               onClick: handleAddFramesClick,
               children: selecting ? "Add selection" : "Select frames to add"
             }
@@ -4949,7 +4949,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
               type: "button",
               className: "f2s-btn f2s-btn--secondary",
               disabled: exporting || !hasCanvasSelection && order.length === 0,
-              title: exporting ? "An export is running \u2014 wait for it to finish before changing the deck." : "Duplicate and reformat every frame already in the deck (plus any extra selection on the Figma canvas) for Slides, so you can refine them pixel-perfect natively.",
+              title: exporting ? "An export is running. Wait for it to finish before changing the deck." : "Duplicate and reformat every frame already in the deck (plus any extra selection on the Figma canvas) for Slides, so you can refine them pixel-perfect natively.",
               onClick: handlePrepareForSlides,
               children: "Prepare for Slides"
             }
@@ -4962,7 +4962,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
               type: "button",
               className: "f2s-btn f2s-btn--tertiary",
               disabled: exporting,
-              title: exporting ? "A template creation is running \u2014 wait for it to finish before changing the layouts." : void 0,
+              title: exporting ? "A template creation is running. Wait for it to finish before changing the layouts." : void 0,
               onClick: handleAddTemplateLayoutClick,
               children: templateSelecting ? "Add selection" : "Select layout to add"
             }
@@ -4973,7 +4973,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
               type: "button",
               className: "f2s-btn f2s-btn--secondary",
               disabled: exporting || !hasCanvasSelection && templateOrder.length === 0,
-              title: exporting ? "A template creation is running \u2014 wait for it to finish before changing the layouts." : "Duplicate and reformat every layout for Slides \u2014 clears most blocking issues (gradients, shadows, letter spacing\u2026) automatically.",
+              title: exporting ? "A template creation is running. Wait for it to finish before changing the layouts." : "Duplicate and reformat every layout for Slides, clearing most blocking issues (gradients, shadows, letter spacing\u2026) automatically.",
               onClick: handlePrepareTemplateForSlides,
               children: "Prepare for Slides"
             }
@@ -4988,7 +4988,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
       ] }),
       /* @__PURE__ */ u3("div", { className: "f2s-toolbar", children: /* @__PURE__ */ u3("div", { className: "f2s-toolbar-row", children: /* @__PURE__ */ u3("div", { className: "f2s-toolbar-group", children: [
         /* @__PURE__ */ u3("span", { className: "f2s-toolbar-label", children: "Fonts:" }),
-        (mode === "deck" ? deckFontSubstitutions : templateFontSubstitutions).length === 0 ? /* @__PURE__ */ u3("span", { className: "f2s-toolbar-muted", children: "All fonts will appear here and can be replaced automatically." }) : (mode === "deck" ? deckFontSubstitutions : templateFontSubstitutions).map((s3) => /* @__PURE__ */ u3("label", { className: "f2s-font-select", title: `"${s3.original}" isn't available in Slides \u2014 pick the replacement to use.`, children: [
+        (mode === "deck" ? deckFontSubstitutions : templateFontSubstitutions).length === 0 ? /* @__PURE__ */ u3("span", { className: "f2s-toolbar-muted", children: "All fonts will appear here and can be replaced automatically." }) : (mode === "deck" ? deckFontSubstitutions : templateFontSubstitutions).map((s3) => /* @__PURE__ */ u3("label", { className: "f2s-font-select", title: `"${s3.original}" isn't available in Slides. Pick the replacement to use.`, children: [
           /* @__PURE__ */ u3("span", { className: "f2s-font-original", children: s3.original }),
           /* @__PURE__ */ u3("span", { className: "f2s-font-arrow", children: "\u2192" }),
           /* @__PURE__ */ u3(
