@@ -1179,7 +1179,6 @@ function App() {
 
       <header className="f2s-topbar">
         <div className="f2s-topbar-left">
-          <Logo />
           <div className="f2s-tabs" role="tablist" aria-label="Deck or template">
             <button
               type="button"
@@ -1358,16 +1357,19 @@ function App() {
       )}
 
       <footer className="f2s-footer">
-        <button
-          type="button"
-          className="f2s-footer-settings"
-          aria-haspopup="dialog"
-          aria-expanded={settingsOpen}
-          onClick={() => setSettingsOpen((open) => !open)}
-        >
-          <GearIcon />
-          <span>Settings</span>
-        </button>
+        <div className="f2s-footer-left">
+          <button
+            type="button"
+            className="f2s-footer-settings"
+            aria-haspopup="dialog"
+            aria-expanded={settingsOpen}
+            onClick={() => setSettingsOpen((open) => !open)}
+          >
+            <GearIcon />
+            <span>Settings</span>
+          </button>
+          <Logo />
+        </div>
         <div className="f2s-footer-actions">
           {/* Sans ce message, un export échoué (session expirée, 400 Slides
               API, backend injoignable…) redevenait totalement silencieux :
