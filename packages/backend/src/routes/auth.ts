@@ -8,11 +8,11 @@ import { DECKER_FAVICON, DECKER_MARK_SVG, PERSONAL_MARK_SVG, escapeHtml } from '
 export const authRouter = Router();
 
 /** Habillages du plugin — voir packages/plugin/src/ui/types.ts::UiSkin, recopié ici (pas de dépendance vers le workspace plugin depuis le backend). */
-type UiSkin = 'win95' | 'modern' | 'hybrid';
-const DEFAULT_UI_SKIN: UiSkin = 'win95';
+type UiSkin = 'win95' | 'modern';
+const DEFAULT_UI_SKIN: UiSkin = 'modern';
 
 function normalizeSkin(value: unknown): UiSkin {
-  return value === 'modern' || value === 'hybrid' || value === 'win95' ? value : DEFAULT_UI_SKIN;
+  return value === 'modern' || value === 'win95' ? value : DEFAULT_UI_SKIN;
 }
 
 /** Spec §5: POST /auth/google → démarre OAuth2 (PKCE). */
@@ -97,96 +97,6 @@ interface PageContent {
  * calibrate` (spec §4) a une méthode d'obtention distincte du token, voir
  * printMissingCredentialsHelp() dans calibration/calibrate.ts.
  */
-
-// ============================================================================
-// Skin "modern" — DA de marque du plugin (orange, coins arrondis).
-// ============================================================================
-
-function renderModernPage(content: PageContent): string {
-  const iconPath =
-    content.accent === 'success'
-      ? '<path d="M20 34 L29 43 L46 24" stroke="#F2ECE8" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>'
-      : '<path d="M24 24 L42 42 M42 24 L24 42" stroke="#F2ECE8" stroke-width="4.5" stroke-linecap="round"/>';
-  const accentColor = content.accent === 'success' ? '#F06800' : '#E00000';
-
-  return `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>${escapeHtml(content.title)}</title>
-<link rel="icon" type="image/svg+xml" href="${DECKER_FAVICON}" />
-<style>
-  :root {
-    color-scheme: light;
-    --f2s-orange: #f06800;
-    --f2s-bg: #fff9f5;
-    --f2s-surface: #ffffff;
-    --f2s-border: #eeeeee;
-    --f2s-text: #120f0d;
-    --f2s-text-muted: rgba(18, 15, 13, 0.7);
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 1.25rem;
-    padding: 1.5rem;
-    background: var(--f2s-bg);
-    color: var(--f2s-text);
-    font-family: 'Cabinet Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  }
-  .card {
-    width: 100%;
-    max-width: 400px;
-    background: var(--f2s-surface);
-    border: 1px solid var(--f2s-border);
-    border-radius: 20px;
-    padding: 2.5rem 2rem;
-    text-align: center;
-    box-shadow: 0 12px 32px rgba(18, 15, 13, 0.08);
-  }
-  .brand { display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 2rem; }
-  .brand-mark { width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0; }
-  .brand-name { font-size: 0.95rem; font-weight: 600; letter-spacing: 0.01em; }
-  .status-icon { width: 64px; height: 64px; margin: 0 auto 1.5rem; }
-  h1 { margin: 0 0 0.75rem; font-size: 1.3rem; font-weight: 700; }
-  p.body { margin: 0 0 2rem; color: var(--f2s-text-muted); font-size: 0.95rem; line-height: 1.5; }
-  .btn {
-    display: inline-flex; align-items: center; justify-content: center; width: 100%;
-    padding: 0.75rem 1.25rem; border-radius: 10px; background: var(--f2s-orange); color: #fff9f5;
-    font-size: 0.95rem; font-weight: 600; text-decoration: none; border: none; cursor: pointer;
-  }
-  .fallback { margin: 1rem 0 0; font-size: 0.8rem; color: var(--f2s-text-muted); }
-  .credit { display: flex; justify-content: center; }
-  .credit a { display: inline-flex; opacity: 0.6; }
-  .credit a:hover { opacity: 1; }
-  .credit svg { width: 24px; height: 24px; display: block; }
-</style>
-</head>
-<body>
-  <main class="card">
-    <div class="brand">
-      <svg class="brand-mark" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${DECKER_MARK_SVG.replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '')}</svg>
-      <span class="brand-name">Decker</span>
-    </div>
-    <svg class="status-icon" viewBox="0 0 66 66" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <circle cx="33" cy="33" r="33" fill="${accentColor}"/>
-      ${iconPath}
-    </svg>
-    <h1>${escapeHtml(content.heading)}</h1>
-    <p class="body">${content.body}</p>
-    <a class="btn" href="figma://">Back to Figma</a>
-    <p class="fallback">If nothing happens, just close this tab.</p>
-  </main>
-  <footer class="credit">${FOOTER_CREDIT}</footer>
-</body>
-</html>`;
-}
 
 // ============================================================================
 // Skin "win95" — chrome Windows 95, mêmes tokens que styles.win95.css.
@@ -280,12 +190,12 @@ function renderWin95Page(content: PageContent): string {
 }
 
 // ============================================================================
-// Skin "hybrid" — palette de marque du skin moderne, biseaux/angles droits
-// du skin win95 (mêmes tokens que styles.hybrid.css, valeurs "clair" — ces
+// Skin "modern" (par défaut) — palette de marque, biseaux/angles droits du
+// skin win95 (mêmes tokens que styles.modern.css, valeurs "clair" — ces
 // pages statiques ne suivent pas le thème Figma, comme win95).
 // ============================================================================
 
-function renderHybridPage(content: PageContent): string {
+function renderModernPage(content: PageContent): string {
   const iconPath =
     content.accent === 'success'
       ? '<path d="M20 34 L29 43 L46 24" stroke="#F2ECE8" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>'
@@ -377,9 +287,8 @@ function renderHybridPage(content: PageContent): string {
 }
 
 function renderPage(skin: UiSkin, content: PageContent): string {
-  if (skin === 'modern') return renderModernPage(content);
-  if (skin === 'hybrid') return renderHybridPage(content);
-  return renderWin95Page(content);
+  if (skin === 'win95') return renderWin95Page(content);
+  return renderModernPage(content);
 }
 
 function renderSuccessPage(skin: UiSkin): string {

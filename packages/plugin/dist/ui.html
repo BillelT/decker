@@ -331,7 +331,7 @@ a {
   transition: background-color 0.15s ease, color 0.15s ease, outline-color 0.15s ease, transform 0.15s ease;
 }
 
-/* Transform translateY() uniquement en mode moderne/hybrid (Win95 gère le pressed via box-shadow) */
+/* Transform translateY() uniquement en mode modern (Win95 gère le pressed via box-shadow) */
 html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   transform: translateY(0.5px);
 }
@@ -1159,7 +1159,7 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   background: var(--color-surface-muted);
 }
 
-/* Transform translateY() uniquement en mode moderne/hybrid */
+/* Transform translateY() uniquement en mode modern */
 html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) {
   transform: translateY(0.5px);
 }
@@ -2210,12 +2210,13 @@ html.f2s-skin--win95 .f2s-font-dropdown::-webkit-scrollbar {
 }
 
 /* ============================================================================
-   Skin Hybride — palette et typographie du skin moderne (styles.css),
-   biseaux et angles droits empruntés au skin Windows 95 (styles.win95.css).
+   Skin Modern — palette et typographie de marque (styles.css), biseaux et
+   angles droits empruntés au skin Windows 95 (styles.win95.css). Skin PAR
+   DÉFAUT du plugin (voir DEFAULT_UI_SKIN, ui/types.ts).
 
    Comme win95.css, cette feuille ne redéfinit AUCUNE structure (flex,
    tailles, colonnes) : seul l'habillage est repeint, sous
-   `html.f2s-skin--hybrid`.
+   `html.f2s-skin--modern`.
 
    Contrairement à win95.css, elle NE remappe PAS les tokens sémantiques
    (--color-orange, --color-bg, etc.) : ce skin reste la palette de marque
@@ -2234,7 +2235,7 @@ html.f2s-skin--win95 .f2s-font-dropdown::-webkit-scrollbar {
    grisé "gravé" des éléments désactivés.
    ============================================================================ */
 
-html.f2s-skin--hybrid {
+html.f2s-skin--modern {
   /* Même mécanique que --w95-out/in/pressed/etched, mais teintée depuis le
      texte/fond du thème actif (rgba sur --color-text) plutôt que sur un
      gris système fixe — le biseau reste lisible en clair comme en sombre. */
@@ -2251,15 +2252,15 @@ html.f2s-skin--hybrid {
   --hyb-etched: inset -1px -1px var(--hyb-hi), inset 1px 1px var(--hyb-lo);
 }
 
-html.f2s-skin--hybrid.figma-dark:not(.f2s-theme-light),
-html.f2s-skin--hybrid.f2s-theme-dark {
+html.f2s-skin--modern.figma-dark:not(.f2s-theme-light),
+html.f2s-skin--modern.f2s-theme-dark {
   --hyb-hi: rgba(255, 255, 255, 0.16);
   --hyb-lo: rgba(0, 0, 0, 0.5);
   --hyb-lo-strong: rgba(0, 0, 0, 0.7);
 }
 
 @media (prefers-color-scheme: dark) {
-  html.f2s-skin--hybrid:not(.figma-light):not(.f2s-theme-light) {
+  html.f2s-skin--modern:not(.figma-light):not(.f2s-theme-light) {
     --hyb-hi: rgba(255, 255, 255, 0.16);
     --hyb-lo: rgba(0, 0, 0, 0.5);
     --hyb-lo-strong: rgba(0, 0, 0, 0.7);
@@ -2268,62 +2269,62 @@ html.f2s-skin--hybrid.f2s-theme-dark {
 
 /* ---- Boutons ---- */
 
-html.f2s-skin--hybrid .f2s-btn {
+html.f2s-skin--modern .f2s-btn {
   border-radius: 0;
   box-shadow: var(--hyb-out);
 }
 
-html.f2s-skin--hybrid .f2s-btn:active:not(:disabled) {
+html.f2s-skin--modern .f2s-btn:active:not(:disabled) {
   box-shadow: var(--hyb-pressed);
 }
 
 /* ---- Champs (saisie, listes déroulantes, boîtes de dimensions) ---- */
 
-html.f2s-skin--hybrid .f2s-title-input,
-html.f2s-skin--hybrid .f2s-font-dropdown,
-html.f2s-skin--hybrid .f2s-dim-box {
+html.f2s-skin--modern .f2s-title-input,
+html.f2s-skin--modern .f2s-font-dropdown,
+html.f2s-skin--modern .f2s-dim-box {
   border: none;
   border-radius: 0;
   box-shadow: var(--hyb-in);
 }
 
-html.f2s-skin--hybrid .f2s-title-input:focus,
-html.f2s-skin--hybrid .f2s-font-dropdown:focus {
+html.f2s-skin--modern .f2s-title-input:focus,
+html.f2s-skin--modern .f2s-font-dropdown:focus {
   outline: none;
   box-shadow: var(--hyb-in), 0 0 0 2px var(--color-orange-40);
 }
 
 /* ---- Vignettes du rail ---- */
 
-html.f2s-skin--hybrid .f2s-frame-preview {
+html.f2s-skin--modern .f2s-frame-preview {
   border-radius: 0;
   box-shadow: var(--hyb-in);
 }
 
 /* Badge carré (angles droits), cohérent avec le reste du skin. */
-html.f2s-skin--hybrid .f2s-frame-preview--blocking::after {
+html.f2s-skin--modern .f2s-frame-preview--blocking::after {
   border-radius: 0;
 }
 
 /* ---- Petit bouton carré (croix de suppression) : chrome seulement au
    survol/appui, pour rester discret dans le rail de vignettes. ---- */
 
-html.f2s-skin--hybrid .f2s-icon-btn {
+html.f2s-skin--modern .f2s-icon-btn {
   border-radius: 0;
 }
 
-html.f2s-skin--hybrid .f2s-icon-btn:hover:not(:disabled) {
+html.f2s-skin--modern .f2s-icon-btn:hover:not(:disabled) {
   box-shadow: var(--hyb-out);
 }
 
-html.f2s-skin--hybrid .f2s-icon-btn:active:not(:disabled) {
+html.f2s-skin--modern .f2s-icon-btn:active:not(:disabled) {
   box-shadow: var(--hyb-pressed);
 }
 
 /* ---- Group boxes : Logs et sections du rapport de template ---- */
 
-html.f2s-skin--hybrid .f2s-logs,
-html.f2s-skin--hybrid .f2s-tmpl-section {
+html.f2s-skin--modern .f2s-logs,
+html.f2s-skin--modern .f2s-tmpl-section {
   border: none;
   border-radius: 0;
   box-shadow: var(--hyb-etched);
@@ -2334,41 +2335,41 @@ html.f2s-skin--hybrid .f2s-tmpl-section {
    pour un total inchangé — sinon le contenu touchait le biseau etched
    ci-dessus, contrairement au skin win95 qui pousse ce padding depuis
    toujours sur `.f2s-tmpl-section` (cf. styles.win95.css). */
-html.f2s-skin--hybrid .f2s-style-aside {
+html.f2s-skin--modern .f2s-style-aside {
   padding: 8px;
 }
 
-html.f2s-skin--hybrid .f2s-style-panel .f2s-tmpl-section {
+html.f2s-skin--modern .f2s-style-panel .f2s-tmpl-section {
   padding: 8px;
 }
 
-html.f2s-skin--hybrid .f2s-canvas--template {
+html.f2s-skin--modern .f2s-canvas--template {
   padding: 12px;
 }
 
-html.f2s-skin--hybrid .f2s-tmpl-panel .f2s-tmpl-section {
+html.f2s-skin--modern .f2s-tmpl-panel .f2s-tmpl-section {
   padding: 8px 12px;
 }
 
 /* Entrées de liste cliquables : biseau sortant/enfoncé plutôt que puces
    arrondies, l'accent orange au survol reste celui du skin moderne. */
-html.f2s-skin--hybrid .f2s-log-entry,
-html.f2s-skin--hybrid .f2s-tmpl-chip {
+html.f2s-skin--modern .f2s-log-entry,
+html.f2s-skin--modern .f2s-tmpl-chip {
   border-radius: 0;
   border-color: transparent;
   box-shadow: var(--hyb-out);
 }
 
-html.f2s-skin--hybrid .f2s-log-entry:active,
-html.f2s-skin--hybrid .f2s-tmpl-chip:active {
+html.f2s-skin--modern .f2s-log-entry:active,
+html.f2s-skin--modern .f2s-tmpl-chip:active {
   box-shadow: var(--hyb-pressed);
 }
 
-html.f2s-skin--hybrid .f2s-log-entry--blocking {
+html.f2s-skin--modern .f2s-log-entry--blocking {
   border-color: transparent;
 }
 
-html.f2s-skin--hybrid .f2s-log-entry-flag {
+html.f2s-skin--modern .f2s-log-entry-flag {
   border-radius: 0;
 }
 
@@ -2376,13 +2377,13 @@ html.f2s-skin--hybrid .f2s-log-entry-flag {
    Biseau sortant ET ombre portée moderne cumulés : la carte reste "posée"
    sur l'overlay (comme le skin moderne) tout en gagnant le relief 95. */
 
-html.f2s-skin--hybrid .f2s-modal {
+html.f2s-skin--modern .f2s-modal {
   border: none;
   border-radius: 0;
   box-shadow: var(--hyb-out), 0 16px 40px rgba(18, 15, 13, 0.25);
 }
 
-html.f2s-skin--hybrid .f2s-toast {
+html.f2s-skin--modern .f2s-toast {
   border: none;
   border-radius: 0;
   box-shadow: var(--hyb-out), 0 8px 20px rgba(18, 15, 13, 0.18);
@@ -2391,30 +2392,30 @@ html.f2s-skin--hybrid .f2s-toast {
 /* ---- Tab menus des réglages : segmented control aux angles droits, l'onglet
    actif enfoncé — sans la trame tramée, exclusive au skin win95. ---- */
 
-html.f2s-skin--hybrid .f2s-tabs {
+html.f2s-skin--modern .f2s-tabs {
   border-radius: 0;
 }
 
-html.f2s-skin--hybrid .f2s-tab {
+html.f2s-skin--modern .f2s-tab {
   border-radius: 0;
 }
 
-html.f2s-skin--hybrid .f2s-tab.is-active {
+html.f2s-skin--modern .f2s-tab.is-active {
   box-shadow: var(--hyb-pressed);
 }
 
 /* ---- Bouton "Settings" du footer ---- */
 
-html.f2s-skin--hybrid .f2s-footer-settings {
+html.f2s-skin--modern .f2s-footer-settings {
   border-radius: 0;
 }
 
-html.f2s-skin--hybrid .f2s-footer-settings:hover {
+html.f2s-skin--modern .f2s-footer-settings:hover {
   box-shadow: var(--hyb-out);
   border-color: transparent;
 }
 
-html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
+html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
   box-shadow: var(--hyb-pressed);
   border-color: transparent;
 }
@@ -2918,14 +2919,13 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
   }
 
   // src/ui/types.ts
-  var DEFAULT_UI_SKIN = "win95";
+  var DEFAULT_UI_SKIN = "modern";
   function skinClassName(skin) {
     return `f2s-skin--${skin}`;
   }
   function readInitialSkin() {
     const root = document.documentElement;
-    if (root.classList.contains(skinClassName("modern"))) return "modern";
-    if (root.classList.contains(skinClassName("hybrid"))) return "hybrid";
+    if (root.classList.contains(skinClassName("win95"))) return "win95";
     return DEFAULT_UI_SKIN;
   }
   function postToPlugin(message) {
@@ -3882,9 +3882,8 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
     { value: "dark", label: "Dark", hint: "Force the dark palette, whatever theme Figma is using." }
   ];
   var SKIN_TABS = [
-    { value: "win95", label: "Windows 95", hint: "Retro Windows 95 chrome \u2014 title bar, bevels, system gray." },
-    { value: "modern", label: "Modern", hint: "The plugin design system \u2014 brand orange, rounded corners." },
-    { value: "hybrid", label: "Hybrid", hint: "Brand orange palette with Windows 95 bevels and square corners." }
+    { value: "modern", label: "Modern", hint: "Brand orange palette with Windows 95 bevels and square corners." },
+    { value: "win95", label: "Windows 95", hint: "Retro Windows 95 chrome \u2014 title bar, bevels, system gray." }
   ];
   function CloseIcon() {
     return /* @__PURE__ */ u3("svg", { width: "14", height: "14", viewBox: "0 0 14 14", fill: "none", xmlns: "http://www.w3.org/2000/svg", "aria-hidden": "true", children: /* @__PURE__ */ u3("path", { d: "m3 3 8 8M11 3l-8 8", stroke: "currentColor", strokeWidth: "1.6", strokeLinecap: "round" }) });
@@ -4122,7 +4121,6 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
       const root = document.documentElement;
       root.classList.toggle(skinClassName("win95"), skin === "win95");
       root.classList.toggle(skinClassName("modern"), skin === "modern");
-      root.classList.toggle(skinClassName("hybrid"), skin === "hybrid");
     }, [skin]);
     function changeSkin(next) {
       setSkin(next);
@@ -4397,7 +4395,7 @@ html.f2s-skin--hybrid .f2s-footer-settings[aria-expanded='true'] {
           // durable dans l'iframe UI, c'est le seul moyen que le choix
           // survive à la fermeture du plugin.
           case "skin-restored":
-            if (msg.skin === "win95" || msg.skin === "modern" || msg.skin === "hybrid") setSkin(msg.skin);
+            if (msg.skin === "win95" || msg.skin === "modern") setSkin(msg.skin);
             break;
           // Session Google persistée via clientStorage (code.ts) — restaurée à
           // l'ouverture pour ne pas refaire l'OAuth à chaque session. Sans
