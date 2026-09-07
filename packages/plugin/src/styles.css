@@ -1132,6 +1132,13 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   z-index: 50;
 }
 
+.f2s-footer-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: none;
+}
+
 .f2s-footer-settings {
   display: flex;
   align-items: center;
