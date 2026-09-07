@@ -145,19 +145,25 @@ a { color: inherit; }
 .header__actions { display: flex; align-items: center; gap: var(--b-space-20); }
 
 /* ---------- Hero (b-hero) ---------- */
+/* Deux colonnes : titre/CTA à gauche, démo à droite (au lieu du bloc centré
+   d'origine) — la colonne texte est plafonnée pour rester lisible, la
+   colonne démo prend le reste de la largeur. */
 .hero {
-  display: flex; flex-direction: column; align-items: center; text-align: center;
-  gap: var(--b-space-20); width: 100%; max-width: 880px; margin-inline: auto;
+  display: grid; grid-template-columns: minmax(0, 460px) 1fr; align-items: center;
+  gap: var(--b-space-64); width: 100%; max-width: 1200px; margin-inline: auto;
   padding: var(--b-space-96) var(--b-space-24);
 }
+.hero__content { display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: var(--b-space-20); }
 .hero__title {
   margin: 0; font-size: var(--b-text-6xl); font-weight: var(--b-font-bold);
   line-height: var(--b-leading-none); letter-spacing: var(--b-tracking-tighter); color: var(--b-ink);
 }
-.hero__lede { margin: 0; max-width: 560px; font-size: var(--b-text-xl); line-height: var(--b-leading-relaxed); color: var(--b-text-muted); }
-.hero__actions { display: flex; align-items: center; justify-content: center; gap: var(--b-space-16); margin-top: var(--b-space-16); }
+.hero__lede { margin: 0; font-size: var(--b-text-xl); line-height: var(--b-leading-relaxed); color: var(--b-text-muted); }
+.hero__actions { display: flex; align-items: center; justify-content: flex-start; gap: var(--b-space-16); margin-top: var(--b-space-16); }
 .hero__actions .btn { padding: var(--b-space-12) var(--b-space-16); }
 .hero__note { margin: 0; font-size: var(--b-text-sm); color: var(--b-text-faint); }
+.hero__demo { width: 100%; }
+.hero__demo .demo-video { width: 100%; aspect-ratio: 4 / 3; }
 
 /* ---------- Content sections (prose — pas un composant Billel, besoin propre à cette page) ---------- */
 .section { width: 100%; max-width: 1200px; margin-inline: auto; padding: var(--b-space-64) var(--b-space-24); }
@@ -237,6 +243,9 @@ a { color: inherit; }
 
 @media (max-width: 960px) {
   .feature-grid { grid-template-columns: repeat(2, 1fr); }
+  .hero { grid-template-columns: 1fr; gap: var(--b-space-32); }
+  .hero__content { align-items: center; text-align: center; }
+  .hero__actions { justify-content: center; }
 }
 
 @media (max-width: 720px) {
