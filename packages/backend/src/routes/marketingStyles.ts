@@ -87,7 +87,7 @@ a { color: inherit; }
 .btn {
   display: inline-flex; align-items: center; justify-content: center;
   cursor: pointer; text-decoration: none; font-family: inherit;
-  line-height: var(--b-leading-tight);
+  line-height: var(--b-leading-tight); white-space: nowrap; flex-shrink: 0;
   transition: background-color var(--b-duration) var(--b-ease-default),
     color var(--b-duration-fast) var(--b-ease-default),
     transform var(--b-duration-instant) var(--b-ease-default);
@@ -163,7 +163,9 @@ a { color: inherit; }
 .hero__actions .btn { padding: var(--b-space-12) var(--b-space-16); }
 .hero__note { margin: 0; font-size: var(--b-text-sm); color: var(--b-text-faint); }
 .hero__demo { width: 100%; }
-.hero__demo .demo-video { width: 100%; aspect-ratio: 4 / 3; }
+/* 960x460 — ratio natif de la vidéo (how-it-works-demo.webm), pour que
+   object-fit: cover (.demo-video) n'ait rien à recadrer. */
+.hero__demo .demo-video { width: 100%; aspect-ratio: 960 / 460; }
 
 /* ---------- Content sections (prose — pas un composant Billel, besoin propre à cette page) ---------- */
 .section { width: 100%; max-width: 1200px; margin-inline: auto; padding: var(--b-space-64) var(--b-space-24); }
@@ -250,7 +252,11 @@ a { color: inherit; }
 
 @media (max-width: 720px) {
   .hero__title { font-size: 48px; }
-  .header { flex-wrap: wrap; }
+  /* Le brand et les boutons ne tiennent plus sur une seule ligne : au lieu de
+     laisser les boutons se compresser (leur texte passait alors sur deux
+     lignes), la ligne d'actions passe entièrement sous le brand. */
+  .header__inner { flex-wrap: wrap; row-gap: var(--b-space-12); }
+  .header__actions { width: 100%; }
   .footer__top { flex-direction: column; }
   .footer__bottom { flex-direction: column; align-items: flex-start; }
   .feature-grid { grid-template-columns: 1fr; }
