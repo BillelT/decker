@@ -326,7 +326,7 @@ a {
   transition: background-color 0.15s ease, color 0.15s ease, outline-color 0.15s ease, transform 0.15s ease;
 }
 
-/* Transform translateY() uniquement en mode moderne/hybrid (Win95 gère le pressed via box-shadow) */
+/* Transform translateY() uniquement en mode modern (Win95 gère le pressed via box-shadow) */
 html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   transform: translateY(0.5px);
 }
@@ -1154,7 +1154,7 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   background: var(--color-surface-muted);
 }
 
-/* Transform translateY() uniquement en mode moderne/hybrid */
+/* Transform translateY() uniquement en mode modern */
 html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) {
   transform: translateY(0.5px);
 }

@@ -11,7 +11,7 @@
  * fonction serverless).
  *
  * DA : hybride "Windows 95 + marque Billel", même parti pris que le skin du
- * plugin (packages/plugin/src/styles.hybrid.css) — chrome 95 (biseaux à
+ * plugin (packages/plugin/src/styles.modern.css) — chrome 95 (biseaux à
  * quatre ombres internes, barre de titre bleu marine, barre d'état) habillé
  * de la palette et de la typo de marque (orange #f06800, Cabinet Grotesk).
  *

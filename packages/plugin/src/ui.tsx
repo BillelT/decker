@@ -127,12 +127,13 @@ function TitleBar({ mode }: { mode: AppMode }) {
 function App() {
   const [mode, setMode] = useState<AppMode>('deck');
 
-  // Habillage de l'UI — Windows 95 par défaut, l'habillage du design system
-  // ("modern") restant accessible depuis le footer. Le choix est persisté
-  // côté sandbox (clientStorage) : code.ts pose déjà la bonne classe sur
-  // <html> avant même le montage de React (voir `readInitialSkin`), donc
-  // c'est de là que part l'état initial — pas de `DEFAULT_UI_SKIN` qu'un
-  // premier rendu afficherait avant que `skin-restored` n'arrive.
+  // Habillage de l'UI — le skin de marque ("modern") par défaut, l'habillage
+  // rétro Windows 95 restant accessible depuis le footer. Le choix est
+  // persisté côté sandbox (clientStorage) : code.ts pose déjà la bonne
+  // classe sur <html> avant même le montage de React (voir
+  // `readInitialSkin`), donc c'est de là que part l'état initial — pas de
+  // `DEFAULT_UI_SKIN` qu'un premier rendu afficherait avant que
+  // `skin-restored` n'arrive.
   const [skin, setSkin] = useState<UiSkin>(() => readInitialSkin());
 
   // Les deux feuilles de style scopent leurs règles sur cette classe : elle
@@ -142,7 +143,6 @@ function App() {
     const root = document.documentElement;
     root.classList.toggle(skinClassName('win95'), skin === 'win95');
     root.classList.toggle(skinClassName('modern'), skin === 'modern');
-    root.classList.toggle(skinClassName('hybrid'), skin === 'hybrid');
   }, [skin]);
 
   function changeSkin(next: UiSkin) {
@@ -527,7 +527,7 @@ function App() {
         // durable dans l'iframe UI, c'est le seul moyen que le choix
         // survive à la fermeture du plugin.
         case 'skin-restored':
-          if (msg.skin === 'win95' || msg.skin === 'modern' || msg.skin === 'hybrid') setSkin(msg.skin);
+          if (msg.skin === 'win95' || msg.skin === 'modern') setSkin(msg.skin);
           break;
         // Session Google persistée via clientStorage (code.ts) — restaurée à
         // l'ouverture pour ne pas refaire l'OAuth à chaque session. Sans

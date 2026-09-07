@@ -87,20 +87,20 @@ export interface TemplateLayoutState extends FrameCandidate {
 export type AppMode = 'deck' | 'template';
 
 /**
- * Habillage visuel de l'UI. `win95` est le skin PAR DÉFAUT (demande
- * produit) : la même arborescence de composants, repeinte en chrome
- * Windows 95 (biseaux, gris #C0C0C0, barre de titre). `modern` est
- * l'habillage historique du design system (orange de marque, coins
- * arrondis). `hybrid` croise les deux : palette et typo du skin moderne,
- * mais biseaux et angles droits empruntés au skin 95 — sans reprendre les
- * éléments les plus identifiants de ce dernier (barre de titre, bleu
- * marine, trame, police système), qui restent exclusifs à `win95` (voir
- * styles.hybrid.css). Le choix est persisté côté sandbox via
- * `clientStorage` (l'iframe UI n'a aucun stockage durable) — voir code.ts.
+ * Habillage visuel de l'UI. `modern` est le skin PAR DÉFAUT (demande
+ * produit) : palette et typo de marque (orange, Cabinet Grotesk), avec
+ * biseaux et angles droits empruntés au chrome Windows 95 — sans reprendre
+ * les éléments les plus identifiants de ce dernier (barre de titre, bleu
+ * marine, trame, police système), qui restent exclusifs au second skin,
+ * `win95` (même arborescence de composants, repeinte intégralement en
+ * chrome Windows 95 : biseaux, gris #C0C0C0, barre de titre — voir
+ * styles.modern.css et styles.win95.css). Le choix est persisté côté
+ * sandbox via `clientStorage` (l'iframe UI n'a aucun stockage durable) —
+ * voir code.ts.
  */
-export type UiSkin = 'win95' | 'modern' | 'hybrid';
+export type UiSkin = 'win95' | 'modern';
 
-export const DEFAULT_UI_SKIN: UiSkin = 'win95';
+export const DEFAULT_UI_SKIN: UiSkin = 'modern';
 
 /** Classe posée sur <html> pour le skin actif — les deux feuilles de style scopent leurs règles dessus. */
 export function skinClassName(skin: UiSkin): string {
@@ -118,8 +118,7 @@ export function skinClassName(skin: UiSkin): string {
  */
 export function readInitialSkin(): UiSkin {
   const root = document.documentElement;
-  if (root.classList.contains(skinClassName('modern'))) return 'modern';
-  if (root.classList.contains(skinClassName('hybrid'))) return 'hybrid';
+  if (root.classList.contains(skinClassName('win95'))) return 'win95';
   return DEFAULT_UI_SKIN;
 }
 

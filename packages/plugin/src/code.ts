@@ -87,8 +87,8 @@ const SESSION_TOKEN_STORAGE_KEY = 'f2s:sessionToken';
 // de session : l'iframe UI est recréée à chaque ouverture et n'a aucun
 // stockage durable, donc un choix ne survit que s'il est gardé côté sandbox.
 //
-// Habillage visuel de l'UI ('win95' par défaut, 'modern' pour le design
-// system historique, 'hybrid' pour le mélange des deux).
+// Habillage visuel de l'UI ('modern' par défaut, 'win95' pour le chrome
+// rétro Windows 95 — voir ui/types.ts::UiSkin).
 const UI_SKIN_STORAGE_KEY = 'f2s:uiSkin';
 // Thème forcé depuis la modale de réglages ('light' | 'dark'). Absent =
 // l'UI suit le thème de Figma (`themeColors: true`).
@@ -797,7 +797,7 @@ async function main(): Promise<void> {
   // round-trip `ui-ready` → `skin-restored`/`theme-preference-restored`) :
   // sinon l'UI monte d'abord avec le skin/thème par défaut, le temps que ce
   // round-trip aboutisse, puis bascule sous les yeux de l'utilisateur — flash
-  // très visible quand le choix persisté n'est pas win95/le thème système.
+  // très visible quand le choix persisté n'est pas modern/le thème système.
   // En les injectant directement dans les classes de `<html>` avant le tout
   // premier rendu, il n'y a plus rien à corriger après coup.
   let storedSkin: unknown;
@@ -810,7 +810,7 @@ async function main(): Promise<void> {
   } catch (err) {
     console.error(err);
   }
-  const initialSkin = storedSkin === 'win95' || storedSkin === 'modern' || storedSkin === 'hybrid' ? storedSkin : 'win95';
+  const initialSkin = storedSkin === 'win95' || storedSkin === 'modern' ? storedSkin : 'modern';
   const initialThemeClass = storedTheme === 'light' ? 'f2s-theme-light' : storedTheme === 'dark' ? 'f2s-theme-dark' : '';
   const html = __html__
     .replace('__F2S_INITIAL_SKIN__', `f2s-skin--${initialSkin}`)

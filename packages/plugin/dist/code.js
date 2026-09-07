@@ -1757,7 +1757,7 @@
     } catch (err) {
       console.error(err);
     }
-    const initialSkin = storedSkin === "win95" || storedSkin === "modern" || storedSkin === "hybrid" ? storedSkin : "win95";
+    const initialSkin = storedSkin === "win95" || storedSkin === "modern" ? storedSkin : "modern";
     const initialThemeClass = storedTheme === "light" ? "f2s-theme-light" : storedTheme === "dark" ? "f2s-theme-dark" : "";
     const html = __html__.replace("__F2S_INITIAL_SKIN__", `f2s-skin--${initialSkin}`).replace("__F2S_INITIAL_THEME__", initialThemeClass);
     figma.showUI(html, { width: 960, height: 640, themeColors: true });

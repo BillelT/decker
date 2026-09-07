@@ -46,9 +46,8 @@ const THEME_TABS: { value: ThemePreference; label: string; hint: string }[] = [
 ];
 
 const SKIN_TABS: { value: UiSkin; label: string; hint: string }[] = [
+  { value: 'modern', label: 'Modern', hint: 'Brand orange palette with Windows 95 bevels and square corners.' },
   { value: 'win95', label: 'Windows 95', hint: 'Retro Windows 95 chrome — title bar, bevels, system gray.' },
-  { value: 'modern', label: 'Modern', hint: 'The plugin design system — brand orange, rounded corners.' },
-  { value: 'hybrid', label: 'Hybrid', hint: 'Brand orange palette with Windows 95 bevels and square corners.' },
 ];
 
 function CloseIcon() {
