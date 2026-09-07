@@ -60,6 +60,16 @@ export const MARKETING_CSS = `
   --b-ease: cubic-bezier(.16, 1, .3, 1);
   --b-ease-default: cubic-bezier(.4, 0, .2, 1);
   --b-duration-instant: .05s; --b-duration-fast: .12s; --b-duration: .15s; --b-duration-slow: .2s;
+
+  /* Biseau "hybride" (mêmes tokens que packages/plugin/src/styles.modern.css)
+     appliqué aux boutons — reste de marque (palette, layout, typo) inchangé. */
+  --hyb-hi: rgba(255, 255, 255, 0.9);
+  --hyb-lo: rgba(18, 15, 13, 0.22);
+  --hyb-lo-strong: rgba(18, 15, 13, 0.4);
+  --hyb-out: inset -1px -1px var(--hyb-lo), inset 1px 1px var(--hyb-hi), inset -2px -2px var(--hyb-lo-strong),
+    inset 2px 2px var(--hyb-hi);
+  --hyb-pressed: inset -1px -1px var(--hyb-hi), inset 1px 1px var(--hyb-lo-strong), inset -2px -2px var(--hyb-hi),
+    inset 2px 2px var(--hyb-lo);
 }
 
 * { box-sizing: border-box; }
@@ -86,16 +96,20 @@ a { color: inherit; }
 .btn:active { transform: translateY(0.5px); }
 .cta {
   gap: var(--b-space-16); padding: var(--b-space-6) var(--b-space-12); border: 0;
-  border-radius: var(--b-radius-md); color: var(--b-ink); font-size: var(--b-text-base);
+  border-radius: 0; color: var(--b-ink); font-size: var(--b-text-base);
   font-weight: var(--b-font-bold); background-color: var(--b-accent);
+  box-shadow: var(--hyb-out);
 }
 .cta:hover { background-color: var(--b-accent-red); }
+.cta:active { box-shadow: var(--hyb-pressed); }
 .tertiary {
-  gap: var(--b-space-16); padding: var(--b-space-6) var(--b-space-12); border: 1px solid var(--b-border);
-  border-radius: var(--b-radius-md); color: var(--b-ink); font-size: var(--b-text-base);
+  gap: var(--b-space-16); padding: var(--b-space-6) var(--b-space-12); border: 1px solid transparent;
+  border-radius: 0; color: var(--b-ink); font-size: var(--b-text-base);
   font-weight: var(--b-font-bold); background-color: transparent;
+  box-shadow: var(--hyb-out);
 }
 .tertiary:hover { background-color: var(--b-surface-muted); }
+.tertiary:active { box-shadow: var(--hyb-pressed); }
 
 /* ---------- Links (b-button) ---------- */
 .nav-link {
