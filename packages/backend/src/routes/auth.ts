@@ -154,7 +154,7 @@ function renderWin95Page(content: PageContent): string {
   .msg-row { display: flex; gap: 12px; align-items: flex-start; }
   .msg-icon { flex: none; font-size: 28px; line-height: 1; }
   .msg-title { margin: 0 0 6px; font-weight: 700; font-size: 13px; }
-  p { margin: 0 0 8px; line-height: 1.5; }
+  p { margin: 0 0 8px; line-height: 1.5; text-wrap: balance; }
   .btn95 {
     display: inline-flex; align-items: center; justify-content: center; width: 100%; margin-top: 8px;
     padding: 6px 12px; background: var(--w95-face); color: #000; box-shadow: var(--w95-out);
@@ -250,8 +250,8 @@ function renderModernPage(content: PageContent): string {
   .brand-mark { width: 28px; height: 28px; border-radius: 0; flex-shrink: 0; }
   .brand-name { font-size: 0.95rem; font-weight: 600; letter-spacing: 0.01em; }
   .status-icon { width: 64px; height: 64px; margin: 0 auto 1.5rem; }
-  h1 { margin: 0 0 0.75rem; font-size: 1.3rem; font-weight: 700; }
-  p.body { margin: 0 0 2rem; color: var(--f2s-text-muted); font-size: 0.95rem; line-height: 1.5; }
+  h1 { margin: 0 0 0.75rem; font-size: 1.3rem; font-weight: 700; text-wrap: balance; }
+  p.body { margin: 0 0 2rem; color: var(--f2s-text-muted); font-size: 0.95rem; line-height: 1.5; text-wrap: balance; }
   .btn {
     display: inline-flex; align-items: center; justify-content: center; width: 100%;
     padding: 0.75rem 1.25rem; border-radius: 0; background: var(--f2s-orange); color: #fff9f5;
