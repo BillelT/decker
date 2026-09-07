@@ -59,8 +59,8 @@ export interface LogEntryWarningLike {
  * choix courant.
  *
  * Pour les autres codes, la phrase de `message` suit déjà le format
- * "<raison> — <conséquence>." (ex. decisionTree.ts) : la raison (avant le
- * tiret) suffit comme tag, sans dupliquer une liste de libellés à
+ * "<raison>: <conséquence>." (ex. decisionTree.ts) : la raison (avant les
+ * deux-points) suffit comme tag, sans dupliquer une liste de libellés à
  * maintenir en parallèle des messages.
  */
 export function logEntryTagText(w: LogEntryWarningLike, fontOverrides: Record<string, string>): string {
@@ -68,7 +68,7 @@ export function logEntryTagText(w: LogEntryWarningLike, fontOverrides: Record<st
     const resolved = fontOverrides[w.fontOriginal] ?? w.fontSubstitute ?? w.fontOriginal;
     return `Font "${w.fontOriginal}" → "${resolved}"`;
   }
-  const dashIndex = w.message.indexOf(' — ');
-  const reason = dashIndex === -1 ? w.message : w.message.slice(0, dashIndex);
+  const colonIndex = w.message.indexOf(': ');
+  const reason = colonIndex === -1 ? w.message : w.message.slice(0, colonIndex);
   return reason.endsWith('.') ? reason.slice(0, -1) : reason;
 }

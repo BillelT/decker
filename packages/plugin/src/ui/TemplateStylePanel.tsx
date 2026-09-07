@@ -63,7 +63,7 @@ export function TemplateStylePanel({ colors, fonts, fontOverrides, colorRoles, s
       const stolenFrom = byKey.get(previousKey);
       postToPlugin({
         type: 'notify',
-        message: `"${THEME_ROLE_LABELS[role]}" was already used by ${stolenFrom ? colorLabel(stolenFrom) : previousKey} — reassigned.`,
+        message: `"${THEME_ROLE_LABELS[role]}" was already used by ${stolenFrom ? colorLabel(stolenFrom) : previousKey}. Reassigned.`,
       });
     }
 
@@ -83,7 +83,7 @@ export function TemplateStylePanel({ colors, fonts, fontOverrides, colorRoles, s
       <section className="f2s-tmpl-section">
         <h3 className="f2s-tmpl-heading f2s-style-heading">Colors</h3>
         {colors.length === 0 ? (
-          <p className="f2s-toolbar-muted">No color detected yet — add layouts first.</p>
+          <p className="f2s-toolbar-muted">No color detected yet. Add layouts first.</p>
         ) : (
           <ul className="f2s-style-list">
             {sortedColors.map((c) => {

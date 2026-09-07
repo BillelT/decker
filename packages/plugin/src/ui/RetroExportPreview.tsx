@@ -172,7 +172,7 @@ export function RetroExportPreview({ src, frameName, index, total }: RetroExport
   return (
     <div className={`f2s-retro${src ? '' : ' f2s-retro--no-signal'}`}>
       <div className="f2s-retro-titlebar">
-        <span className="f2s-retro-title">Exporting — {frameName}</span>
+        <span className="f2s-retro-title">Exporting - {frameName}</span>
         <span className="f2s-retro-window-buttons" aria-hidden="true">
           <i>_</i>
           <i>□</i>

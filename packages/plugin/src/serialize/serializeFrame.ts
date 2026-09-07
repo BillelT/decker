@@ -139,7 +139,7 @@ async function walk(node: SceneNode, state: WalkState): Promise<void> {
       severity: 'warning',
       sourceNodeId: node.id,
       nodeName: node.name,
-      message: `Unknown placeholder tag "[[${unknownTag}]]" — use one of: ${KNOWN_ROLE_TAGS.map((r) => `[[${r}]]`).join(', ')}.`,
+      message: `Unknown placeholder tag "[[${unknownTag}]]". Use one of: ${KNOWN_ROLE_TAGS.map((r) => `[[${r}]]`).join(', ')}.`,
     });
   }
 

@@ -118,29 +118,29 @@ export function classifyNode(input: DecisionInput): Decision {
   // que les nœuds réellement dégénérés dans les DEUX axes.
   if (input.width < 0.5 && input.height < 0.5) return { action: 'ignore' };
   if (!BLEND_MODES_EQUIVALENT_TO_NORMAL.has(input.blendMode)) {
-    return { action: 'raster', warningCode: 'BLEND_MODE_RASTERIZED', message: `Blend mode "${input.blendMode}" isn't supported by Slides — converted to an image.` };
+    return { action: 'raster', warningCode: 'BLEND_MODE_RASTERIZED', message: `Blend mode "${input.blendMode}" isn't supported by Slides: converted to an image.` };
   }
   if (input.hasVisibleShadowOrBlur) {
-    return { action: 'raster', warningCode: 'EFFECT_RASTERIZED', message: 'Drop shadow or blur has no native Slides equivalent — converted to an image.' };
+    return { action: 'raster', warningCode: 'EFFECT_RASTERIZED', message: 'Drop shadow or blur has no native Slides equivalent: converted to an image.' };
   }
   if (input.isMasked) {
-    return { action: 'raster', warningCode: 'MASK_RASTERIZED', message: 'Layer masks have no native Slides equivalent — the masked group is flattened into an image.' };
+    return { action: 'raster', warningCode: 'MASK_RASTERIZED', message: 'Layer masks have no native Slides equivalent: the masked group is flattened into an image.' };
   }
 
   if (input.kind === 'LINE') {
     const l = input.line;
     if (!l || l.visibleStrokeCount === 0) return { action: 'ignore' }; // pas de contour visible = ligne invisible
     if (l.visibleStrokeCount > 1) {
-      return { action: 'raster', warningCode: 'LINE_RASTERIZED', message: 'Multiple strokes on a line — Slides supports only one, converted to an image.' };
+      return { action: 'raster', warningCode: 'LINE_RASTERIZED', message: 'Multiple strokes on a line: Slides supports only one, converted to an image.' };
     }
     if (l.strokeIsGradient) {
-      return { action: 'raster', warningCode: 'GRADIENT_RASTERIZED', message: 'Gradient stroke on a line is not supported by Slides — converted to an image.' };
+      return { action: 'raster', warningCode: 'GRADIENT_RASTERIZED', message: 'Gradient stroke on a line is not supported by Slides: converted to an image.' };
     }
     if (l.strokeWeightIsMixed) {
-      return { action: 'raster', warningCode: 'LINE_RASTERIZED', message: 'Non-uniform stroke weight on this line — converted to an image.' };
+      return { action: 'raster', warningCode: 'LINE_RASTERIZED', message: 'Non-uniform stroke weight on this line: converted to an image.' };
     }
     if (l.hasUnsupportedCap) {
-      return { action: 'raster', warningCode: 'LINE_RASTERIZED', message: 'Decorative line cap (arrow, diamond, circle…) has no native Slides equivalent — converted to an image.' };
+      return { action: 'raster', warningCode: 'LINE_RASTERIZED', message: 'Decorative line cap (arrow, diamond, circle…) has no native Slides equivalent: converted to an image.' };
     }
     return { action: 'native-line' };
   }
@@ -148,13 +148,13 @@ export function classifyNode(input: DecisionInput): Decision {
   if (input.kind === 'TEXT') {
     const t = input.text;
     if (t?.fontUnavailable) {
-      return { action: 'raster', warningCode: 'FONT_MISSING', message: 'Font not found and no substitute available — text converted to an image.' };
+      return { action: 'raster', warningCode: 'FONT_MISSING', message: 'Font not found and no substitute available: text converted to an image.' };
     }
     if (t?.letterSpacingExceedsThreshold) {
-      return { action: 'raster', warningCode: 'LETTER_SPACING_LOST', message: 'Letter spacing changes the text width by more than 2% — converted to an image.' };
+      return { action: 'raster', warningCode: 'LETTER_SPACING_LOST', message: 'Letter spacing changes the text width by more than 2%: converted to an image.' };
     }
     if (t?.hasUnrepresentableMixedStyle) {
-      return { action: 'raster', warningCode: 'EFFECT_RASTERIZED', message: 'Mixed text styling cannot be represented — converted to an image.' };
+      return { action: 'raster', warningCode: 'EFFECT_RASTERIZED', message: 'Mixed text styling cannot be represented: converted to an image.' };
     }
     return { action: 'native-text' };
   }
@@ -162,16 +162,16 @@ export function classifyNode(input: DecisionInput): Decision {
   if (input.kind === 'RECTANGLE' || input.kind === 'ELLIPSE' || input.kind === 'POLYGON' || input.kind === 'STAR') {
     const s = input.shape;
     if (s && s.visibleFillCount > 1) {
-      return { action: 'raster', warningCode: 'MULTIPLE_FILLS_RASTERIZED', message: 'Multiple visible fills — Slides supports only one, converted to an image.' };
+      return { action: 'raster', warningCode: 'MULTIPLE_FILLS_RASTERIZED', message: 'Multiple visible fills: Slides supports only one, converted to an image.' };
     }
     if (s?.fillIsGradient) {
-      return { action: 'raster', warningCode: 'GRADIENT_RASTERIZED', message: 'Gradients are not supported by Slides — converted to an image.' };
+      return { action: 'raster', warningCode: 'GRADIENT_RASTERIZED', message: 'Gradients are not supported by Slides: converted to an image.' };
     }
     if (s?.fillIsImage) {
       return { action: 'image' };
     }
     if (s?.hasMultipleOrOffCenterStroke) {
-      return { action: 'raster', warningCode: 'EFFECT_RASTERIZED', message: 'Multiple or off-center stroke beyond tolerance — converted to an image.' };
+      return { action: 'raster', warningCode: 'EFFECT_RASTERIZED', message: 'Multiple or off-center stroke beyond tolerance: converted to an image.' };
     }
     // Slides n'a de préréglage natif que pour 3/4/5/6 côtés (TRIANGLE,
     // DIAMOND, PENTAGON, HEXAGON) — au-delà, forcer un de ces préréglages
@@ -181,7 +181,7 @@ export function classifyNode(input: DecisionInput): Decision {
       return {
         action: 'raster',
         warningCode: 'POLYGON_SIDES_UNSUPPORTED',
-        message: `Slides has no native preset for a ${s.polygonSides}-sided polygon (only 3–6) — converted to an image.`,
+        message: `Slides has no native preset for a ${s.polygonSides}-sided polygon (only 3–6): converted to an image.`,
       };
     }
     // Même logique que POLYGON ci-dessus, mais pour STAR : seul le préréglage
@@ -192,7 +192,7 @@ export function classifyNode(input: DecisionInput): Decision {
       return {
         action: 'raster',
         warningCode: 'STAR_POINTS_UNSUPPORTED',
-        message: `Slides has no verified native preset for a ${s.starPoints}-point star (only 5) — converted to an image.`,
+        message: `Slides has no verified native preset for a ${s.starPoints}-point star (only 5): converted to an image.`,
       };
     }
     if (input.kind === 'RECTANGLE' && s?.radiusDecision) {
@@ -209,12 +209,12 @@ export function classifyNode(input: DecisionInput): Decision {
   }
 
   if (input.kind === 'VECTOR_LIKE') {
-    return { action: 'raster', warningCode: 'VECTOR_RASTERIZED', message: 'Custom vector shape (icon, boolean operation, path) — converted to an image.' };
+    return { action: 'raster', warningCode: 'VECTOR_RASTERIZED', message: 'Custom vector shape (icon, boolean operation, path): converted to an image.' };
   }
 
   if (input.kind === 'GROUP_LIKE') {
     if (input.container?.clipsContentWithOverflow) {
-      return { action: 'raster', warningCode: 'EFFECT_RASTERIZED', message: 'Group clips overflowing children — flattened into an image.' };
+      return { action: 'raster', warningCode: 'EFFECT_RASTERIZED', message: 'Group clips overflowing children: flattened into an image.' };
     }
     const bg = input.container?.fill;
     if (bg && bg.visibleFillCount > 0) {
@@ -231,7 +231,7 @@ export function classifyNode(input: DecisionInput): Decision {
         return {
           action: 'raster',
           warningCode: 'CONTAINER_BACKGROUND_RASTERIZED',
-          message: "This layout frame's own background (gradient, image fill, multiple fills, or non-standard stroke) can't be combined natively with its children — the whole group is converted to an image.",
+          message: "This layout frame's own background (gradient, image fill, multiple fills, or non-standard stroke) can't be combined natively with its children: the whole group is converted to an image.",
         };
       }
       if (bg.radiusDecision) {

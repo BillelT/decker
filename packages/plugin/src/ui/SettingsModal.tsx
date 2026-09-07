@@ -47,7 +47,7 @@ const THEME_TABS: { value: ThemePreference; label: string; hint: string }[] = [
 
 const SKIN_TABS: { value: UiSkin; label: string; hint: string }[] = [
   { value: 'modern', label: 'Modern', hint: 'Brand orange palette with Windows 95 bevels and square corners.' },
-  { value: 'win95', label: 'Windows 95', hint: 'Retro Windows 95 chrome — title bar, bevels, system gray.' },
+  { value: 'win95', label: 'Windows 95', hint: 'Retro Windows 95 chrome: title bar, bevels, system gray.' },
 ];
 
 function CloseIcon() {
@@ -147,7 +147,7 @@ export function SettingsModal({
                     Signed in as <strong>{accountEmail}</strong>.
                   </>
                 ) : signedIn ? (
-                  'Signed in (email unavailable — sign out and back in to see it).'
+                  'Signed in (email unavailable: sign out and back in to see it).'
                 ) : (
                   'Not signed in.'
                 )}
@@ -157,7 +157,7 @@ export function SettingsModal({
               <button
                 type="button"
                 className="f2s-btn f2s-btn--secondary"
-                title="Sign out — you'll be asked to pick a Google account next time you sign in."
+                title="Sign out. You'll be asked to pick a Google account next time you sign in."
                 onClick={onSignOut}
               >
                 Sign out
@@ -217,7 +217,7 @@ export function SettingsModal({
               <div className="f2s-setting-text">
                 <h3 className="f2s-setting-title">Developer</h3>
                 <p className="f2s-setting-desc">
-                  Download the current deck as IRDocument JSON — for building calibration fixtures (see LIMITATIONS.md). Never sent over the network.
+                  Download the current deck as IRDocument JSON, for building calibration fixtures (see LIMITATIONS.md). Never sent over the network.
                 </p>
               </div>
               <button type="button" className="f2s-btn f2s-btn--secondary" onClick={onExportDebugIr}>

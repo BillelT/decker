@@ -293,16 +293,16 @@ function renderPage(skin: UiSkin, content: PageContent): string {
 
 function renderSuccessPage(skin: UiSkin): string {
   return renderPage(skin, {
-    title: 'Signed in — Decker',
+    title: 'Decker: Signed in',
     accent: 'success',
     heading: "You're signed in",
-    body: 'You can close this tab and go back to Figma — Decker will pick this up automatically.',
+    body: 'You can close this tab and go back to Figma. Decker will pick this up automatically.',
   });
 }
 
 function renderErrorPage(message: string, skin: UiSkin): string {
   return renderPage(skin, {
-    title: 'Sign-in failed — Decker',
+    title: 'Decker: Sign-in failed',
     accent: 'error',
     heading: 'Google sign-in failed',
     body: escapeHtml(message),

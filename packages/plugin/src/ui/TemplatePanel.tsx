@@ -40,7 +40,7 @@ function TemplateLogList({
         const currentRole = parsePlaceholderTag(w.nodeName)?.role;
         return (
           <li key={i} className={`f2s-log-entry${w.severity === 'blocking' ? ' f2s-log-entry--blocking' : ''}${flag ? ` f2s-log-entry--${flag}` : ''}`}>
-            <button type="button" className="f2s-log-entry-clickarea" title={`${w.nodeName} — ${tagText ?? w.message}`} onClick={() => selectSourceNodes([w.sourceNodeId])}>
+            <button type="button" className="f2s-log-entry-clickarea" title={`${w.nodeName}: ${tagText ?? w.message}`} onClick={() => selectSourceNodes([w.sourceNodeId])}>
               {/* Le nom du calque (nodeName) vient de Figma, où le nom par défaut d'un
                   calque texte est son contenu entier : sur un long paragraphe, ça
                   déborde. Tronqué en priorité sur une ligne, à gauche — le tag (la
@@ -49,7 +49,7 @@ function TemplateLogList({
                   placeholder inconnu) : sinon la raison est déjà dans le tag. */}
               <span className="f2s-log-entry-text">
                 <strong className="f2s-log-entry-name">{w.nodeName}</strong>
-                {!tagText && <span className="f2s-log-entry-message">— {w.message}</span>}
+                {!tagText && <span className="f2s-log-entry-message">: {w.message}</span>}
               </span>
               {tagText && <span className={`f2s-log-entry-flag f2s-log-entry-flag--${flag}`}>{tagText}</span>}
             </button>
@@ -324,7 +324,7 @@ export function TemplatePanel({
                 className={`f2s-frame-preview${highlightedId === id ? ' is-active' : ''}${layout.blocking ? ' f2s-frame-preview--blocking' : ''}${pacedCursor?.frameId === id ? ' is-exporting' : ''}`}
                 onClick={() => selectLayout(id)}
                 onPointerDown={(e) => handleDragPointerDown(e, id)}
-                title={layout.blocking ? 'Contains an element that would be rasterized — open it to see the details.' : undefined}
+                title={layout.blocking ? 'Contains an element that would be rasterized. Open it to see the details.' : undefined}
               >
                 {layout.previewDataUrl && <img src={layout.previewDataUrl} alt={layout.name} draggable={false} />}
               </button>
@@ -372,7 +372,7 @@ export function TemplatePanel({
                 <h3 className="f2s-tmpl-heading">Placeholders</h3>
                 {previewedLayout.placeholders.length === 0 ? (
                   <p className="f2s-toolbar-muted">
-                    No tagged placeholder yet — prefix a layer name in Figma with <code>[[title]]</code>, <code>[[body]]</code>,{' '}
+                    No tagged placeholder yet. Prefix a layer name in Figma with <code>[[title]]</code>, <code>[[body]]</code>,{' '}
                     <code>[[image]]</code>, <code>[[subtitle]]</code> or <code>[[logo]]</code> to mark it.
                   </p>
                 ) : (

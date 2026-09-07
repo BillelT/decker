@@ -121,7 +121,7 @@ describe('mapDocumentToBatches', () => {
     expect(altTextIdx).toBeGreaterThan(shapeIdx);
     expect((batch.requests[altTextIdx] as any).updatePageElementAltText).toEqual({
       objectId: 'el1',
-      title: 'Template placeholder — Hero photo',
+      title: 'Template placeholder: Hero photo',
       description: 'f2s-placeholder:IMAGE',
     });
   });
