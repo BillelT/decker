@@ -63,6 +63,11 @@ html.f2s-skin--win95.f2s-skin--win95 {
   --color-orange-40: var(--w95-navy-light);
   --color-orange-red: var(--w95-navy);
   --color-error: #a80000;
+  /* Tapis du tag "approximé" : le bleu clair du dégradé de barre de titre
+     plutôt que l'orange de marque, comme les autres remaps ci-dessus. Lu
+     avec --color-badge-ink il donne 4.76:1 — le blanc y était à 4.01:1,
+     sous le seuil (audit). */
+  --color-orange-soft: var(--w95-navy-light);
 }
 
 html.f2s-skin--win95 body {
@@ -154,14 +159,15 @@ html.f2s-skin--win95 .f2s-footer-left {
   gap: 6px;
 }
 
-/* Le logo prend la même hauteur que le bouton ".f2s-footer-settings" juste
-   à côté de lui en win95 (mesuré en rendu réel). Un align-items:stretch +
-   aspect-ratio:1/1 aurait évité de recopier cette valeur à la main, mais
-   casse ici : le SVG du logo est dimensionné en width/height 100%
-   (styles.css), donc sans hauteur explicite sur .f2s-logo le stretch n'a
-   rien à partir de quoi se calculer (dépendance circulaire) et le logo
-   explose à la taille de remplacement par défaut (300×300) — vérifié en
-   rendu. Valeur fixe donc, à réajuster si le gabarit du bouton change. */
+/* Le logo prend la même hauteur que le bouton voisin — "Buy me a coffee"
+   depuis qu'il a quitté la zone Settings (mesuré en rendu réel). Un
+   align-items:stretch + aspect-ratio:1/1 aurait évité de recopier cette
+   valeur à la main, mais casse ici : le SVG du logo est dimensionné en
+   width/height 100% (styles.css), donc sans hauteur explicite sur .f2s-logo
+   le stretch n'a rien à partir de quoi se calculer (dépendance circulaire)
+   et le logo explose à la taille de remplacement par défaut (300×300) —
+   vérifié en rendu. Valeur fixe donc, à réajuster si le gabarit du bouton
+   change. */
 html.f2s-skin--win95 .f2s-logo {
   width: 22px;
   height: 22px;
@@ -602,4 +608,29 @@ html.f2s-skin--win95 * {
 html.f2s-skin--win95 .f2s-font-dropdown::-webkit-scrollbar {
   width: 16px;
   height: 16px;
+}
+
+/* ---- Signature de l'auteur ----
+   Le monogramme perso est repeint dans la palette système : son orange de
+   marque était le seul aplat saturé et anti-aliasé d'une fenêtre entièrement
+   grise et pixelisée. Le fond passe au bleu de sélection Windows, comme
+   --color-orange plus haut ; la lettre garde son ivoire, qui joue le rôle du
+   blanc système. Angles droits déjà posés dans styles.css, plus le biseau
+   sortant des autres éléments cliquables. Pas de transform au survol : le
+   relief 95 se joue au box-shadow, jamais à l'animation. */
+html.f2s-skin--win95 .f2s-logo {
+  box-shadow: var(--w95-out);
+}
+
+html.f2s-skin--win95 .f2s-logo svg > rect:first-child {
+  fill: var(--w95-navy);
+}
+
+html.f2s-skin--win95 .f2s-logo-link:hover .f2s-logo,
+html.f2s-skin--win95 .f2s-logo-link:active .f2s-logo {
+  transform: none;
+}
+
+html.f2s-skin--win95 .f2s-logo-link:active .f2s-logo {
+  box-shadow: var(--w95-pressed);
 }

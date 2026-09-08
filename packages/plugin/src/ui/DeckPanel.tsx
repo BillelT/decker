@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { logEntryFlag, logEntryTagText } from './logEntryFlag.js';
+import { logEntryFlag, logEntryTagText, logEntryTooltip } from './logEntryFlag.js';
 import { moveToIndex } from './reorderFrames.js';
 import { usePacedExportCursor } from './pacedExportCursor.js';
 import { RetroExportPreview } from './RetroExportPreview.js';
@@ -328,7 +328,7 @@ export function DeckPanel({
                         <button
                           type="button"
                           className={`f2s-log-entry${w.severity === 'blocking' ? ' f2s-log-entry--blocking' : ''}${flag ? ` f2s-log-entry--${flag}` : ''}`}
-                          title={`${w.nodeName}: ${tagText ?? w.message}`}
+                          title={`${w.nodeName}: ${logEntryTooltip(w, tagText)}`}
                           onClick={() => selectSourceNodes([w.sourceNodeId])}
                         >
                           {/* Le nom du calque (nodeName) vient de Figma, où le nom par défaut d'un

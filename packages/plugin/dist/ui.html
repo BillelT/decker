@@ -33,6 +33,17 @@
      que le monogramme (#F2ECE8) plutôt que des gris neutres génériques. */
   --color-surface: #ffffff;
   --color-surface-muted: #f2ece8;
+
+  /* Tapis du tag "approximé" (.f2s-log-entry-flag--visual-diff) : opaque, et
+     volontairement PAS redéfini en thème sombre. Un tapis translucide
+     (--color-orange-40) prenait la couleur du fond sous lui, si bien qu'une
+     seule couleur de texte ne pouvait pas convenir aux deux thèmes : blanc
+     donnait 1.76:1 en clair et encre 2.49:1 en sombre. Un aplat fixe + une
+     encre fixe (--color-badge-ink) tiennent 12.45:1 partout. */
+  --color-orange-soft: #ffc599;
+  /* Encre des tags, fixe elle aussi : --color-text s'inverse en thème sombre
+     et retournerait le problème. */
+  --color-badge-ink: #120f0d;
 }
 
 /* Thème sombre : Figma pose `figma-dark`/`figma-light` sur <html> quand le
@@ -188,18 +199,51 @@ a {
   flex: none;
 }
 
-.f2s-logo {
-  width: 24px;
-  height: 24px;
+/* ---- Signature de l'auteur (pied de panneau, à gauche de "Buy me a coffee") ----
+
+   Le monogramme est un SVG inliné au build (__LOGO_SVG__) dont le fond est
+   un `<rect rx="40">` sur une viewBox 80×80 : un cercle parfait. C'était le
+   seul élément rond de deux habillages qui n'ont plus un seul angle arrondi
+   (le skin modern a pris les angles droits du 95). `rx`/`ry` sont des
+   propriétés géométriques CSS côté Chromium — donc côté iframe Figma — on
+   les remet à 0 ici plutôt que de maintenir un second fichier SVG carré en
+   parallèle du rond. Le petit `<rect rx="1.5">` de la hampe du B n'est pas
+   touché : le sélecteur ne vise que le premier enfant, le fond. */
+.f2s-logo-link {
+  display: inline-flex;
+  align-items: center;
   flex: none;
-  border-radius: 8px;
+  text-decoration: none;
+}
+
+/* 28px : le bouton "Buy me a coffee" voisin fait 34px de haut (mesuré en
+   rendu). À 24px le monogramme flottait visiblement plus bas que lui ; à 34
+   il aurait pesé autant qu'une action, ce qu'une signature n'est pas. */
+.f2s-logo {
+  width: 28px;
+  height: 28px;
+  flex: none;
   display: block;
+  border-radius: 0;
+  transition: transform 0.15s ease;
 }
 
 .f2s-logo svg {
   width: 100%;
   height: 100%;
   display: block;
+}
+
+.f2s-logo svg > rect:first-child {
+  rx: 0;
+}
+
+.f2s-logo-link:hover .f2s-logo {
+  transform: translateY(-1px);
+}
+
+.f2s-logo-link:active .f2s-logo {
+  transform: translateY(0.5px);
 }
 
 /* ---- Toolbar (polices) ---- */
@@ -808,11 +852,14 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
 
 /* Repère plus discret que "Rasterized" : l'élément reste natif et éditable,
    juste pas garanti identique au pixel près — un aplat orange plein
-   pèserait visuellement autant qu'un vrai raster. Même teinte de marque,
-   posée en tapis clair (opacité) plutôt qu'en plein — texte blanc comme
-   "Rasterized" (orange sur orange-40 était illisible, faute de contraste). */
+   pèserait visuellement autant qu'un vrai raster. Tapis clair, donc texte en
+   ENCRE et non en blanc : blanc sur ce tapis donnait 1.76:1 (audit), très
+   loin des 4.5:1 exigés pour du 9px gras ; l'encre monte à 12.45:1. Le tag
+   "Rasterized" garde son texte blanc — sur son rouge plein, c'est lui qui
+   passe (5.04:1) et l'encre qui échouerait (3.79:1). */
 .f2s-log-entry-flag--visual-diff {
-  background: var(--color-orange-40);
+  background: var(--color-orange-soft);
+  color: var(--color-badge-ink);
 }
 
 /* ---- Création de template : rapport de contenu communicable ----
@@ -1680,6 +1727,11 @@ html.f2s-skin--win95.f2s-skin--win95 {
   --color-orange-40: var(--w95-navy-light);
   --color-orange-red: var(--w95-navy);
   --color-error: #a80000;
+  /* Tapis du tag "approximé" : le bleu clair du dégradé de barre de titre
+     plutôt que l'orange de marque, comme les autres remaps ci-dessus. Lu
+     avec --color-badge-ink il donne 4.76:1 — le blanc y était à 4.01:1,
+     sous le seuil (audit). */
+  --color-orange-soft: var(--w95-navy-light);
 }
 
 html.f2s-skin--win95 body {
@@ -1771,14 +1823,15 @@ html.f2s-skin--win95 .f2s-footer-left {
   gap: 6px;
 }
 
-/* Le logo prend la même hauteur que le bouton ".f2s-footer-settings" juste
-   à côté de lui en win95 (mesuré en rendu réel). Un align-items:stretch +
-   aspect-ratio:1/1 aurait évité de recopier cette valeur à la main, mais
-   casse ici : le SVG du logo est dimensionné en width/height 100%
-   (styles.css), donc sans hauteur explicite sur .f2s-logo le stretch n'a
-   rien à partir de quoi se calculer (dépendance circulaire) et le logo
-   explose à la taille de remplacement par défaut (300×300) — vérifié en
-   rendu. Valeur fixe donc, à réajuster si le gabarit du bouton change. */
+/* Le logo prend la même hauteur que le bouton voisin — "Buy me a coffee"
+   depuis qu'il a quitté la zone Settings (mesuré en rendu réel). Un
+   align-items:stretch + aspect-ratio:1/1 aurait évité de recopier cette
+   valeur à la main, mais casse ici : le SVG du logo est dimensionné en
+   width/height 100% (styles.css), donc sans hauteur explicite sur .f2s-logo
+   le stretch n'a rien à partir de quoi se calculer (dépendance circulaire)
+   et le logo explose à la taille de remplacement par défaut (300×300) —
+   vérifié en rendu. Valeur fixe donc, à réajuster si le gabarit du bouton
+   change. */
 html.f2s-skin--win95 .f2s-logo {
   width: 22px;
   height: 22px;
@@ -2221,6 +2274,31 @@ html.f2s-skin--win95 .f2s-font-dropdown::-webkit-scrollbar {
   height: 16px;
 }
 
+/* ---- Signature de l'auteur ----
+   Le monogramme perso est repeint dans la palette système : son orange de
+   marque était le seul aplat saturé et anti-aliasé d'une fenêtre entièrement
+   grise et pixelisée. Le fond passe au bleu de sélection Windows, comme
+   --color-orange plus haut ; la lettre garde son ivoire, qui joue le rôle du
+   blanc système. Angles droits déjà posés dans styles.css, plus le biseau
+   sortant des autres éléments cliquables. Pas de transform au survol : le
+   relief 95 se joue au box-shadow, jamais à l'animation. */
+html.f2s-skin--win95 .f2s-logo {
+  box-shadow: var(--w95-out);
+}
+
+html.f2s-skin--win95 .f2s-logo svg > rect:first-child {
+  fill: var(--w95-navy);
+}
+
+html.f2s-skin--win95 .f2s-logo-link:hover .f2s-logo,
+html.f2s-skin--win95 .f2s-logo-link:active .f2s-logo {
+  transform: none;
+}
+
+html.f2s-skin--win95 .f2s-logo-link:active .f2s-logo {
+  box-shadow: var(--w95-pressed);
+}
+
 /* ============================================================================
    Skin Modern — palette et typographie de marque (styles.css), biseaux et
    angles droits empruntés au skin Windows 95 (styles.win95.css). Skin PAR
@@ -2430,6 +2508,20 @@ html.f2s-skin--modern .f2s-footer-settings:hover {
 html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
   box-shadow: var(--hyb-pressed);
   border-color: transparent;
+}
+
+/* ---- Signature de l'auteur ----
+   Le monogramme voisine "Buy me a coffee" en pied de panneau : il prend le
+   même biseau sortant que les boutons pour ne pas rester le seul aplat plat
+   de la rangée. Angles droits déjà posés dans styles.css (le `rx` du rond
+   d'origine y est remis à 0), couleur de marque conservée — c'est déjà
+   l'orange du skin. */
+html.f2s-skin--modern .f2s-logo {
+  box-shadow: var(--hyb-out);
+}
+
+html.f2s-skin--modern .f2s-logo-link:active .f2s-logo {
+  box-shadow: var(--hyb-pressed);
 }
 </style>
 </head>
@@ -2969,14 +3061,36 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     if (VISUAL_DIFF_WARNING_CODES.has(code)) return "visual-diff";
     return void 0;
   }
+  var SHORT_TAG_LABELS = {
+    FONT_MISSING: "Font missing",
+    GRADIENT_RASTERIZED: "Gradient",
+    EFFECT_RASTERIZED: "Effect",
+    BLEND_MODE_RASTERIZED: "Blend mode",
+    MASK_RASTERIZED: "Mask",
+    VECTOR_RASTERIZED: "Vector",
+    POLYGON_SIDES_UNSUPPORTED: "Polygon sides",
+    STAR_POINTS_UNSUPPORTED: "Star points",
+    LINE_RASTERIZED: "Line style",
+    LETTER_SPACING_LOST: "Letter spacing",
+    CORNER_RADIUS_RASTERIZED: "Corner radius",
+    MULTIPLE_FILLS_RASTERIZED: "Multiple fills",
+    CONTAINER_BACKGROUND_RASTERIZED: "Frame background",
+    RADIUS_APPROXIMATED: "Radius approximated"
+  };
   function logEntryTagText(w3, fontOverrides) {
     if (w3.code === "FONT_SUBSTITUTED" && w3.fontOriginal) {
       const resolved = fontOverrides[w3.fontOriginal] ?? w3.fontSubstitute ?? w3.fontOriginal;
-      return `Font "${w3.fontOriginal}" \u2192 "${resolved}"`;
+      return `${w3.fontOriginal} \u2192 ${resolved}`;
     }
+    const short = SHORT_TAG_LABELS[w3.code];
+    if (short) return short;
     const colonIndex = w3.message.indexOf(": ");
     const reason = colonIndex === -1 ? w3.message : w3.message.slice(0, colonIndex);
     return reason.endsWith(".") ? reason.slice(0, -1) : reason;
+  }
+  function logEntryTooltip(w3, tagText) {
+    if (w3.code === "FONT_SUBSTITUTED" && tagText) return `Font ${tagText}`;
+    return w3.message;
   }
 
   // src/ui/reorderFrames.ts
@@ -3402,7 +3516,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
               {
                 type: "button",
                 className: `f2s-log-entry${w3.severity === "blocking" ? " f2s-log-entry--blocking" : ""}${flag ? ` f2s-log-entry--${flag}` : ""}`,
-                title: `${w3.nodeName}: ${tagText ?? w3.message}`,
+                title: `${w3.nodeName}: ${logEntryTooltip(w3, tagText)}`,
                 onClick: () => selectSourceNodes([w3.sourceNodeId]),
                 children: [
                   /* @__PURE__ */ u3("span", { className: "f2s-log-entry-text", children: [
@@ -3626,7 +3740,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
       const tagText = flag ? logEntryTagText(w3, fontOverrides) : void 0;
       const currentRole = parsePlaceholderTag(w3.nodeName)?.role;
       return /* @__PURE__ */ u3("li", { className: `f2s-log-entry${w3.severity === "blocking" ? " f2s-log-entry--blocking" : ""}${flag ? ` f2s-log-entry--${flag}` : ""}`, children: [
-        /* @__PURE__ */ u3("button", { type: "button", className: "f2s-log-entry-clickarea", title: `${w3.nodeName}: ${tagText ?? w3.message}`, onClick: () => selectSourceNodes([w3.sourceNodeId]), children: [
+        /* @__PURE__ */ u3("button", { type: "button", className: "f2s-log-entry-clickarea", title: `${w3.nodeName}: ${logEntryTooltip(w3, tagText)}`, onClick: () => selectSourceNodes([w3.sourceNodeId]), children: [
           /* @__PURE__ */ u3("span", { className: "f2s-log-entry-text", children: [
             /* @__PURE__ */ u3("strong", { className: "f2s-log-entry-name", children: w3.nodeName }),
             !tagText && /* @__PURE__ */ u3("span", { className: "f2s-log-entry-message", children: [
@@ -4087,7 +4201,18 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     }
   };
   function Logo() {
-    return /* @__PURE__ */ u3("a", { href: "https://billeltighidet.fr", target: "_blank", rel: "noreferrer", title: "billeltighidet.fr", children: /* @__PURE__ */ u3("div", { className: "f2s-logo", dangerouslySetInnerHTML: { __html: '<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">\n<rect width="80" height="80" rx="40" fill="#F06800"/>\n<path d="M48.6887 47.1716C50.2508 48.7337 50.2508 51.2664 48.6887 52.8285L44.2034 57.3138C41.6836 59.8336 37.375 58.049 37.375 54.4854L37.375 45.5148C37.375 41.9512 41.6836 40.1665 44.2034 42.6864L48.6887 47.1716Z" fill="#F2ECE8"/>\n<path d="M48.6887 27.1715C50.2508 28.7335 50.2508 31.2662 48.6887 32.8283L44.2034 37.3136C41.6836 39.8334 37.375 38.0488 37.375 34.4852L37.375 25.5146C37.375 21.951 41.6836 20.1663 44.2034 22.6862L48.6887 27.1715Z" fill="#F2ECE8"/>\n<rect x="30.6235" y="21.0001" width="3" height="37" rx="1.5" fill="#F2ECE8"/>\n</svg>\n' } }) });
+    return /* @__PURE__ */ u3(
+      "a",
+      {
+        className: "f2s-logo-link",
+        href: "https://billeltighidet.fr",
+        target: "_blank",
+        rel: "noreferrer",
+        title: "billeltighidet.fr",
+        "aria-label": "Made by Billel Tighidet \u2014 billeltighidet.fr",
+        children: /* @__PURE__ */ u3("span", { className: "f2s-logo", dangerouslySetInnerHTML: { __html: '<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">\n<rect width="80" height="80" rx="40" fill="#F06800"/>\n<path d="M48.6887 47.1716C50.2508 48.7337 50.2508 51.2664 48.6887 52.8285L44.2034 57.3138C41.6836 59.8336 37.375 58.049 37.375 54.4854L37.375 45.5148C37.375 41.9512 41.6836 40.1665 44.2034 42.6864L48.6887 47.1716Z" fill="#F2ECE8"/>\n<path d="M48.6887 27.1715C50.2508 28.7335 50.2508 31.2662 48.6887 32.8283L44.2034 37.3136C41.6836 39.8334 37.375 38.0488 37.375 34.4852L37.375 25.5146C37.375 21.951 41.6836 20.1663 44.2034 22.6862L48.6887 27.1715Z" fill="#F2ECE8"/>\n<rect x="30.6235" y="21.0001" width="3" height="37" rx="1.5" fill="#F2ECE8"/>\n</svg>\n' } })
+      }
+    );
   }
   function GearIcon() {
     return /* @__PURE__ */ u3(
@@ -5051,25 +5176,23 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
         }
       ),
       /* @__PURE__ */ u3("footer", { className: "f2s-footer", children: [
-        /* @__PURE__ */ u3("div", { className: "f2s-footer-left", children: [
-          /* @__PURE__ */ u3(
-            "button",
-            {
-              type: "button",
-              className: "f2s-footer-settings",
-              "aria-haspopup": "dialog",
-              "aria-expanded": settingsOpen,
-              onClick: () => setSettingsOpen((open) => !open),
-              children: [
-                /* @__PURE__ */ u3(GearIcon, {}),
-                /* @__PURE__ */ u3("span", { children: "Settings" })
-              ]
-            }
-          ),
-          /* @__PURE__ */ u3(Logo, {})
-        ] }),
+        /* @__PURE__ */ u3("div", { className: "f2s-footer-left", children: /* @__PURE__ */ u3(
+          "button",
+          {
+            type: "button",
+            className: "f2s-footer-settings",
+            "aria-haspopup": "dialog",
+            "aria-expanded": settingsOpen,
+            onClick: () => setSettingsOpen((open) => !open),
+            children: [
+              /* @__PURE__ */ u3(GearIcon, {}),
+              /* @__PURE__ */ u3("span", { children: "Settings" })
+            ]
+          }
+        ) }),
         /* @__PURE__ */ u3("div", { className: "f2s-footer-actions", children: [
           exportState === "error" && exportSource === mode && exportError && /* @__PURE__ */ u3("p", { className: "f2s-error f2s-footer-error", title: exportError, children: exportError }),
+          /* @__PURE__ */ u3(Logo, {}),
           /* @__PURE__ */ u3("a", { href: "https://buymeacoffee.com/billelt", target: "_blank", rel: "noreferrer", className: "f2s-btn f2s-btn--tertiary", children: "Buy me a coffee" }),
           exportState === "error" && exportSource === mode && retryable && /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--secondary", disabled: retrying, onClick: handleRetryFailedSlides, children: retrying ? "Retrying\u2026" : `Retry ${failedFrameIds.length} failed slide${failedFrameIds.length === 1 ? "" : "s"}` }),
           (exportState === "done" || exportState === "error") && exportSource === mode && resultUrl && /* @__PURE__ */ u3("a", { href: resultUrl, target: "_blank", rel: "noreferrer", className: "f2s-btn f2s-btn--primary", children: "Open presentation" })
