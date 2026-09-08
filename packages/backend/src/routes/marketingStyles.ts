@@ -44,9 +44,6 @@ export const MARKETING_CSS = `
   --b-space-12: 12px; --b-space-16: 16px; --b-space-20: 20px; --b-space-24: 24px;
   --b-space-32: 32px; --b-space-48: 48px; --b-space-64: 64px; --b-space-96: 96px;
 
-  --b-radius-2xs: 2px; --b-radius-xs: 4px; --b-radius-sm: 6px; --b-radius-md: 8px;
-  --b-radius-lg: 32px; --b-radius-full: 9999px;
-
   --b-font-sans: "Cabinet Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --b-text-xs: 12px; --b-text-sm: 14px; --b-text-base: 16px; --b-text-lg: 18px;
   --b-text-xl: 20px; --b-text-3xl: 36px; --b-text-6xl: 72px;
@@ -121,7 +118,7 @@ a { color: inherit; }
   color: var(--b-ink); font: inherit; text-decoration: underline;
 }
 .nav-link:focus-visible, .text-link:focus-visible {
-  outline: var(--b-focus-outline); outline-offset: var(--b-focus-offset); border-radius: var(--b-radius-2xs);
+  outline: var(--b-focus-outline); outline-offset: var(--b-focus-offset); border-radius: 0;
 }
 
 /* ---------- Header (b-header, compo marketing) ---------- */
@@ -191,7 +188,7 @@ a { color: inherit; }
 }
 .feature-card {
   display: flex; flex-direction: column; gap: var(--b-space-12);
-  background: var(--b-surface-muted); border-radius: var(--b-radius-md); padding: var(--b-space-24);
+  background: var(--b-surface-muted); border-radius: 0; padding: var(--b-space-24);
 }
 .feature-card__icon { width: 24px; height: 24px; color: var(--b-text-muted); }
 .feature-card__title { margin: 0; font-size: var(--b-text-base); font-weight: var(--b-font-bold); color: var(--b-ink); text-wrap: balance; }
@@ -210,7 +207,7 @@ a { color: inherit; }
 .steps__item { display: flex; gap: var(--b-space-16); align-items: flex-start; }
 .steps__num {
   flex: 0 0 auto; display: flex; align-items: center; justify-content: center; line-height: 1;
-  width: 32px; height: 32px; border-radius: var(--b-radius-full);
+  width: 32px; height: 32px; border-radius: 0;
   background: var(--b-accent-soft); color: var(--b-ink); font-size: var(--b-text-sm); font-weight: var(--b-font-bold);
 }
 .steps__title { margin: 0 0 var(--b-space-4); font-size: var(--b-text-lg); font-weight: var(--b-font-bold); color: var(--b-ink); text-wrap: balance; }
@@ -221,7 +218,7 @@ a { color: inherit; }
 /* ---------- Demo video (illustration "how it works") ---------- */
 .demo-video {
   display: block; width: 100%; height: 100%; min-height: 220px;
-  object-fit: cover; border-radius: var(--b-radius-md);
+  object-fit: cover; border-radius: 0;
   border: 1px solid var(--b-border); background: var(--b-surface-muted);
 }
 
