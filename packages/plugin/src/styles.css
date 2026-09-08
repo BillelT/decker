@@ -28,6 +28,17 @@
      que le monogramme (#F2ECE8) plutôt que des gris neutres génériques. */
   --color-surface: #ffffff;
   --color-surface-muted: #f2ece8;
+
+  /* Tapis du tag "approximé" (.f2s-log-entry-flag--visual-diff) : opaque, et
+     volontairement PAS redéfini en thème sombre. Un tapis translucide
+     (--color-orange-40) prenait la couleur du fond sous lui, si bien qu'une
+     seule couleur de texte ne pouvait pas convenir aux deux thèmes : blanc
+     donnait 1.76:1 en clair et encre 2.49:1 en sombre. Un aplat fixe + une
+     encre fixe (--color-badge-ink) tiennent 12.45:1 partout. */
+  --color-orange-soft: #ffc599;
+  /* Encre des tags, fixe elle aussi : --color-text s'inverse en thème sombre
+     et retournerait le problème. */
+  --color-badge-ink: #120f0d;
 }
 
 /* Thème sombre : Figma pose `figma-dark`/`figma-light` sur <html> quand le
@@ -183,18 +194,51 @@ a {
   flex: none;
 }
 
-.f2s-logo {
-  width: 24px;
-  height: 24px;
+/* ---- Signature de l'auteur (pied de panneau, à gauche de "Buy me a coffee") ----
+
+   Le monogramme est un SVG inliné au build (__LOGO_SVG__) dont le fond est
+   un `<rect rx="40">` sur une viewBox 80×80 : un cercle parfait. C'était le
+   seul élément rond de deux habillages qui n'ont plus un seul angle arrondi
+   (le skin modern a pris les angles droits du 95). `rx`/`ry` sont des
+   propriétés géométriques CSS côté Chromium — donc côté iframe Figma — on
+   les remet à 0 ici plutôt que de maintenir un second fichier SVG carré en
+   parallèle du rond. Le petit `<rect rx="1.5">` de la hampe du B n'est pas
+   touché : le sélecteur ne vise que le premier enfant, le fond. */
+.f2s-logo-link {
+  display: inline-flex;
+  align-items: center;
   flex: none;
-  border-radius: 8px;
+  text-decoration: none;
+}
+
+/* 28px : le bouton "Buy me a coffee" voisin fait 34px de haut (mesuré en
+   rendu). À 24px le monogramme flottait visiblement plus bas que lui ; à 34
+   il aurait pesé autant qu'une action, ce qu'une signature n'est pas. */
+.f2s-logo {
+  width: 28px;
+  height: 28px;
+  flex: none;
   display: block;
+  border-radius: 0;
+  transition: transform 0.15s ease;
 }
 
 .f2s-logo svg {
   width: 100%;
   height: 100%;
   display: block;
+}
+
+.f2s-logo svg > rect:first-child {
+  rx: 0;
+}
+
+.f2s-logo-link:hover .f2s-logo {
+  transform: translateY(-1px);
+}
+
+.f2s-logo-link:active .f2s-logo {
+  transform: translateY(0.5px);
 }
 
 /* ---- Toolbar (polices) ---- */
@@ -803,11 +847,14 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
 
 /* Repère plus discret que "Rasterized" : l'élément reste natif et éditable,
    juste pas garanti identique au pixel près — un aplat orange plein
-   pèserait visuellement autant qu'un vrai raster. Même teinte de marque,
-   posée en tapis clair (opacité) plutôt qu'en plein — texte blanc comme
-   "Rasterized" (orange sur orange-40 était illisible, faute de contraste). */
+   pèserait visuellement autant qu'un vrai raster. Tapis clair, donc texte en
+   ENCRE et non en blanc : blanc sur ce tapis donnait 1.76:1 (audit), très
+   loin des 4.5:1 exigés pour du 9px gras ; l'encre monte à 12.45:1. Le tag
+   "Rasterized" garde son texte blanc — sur son rouge plein, c'est lui qui
+   passe (5.04:1) et l'encre qui échouerait (3.79:1). */
 .f2s-log-entry-flag--visual-diff {
-  background: var(--color-orange-40);
+  background: var(--color-orange-soft);
+  color: var(--color-badge-ink);
 }
 
 /* ---- Création de template : rapport de contenu communicable ----

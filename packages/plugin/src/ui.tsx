@@ -74,11 +74,23 @@ class AuthExpiredError extends Error {
   }
 }
 
-/** Monogramme "B" — assets/logo.svg (depuis la racine du projet). */
+/**
+ * Monogramme "B" — assets/logo.svg (depuis la racine du projet). Signature
+ * de l'auteur, posée en pied de panneau à gauche de "Buy me a coffee" :
+ * les deux pointent vers moi, autant qu'ils voisinent, et la zone Settings
+ * garde son seul rôle de réglages.
+ */
 function Logo() {
   return (
-    <a href="https://billeltighidet.fr" target="_blank" rel="noreferrer" title="billeltighidet.fr">
-      <div className="f2s-logo" dangerouslySetInnerHTML={{ __html: __LOGO_SVG__ }} />
+    <a
+      className="f2s-logo-link"
+      href="https://billeltighidet.fr"
+      target="_blank"
+      rel="noreferrer"
+      title="billeltighidet.fr"
+      aria-label="Made by Billel Tighidet — billeltighidet.fr"
+    >
+      <span className="f2s-logo" dangerouslySetInnerHTML={{ __html: __LOGO_SVG__ }} />
     </a>
   );
 }
@@ -1368,7 +1380,6 @@ function App() {
             <GearIcon />
             <span>Settings</span>
           </button>
-          <Logo />
         </div>
         <div className="f2s-footer-actions">
           {/* Sans ce message, un export échoué (session expirée, 400 Slides
@@ -1381,6 +1392,7 @@ function App() {
               {exportError}
             </p>
           )}
+          <Logo />
           <a href="https://buymeacoffee.com/billelt" target="_blank" rel="noreferrer" className="f2s-btn f2s-btn--tertiary">
             Buy me a coffee
           </a>
