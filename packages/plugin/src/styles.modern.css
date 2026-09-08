@@ -209,16 +209,3 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
   border-color: transparent;
 }
 
-/* ---- Signature de l'auteur ----
-   Le monogramme voisine "Buy me a coffee" en pied de panneau : il prend le
-   même biseau sortant que les boutons pour ne pas rester le seul aplat plat
-   de la rangée. Angles droits déjà posés dans styles.css (le `rx` du rond
-   d'origine y est remis à 0), couleur de marque conservée — c'est déjà
-   l'orange du skin. */
-html.f2s-skin--modern .f2s-logo {
-  box-shadow: var(--hyb-out);
-}
-
-html.f2s-skin--modern .f2s-logo-link:active .f2s-logo {
-  box-shadow: var(--hyb-pressed);
-}
