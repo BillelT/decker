@@ -159,7 +159,7 @@ a { color: inherit; }
 .hero__lede { margin: 0; font-size: var(--b-text-xl); line-height: var(--b-leading-relaxed); color: var(--b-text-muted); text-wrap: balance; }
 .hero__actions { display: flex; align-items: center; justify-content: flex-start; gap: var(--b-space-16); margin-top: var(--b-space-16); }
 .hero__actions .btn { padding: var(--b-space-12) var(--b-space-16); }
-.hero__note { margin: 0; font-size: var(--b-text-sm); color: var(--b-text-faint); text-wrap: balance; }
+.hero__note { margin: 0; font-size: var(--b-text-sm); font-weight: var(--b-font-medium); color: var(--b-text-faint); text-wrap: balance; }
 .hero__demo { width: 100%; }
 /* 960x460 — ratio natif de la vidéo (how-it-works-demo.webm), pour que
    object-fit: cover (.demo-video) n'ait rien à recadrer. */
