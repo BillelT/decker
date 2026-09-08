@@ -83,7 +83,7 @@ const CSS = `
 
   --b-ink: #120f0d;
   --b-paper: #ffffff;
-  --b-muted: #575757;
+  --b-muted: #3b3735;
   --b-accent: #f06800;
   --chrome-font: "W95FA", "Liberation Sans", Tahoma, "MS Sans Serif", Arial, sans-serif;
 }
