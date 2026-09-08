@@ -22,9 +22,9 @@ export const MARKETING_CSS = `
   --b-black: #120f0d;
   --b-white: #fff9f5;
   --b-ink: #120f0d;
-  --b-gray-700: #575757;
-  --b-gray-300: #cccccc;
-  --b-gray-100: #eeeeee;
+  --b-gray-700: #3b3735;
+  --b-gray-300: #dcd5d0;
+  --b-gray-100: #f1edeb;
   --b-text: var(--b-ink);
   --b-text-muted: var(--b-gray-700);
   --b-text-faint: var(--b-gray-700);
