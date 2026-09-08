@@ -196,14 +196,22 @@ a {
 
 /* ---- Signature de l'auteur (pied de panneau, à gauche de "Buy me a coffee") ----
 
-   Le monogramme est un SVG inliné au build (__LOGO_SVG__) dont le fond est
-   un `<rect rx="40">` sur une viewBox 80×80 : un cercle parfait. C'était le
-   seul élément rond de deux habillages qui n'ont plus un seul angle arrondi
-   (le skin modern a pris les angles droits du 95). `rx`/`ry` sont des
-   propriétés géométriques CSS côté Chromium — donc côté iframe Figma — on
-   les remet à 0 ici plutôt que de maintenir un second fichier SVG carré en
-   parallèle du rond. Le petit `<rect rx="1.5">` de la hampe du B n'est pas
-   touché : le sélecteur ne vise que le premier enfant, le fond. */
+   Le monogramme est un SVG inliné au build (__LOGO_SVG__) : sur une viewBox
+   80×80, un `<rect rx="40">` de fond orange plein (donc un cercle) et,
+   par-dessus, le B en ivoire (deux `<path>` + la hampe).
+
+   Ici il est repeint en monochrome : le rond de fond passe en `fill: none`,
+   la marque et une bordure 1px prennent `--color-text`. Le fond du panneau
+   se voit donc au travers et joue le rôle de l'aplat — crème en thème clair,
+   sombre en thème sombre, gris système en win95 — et la signature suit le
+   thème au lieu d'être le seul aplat saturé de la fenêtre. Tout se fait en
+   CSS (`fill` s'applique aux éléments SVG, `rx` est une propriété
+   géométrique côté Chromium, donc côté iframe Figma) plutôt qu'en
+   maintenant un second fichier SVG en parallèle du rond orange, qui reste
+   la version de référence hors plugin.
+
+   `> *` d'abord, puis le fond en `:first-child` : ce dernier a la plus forte
+   spécificité et l'emporte, sans avoir à énumérer les trois autres nœuds. */
 .f2s-logo-link {
   display: inline-flex;
   align-items: center;
@@ -213,12 +221,15 @@ a {
 
 /* 28px : le bouton "Buy me a coffee" voisin fait 34px de haut (mesuré en
    rendu). À 24px le monogramme flottait visiblement plus bas que lui ; à 34
-   il aurait pesé autant qu'une action, ce qu'une signature n'est pas. */
+   il aurait pesé autant qu'une action, ce qu'une signature n'est pas.
+   `box-sizing: border-box` (règle `*` en tête de fichier) fait que la
+   bordure tient DANS ces 28px. */
 .f2s-logo {
   width: 28px;
   height: 28px;
   flex: none;
   display: block;
+  border: 1px solid var(--color-text);
   border-radius: 0;
   transition: transform 0.15s ease;
 }
@@ -229,8 +240,22 @@ a {
   display: block;
 }
 
+.f2s-logo svg > * {
+  fill: var(--color-text);
+}
+
 .f2s-logo svg > rect:first-child {
-  rx: 0;
+  fill: none;
+}
+
+/* Sans son rond de fond, le B seul n'occupe qu'environ 25% de la largeur et
+   46% de la hauteur de la viewBox : il flottait perdu au milieu de sa
+   bordure. Agrandi autour du centre de sa propre boîte englobante
+   (x 30.6→50.2, y 21→58, donc centre 40.4 / 39.5) pour remplir le cadre
+   comme le faisait l'aplat. */
+.f2s-logo svg > *:not(:first-child) {
+  transform: scale(1.55);
+  transform-origin: 40.4px 39.5px;
 }
 
 .f2s-logo-link:hover .f2s-logo {

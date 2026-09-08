@@ -611,26 +611,12 @@ html.f2s-skin--win95 .f2s-font-dropdown::-webkit-scrollbar {
 }
 
 /* ---- Signature de l'auteur ----
-   Le monogramme perso est repeint dans la palette système : son orange de
-   marque était le seul aplat saturé et anti-aliasé d'une fenêtre entièrement
-   grise et pixelisée. Le fond passe au bleu de sélection Windows, comme
-   --color-orange plus haut ; la lettre garde son ivoire, qui joue le rôle du
-   blanc système. Angles droits déjà posés dans styles.css, plus le biseau
-   sortant des autres éléments cliquables. Pas de transform au survol : le
-   relief 95 se joue au box-shadow, jamais à l'animation. */
-html.f2s-skin--win95 .f2s-logo {
-  box-shadow: var(--w95-out);
-}
-
-html.f2s-skin--win95 .f2s-logo svg > rect:first-child {
-  fill: var(--w95-navy);
-}
-
+   Rien à repeindre ici : le monogramme est monochrome et prend
+   `--color-text`, que ce fichier remappe déjà sur le noir système (bloc
+   racine). Le fond du panneau se voit au travers de la marque et joue le
+   rôle du gris #c0c0c0. Seule exception au tronc commun : pas de transform
+   au survol, comme partout dans ce skin. */
 html.f2s-skin--win95 .f2s-logo-link:hover .f2s-logo,
 html.f2s-skin--win95 .f2s-logo-link:active .f2s-logo {
   transform: none;
-}
-
-html.f2s-skin--win95 .f2s-logo-link:active .f2s-logo {
-  box-shadow: var(--w95-pressed);
 }
