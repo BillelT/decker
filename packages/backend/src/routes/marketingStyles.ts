@@ -44,6 +44,12 @@ export const MARKETING_CSS = `
   --b-space-12: 12px; --b-space-16: 16px; --b-space-20: 20px; --b-space-24: 24px;
   --b-space-32: 32px; --b-space-48: 48px; --b-space-64: 64px; --b-space-96: 96px;
 
+  /* Conteneur des sections principales : pas de padding latéral, la marge auto
+     fait le travail — 95% de large sous 1280px (soit 2.5% de marge de chaque
+     côté), puis 1280px centrés au-delà. */
+  --b-container: 1280px;
+  --b-container-width: 95%;
+
   --b-font-sans: "Cabinet Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --b-text-xs: 12px; --b-text-sm: 14px; --b-text-base: 16px; --b-text-lg: 18px;
   --b-text-xl: 20px; --b-text-3xl: 36px; --b-text-6xl: 72px;
@@ -130,7 +136,8 @@ a { color: inherit; }
 .header--scrolled { border-bottom-color: var(--b-border); }
 .header__inner {
   display: flex; align-items: center; justify-content: space-between; gap: var(--b-space-32);
-  width: 100%; max-width: 1200px; margin-inline: auto; padding: var(--b-space-16) var(--b-space-24);
+  width: var(--b-container-width); max-width: var(--b-container); margin-inline: auto;
+  padding-block: var(--b-space-16);
 }
 .header__lead { display: flex; align-items: center; gap: var(--b-space-32); }
 .header__brand {
@@ -147,8 +154,8 @@ a { color: inherit; }
    colonne démo prend le reste de la largeur. */
 .hero {
   display: grid; grid-template-columns: minmax(0, 460px) 1fr; align-items: center;
-  gap: var(--b-space-64); width: 100%; max-width: 1200px; margin-inline: auto;
-  padding: var(--b-space-96) var(--b-space-24);
+  gap: var(--b-space-64); width: var(--b-container-width); max-width: var(--b-container);
+  margin-inline: auto; padding-block: var(--b-space-64);
 }
 .hero__content { display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: var(--b-space-20); }
 .hero__title {
@@ -166,7 +173,10 @@ a { color: inherit; }
 .hero__demo .demo-video { width: 100%; aspect-ratio: 960 / 460; }
 
 /* ---------- Content sections (prose — pas un composant Billel, besoin propre à cette page) ---------- */
-.section { width: 100%; max-width: 1200px; margin-inline: auto; padding: var(--b-space-64) var(--b-space-24); }
+.section {
+  width: var(--b-container-width); max-width: var(--b-container); margin-inline: auto;
+  padding-block: var(--b-space-64);
+}
 .section__title {
   margin: 0 0 var(--b-space-16); font-size: var(--b-text-3xl); font-weight: var(--b-font-bold);
   letter-spacing: var(--b-tracking-tight); color: var(--b-ink);
@@ -198,7 +208,10 @@ a { color: inherit; }
 .section--muted {
   width: 100%; max-width: none; padding: 0; background: var(--b-surface-muted);
 }
-.section--muted .section__inner { max-width: 1200px; margin-inline: auto; padding: var(--b-space-64) var(--b-space-24); }
+.section--muted .section__inner {
+  width: var(--b-container-width); max-width: var(--b-container); margin-inline: auto;
+  padding-block: var(--b-space-64);
+}
 .how-it-works {
   display: grid; grid-template-columns: 1fr 1fr; align-items: stretch;
   column-gap: var(--b-space-48); row-gap: var(--b-space-32); margin-top: var(--b-space-32);
@@ -226,7 +239,10 @@ a { color: inherit; }
 .footer {
   width: 100%; border-top: 1px solid var(--b-border);
 }
-.footer__inner { max-width: 1200px; margin-inline: auto; padding: var(--b-space-48) var(--b-space-24); }
+.footer__inner {
+  width: var(--b-container-width); max-width: var(--b-container); margin-inline: auto;
+  padding-block: var(--b-space-48);
+}
 .footer__top { display: flex; justify-content: space-between; gap: var(--b-space-48); margin-bottom: var(--b-space-64); flex-wrap: wrap; }
 .footer__brand { display: flex; flex-direction: column; align-items: flex-start; gap: var(--b-space-16); }
 .footer__brand-row { display: flex; align-items: center; gap: var(--b-space-12); }
