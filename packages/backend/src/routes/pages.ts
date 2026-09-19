@@ -4,6 +4,7 @@ import { MARKETING_CSS } from './marketingStyles.js';
 import { OG_IMAGE_PNG_BASE64 } from '../og/ogImageData.js';
 import { OG_IMAGE } from '../og/variants.js';
 import { DEMO_VIDEO_WEBM_BASE64 } from './demoVideoData.js';
+import { STEP_GET_DECK_SVG, STEP_MATCHED_SVG, STEP_PICK_FRAMES_SVG } from './stepArtwork.js';
 
 export const pagesRouter = Router();
 
@@ -240,42 +241,36 @@ pagesRouter.get('/', (_req, res) => {
       </div>
     </section>
 
-    <section class="section section--muted">
-      <div class="section__inner">
-        <h2 class="section__title">How it works</h2>
-        <div class="how-it-works">
-          <ol class="steps">
-            <li class="steps__item">
-              <span class="steps__num">1</span>
-              <div>
-                <h3 class="steps__title">Pick your frames</h3>
-                <p class="steps__desc">From inside Figma, select the frames you want to export.</p>
-              </div>
-            </li>
-            <li class="steps__item">
-              <span class="steps__num">2</span>
-              <div>
-                <h3 class="steps__title">Matched, pixel for pixel</h3>
-                <p class="steps__desc">Every layer, font, and color is mapped precisely into native Slides objects.</p>
-              </div>
-            </li>
-            <li class="steps__item">
-              <span class="steps__num">3</span>
-              <div>
-                <h3 class="steps__title">Get your deck</h3>
-                <p class="steps__desc">Decker creates the presentation directly in your own Google Drive, ready to edit.</p>
-              </div>
-            </li>
-          </ol>
-          <div class="how-it-works__demo">
-            <video class="demo-video" loop muted playsinline aria-label="Screen recording of Decker exporting a Figma deck to Google Slides">
-              <source src="/${DEMO_VIDEO_FILE}?v=${DEMO_VIDEO_VERSION}" type="video/webm" />
-            </video>
+    <section class="section">
+      <h2 class="section__title">How it works</h2>
+      <ol class="steps">
+        <li class="steps__item">
+          ${STEP_PICK_FRAMES_SVG}
+          <div class="steps__body">
+            <p class="steps__eyebrow">Step 1</p>
+            <h3 class="steps__title">Pick your frames</h3>
+            <p class="steps__desc">From inside Figma, select the frames you want to export.</p>
           </div>
-          <div class="section__cta">
-            <a class="btn cta" href="${PLUGIN_URL}" target="_blank" rel="${REL_THIRD_PARTY}">Try it on Figma</a>
+        </li>
+        <li class="steps__item">
+          ${STEP_MATCHED_SVG}
+          <div class="steps__body">
+            <p class="steps__eyebrow">Step 2</p>
+            <h3 class="steps__title">Matched, pixel for pixel</h3>
+            <p class="steps__desc">Every layer, font, and color is mapped precisely into native Slides objects.</p>
           </div>
-        </div>
+        </li>
+        <li class="steps__item">
+          ${STEP_GET_DECK_SVG}
+          <div class="steps__body">
+            <p class="steps__eyebrow">Step 3</p>
+            <h3 class="steps__title">Get your deck</h3>
+            <p class="steps__desc">Decker creates the presentation directly in your own Google Drive, ready to edit.</p>
+          </div>
+        </li>
+      </ol>
+      <div class="section__cta">
+        <a class="btn cta" href="${PLUGIN_URL}" target="_blank" rel="${REL_THIRD_PARTY}">Try it on Figma</a>
       </div>
     </section>
 
