@@ -204,29 +204,29 @@ a { color: inherit; }
 .feature-card__title { margin: 0; font-size: var(--b-text-base); font-weight: var(--b-font-bold); color: var(--b-ink); text-wrap: balance; }
 .feature-card__desc { margin: 0; font-size: var(--b-text-sm); line-height: var(--b-leading-relaxed); color: var(--b-text-muted); text-wrap: balance; }
 
-/* ---------- How it works — section pleine largeur (prose) ---------- */
-.section--muted {
-  width: 100%; max-width: none; padding: 0; background: var(--b-surface-muted);
+/* ---------- How it works — une card par étape (prose) ----------
+   Plus de bande de fond colorée pleine largeur : chaque étape est une card
+   posée sur le fond de page, avec un aperçu illustré en haut (surface blanche
+   encadrée), puis l'intitulé d'étape, le titre et la description. */
+.steps {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--b-space-20);
+  margin: var(--b-space-32) 0 0; padding: 0; list-style: none;
 }
-.section--muted .section__inner {
-  width: var(--b-container-width); max-width: var(--b-container); margin-inline: auto;
-  padding-block: var(--b-space-64);
+.steps__item {
+  display: flex; flex-direction: column; gap: var(--b-space-24);
+  background: var(--b-surface-muted); border-radius: 0; padding: var(--b-space-24);
 }
-.how-it-works {
-  display: grid; grid-template-columns: 1fr 1fr; align-items: stretch;
-  column-gap: var(--b-space-48); row-gap: var(--b-space-32); margin-top: var(--b-space-32);
+/* Le visuel est dessiné en SVG sur un ratio fixe : la rangée de cards garde
+   des aperçus de même hauteur quelle que soit la longueur des textes. */
+.steps__media {
+  display: block; width: 100%; aspect-ratio: 8 / 5;
+  background: var(--b-surface); border: 1px solid var(--b-border);
 }
-.steps { grid-column: 1; grid-row: 1; display: flex; flex-direction: column; gap: var(--b-space-32); margin: 0; padding: 0; list-style: none; }
-.steps__item { display: flex; gap: var(--b-space-16); align-items: flex-start; }
-.steps__num {
-  flex: 0 0 auto; display: flex; align-items: center; justify-content: center; line-height: 1;
-  width: 32px; height: 32px; border-radius: 0;
-  background: var(--b-accent-soft); color: var(--b-ink); font-size: var(--b-text-sm); font-weight: var(--b-font-bold);
-}
-.steps__title { margin: 0 0 var(--b-space-4); font-size: var(--b-text-lg); font-weight: var(--b-font-bold); color: var(--b-ink); text-wrap: balance; }
+.steps__body { display: flex; flex-direction: column; gap: var(--b-space-8); }
+.steps__eyebrow { margin: 0; font-size: var(--b-text-sm); font-weight: var(--b-font-medium); color: var(--b-text-faint); }
+.steps__title { margin: 0; font-size: var(--b-text-lg); font-weight: var(--b-font-bold); color: var(--b-ink); text-wrap: balance; }
 .steps__desc { margin: 0; font-size: var(--b-text-base); line-height: var(--b-leading-relaxed); color: var(--b-text-muted); text-wrap: balance; }
-.how-it-works__demo { grid-column: 2; grid-row: 1; }
-.section__cta { grid-column: 1; grid-row: 2; align-self: start; justify-self: end; }
+.section__cta { display: flex; justify-content: flex-end; margin-top: var(--b-space-32); }
 
 /* ---------- Demo video (illustration "how it works") ---------- */
 .demo-video {
@@ -259,7 +259,7 @@ a { color: inherit; }
 .footer__legal { display: flex; gap: var(--b-space-24); }
 
 @media (max-width: 960px) {
-  .feature-grid { grid-template-columns: repeat(2, 1fr); }
+  .feature-grid, .steps { grid-template-columns: repeat(2, 1fr); }
   .hero { grid-template-columns: 1fr; gap: var(--b-space-32); }
   .hero__content { align-items: center; text-align: center; }
   .hero__actions { justify-content: center; }
@@ -274,10 +274,7 @@ a { color: inherit; }
   .header__actions { width: 100%; }
   .footer__top { flex-direction: column; }
   .footer__bottom { flex-direction: column; align-items: flex-start; }
-  .feature-grid { grid-template-columns: 1fr; }
-  .how-it-works { grid-template-columns: 1fr; }
-  .steps { grid-column: 1; grid-row: 1; }
-  .how-it-works__demo { grid-column: 1; grid-row: 2; height: 280px; }
-  .section__cta { grid-column: 1; grid-row: 3; justify-self: start; }
+  .feature-grid, .steps { grid-template-columns: 1fr; }
+  .section__cta { justify-content: flex-start; }
 }
 `;
