@@ -11,6 +11,9 @@ import {
   FEATURE_PICK_SVG,
   FEATURE_PRIVATE_SVG,
   FEATURE_TEMPLATE_SVG,
+  ICON_ACCOUNT_SVG,
+  ICON_DRIVE_FILE_SVG,
+  ICON_NO_STORAGE_SVG,
   STEP_GET_DECK_SVG,
   STEP_MATCHED_SVG,
   STEP_PICK_FRAMES_SVG,
@@ -150,12 +153,10 @@ ${footer()}
     var item = track && track.firstElementChild;
     if (!track || !controls || !prev || !next || !item) return;
 
-    // Une "page" = le nombre de cards entières visibles, pour que le défilement
-    // s'aligne sur la grille plutôt que de couper une card en deux.
-    var page = function () {
+    // Une card à la fois : le pas vaut une card plus sa gouttière.
+    var stride = function () {
       var gap = parseFloat(getComputedStyle(track).columnGap) || 0;
-      var stride = item.getBoundingClientRect().width + gap;
-      return stride * Math.max(1, Math.floor((track.clientWidth + gap) / stride));
+      return item.getBoundingClientRect().width + gap;
     };
 
     var update = function () {
@@ -167,10 +168,47 @@ ${footer()}
       next.disabled = track.scrollLeft >= max - 1;
     };
 
-    prev.addEventListener('click', function () { track.scrollBy({ left: -page() }); });
-    next.addEventListener('click', function () { track.scrollBy({ left: page() }); });
+    prev.addEventListener('click', function () { track.scrollBy({ left: -stride() }); });
+    next.addEventListener('click', function () { track.scrollBy({ left: stride() }); });
     track.addEventListener('scroll', update, { passive: true });
     window.addEventListener('resize', update);
+
+    // Glisser à la souris ou au stylet. Le tactile est laissé au défilement
+    // natif du navigateur, qui gère déjà l'inertie et l'accrochage bien mieux
+    // qu'un suivi manuel.
+    var dragFrom = 0;
+    var scrollFrom = 0;
+    var dragging = false;
+    var stopDrag = function (event) {
+      if (!dragging) return;
+      dragging = false;
+      if (track.hasPointerCapture(event.pointerId)) track.releasePointerCapture(event.pointerId);
+      // Retirer la classe rend son scroll-snap à la piste, donc l'accrochage
+      // sur la card la plus proche se fait ici, au relâchement.
+      track.classList.remove('carousel__track--dragging');
+    };
+    track.addEventListener('pointerdown', function (event) {
+      if (event.pointerType === 'touch' || event.button !== 0) return;
+      dragging = true;
+      dragFrom = event.clientX;
+      scrollFrom = track.scrollLeft;
+      track.setPointerCapture(event.pointerId);
+      track.classList.add('carousel__track--dragging');
+      // Sans ça, un glisser amorcé sur un texte de card démarre une sélection
+      // de texte native, qui prend la main et fait perdre le glisser. La piste
+      // est une surface à tirer : la sélection y cède le pas.
+      event.preventDefault();
+    });
+    track.addEventListener('pointermove', function (event) {
+      if (!dragging) return;
+      track.scrollLeft = scrollFrom - (event.clientX - dragFrom);
+    });
+    track.addEventListener('pointerup', stopDrag);
+    track.addEventListener('pointercancel', stopDrag);
+    // Sans ça, le navigateur lance son propre glisser-déposer sur les SVG des
+    // aperçus dès le premier pixel, et le glisser de la piste s'interrompt.
+    track.addEventListener('dragstart', function (event) { event.preventDefault(); });
+
     update();
   });
 })();
@@ -250,9 +288,11 @@ pagesRouter.get('/', (_req, res) => {
       </div>
     </section>
 
-    <section class="section">
-      <p class="section__eyebrow">What Decker does</p>
-      <h2 class="section__title">Free, complete, and fully editable.</h2>
+    <section class="section section--bleed">
+      <div class="section__inner">
+        <p class="section__eyebrow">What Decker does</p>
+        <h2 class="section__title">Free, complete, and fully editable.</h2>
+      </div>
       <div class="carousel" data-carousel>
         <ul class="carousel__track" data-carousel-track tabindex="0" aria-label="What Decker does">
         <li class="carousel__item card">
@@ -304,7 +344,7 @@ pagesRouter.get('/', (_req, res) => {
           </div>
         </li>
         </ul>
-        <div class="carousel__controls" data-carousel-controls>
+        <div class="section__inner carousel__controls" data-carousel-controls>
           <button type="button" class="btn carousel__btn" data-carousel-prev aria-label="Show previous features">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15,5 8,12 15,19" /></svg>
           </button>
@@ -318,7 +358,7 @@ pagesRouter.get('/', (_req, res) => {
     <section class="section">
       <p class="section__eyebrow">How it works</p>
       <h2 class="section__title">Three steps to a live deck.</h2>
-      <ol class="steps">
+      <ol class="card-grid">
         <li class="card">
           ${STEP_PICK_FRAMES_SVG}
           <div class="card__body">
@@ -352,12 +392,33 @@ pagesRouter.get('/', (_req, res) => {
     <section class="section">
       <p class="section__eyebrow">Why Decker asks for Google access</p>
       <h2 class="section__title">Only what the export needs.</h2>
-      <p>When you sign in, Decker requests two things, and nothing more:</p>
-      <ul>
-        <li><strong>Google Drive API (<code>drive.file</code> scope)</strong>: limited to files created by Decker itself. This is what lets Decker create and populate the presentation you ask to export through the Google Slides API; it cannot read or modify any of your other Drive or Slides files.</li>
-        <li><strong>Your email address</strong>: used only to display, inside the plugin, which Google account is currently connected.</li>
+      <p class="section__lede">When you sign in, Decker asks for two things, and keeps none of them.</p>
+      <ul class="card-grid">
+        <li class="card card--compact">
+          ${ICON_DRIVE_FILE_SVG}
+          <div class="card__body">
+            <h3 class="card__title">Create the deck, nothing else</h3>
+            <p class="card__desc">Decker only touches the presentation it creates for you. It cannot read or modify any other file in your Drive or Slides.</p>
+          </div>
+          <p class="card__note">Scope <code>drive.file</code></p>
+        </li>
+        <li class="card card--compact">
+          ${ICON_ACCOUNT_SVG}
+          <div class="card__body">
+            <h3 class="card__title">Show which account is connected</h3>
+            <p class="card__desc">Your email address is displayed inside the plugin, so you always know where an export is about to land.</p>
+          </div>
+          <p class="card__note">Scope <code>userinfo.email</code></p>
+        </li>
+        <li class="card card--compact">
+          ${ICON_NO_STORAGE_SVG}
+          <div class="card__body">
+            <h3 class="card__title">Nothing kept after the export</h3>
+            <p class="card__desc">No data is stored beyond what's needed to run that export. No tracking, no analytics, no resale.</p>
+          </div>
+          <p class="card__note"><a class="text-link" href="${SITE_URL}/privacy">Read the Privacy Policy</a></p>
+        </li>
       </ul>
-      <p>No data is stored beyond what's needed to run that export. Full details are in the <a class="text-link" href="${SITE_URL}/privacy">Privacy Policy</a>.</p>
     </section>
   `;
   res.type('html').send(

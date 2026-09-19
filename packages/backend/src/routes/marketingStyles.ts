@@ -73,6 +73,19 @@ export const MARKETING_CSS = `
     inset 2px 2px var(--hyb-hi);
   --hyb-pressed: inset -1px -1px var(--hyb-hi), inset 1px 1px var(--hyb-lo-strong), inset -2px -2px var(--hyb-hi),
     inset 2px 2px var(--hyb-lo);
+  --hyb-in: inset -1px -1px var(--hyb-hi), inset 1px 1px var(--hyb-lo), inset -2px -2px var(--hyb-hi),
+    inset 2px 2px var(--hyb-lo-strong);
+
+  /* Marge latérale laissée par le conteneur, à l'identique de son calcul :
+     2.5% de chaque côté sous 1280px, puis ce qui reste une fois les 1280px
+     centrés. Sert aux blocs qui débordent du conteneur et doivent quand même
+     démarrer sur sa colonne. Pas de vw ici : un pourcentage se mesure sur le
+     bloc parent, donc hors barre de défilement, là où 100vw la compte et
+     provoquerait un débordement horizontal de la page. */
+  --b-gutter: max(
+    calc((100% - var(--b-container-width)) / 2),
+    calc((100% - var(--b-container)) / 2)
+  );
 }
 
 * { box-sizing: border-box; }
@@ -181,6 +194,13 @@ a { color: inherit; }
   margin: 0 0 var(--b-space-12); font-size: var(--b-text-sm); font-weight: var(--b-font-semibold);
   letter-spacing: var(--b-tracking-wide); text-transform: uppercase; color: var(--b-text-muted);
 }
+.section__lede { margin: 0; font-size: var(--b-text-lg); line-height: var(--b-leading-relaxed); color: var(--b-text-muted); text-wrap: balance; }
+/* Bandeau qui déborde du conteneur : la section prend toute la largeur de
+   page, et ses blocs de texte reprennent la colonne via .section__inner. */
+.section--bleed { width: 100%; max-width: none; }
+.section__inner {
+  width: var(--b-container-width); max-width: var(--b-container); margin-inline: auto;
+}
 .section__title {
   margin: 0 0 var(--b-space-16); font-size: var(--b-text-4xl); font-weight: var(--b-font-bold);
   letter-spacing: var(--b-tracking-tight); color: var(--b-ink);
@@ -204,8 +224,8 @@ a { color: inherit; }
 .legal .section__title--page { font-size: var(--b-text-3xl); text-align: center; padding-top: var(--b-space-32); }
 .legal .meta { text-align: center; font-size: var(--b-text-xs); line-height: var(--b-leading-relaxed); color: var(--b-text-faint); margin: 0 0 var(--b-space-48); text-wrap: balance; }
 
-/* ---------- How it works : les trois étapes, en grille ---------- */
-.steps {
+/* ---------- Grille de cards (étapes, points d'accès Google) ---------- */
+.card-grid {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--b-space-20);
   margin: var(--b-space-32) 0 0; padding: 0; list-style: none;
 }
@@ -214,32 +234,62 @@ a { color: inherit; }
    Aperçu illustré en haut sur surface blanche, puis surtitre, titre et
    description. Les deux sections partagent le composant : seul le conteneur
    change (grille pour les étapes, piste défilante pour les points forts). */
+/* Relief 95 sur la palette moderne, comme le skin hybride du plugin : la card
+   est un panneau en relief (--hyb-out) et son aperçu un puits en creux
+   (--hyb-in), au lieu d'un aplat bordé d'1px. Le biseau remplace la bordure,
+   d'où sa disparition sur .card__media. */
 .card {
   display: flex; flex-direction: column; gap: var(--b-space-24);
   background: var(--b-surface-muted); border-radius: 0; padding: var(--b-space-24);
+  box-shadow: var(--hyb-out);
 }
 /* Ratio fixe : les aperçus restent alignés entre eux quelle que soit la
    longueur des textes en dessous. */
 .card__media {
   display: block; width: 100%; aspect-ratio: 8 / 5;
-  background: var(--b-surface); border: 1px solid var(--b-border);
+  background: var(--b-surface); box-shadow: var(--hyb-in);
 }
+.card__icon { width: 24px; height: 24px; flex: 0 0 auto; color: var(--b-text-muted); }
 .card__body { display: flex; flex-direction: column; gap: var(--b-space-8); }
-.card__eyebrow { margin: 0; font-size: var(--b-text-sm); font-weight: var(--b-font-medium); color: var(--b-text-faint); }
+/* Capitales comme le surtitre de section, d'un palier plus petit pour que les
+   deux niveaux restent distincts. */
+.card__eyebrow {
+  margin: 0; font-size: var(--b-text-xs); font-weight: var(--b-font-semibold);
+  letter-spacing: var(--b-tracking-wide); text-transform: uppercase; color: var(--b-text-faint);
+}
 .card__title { margin: 0; font-size: var(--b-text-lg); font-weight: var(--b-font-bold); color: var(--b-ink); text-wrap: balance; }
 .card__desc { margin: 0; font-size: var(--b-text-base); line-height: var(--b-leading-relaxed); color: var(--b-text-muted); text-wrap: balance; }
+.card--compact { gap: var(--b-space-16); }
+/* Poussée en pied de card (margin-top: auto) pour que les notes s'alignent
+   d'une card à l'autre malgré des descriptions de longueurs différentes.
+   Le filet est une rainure gravée 95 : un trait sombre doublé d'un trait
+   clair, plutôt qu'une bordure 1px plate. */
+.card__note {
+  margin: var(--b-space-8) 0 0; margin-top: auto; padding-top: var(--b-space-16);
+  border-top: 1px solid var(--hyb-lo); box-shadow: inset 0 1px var(--hyb-hi);
+  font-size: var(--b-text-xs); color: var(--b-text-faint);
+}
+.card__note code { font-size: 1em; color: var(--b-ink); font-weight: var(--b-font-semibold); }
 
 /* ---------- Carrousel de cards (prose) ----------
    Six points forts : trop pour une grille lisible, donc une piste qui défile
-   horizontalement, coupée net au bord du conteneur. La card partiellement
-   visible à droite signale qu'il y en a d'autres ; les flèches sont sous la
-   piste, alignées sur la marge droite du conteneur. */
+   horizontalement. Elle prend toute la largeur de page et se contente d'un
+   padding égal à la gouttière du conteneur : les cards démarrent donc sur la
+   colonne du texte, mais continuent de courir jusqu'au bord de l'écran au
+   lieu d'être coupées au bord du conteneur. On voit ainsi la suivante
+   dépasser à droite, et les précédentes dépasser à gauche une fois
+   défilé. Le scroll-padding aligne l'accrochage sur cette même colonne. */
 .carousel__track {
-  display: flex; gap: var(--b-space-20); margin: var(--b-space-32) 0 0; padding: 0; list-style: none;
+  display: flex; gap: var(--b-space-20); margin: var(--b-space-32) 0 0; list-style: none;
+  padding: 0 var(--b-gutter); scroll-padding-inline: var(--b-gutter);
   overflow-x: auto; overscroll-behavior-x: contain;
   scroll-snap-type: x mandatory; scroll-behavior: smooth;
   scrollbar-width: none;
 }
+/* Pendant un glisser, scrollLeft est piloté à la main : l'accrochage doit se
+   taire, sinon il ramène la piste à chaque image. Il reprend au relâchement,
+   ce qui produit l'accrochage final. */
+.carousel__track--dragging { scroll-snap-type: none; scroll-behavior: auto; cursor: grabbing; user-select: none; }
 .carousel__track::-webkit-scrollbar { display: none; }
 /* La card suivante doit toujours dépasser : c'est le seul signal qu'il y a
    une suite. La largeur est donc calculee pour qu'un nombre entier de cards
@@ -251,7 +301,7 @@ a { color: inherit; }
    largeur. Les paliers en dessous suivent la meme logique avec deux cards
    (10% de depassement) puis une (20%). */
 .carousel__item { flex: 0 0 calc(31% - 20px); scroll-snap-align: start; }
-.carousel__controls { display: flex; justify-content: flex-end; gap: var(--b-space-8); margin-top: var(--b-space-48); }
+.carousel__controls { display: flex; justify-content: flex-end; gap: var(--b-space-8); padding-top: var(--b-space-48); }
 .carousel__btn {
   width: 40px; height: 40px; padding: 0; border: 0; border-radius: 0;
   background-color: var(--b-surface-muted); color: var(--b-ink); box-shadow: var(--hyb-out);
@@ -299,7 +349,7 @@ a { color: inherit; }
 }
 
 @media (max-width: 960px) {
-  .steps { grid-template-columns: repeat(2, 1fr); }
+  .card-grid { grid-template-columns: repeat(2, 1fr); }
   .carousel__item { flex-basis: calc(45% - 20px); }
   .hero { grid-template-columns: 1fr; gap: var(--b-space-32); }
   .hero__content { align-items: center; text-align: center; }
@@ -319,7 +369,7 @@ a { color: inherit; }
   .header__actions { width: 100%; }
   .footer__top { flex-direction: column; }
   .footer__bottom { flex-direction: column; align-items: flex-start; }
-  .steps { grid-template-columns: 1fr; }
+  .card-grid { grid-template-columns: 1fr; }
   .section__cta { justify-content: flex-start; }
 }
 `;
