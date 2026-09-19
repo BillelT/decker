@@ -181,9 +181,10 @@ a { color: inherit; }
 .hero__actions .btn { padding: var(--b-space-12) var(--b-space-16); }
 .hero__note { margin: 0; font-size: var(--b-text-sm); font-weight: var(--b-font-medium); color: var(--b-text-faint); text-wrap: balance; }
 .hero__demo { width: 100%; }
-/* 960x460, ratio natif de la vidéo (how-it-works-demo.webm), pour que
-   object-fit: cover (.demo-video) n'ait rien à recadrer. */
-.hero__demo .demo-video { width: 100%; aspect-ratio: 960 / 460; }
+/* 16/9 plutôt que le 960x460 natif de la vidéo (how-it-works-demo.webm) :
+   la démo gagne en hauteur, au prix d'un recadrage latéral par
+   object-fit: cover, la vidéo étant plus large que 16/9. */
+.hero__demo .demo-video { width: 100%; aspect-ratio: 16 / 9; }
 
 /* ---------- Content sections (prose, pas un composant Billel, besoin propre à cette page) ---------- */
 .section {
@@ -218,8 +219,8 @@ a { color: inherit; }
    "tout paragraphe" met tout composant à l'abri, présent comme futur. */
 .section > p:not([class]) { margin: 0 0 var(--b-space-16); font-size: var(--b-text-base); line-height: var(--b-leading-relaxed); color: var(--b-text-muted); text-wrap: balance; }
 .section > p:not([class]):last-child { margin-bottom: 0; }
-.section > ul { margin: var(--b-space-8) 0 var(--b-space-16); padding-left: var(--b-space-24); }
-.section > ul > li { font-size: var(--b-text-base); line-height: var(--b-leading-relaxed); color: var(--b-text-muted); margin-bottom: var(--b-space-8); text-wrap: balance; }
+.section > ul:not([class]) { margin: var(--b-space-8) 0 var(--b-space-16); padding-left: var(--b-space-24); }
+.section > ul:not([class]) > li { font-size: var(--b-text-base); line-height: var(--b-leading-relaxed); color: var(--b-text-muted); margin-bottom: var(--b-space-8); text-wrap: balance; }
 .legal .section { max-width: 680px; }
 .legal .section__title--page { font-size: var(--b-text-3xl); text-align: center; padding-top: var(--b-space-32); }
 .legal .meta { text-align: center; font-size: var(--b-text-xs); line-height: var(--b-leading-relaxed); color: var(--b-text-faint); margin: 0 0 var(--b-space-48); text-wrap: balance; }
@@ -289,6 +290,10 @@ a { color: inherit; }
 /* Pendant un glisser, scrollLeft est piloté à la main : l'accrochage doit se
    taire, sinon il ramène la piste à chaque image. Il reprend au relâchement,
    ce qui produit l'accrochage final. */
+/* Curseur de préhension pour annoncer que la piste se tire à la souris. Posé
+   par le script seulement quand elle déborde : sur une piste qui tient à
+   l'écran, il promettrait un geste sans effet. */
+.carousel__track--grabbable { cursor: grab; }
 .carousel__track--dragging { scroll-snap-type: none; scroll-behavior: auto; cursor: grabbing; user-select: none; }
 .carousel__track::-webkit-scrollbar { display: none; }
 /* La card suivante doit toujours dépasser : c'est le seul signal qu'il y a
@@ -313,6 +318,7 @@ a { color: inherit; }
 .carousel__btn svg { width: 20px; height: 20px; display: block; }
 
 .section__cta { display: flex; justify-content: flex-end; margin-top: var(--b-space-32); }
+.section__cta .btn { padding: var(--b-space-12) var(--b-space-16); }
 
 /* ---------- Demo video (illustration "how it works") ---------- */
 .demo-video {
