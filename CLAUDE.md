@@ -29,6 +29,11 @@
   `localhost` :
   `grep -o 'baseUrl: [a-z]* ? "[^"]*"' packages/plugin/dist/ui.html`
   doit afficher l'URL Vercel, jamais `http://localhost:8787`.
+- **Jamais de tiret cadratin (`—`) ni de tiret demi-cadratin (`–`)**, nulle
+  part : ni dans les textes du site ou du plugin, ni dans le code et ses
+  commentaires, ni dans les messages de commit, ni dans les réponses en chat.
+  Utiliser une virgule, un deux-points, une parenthèse ou une phrase séparée.
+  Le trait d'union normal (`-`) reste évidemment permis.
 - **Le plugin Figma "Decker" est déjà publié et en ligne** (Figma
   Community, `manifest.json` a un `id` fixe). Après tout changement dans
   `packages/plugin/` (une fois `dist/code.js` et `dist/ui.html` rebuild et

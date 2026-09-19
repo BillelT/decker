@@ -1,9 +1,9 @@
 /**
- * Aperçus des cards de la landing — les six de "What Decker does" et les
+ * Aperçus des cards de la landing : les six de "What Decker does" et les
  * trois de "How it works".
  *
  * Dessinés en SVG inline plutôt qu'en capture : ce sont des schémas, pas des
- * screenshots — ils restent nets à toutes les tailles, ne pèsent rien, et
+ * screenshots, ils restent nets à toutes les tailles, ne pèsent rien, et
  * suivent les tokens de couleur du site (`var(--b-*)`) au lieu de figer la
  * palette dans un bitmap. Même `viewBox` pour tous, calé sur le ratio 8/5 de
  * `.card__media`, pour que les rangées de cards restent régulières.
@@ -52,7 +52,7 @@ const frame = (x: number, y: number, selected: boolean): string => {
   ${selected ? handles(x, y, w, h) : ''}`;
 };
 
-/** How it works, étape 1 — le canvas Figma, deux maquettes sur quatre sélectionnées. */
+/** How it works, étape 1 : le canvas Figma, deux maquettes sur quatre sélectionnées. */
 export const STEP_PICK_FRAMES_SVG = svg(
   'Four frames on a Figma canvas, two of them selected',
   `${frame(28, 38, true)}${frame(174, 38, false)}${frame(28, 116, false)}${frame(174, 116, true)}`,
@@ -67,7 +67,7 @@ const slideContent = (x: number, y: number): string => `
   <rect x="${x + 62}" y="${y + 62}" width="30" height="6" fill="var(--b-gray-300)" />`;
 
 /**
- * How it works, étape 2 — maquette Figma à gauche, diapo Slides à droite. Les deux portent
+ * How it works, étape 2 : maquette Figma à gauche, diapo Slides à droite. Les deux portent
  * exactement les mêmes blocs, et les repères pointillés sont tracés par-dessus
  * les cadres (et non derrière, où ils se réduisaient à deux traits flottants
  * dans le vide) pour qu'on voie qu'ils traversent les deux : c'est ce qui rend
@@ -90,7 +90,7 @@ export const STEP_MATCHED_SVG = svg(
   </g>`,
 );
 
-/** How it works, étape 3 — le deck livré dans Google Slides : pellicule de diapos et diapo courante. */
+/** How it works, étape 3 : le deck livré dans Google Slides : pellicule de diapos et diapo courante. */
 export const STEP_GET_DECK_SVG = svg(
   'A finished deck open in Google Slides, with its slide filmstrip',
   `
@@ -118,7 +118,7 @@ export const STEP_GET_DECK_SVG = svg(
 );
 
 /* ------------------------------------------------------------------ *
- * "What Decker does" — un aperçu par point fort.
+ * "What Decker does" : un aperçu par point fort.
  * ------------------------------------------------------------------ */
 
 /** Flèche "Decker fait la transformation", commune aux schémas avant/après. */
@@ -128,7 +128,7 @@ const arrow = (x1: number, x2: number, y: number): string => `
     <polyline points="${x2 - 6},${y - 6} ${x2},${y} ${x2 - 6},${y + 6}" />
   </g>`;
 
-/** 100% free — un paywall barré : ni prix, ni moyen de paiement à saisir. */
+/** 100% free : un paywall barré, ni prix, ni moyen de paiement à saisir. */
 export const FEATURE_FREE_SVG = svg(
   'A checkout paywall crossed out',
   `
@@ -143,7 +143,7 @@ export const FEATURE_FREE_SVG = svg(
   <line x1="62" y1="178" x2="258" y2="22" stroke="var(--b-accent)" stroke-width="3" stroke-linecap="round" />`,
 );
 
-/** Export complet — six maquettes du fichier Figma deviennent un deck entier, pas une diapo. */
+/** Export complet : six maquettes du fichier Figma deviennent un deck entier, pas une diapo. */
 export const FEATURE_FULL_DECK_SVG = svg(
   'Six Figma frames turning into one full slide deck',
   `
@@ -168,7 +168,7 @@ export const FEATURE_FULL_DECK_SVG = svg(
   <rect x="234" y="114" width="26" height="6" fill="var(--b-gray-300)" />`,
 );
 
-/** Export template — une maquette devient une mise en page réutilisable, thème compris. */
+/** Export template : une maquette devient une mise en page réutilisable, thème compris. */
 export const FEATURE_TEMPLATE_SVG = svg(
   'A single Figma frame turning into a reusable Slides layout with its theme colors',
   `
@@ -205,7 +205,7 @@ const pickRow = (y: number, checked: boolean): string => `
   <rect x="116" y="${y + 1}" width="20" height="14" fill="var(--b-gray-100)" />
   <rect x="146" y="${y + 5}" width="80" height="6" fill="var(--b-gray-300)" />`;
 
-/** Choix des maquettes — la liste du plugin, avec ses cases à cocher. */
+/** Choix des maquettes : la liste du plugin, avec ses cases à cocher. */
 export const FEATURE_PICK_SVG = svg(
   'The plugin panel listing frames, with some of them ticked',
   `
@@ -216,7 +216,7 @@ export const FEATURE_PICK_SVG = svg(
   ${pickRow(62, true)}${pickRow(92, true)}${pickRow(122, false)}${pickRow(152, true)}`,
 );
 
-/** Objets natifs — la même diapo en capture aplatie à gauche, en objets éditables à droite. */
+/** Objets natifs : la même diapo en capture aplatie à gauche, en objets éditables à droite. */
 export const FEATURE_NATIVE_SVG = svg(
   'A flattened screenshot on the left, the same slide as editable objects on the right',
   `
@@ -236,7 +236,7 @@ export const FEATURE_NATIVE_SVG = svg(
   <rect x="248" y="114" width="26" height="6" fill="var(--b-gray-300)" />`,
 );
 
-/** Rien de gardé — le bouclier, et un stockage qui reste vide une fois l'export fini. */
+/** Rien de gardé : le bouclier, et un stockage qui reste vide une fois l'export fini. */
 export const FEATURE_PRIVATE_SVG = svg(
   'A shield above an empty storage box',
   `

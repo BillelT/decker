@@ -20,7 +20,7 @@ export const pagesRouter = Router();
 
 const LAST_UPDATED = 'September 1, 2026';
 const CONTACT_EMAIL = 'b.tighidet0@gmail.com';
-/** Absolue plutôt que relative sur tous les liens vers /privacy et /terms : le check Google Branding ("App Homepage" guidance) compare cette URL telle quelle à celle configurée sur l'écran de consentement OAuth — une URL relative comme "/privacy" risque de ne pas matcher. */
+/** Absolue plutôt que relative sur tous les liens vers /privacy et /terms : le check Google Branding ("App Homepage" guidance) compare cette URL telle quelle à celle configurée sur l'écran de consentement OAuth, et une URL relative comme "/privacy" risque de ne pas matcher. */
 const SITE_URL = 'https://decker.billeltighidet.fr';
 const PLUGIN_URL = 'https://www.figma.com/community/plugin/1666774362264403763';
 const FOLIO_URL = 'https://billeltighidet.fr';
@@ -38,7 +38,7 @@ const COFFEE_URL = 'https://buymeacoffee.com/billelt';
  */
 const OG_IMAGE_VERSION = '5';
 
-/** Dimensions du PNG généré (cf. src/og/render.ts) — annoncées dans les
+/** Dimensions du PNG généré (cf. src/og/render.ts), annoncées dans les
  *  balises `og:image:width/height` pour que les plateformes réservent la
  *  bonne place avant même d'avoir téléchargé l'image. */
 const OG_IMAGE_WIDTH = 1200;
@@ -51,7 +51,7 @@ const OG_IMAGE_HEIGHT = 630;
  * À noter, côté balises posées par `shell()` : la carte est annoncée en
  * `twitter:card = summary_large_image` et non `summary`, qui la rognerait au
  * carré pour n'en garder qu'une vignette. Seule l'image est répétée en
- * `twitter:*` — X et LinkedIn retombent sur les `og:*` pour le titre et la
+ * `twitter:*` : X et LinkedIn retombent sur les `og:*` pour le titre et la
  * description, mais certains clients ne lisent que `twitter:image`.
  */
 const OG_IMAGE_URL = `${SITE_URL}/${OG_IMAGE.file}?v=${OG_IMAGE_VERSION}`;
@@ -70,7 +70,7 @@ const brandMarkInline = (): string => DECKER_MARK_SVG.replace(/^<svg[^>]*>/, '')
  * DA "Billel" (design system perso, repo billel-skill, archétype b-marketing) :
  * header + hero + footer copiés depuis b-header.md/b-hero.md/b-footer.md,
  * remplace l'ancienne DA "hybrid" (une carte étroite unique, jugée pas assez
- * "vraie page web" par la revue Branding OAuth de Google — voir historique).
+ * "vraie page web" par la revue Branding OAuth de Google, voir historique).
  */
 function shell(opts: {
   title: string;
@@ -251,7 +251,8 @@ pagesRouter.get('/', (_req, res) => {
     </section>
 
     <section class="section">
-      <h2 class="section__title">What Decker does</h2>
+      <p class="section__eyebrow">What Decker does</p>
+      <h2 class="section__title">Free, complete, and fully editable.</h2>
       <div class="carousel" data-carousel>
         <ul class="carousel__track" data-carousel-track tabindex="0" aria-label="What Decker does">
         <li class="carousel__item card">
@@ -267,7 +268,7 @@ pagesRouter.get('/', (_req, res) => {
           <div class="card__body">
             <p class="card__eyebrow">Full deck</p>
             <h3 class="card__title">Export a whole file</h3>
-            <p class="card__desc">Send a Figma file to Slides frame by frame, as one real deck — not one slide at a time.</p>
+            <p class="card__desc">Send a Figma file to Slides frame by frame, as one real deck, not one slide at a time.</p>
           </div>
         </li>
         <li class="carousel__item card">
@@ -315,7 +316,8 @@ pagesRouter.get('/', (_req, res) => {
     </section>
 
     <section class="section">
-      <h2 class="section__title">How it works</h2>
+      <p class="section__eyebrow">How it works</p>
+      <h2 class="section__title">Three steps to a live deck.</h2>
       <ol class="steps">
         <li class="card">
           ${STEP_PICK_FRAMES_SVG}
@@ -348,7 +350,8 @@ pagesRouter.get('/', (_req, res) => {
     </section>
 
     <section class="section">
-      <h2 class="section__title">Why Decker asks for Google access</h2>
+      <p class="section__eyebrow">Why Decker asks for Google access</p>
+      <h2 class="section__title">Only what the export needs.</h2>
       <p>When you sign in, Decker requests two things, and nothing more:</p>
       <ul>
         <li><strong>Google Drive API (<code>drive.file</code> scope)</strong>: limited to files created by Decker itself. This is what lets Decker create and populate the presentation you ask to export through the Google Slides API; it cannot read or modify any of your other Drive or Slides files.</li>
@@ -449,7 +452,7 @@ pagesRouter.get('/terms', (_req, res) => {
  * Le PNG est servi par la fonction elle-même, décodé depuis le base64 de
  * `og/ogImageData.ts` : Vercel réécrit ici toutes les routes (voir
  * vercel.json), il n'y a pas de dossier statique devant. Le cache d'un an est
- * sûr parce que l'URL porte un numéro de version (OG_IMAGE_VERSION) — un
+ * sûr parce que l'URL porte un numéro de version (OG_IMAGE_VERSION) : un
  * nouveau visuel = une nouvelle URL.
  */
 pagesRouter.get(`/${OG_IMAGE.file}`, (_req, res) => {
