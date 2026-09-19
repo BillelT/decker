@@ -164,6 +164,7 @@ ${footer()}
       // densité d'écran ne tombe pas juste, et n'atteint jamais l'entier exact.
       var max = track.scrollWidth - track.clientWidth;
       controls.hidden = max <= 1;
+      track.classList.toggle('carousel__track--grabbable', max > 1);
       prev.disabled = track.scrollLeft <= 1;
       next.disabled = track.scrollLeft >= max - 1;
     };
@@ -228,7 +229,7 @@ function header(): string {
     </div>
     <div class="header__actions">
       <a class="btn tertiary" href="${COFFEE_URL}" target="_blank" rel="${REL_THIRD_PARTY}">Buy me a coffee</a>
-      <a class="btn cta" href="${PLUGIN_URL}" target="_blank" rel="${REL_THIRD_PARTY}">View on Figma</a>
+      <a class="btn cta" href="${PLUGIN_URL}" target="_blank" rel="${REL_THIRD_PARTY}">Try it on Figma</a>
     </div>
   </div>
 </header>`;
@@ -249,7 +250,7 @@ function footer(): string {
     <div class="footer__cols">
       <nav class="footer__col" aria-label="Product">
         <h2 class="footer__col-title">Product</h2>
-        <a class="nav-link" href="${PLUGIN_URL}" target="_blank" rel="${REL_THIRD_PARTY}">View on Figma</a>
+        <a class="nav-link" href="${PLUGIN_URL}" target="_blank" rel="${REL_THIRD_PARTY}">Try it on Figma</a>
         <a class="nav-link" href="${COFFEE_URL}" target="_blank" rel="${REL_THIRD_PARTY}">Buy me a coffee</a>
       </nav>
       <nav class="footer__col" aria-label="Connect">
@@ -277,7 +278,7 @@ pagesRouter.get('/', (_req, res) => {
         <h1 class="hero__title">Editable &amp; pixel perfect export</h1>
         <p class="hero__lede">Export a Figma design straight to Google Slides, with layout, styles, and theme preserved.</p>
         <div class="hero__actions">
-          <a class="btn cta" href="${PLUGIN_URL}" target="_blank" rel="${REL_THIRD_PARTY}">View the plugin on Figma</a>
+          <a class="btn cta" href="${PLUGIN_URL}" target="_blank" rel="${REL_THIRD_PARTY}">Try it on Figma</a>
         </div>
         <p class="hero__note">Free to use. Sign in with Google only when you're ready to export.</p>
       </div>
