@@ -4,7 +4,17 @@ import { MARKETING_CSS } from './marketingStyles.js';
 import { OG_IMAGE_PNG_BASE64 } from '../og/ogImageData.js';
 import { OG_IMAGE } from '../og/variants.js';
 import { DEMO_VIDEO_WEBM_BASE64 } from './demoVideoData.js';
-import { STEP_GET_DECK_SVG, STEP_MATCHED_SVG, STEP_PICK_FRAMES_SVG } from './stepArtwork.js';
+import {
+  FEATURE_FREE_SVG,
+  FEATURE_FULL_DECK_SVG,
+  FEATURE_NATIVE_SVG,
+  FEATURE_PICK_SVG,
+  FEATURE_PRIVATE_SVG,
+  FEATURE_TEMPLATE_SVG,
+  STEP_GET_DECK_SVG,
+  STEP_MATCHED_SVG,
+  STEP_PICK_FRAMES_SVG,
+} from './artwork.js';
 
 export const pagesRouter = Router();
 
@@ -128,6 +138,41 @@ ${footer()}
   if (demoVideos.length && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     demoVideos.forEach(function (video) { video.play().catch(function () {}); });
   }
+
+  // Carrousel de cards. La piste défile déjà nativement (tactile, trackpad,
+  // clavier) : le script n'ajoute que les flèches, et les masque tant que tout
+  // tient à l'écran, pour ne pas afficher deux boutons morts.
+  document.querySelectorAll('[data-carousel]').forEach(function (carousel) {
+    var track = carousel.querySelector('[data-carousel-track]');
+    var controls = carousel.querySelector('[data-carousel-controls]');
+    var prev = carousel.querySelector('[data-carousel-prev]');
+    var next = carousel.querySelector('[data-carousel-next]');
+    var item = track && track.firstElementChild;
+    if (!track || !controls || !prev || !next || !item) return;
+
+    // Une "page" = le nombre de cards entières visibles, pour que le défilement
+    // s'aligne sur la grille plutôt que de couper une card en deux.
+    var page = function () {
+      var gap = parseFloat(getComputedStyle(track).columnGap) || 0;
+      var stride = item.getBoundingClientRect().width + gap;
+      return stride * Math.max(1, Math.floor((track.clientWidth + gap) / stride));
+    };
+
+    var update = function () {
+      // 1px de tolérance : scrollLeft est fractionnaire dès que le zoom ou la
+      // densité d'écran ne tombe pas juste, et n'atteint jamais l'entier exact.
+      var max = track.scrollWidth - track.clientWidth;
+      controls.hidden = max <= 1;
+      prev.disabled = track.scrollLeft <= 1;
+      next.disabled = track.scrollLeft >= max - 1;
+    };
+
+    prev.addEventListener('click', function () { track.scrollBy({ left: -page() }); });
+    next.addEventListener('click', function () { track.scrollBy({ left: page() }); });
+    track.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    update();
+  });
 })();
 </script>
 </body>
@@ -206,37 +251,65 @@ pagesRouter.get('/', (_req, res) => {
     </section>
 
     <section class="section">
-      <h2 class="section__title section__title--center">What Decker does</h2>
-      <div class="feature-grid">
-        <div class="feature-card">
-          <svg class="feature-card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="17" r="2.5"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
-          <h3 class="feature-card__title">100% free</h3>
-          <p class="feature-card__desc">No paywall, no subscription, no trial. Free to use, today and tomorrow.</p>
-        </div>
-        <div class="feature-card">
-          <svg class="feature-card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="14" height="10" rx="1.5"/><line x1="7" y1="19" x2="13" y2="19"/><line x1="10" y1="15" x2="10" y2="19"/><path d="M18 8 L21 11 L18 14"/></svg>
-          <h3 class="feature-card__title">Full deck export</h3>
-          <p class="feature-card__desc">Export a whole Figma file frame by frame into a real Slides deck, not one slide at a time.</p>
-        </div>
-        <div class="feature-card">
-          <svg class="feature-card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="1.5"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="9" x2="9" y2="21"/></svg>
-          <h3 class="feature-card__title">Template export</h3>
-          <p class="feature-card__desc">Export a single frame as a ready-to-reuse Slides template, theme and layout included.</p>
-        </div>
-        <div class="feature-card">
-          <svg class="feature-card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><line x1="6" y1="4" x2="6" y2="20"/><circle cx="6" cy="9" r="2"/><line x1="14" y1="4" x2="14" y2="20"/><circle cx="14" cy="15" r="2"/></svg>
-          <h3 class="feature-card__title">Pick what you export</h3>
-          <p class="feature-card__desc">Choose exactly which frames to send, right from inside Figma, before you sign in.</p>
-        </div>
-        <div class="feature-card">
-          <svg class="feature-card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="9" width="10" height="10" rx="1.5"/><circle cx="16" cy="8" r="5"/></svg>
-          <h3 class="feature-card__title">Real Slides objects</h3>
-          <p class="feature-card__desc">Text, shapes, colors, and typography are recreated as native, editable objects instead of a flattened screenshot.</p>
-        </div>
-        <div class="feature-card">
-          <svg class="feature-card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 L20 6 V11 C20 16 16.5 19.5 12 21 C7.5 19.5 4 16 4 11 V6 Z"/><path d="M8.5 12 L11 14.5 L16 9.5"/></svg>
-          <h3 class="feature-card__title">Private by default</h3>
-          <p class="feature-card__desc">Nothing is stored beyond what's needed to run the export. No tracking, no analytics.</p>
+      <h2 class="section__title">What Decker does</h2>
+      <div class="carousel" data-carousel>
+        <ul class="carousel__track" data-carousel-track tabindex="0" aria-label="What Decker does">
+        <li class="carousel__item card">
+          ${FEATURE_FREE_SVG}
+          <div class="card__body">
+            <p class="card__eyebrow">Pricing</p>
+            <h3 class="card__title">100% free</h3>
+            <p class="card__desc">No paywall, no subscription, no trial. Free to use, today and tomorrow.</p>
+          </div>
+        </li>
+        <li class="carousel__item card">
+          ${FEATURE_FULL_DECK_SVG}
+          <div class="card__body">
+            <p class="card__eyebrow">Full deck</p>
+            <h3 class="card__title">Export a whole file</h3>
+            <p class="card__desc">Send a Figma file to Slides frame by frame, as one real deck — not one slide at a time.</p>
+          </div>
+        </li>
+        <li class="carousel__item card">
+          ${FEATURE_TEMPLATE_SVG}
+          <div class="card__body">
+            <p class="card__eyebrow">Templates</p>
+            <h3 class="card__title">Export a template</h3>
+            <p class="card__desc">Turn a single frame into a ready-to-reuse Slides template, theme and layout included.</p>
+          </div>
+        </li>
+        <li class="carousel__item card">
+          ${FEATURE_PICK_SVG}
+          <div class="card__body">
+            <p class="card__eyebrow">Control</p>
+            <h3 class="card__title">Pick what you export</h3>
+            <p class="card__desc">Choose exactly which frames to send, right from inside Figma, before you sign in.</p>
+          </div>
+        </li>
+        <li class="carousel__item card">
+          ${FEATURE_NATIVE_SVG}
+          <div class="card__body">
+            <p class="card__eyebrow">Fidelity</p>
+            <h3 class="card__title">Real Slides objects</h3>
+            <p class="card__desc">Text, shapes, colors, and typography are recreated as native, editable objects instead of a flattened screenshot.</p>
+          </div>
+        </li>
+        <li class="carousel__item card">
+          ${FEATURE_PRIVATE_SVG}
+          <div class="card__body">
+            <p class="card__eyebrow">Privacy</p>
+            <h3 class="card__title">Private by default</h3>
+            <p class="card__desc">Nothing is stored beyond what's needed to run the export. No tracking, no analytics.</p>
+          </div>
+        </li>
+        </ul>
+        <div class="carousel__controls" data-carousel-controls>
+          <button type="button" class="btn carousel__btn" data-carousel-prev aria-label="Show previous features">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15,5 8,12 15,19" /></svg>
+          </button>
+          <button type="button" class="btn carousel__btn" data-carousel-next aria-label="Show next features">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9,5 16,12 9,19" /></svg>
+          </button>
         </div>
       </div>
     </section>
@@ -244,28 +317,28 @@ pagesRouter.get('/', (_req, res) => {
     <section class="section">
       <h2 class="section__title">How it works</h2>
       <ol class="steps">
-        <li class="steps__item">
+        <li class="card">
           ${STEP_PICK_FRAMES_SVG}
-          <div class="steps__body">
-            <p class="steps__eyebrow">Step 1</p>
-            <h3 class="steps__title">Pick your frames</h3>
-            <p class="steps__desc">From inside Figma, select the frames you want to export.</p>
+          <div class="card__body">
+            <p class="card__eyebrow">Step 1</p>
+            <h3 class="card__title">Pick your frames</h3>
+            <p class="card__desc">From inside Figma, select the frames you want to export.</p>
           </div>
         </li>
-        <li class="steps__item">
+        <li class="card">
           ${STEP_MATCHED_SVG}
-          <div class="steps__body">
-            <p class="steps__eyebrow">Step 2</p>
-            <h3 class="steps__title">Matched, pixel for pixel</h3>
-            <p class="steps__desc">Every layer, font, and color is mapped precisely into native Slides objects.</p>
+          <div class="card__body">
+            <p class="card__eyebrow">Step 2</p>
+            <h3 class="card__title">Matched, pixel for pixel</h3>
+            <p class="card__desc">Every layer, font, and color is mapped precisely into native Slides objects.</p>
           </div>
         </li>
-        <li class="steps__item">
+        <li class="card">
           ${STEP_GET_DECK_SVG}
-          <div class="steps__body">
-            <p class="steps__eyebrow">Step 3</p>
-            <h3 class="steps__title">Get your deck</h3>
-            <p class="steps__desc">Decker creates the presentation directly in your own Google Drive, ready to edit.</p>
+          <div class="card__body">
+            <p class="card__eyebrow">Step 3</p>
+            <h3 class="card__title">Get your deck</h3>
+            <p class="card__desc">Decker creates the presentation directly in your own Google Drive, ready to edit.</p>
           </div>
         </li>
       </ol>

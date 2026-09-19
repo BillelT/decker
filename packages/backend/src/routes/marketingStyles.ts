@@ -182,50 +182,69 @@ a { color: inherit; }
   letter-spacing: var(--b-tracking-tight); color: var(--b-ink);
   text-wrap: balance;
 }
-.section__title--center { text-align: center; }
-.section p { margin: 0 0 var(--b-space-16); font-size: var(--b-text-base); line-height: var(--b-leading-relaxed); color: var(--b-text-muted); text-wrap: balance; }
-.section p:last-child { margin-bottom: 0; }
-.section ul { margin: var(--b-space-8) 0 var(--b-space-16); padding-left: var(--b-space-24); }
-.section li { font-size: var(--b-text-base); line-height: var(--b-leading-relaxed); color: var(--b-text-muted); margin-bottom: var(--b-space-8); text-wrap: balance; }
+/* Ces règles habillent le texte courant d'une section, et rien d'autre : d'où
+   le combinateur enfant. Sans lui elles atteignaient aussi les listes et les
+   paragraphes des cards — .section ul (0,1,1) l'emportait sur
+   .carousel__track (0,1,0) et collait 24px de padding à la piste, ce qui
+   empêchait le carrousel de revenir à scrollLeft 0 ; .section p écrasait de
+   même la taille du surtitre des cards. */
+.section > p { margin: 0 0 var(--b-space-16); font-size: var(--b-text-base); line-height: var(--b-leading-relaxed); color: var(--b-text-muted); text-wrap: balance; }
+.section > p:last-child { margin-bottom: 0; }
+.section > ul { margin: var(--b-space-8) 0 var(--b-space-16); padding-left: var(--b-space-24); }
+.section > ul > li { font-size: var(--b-text-base); line-height: var(--b-leading-relaxed); color: var(--b-text-muted); margin-bottom: var(--b-space-8); text-wrap: balance; }
 .legal .section { max-width: 680px; }
 .legal .section__title--page { font-size: var(--b-text-3xl); text-align: center; padding-top: var(--b-space-32); }
 .legal .meta { text-align: center; font-size: var(--b-text-xs); color: var(--b-text-faint); margin: 0 0 var(--b-space-48); text-wrap: balance; }
 
-/* ---------- Feature grid (prose — cartes des points forts, pas un compo Billel) ---------- */
-.feature-grid {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--b-space-20);
-  margin-top: var(--b-space-32);
-}
-.feature-card {
-  display: flex; flex-direction: column; gap: var(--b-space-12);
-  background: var(--b-surface-muted); border-radius: 0; padding: var(--b-space-24);
-}
-.feature-card__icon { width: 24px; height: 24px; color: var(--b-text-muted); }
-.feature-card__title { margin: 0; font-size: var(--b-text-base); font-weight: var(--b-font-bold); color: var(--b-ink); text-wrap: balance; }
-.feature-card__desc { margin: 0; font-size: var(--b-text-sm); line-height: var(--b-leading-relaxed); color: var(--b-text-muted); text-wrap: balance; }
-
-/* ---------- How it works — une card par étape (prose) ----------
-   Plus de bande de fond colorée pleine largeur : chaque étape est une card
-   posée sur le fond de page, avec un aperçu illustré en haut (surface blanche
-   encadrée), puis l'intitulé d'étape, le titre et la description. */
+/* ---------- How it works — les trois étapes, en grille ---------- */
 .steps {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--b-space-20);
   margin: var(--b-space-32) 0 0; padding: 0; list-style: none;
 }
-.steps__item {
+
+/* ---------- Card (prose — un seul modèle pour "What Decker does" et "How it works") ----------
+   Aperçu illustré en haut sur surface blanche, puis surtitre, titre et
+   description. Les deux sections partagent le composant : seul le conteneur
+   change (grille pour les étapes, piste défilante pour les points forts). */
+.card {
   display: flex; flex-direction: column; gap: var(--b-space-24);
   background: var(--b-surface-muted); border-radius: 0; padding: var(--b-space-24);
 }
-/* Le visuel est dessiné en SVG sur un ratio fixe : la rangée de cards garde
-   des aperçus de même hauteur quelle que soit la longueur des textes. */
-.steps__media {
+/* Ratio fixe : les aperçus restent alignés entre eux quelle que soit la
+   longueur des textes en dessous. */
+.card__media {
   display: block; width: 100%; aspect-ratio: 8 / 5;
   background: var(--b-surface); border: 1px solid var(--b-border);
 }
-.steps__body { display: flex; flex-direction: column; gap: var(--b-space-8); }
-.steps__eyebrow { margin: 0; font-size: var(--b-text-sm); font-weight: var(--b-font-medium); color: var(--b-text-faint); }
-.steps__title { margin: 0; font-size: var(--b-text-lg); font-weight: var(--b-font-bold); color: var(--b-ink); text-wrap: balance; }
-.steps__desc { margin: 0; font-size: var(--b-text-base); line-height: var(--b-leading-relaxed); color: var(--b-text-muted); text-wrap: balance; }
+.card__body { display: flex; flex-direction: column; gap: var(--b-space-8); }
+.card__eyebrow { margin: 0; font-size: var(--b-text-sm); font-weight: var(--b-font-medium); color: var(--b-text-faint); }
+.card__title { margin: 0; font-size: var(--b-text-lg); font-weight: var(--b-font-bold); color: var(--b-ink); text-wrap: balance; }
+.card__desc { margin: 0; font-size: var(--b-text-base); line-height: var(--b-leading-relaxed); color: var(--b-text-muted); text-wrap: balance; }
+
+/* ---------- Carrousel de cards (prose) ----------
+   Six points forts : trop pour une grille lisible, donc une piste qui défile
+   horizontalement, coupée net au bord du conteneur. La card partiellement
+   visible à droite signale qu'il y en a d'autres ; les flèches sont sous la
+   piste, alignées sur la marge droite du conteneur. */
+.carousel__track {
+  display: flex; gap: var(--b-space-20); margin: var(--b-space-32) 0 0; padding: 0; list-style: none;
+  overflow-x: auto; overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory; scroll-behavior: smooth;
+  scrollbar-width: none;
+}
+.carousel__track::-webkit-scrollbar { display: none; }
+.carousel__item { flex: 0 0 clamp(248px, 28%, 340px); scroll-snap-align: start; }
+.carousel__controls { display: flex; justify-content: flex-end; gap: var(--b-space-8); margin-top: var(--b-space-24); }
+.carousel__btn {
+  width: 40px; height: 40px; padding: 0; border: 0; border-radius: 0;
+  background-color: var(--b-surface-muted); color: var(--b-ink); box-shadow: var(--hyb-out);
+}
+.carousel__btn:hover:not(:disabled) { background-color: var(--b-gray-300); }
+.carousel__btn:active:not(:disabled) { box-shadow: var(--hyb-pressed); }
+.carousel__btn:disabled { color: var(--b-gray-300); cursor: default; }
+.carousel__btn:disabled:active { transform: none; }
+.carousel__btn svg { width: 20px; height: 20px; display: block; }
+
 .section__cta { display: flex; justify-content: flex-end; margin-top: var(--b-space-32); }
 
 /* ---------- Demo video (illustration "how it works") ---------- */
@@ -258,8 +277,12 @@ a { color: inherit; }
 .footer__note { margin: 0; font-size: var(--b-text-xs); color: var(--b-text-muted); text-wrap: balance; }
 .footer__legal { display: flex; gap: var(--b-space-24); }
 
+@media (prefers-reduced-motion: reduce) {
+  .carousel__track { scroll-behavior: auto; }
+}
+
 @media (max-width: 960px) {
-  .feature-grid, .steps { grid-template-columns: repeat(2, 1fr); }
+  .steps { grid-template-columns: repeat(2, 1fr); }
   .hero { grid-template-columns: 1fr; gap: var(--b-space-32); }
   .hero__content { align-items: center; text-align: center; }
   .hero__actions { justify-content: center; }
@@ -274,7 +297,7 @@ a { color: inherit; }
   .header__actions { width: 100%; }
   .footer__top { flex-direction: column; }
   .footer__bottom { flex-direction: column; align-items: flex-start; }
-  .feature-grid, .steps { grid-template-columns: 1fr; }
+  .steps { grid-template-columns: 1fr; }
   .section__cta { justify-content: flex-start; }
 }
 `;
