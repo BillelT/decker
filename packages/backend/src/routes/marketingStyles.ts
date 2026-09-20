@@ -86,10 +86,19 @@ export const MARKETING_CSS = `
     calc((100% - var(--b-container-width)) / 2),
     calc((100% - var(--b-container)) / 2)
   );
+  /* Meme valeur que --b-gutter, mais en vw. Un pourcentage se resout sur le
+     bloc parent, ce qui ne convient pas partout : dans un flex-basis, il se
+     resout sur la piste, et non sur la largeur de page. Seule la barre de
+     defilement separe les deux valeurs (~15px), sans consequence la ou
+     celle-ci sert : un calcul de largeur de card, pas un padding de page. */
+  --b-gutter-vw: max(2.5vw, calc((100vw - var(--b-container)) / 2));
 }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; }
+/* Defilement doux sur les ancres du header, coupe des que l'utilisateur a
+   demande moins d'animation (cf. le bloc prefers-reduced-motion en bas). */
+html { scroll-behavior: smooth; }
 body {
   font-family: var(--b-font-sans);
   color: var(--b-text);
@@ -152,14 +161,21 @@ a { color: inherit; }
   width: var(--b-container-width); max-width: var(--b-container); margin-inline: auto;
   padding-block: var(--b-space-16);
 }
-.header__lead { display: flex; align-items: center; gap: var(--b-space-32); }
+/* Trois zones a poids egal de part et d'autre de la nav (flex: 1 1 0 sur le
+   lead et les actions) : la nav reste centree sur la page, et non sur ce qui
+   reste entre un brand court et deux boutons larges. */
+.header__lead { display: flex; align-items: center; gap: var(--b-space-32); flex: 1 1 0; }
+.header__nav {
+  display: flex; align-items: center; justify-content: center; gap: var(--b-space-24);
+  flex: 0 1 auto;
+}
 .header__brand {
   display: inline-flex; align-items: center; gap: var(--b-space-8); color: var(--b-ink);
   font-size: var(--b-text-base); font-weight: var(--b-font-bold); letter-spacing: var(--b-tracking-tight);
   text-decoration: none;
 }
 .header__brand-mark { width: 24px; height: 24px; flex: 0 0 auto; display: block; }
-.header__actions { display: flex; align-items: center; gap: var(--b-space-20); }
+.header__actions { display: flex; align-items: center; justify-content: flex-end; gap: var(--b-space-20); flex: 1 1 0; }
 
 /* ---------- Hero (b-hero) ---------- */
 /* Deux colonnes : titre/CTA à gauche, démo à droite (au lieu du bloc centré
@@ -191,6 +207,9 @@ a { color: inherit; }
   width: var(--b-container-width); max-width: var(--b-container); margin-inline: auto;
   padding-block: var(--b-space-64);
 }
+/* Cible d'ancre : le header est colle en haut, donc sans cette marge le titre
+   de section se range juste dessous, hors de vue. */
+.section[id] { scroll-margin-top: var(--b-space-32); }
 .section__eyebrow {
   margin: 0 0 var(--b-space-12); font-size: var(--b-text-sm); font-weight: var(--b-font-semibold);
   letter-spacing: var(--b-tracking-wide); text-transform: uppercase; color: var(--b-text-muted);
@@ -250,7 +269,6 @@ a { color: inherit; }
   display: block; width: 100%; aspect-ratio: 8 / 5;
   background: var(--b-surface); box-shadow: var(--hyb-in);
 }
-.card__icon { width: 24px; height: 24px; flex: 0 0 auto; color: var(--b-text-muted); }
 .card__body { display: flex; flex-direction: column; gap: var(--b-space-8); }
 /* Capitales comme le surtitre de section, d'un palier plus petit pour que les
    deux niveaux restent distincts. */
@@ -297,15 +315,27 @@ a { color: inherit; }
 .carousel__track--dragging { scroll-snap-type: none; scroll-behavior: auto; cursor: grabbing; user-select: none; }
 .carousel__track::-webkit-scrollbar { display: none; }
 /* La card suivante doit toujours dépasser : c'est le seul signal qu'il y a
-   une suite. La largeur est donc calculee pour qu'un nombre entier de cards
-   ne remplisse jamais la piste, plutot qu'avec un clamp, dont les bornes
-   finissaient par coincider avec la largeur de piste (a 960px, la borne basse
-   laissait 12px de depassement, soit un liseré qui passait pour un bug).
-   Trois cards a 31% de la piste occupent 93% plus deux gouttieres : il reste
-   exactement 7% de piste pour laisser voir la quatrieme, quelle que soit la
-   largeur. Les paliers en dessous suivent la meme logique avec deux cards
-   (10% de depassement) puis une (20%). */
-.carousel__item { flex: 0 0 calc(31% - 20px); scroll-snap-align: start; }
+   une suite, et un lisere de quelques pixels ne se lit pas comme tel : il
+   passe pour un bord mal coupe. La largeur vise donc une demi-card visible,
+   quelle que soit la taille de l'ecran.
+
+   Le decompte ne part pas de la largeur de la piste mais de ce qui s'en voit.
+   La piste fait toute la largeur de page et porte le gouttiere en padding :
+   la premiere card demarre donc sur la colonne de texte, mais la zone visible
+   court jusqu'au bord droit de l'ecran, soit une gouttiere de plus que la
+   boite de contenu. C'est ce qui ruinait le calcul precedent, pose en simple
+   pourcentage de la piste : sur un ecran large, ou la gouttiere enfle pour
+   centrer un conteneur plafonne a 1280px, la gouttiere de rab suffisait a
+   loger presque entierement la card suivante, qui passait alors pour une
+   quatrieme colonne complete.
+
+   D'ou V = 100% + une gouttiere, et pour n cards pleines plus une moitie :
+   n x w + n x gouttiere-de-piste + w / 2 = V, soit w = (V - n x 20px) / (n + 0,5).
+   Les paliers en dessous reprennent la formule avec n = 2 puis n = 1. */
+.carousel__item {
+  flex: 0 0 calc((100% + var(--b-gutter-vw) - 60px) / 3.5);
+  scroll-snap-align: start;
+}
 .carousel__controls { display: flex; justify-content: flex-end; gap: var(--b-space-8); padding-top: var(--b-space-48); }
 .carousel__btn {
   width: 40px; height: 40px; padding: 0; border: 0; border-radius: 0;
@@ -351,28 +381,34 @@ a { color: inherit; }
 .footer__legal { display: flex; gap: var(--b-space-24); }
 
 @media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
   .carousel__track { scroll-behavior: auto; }
 }
 
 @media (max-width: 960px) {
   .card-grid { grid-template-columns: repeat(2, 1fr); }
-  .carousel__item { flex-basis: calc(45% - 20px); }
+  .carousel__item { flex-basis: calc((100% + var(--b-gutter-vw) - 40px) / 2.5); }
   .hero { grid-template-columns: 1fr; gap: var(--b-space-32); }
   .hero__content { align-items: center; text-align: center; }
   .hero__actions { justify-content: center; }
 }
 
 @media (max-width: 640px) {
-  .carousel__item { flex-basis: calc(80% - 16px); }
+  .carousel__item { flex-basis: calc((100% + var(--b-gutter-vw) - 20px) / 1.5); }
 }
 
 @media (max-width: 720px) {
   .hero__title { font-size: 48px; }
-  /* Le brand et les boutons ne tiennent plus sur une seule ligne : au lieu de
-     laisser les boutons se compresser (leur texte passait alors sur deux
-     lignes), la ligne d'actions passe entièrement sous le brand. */
+  /* Le brand, la nav et les boutons ne tiennent plus sur une seule ligne : au
+     lieu de laisser les boutons se compresser (leur texte passait alors sur
+     deux lignes), la nav puis la ligne d'actions passent sous le brand. */
   .header__inner { flex-wrap: wrap; row-gap: var(--b-space-12); }
-  .header__actions { width: 100%; }
+  .header__lead { flex: 0 0 auto; }
+  .header__nav { order: 2; width: 100%; justify-content: flex-start; flex-wrap: wrap; gap: var(--b-space-16); }
+  .header__actions { order: 3; width: 100%; flex: 0 0 auto; }
+  /* Le header tient sur trois lignes a ce palier : les ancres doivent viser
+     d'autant plus bas pour ne pas ranger le titre de section dessous. */
+  .section[id] { scroll-margin-top: var(--b-space-96); }
   .footer__top { flex-direction: column; }
   .footer__bottom { flex-direction: column; align-items: flex-start; }
   .card-grid { grid-template-columns: 1fr; }
