@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { IRElement, IRShape, IRText } from '@figma-to-slides/shared';
-import { aggregateColorSwatches, aggregateFontUsages, summarizeColors, summarizeFonts, summarizePlaceholders } from './templateSummary.js';
+import { aggregateColorSwatches, aggregateFontUsages, summarizeColors, summarizeFonts, summarizeTaggableElements } from './templateSummary.js';
 
 function baseShape(overrides: Partial<IRShape> = {}): IRShape {
   return {
@@ -124,16 +124,53 @@ describe('aggregateFontUsages', () => {
   });
 });
 
-describe('summarizePlaceholders', () => {
-  it('collects only elements carrying placeholder metadata, in order', () => {
+
+describe('summarizeTaggableElements', () => {
+  it('lists every taggable layer, not just the tagged ones', () => {
     const elements: IRElement[] = [
-      baseShape({ id: 'a', placeholder: { role: 'IMAGE', label: 'Hero photo' } }),
-      baseText({ id: 'b' }),
-      baseText({ id: 'c', placeholder: { role: 'TITLE', label: 'Title' } }),
+      baseText({ id: 'a', sourceNodeId: 'na', sourceNodeName: 'Heading' }),
+      baseShape({ id: 'b', sourceNodeId: 'nb', sourceNodeName: 'Photo slot', placeholder: { role: 'IMAGE', label: 'Image' } }),
     ];
-    expect(summarizePlaceholders(elements)).toEqual([
-      { id: 'a', sourceNodeId: 'n1', role: 'IMAGE', label: 'Hero photo' },
-      { id: 'c', sourceNodeId: 'n2', role: 'TITLE', label: 'Title' },
+    expect(summarizeTaggableElements(elements)).toEqual([
+      { id: 'a', sourceNodeId: 'na', name: 'Heading', kind: 'text', role: undefined, label: undefined },
+      { id: 'b', sourceNodeId: 'nb', name: 'Photo slot', kind: 'shape', role: 'IMAGE', label: 'Image' },
     ]);
+  });
+
+  it('skips untagged lines, which are never placeholders', () => {
+    const line: IRElement = {
+      kind: 'line',
+      id: 'l1',
+      sourceNodeId: 'nl',
+      sourceNodeName: 'Divider',
+      rect: { x: 0, y: 0, w: 10, h: 1 },
+      rotation: 0,
+      opacity: 1,
+      stroke: { color: { r: 0, g: 0, b: 0, a: 1 }, weightPt: 1, dash: 'SOLID' },
+    };
+    expect(summarizeTaggableElements([line])).toEqual([]);
+  });
+
+  it('keeps a tagged line, so its tag can still be removed from the panel', () => {
+    const line: IRElement = {
+      kind: 'line',
+      id: 'l1',
+      sourceNodeId: 'nl',
+      sourceNodeName: 'Divider',
+      rect: { x: 0, y: 0, w: 10, h: 1 },
+      rotation: 0,
+      opacity: 1,
+      stroke: { color: { r: 0, g: 0, b: 0, a: 1 }, weightPt: 1, dash: 'SOLID' },
+      placeholder: { role: 'CUSTOM', label: 'Rule' },
+    };
+    expect(summarizeTaggableElements([line])).toHaveLength(1);
+  });
+
+  it('falls back to the placeholder label, then to the kind, when the layer name is missing', () => {
+    const elements: IRElement[] = [
+      baseText({ id: 'a', sourceNodeId: 'na', placeholder: { role: 'TITLE', label: 'Title' } }),
+      baseShape({ id: 'b', sourceNodeId: 'nb' }),
+    ];
+    expect(summarizeTaggableElements(elements).map((e) => e.name)).toEqual(['Title', 'shape']);
   });
 });

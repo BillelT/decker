@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CANONICAL_TAG_FOR_ROLE, findUnknownPlaceholderTag, parsePlaceholderTag, setPlaceholderTag } from './placeholder.js';
+import { CANONICAL_TAG_FOR_ROLE, clearPlaceholderTag, findUnknownPlaceholderTag, parsePlaceholderTag, setPlaceholderTag } from './placeholder.js';
 
 describe('parsePlaceholderTag', () => {
   it('returns undefined for a layer name without a tag', () => {
@@ -82,5 +82,27 @@ describe('CANONICAL_TAG_FOR_ROLE', () => {
       expect(CANONICAL_TAG_FOR_ROLE[role]).toBeDefined();
       expect(parsePlaceholderTag(`[[${CANONICAL_TAG_FOR_ROLE[role]}]] X`)!.role).toBe(role);
     }
+  });
+});
+
+describe('clearPlaceholderTag', () => {
+  it('removes a valid tag and keeps the rest of the layer name', () => {
+    expect(clearPlaceholderTag('[[title]] Main heading')).toBe('Main heading');
+  });
+
+  it('removes a misspelled tag too', () => {
+    expect(clearPlaceholderTag('[[titel]] Main heading')).toBe('Main heading');
+  });
+
+  it('leaves an untagged name untouched', () => {
+    expect(clearPlaceholderTag('Main heading')).toBe('Main heading');
+  });
+
+  it('never leaves a layer nameless when the tag was the whole name', () => {
+    expect(clearPlaceholderTag('[[body]]')).toBe('Body text');
+  });
+
+  it('round-trips with setPlaceholderTag', () => {
+    expect(clearPlaceholderTag(setPlaceholderTag('Main heading', 'title'))).toBe('Main heading');
   });
 });

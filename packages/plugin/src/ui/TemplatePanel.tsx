@@ -1,45 +1,87 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { logEntryFlag, logEntryTagText, logEntryTooltip } from './logEntryFlag.js';
-import { placeholderRoleTagsFor } from './placeholderRoleOptions.js';
+import { placeholderRoleTagsForKind } from './placeholderRoleOptions.js';
 import { moveToIndex } from './reorderFrames.js';
 import { usePacedExportCursor } from './pacedExportCursor.js';
 import { RetroExportPreview } from './RetroExportPreview.js';
 import { TemplateStylePanel, type TemplateStylePanelProps } from './TemplateStylePanel.js';
 import type { ExportCursor } from './exportCursor.js';
-import { postToPlugin, selectSourceNodes, type TemplateLayoutState, type TemplateWarning } from './types.js';
-import { CANONICAL_TAG_FOR_ROLE, parsePlaceholderTag } from '../serialize/placeholder.js';
+import { postToPlugin, selectSourceNodes, type TemplateElement, type TemplateLayoutState, type TemplateWarning } from './types.js';
+import { CANONICAL_TAG_FOR_ROLE } from '../serialize/placeholder.js';
+import { COMPOSITION_WARNING_CODES } from '../serialize/templateComposition.js';
+import type { PlaceholderRole } from '@figma-to-slides/shared';
 
+/** `tag` vide = option "No role" : le sandbox retire le tag du calque au lieu d'en poser un. */
 function setPlaceholderRole(sourceNodeId: string, tag: string): void {
   postToPlugin({ type: 'set-placeholder-role', sourceNodeId, tag });
 }
 
 /**
+ * Liste "Content" : TOUS les calques taguables du layout, avec leur rôle
+ * de placeholder courant et le sélecteur pour le changer ou le retirer.
+ *
+ * Remplace l'ancienne paire "Placeholders" (chips, en lecture seule) +
+ * sélecteur greffé sur les entrées d'avertissement : un layout sans aucun
+ * défaut de fidélité ne produisant aucun avertissement, il n'offrait alors
+ * AUCUN moyen d'assigner un rôle depuis le plugin, alors que c'est
+ * précisément le layout le plus abouti (TODO.md § Mode template, point 9).
+ */
+function TemplateElementList({ elements }: { elements: TemplateElement[] }) {
+  return (
+    <ul className="f2s-tmpl-list">
+      {elements.map((el) => {
+        const role = el.role as PlaceholderRole | undefined;
+        return (
+          <li key={el.id} className={`f2s-log-entry${role ? ' f2s-log-entry--tagged' : ''}`}>
+            <button type="button" className="f2s-log-entry-clickarea" title={el.label ? `${el.name} (${el.label})` : el.name} onClick={() => selectSourceNodes([el.sourceNodeId])}>
+              <span className="f2s-log-entry-text">
+                <strong className="f2s-log-entry-name">{el.name}</strong>
+              </span>
+              {role && <span className="f2s-tmpl-role">{role}</span>}
+            </button>
+            <select
+              className="f2s-log-entry-role"
+              value={role ? CANONICAL_TAG_FOR_ROLE[role] : ''}
+              title="Assign this layer to a Slides template placeholder role"
+              onChange={(e) => setPlaceholderRole(el.sourceNodeId, (e.target as HTMLSelectElement).value)}
+            >
+              <option value="">No role</option>
+              {placeholderRoleTagsForKind(el.kind).map((tag) => (
+                <option key={tag} value={tag}>
+                  [[{tag}]]
+                </option>
+              ))}
+            </select>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/**
  * Rendu d'une liste de warnings (bloquants ou non) au même aspect que le
- * panneau Content du mode deck (DeckPanel.tsx) — même structure de bouton,
+ * panneau Logs du mode deck (DeckPanel.tsx) : même structure de bouton,
  * même troncature sur une ligne pour le nom de calque, tag à droite.
  *
- * `roleSelectable` n'ajoute le sélecteur de rôle de placeholder qu'à la
- * liste "Content" (pas à "Fix before creating the template" juste
- * au-dessus) : assigner un rôle à un calque encore bloquant n'a pas de sens
- * tant que le blocage lui-même n'est pas réglé.
+ * Purement informatif : l'assignation d'un rôle de placeholder vit
+ * désormais dans la liste "Content" (`TemplateElementList`), qui couvre
+ * TOUS les calques et pas seulement ceux qui ont un avertissement.
+ *
+ * `wrap` passe la ligne en deux temps (nom, puis message sur plusieurs
+ * lignes) au lieu de tronquer les deux sur une seule. Réservé à la section
+ * Composition : ses messages disent quoi FAIRE ("deux calques tagués
+ * [[title]], gardez-en un"), les lire est tout l'intérêt de l'entrée, alors
+ * qu'un message de fidélité se résume déjà à son tag de deux mots.
  */
-function TemplateLogList({
-  warnings,
-  fontOverrides,
-  roleSelectable,
-}: {
-  warnings: TemplateWarning[];
-  fontOverrides: Record<string, string>;
-  roleSelectable?: boolean;
-}) {
+function TemplateLogList({ warnings, fontOverrides, wrap }: { warnings: TemplateWarning[]; fontOverrides: Record<string, string>; wrap?: boolean }) {
   return (
     <ul className="f2s-tmpl-list">
       {warnings.map((w, i) => {
         const flag = logEntryFlag(w.code);
         const tagText = flag ? logEntryTagText(w, fontOverrides) : undefined;
-        const currentRole = parsePlaceholderTag(w.nodeName)?.role;
         return (
-          <li key={i} className={`f2s-log-entry${w.severity === 'blocking' ? ' f2s-log-entry--blocking' : ''}${flag ? ` f2s-log-entry--${flag}` : ''}`}>
+          <li key={i} className={`f2s-log-entry${wrap ? ' f2s-log-entry--wrap' : ''}${w.severity === 'blocking' ? ' f2s-log-entry--blocking' : ''}${flag ? ` f2s-log-entry--${flag}` : ''}`}>
             <button type="button" className="f2s-log-entry-clickarea" title={`${w.nodeName}: ${logEntryTooltip(w, tagText)}`} onClick={() => selectSourceNodes([w.sourceNodeId])}>
               {/* Le nom du calque (nodeName) vient de Figma, où le nom par défaut d'un
                   calque texte est son contenu entier : sur un long paragraphe, ça
@@ -49,27 +91,10 @@ function TemplateLogList({
                   placeholder inconnu) : sinon la raison est déjà dans le tag. */}
               <span className="f2s-log-entry-text">
                 <strong className="f2s-log-entry-name">{w.nodeName}</strong>
-                {!tagText && <span className="f2s-log-entry-message">: {w.message}</span>}
+                {!tagText && <span className="f2s-log-entry-message">{wrap ? w.message : `: ${w.message}`}</span>}
               </span>
               {tagText && <span className={`f2s-log-entry-flag f2s-log-entry-flag--${flag}`}>{tagText}</span>}
             </button>
-            {roleSelectable && (
-              <select
-                className="f2s-log-entry-role"
-                value={currentRole ? CANONICAL_TAG_FOR_ROLE[currentRole] : ''}
-                title="Assign this content to a Slides template placeholder role"
-                onChange={(e) => setPlaceholderRole(w.sourceNodeId, (e.target as HTMLSelectElement).value)}
-              >
-                <option value="" disabled>
-                  Set placeholder role…
-                </option>
-                {placeholderRoleTagsFor(w.code).map((tag) => (
-                  <option key={tag} value={tag}>
-                    [[{tag}]]
-                  </option>
-                ))}
-              </select>
-            )}
           </li>
         );
       })}
@@ -98,6 +123,13 @@ export interface TemplatePanelProps extends TemplateStylePanelProps {
   notice: string | undefined;
   onRemove: (id: string) => void;
   onRename: (id: string, name: string) => void;
+  /**
+   * Validation du renommage (blur ou Entrée, pas à chaque frappe) : renomme
+   * la vraie frame Figma. Séparé de `onRename`, qui ne tient que l'état de
+   * la saisie : renommer le nœud à chaque caractère déclencherait autant de
+   * `nodechange`, donc autant de re-sérialisations du layout.
+   */
+  onRenameCommit: (id: string, name: string) => void;
   /** Layout dont le lot est en cours d'application côté backend, s'il y a une création de template en cours. */
   exportCursor?: ExportCursor;
   /** Incrémenté à chaque lancement d'export/retry — voir usePacedExportCursor. */
@@ -123,6 +155,7 @@ export function TemplatePanel({
   notice,
   onRemove,
   onRename,
+  onRenameCommit,
   fontOverrides,
   exportCursor,
   exportAttempt,
@@ -248,6 +281,14 @@ export function TemplatePanel({
     return () => cancelAnimationFrame(frame);
   }, [suppressShiftTransition]);
 
+  // Trois familles distinctes dans le même tableau `warnings` : ce qui
+  // BLOQUE la création (fidélité durcie, cf. templateValidation.ts), ce qui
+  // relève de la COMPOSITION du layout (templateComposition.ts) et le reste,
+  // purement informatif sur le rendu.
+  const blockingWarnings = previewedLayout?.warnings.filter((w) => w.severity === 'blocking') ?? [];
+  const compositionWarnings = previewedLayout?.warnings.filter((w) => w.severity !== 'blocking' && COMPOSITION_WARNING_CODES.has(w.code)) ?? [];
+  const fidelityNotes = previewedLayout?.warnings.filter((w) => w.severity !== 'blocking' && !COMPOSITION_WARNING_CODES.has(w.code)) ?? [];
+
   if (order.length === 0) {
     return (
       <div className="f2s-body">
@@ -337,6 +378,8 @@ export function TemplatePanel({
                   title={layout.name}
                   aria-label="Layout name"
                   onInput={(e) => onRename(id, (e.target as HTMLInputElement).value)}
+                  onChange={(e) => onRenameCommit(id, (e.target as HTMLInputElement).value)}
+                  onBlur={(e) => onRenameCommit(id, (e.target as HTMLInputElement).value)}
                 />
                 <div className="f2s-frame-controls">
                   <button type="button" className="f2s-icon-btn" title="Remove" onClick={() => onRemove(id)}>
@@ -368,42 +411,46 @@ export function TemplatePanel({
             )}
 
             <div className="f2s-tmpl-panel">
-              <section className="f2s-tmpl-section">
-                <h3 className="f2s-tmpl-heading">Placeholders</h3>
-                {previewedLayout.placeholders.length === 0 ? (
-                  <p className="f2s-toolbar-muted">
-                    No tagged placeholder yet. Prefix a layer name in Figma with <code>[[title]]</code>, <code>[[body]]</code>,{' '}
-                    <code>[[image]]</code>, <code>[[subtitle]]</code> or <code>[[logo]]</code> to mark it.
-                  </p>
-                ) : (
-                  <ul className="f2s-tmpl-list">
-                    {previewedLayout.placeholders.map((p) => (
-                      <li key={p.id}>
-                        <button type="button" className="f2s-tmpl-chip" title={p.label} onClick={() => selectSourceNodes([p.sourceNodeId])}>
-                          <span className="f2s-tmpl-role">{p.role}</span>
-                          <span className="f2s-tmpl-chip-label">{p.label}</span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </section>
-
-              {previewedLayout.warnings.filter((w) => w.severity === 'blocking').length > 0 && (
+              {blockingWarnings.length > 0 && (
                 <div className="f2s-logs f2s-tmpl-section--blocking">
                   <div className="f2s-logs-header">
                     <h3 className="f2s-tmpl-heading">Fix before creating the template</h3>
                   </div>
-                  <TemplateLogList warnings={previewedLayout.warnings.filter((w) => w.severity === 'blocking')} fontOverrides={fontOverrides} />
+                  <TemplateLogList warnings={blockingWarnings} fontOverrides={fontOverrides} />
                 </div>
               )}
 
-              {previewedLayout.warnings.filter((w) => w.severity !== 'blocking').length > 0 && (
+              <section className="f2s-tmpl-section">
+                <h3 className="f2s-tmpl-heading">Content</h3>
+                {previewedLayout.elements.length === 0 ? (
+                  <p className="f2s-toolbar-muted">
+                    Nothing to tag in this layout yet. A placeholder can also be set by prefixing a layer name in Figma with <code>[[title]]</code>,{' '}
+                    <code>[[body]]</code>, <code>[[image]]</code>, <code>[[subtitle]]</code> or <code>[[logo]]</code>.
+                  </p>
+                ) : (
+                  <TemplateElementList elements={previewedLayout.elements} />
+                )}
+              </section>
+
+              {/* Composition (TODO.md § Mode template, point 7) : ni un défaut de
+                  fidélité, ni un blocage, mais une intention douteuse qui retombera sur
+                  tous les futurs utilisateurs du template. Gardée à part des "Notes"
+                  de fidélité, qui, elles, ne parlent que du rendu. */}
+              {compositionWarnings.length > 0 && (
                 <div className="f2s-logs">
                   <div className="f2s-logs-header">
-                    <h3 className="f2s-tmpl-heading">Content</h3>
+                    <h3 className="f2s-tmpl-heading">Composition</h3>
                   </div>
-                  <TemplateLogList warnings={previewedLayout.warnings.filter((w) => w.severity !== 'blocking')} fontOverrides={fontOverrides} roleSelectable />
+                  <TemplateLogList warnings={compositionWarnings} fontOverrides={fontOverrides} wrap />
+                </div>
+              )}
+
+              {fidelityNotes.length > 0 && (
+                <div className="f2s-logs">
+                  <div className="f2s-logs-header">
+                    <h3 className="f2s-tmpl-heading">Notes</h3>
+                  </div>
+                  <TemplateLogList warnings={fidelityNotes} fontOverrides={fontOverrides} />
                 </div>
               )}
             </div>

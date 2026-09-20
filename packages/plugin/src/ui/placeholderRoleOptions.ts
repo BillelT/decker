@@ -29,6 +29,7 @@ const IMAGE_WARNING_CODES = new Set([
 
 const TEXT_ROLE_TAGS = KNOWN_ROLE_TAGS.filter((tag) => tag !== 'image' && tag !== 'logo');
 const IMAGE_ROLE_TAGS = KNOWN_ROLE_TAGS.filter((tag) => tag !== 'title' && tag !== 'subtitle' && tag !== 'body');
+const CUSTOM_ONLY_ROLE_TAGS = KNOWN_ROLE_TAGS.filter((tag) => tag === 'custom');
 
 /**
  * Rôles de placeholder proposables pour une entrée du rapport de contenu,
@@ -40,5 +41,25 @@ const IMAGE_ROLE_TAGS = KNOWN_ROLE_TAGS.filter((tag) => tag !== 'title' && tag !
 export function placeholderRoleTagsFor(code: string): readonly (typeof KNOWN_ROLE_TAGS)[number][] {
   if (TEXT_WARNING_CODES.has(code)) return TEXT_ROLE_TAGS;
   if (IMAGE_WARNING_CODES.has(code)) return IMAGE_ROLE_TAGS;
+  return KNOWN_ROLE_TAGS;
+}
+
+/**
+ * Même filtrage, mais à partir du TYPE de l'élément sérialisé plutôt que du
+ * code d'un avertissement : la liste "Content" du rapport de template liste
+ * désormais tous les calques taguables, y compris ceux qui n'ont produit
+ * aucun avertissement (voir summarizeTaggableElements), et le code de
+ * warning n'est donc plus disponible pour deviner.
+ *
+ * Une FORME reçoit la liste complète : un rectangle vide est aussi bien un
+ * emplacement d'image réservé (`[[image]]`) qu'un cartouche de titre
+ * décoratif, rien ne permet de trancher ici. Une LIGNE n'en reçoit qu'un,
+ * `custom` : elle n'apparaît dans la liste que parce qu'elle porte déjà un
+ * tag, qu'il s'agit surtout de pouvoir retirer.
+ */
+export function placeholderRoleTagsForKind(kind: 'text' | 'shape' | 'image' | 'line'): readonly (typeof KNOWN_ROLE_TAGS)[number][] {
+  if (kind === 'text') return TEXT_ROLE_TAGS;
+  if (kind === 'image') return IMAGE_ROLE_TAGS;
+  if (kind === 'line') return CUSTOM_ONLY_ROLE_TAGS;
   return KNOWN_ROLE_TAGS;
 }

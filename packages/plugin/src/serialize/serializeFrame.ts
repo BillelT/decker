@@ -205,6 +205,7 @@ async function walk(node: SceneNode, state: WalkState): Promise<void> {
         kind: 'text',
         id: state.ctx.nextId(),
         sourceNodeId: node.id,
+        sourceNodeName: node.name,
         rect: rel,
         rotation: 'rotation' in node ? node.rotation : 0,
         opacity: 'opacity' in node ? node.opacity : 1,
@@ -475,6 +476,7 @@ function buildNativeShape(node: SceneNode, action: 'native-shape-preset' | 'nati
     kind: 'shape',
     id: state.ctx.nextId(),
     sourceNodeId: node.id,
+    sourceNodeName: node.name,
     rect: rel,
     rotation: 'rotation' in node ? node.rotation : 0,
     opacity: 'opacity' in node ? node.opacity : 1,
@@ -503,6 +505,7 @@ function buildNativeLine(node: SceneNode, state: WalkState): IRLine {
     kind: 'line',
     id: state.ctx.nextId(),
     sourceNodeId: node.id,
+    sourceNodeName: node.name,
     rect: rel,
     rotation: 'rotation' in node ? node.rotation : 0,
     opacity: 'opacity' in node ? node.opacity : 1,
@@ -558,6 +561,7 @@ function buildImagePlaceholder(node: SceneNode, id: string, state: WalkState, is
     kind: 'image',
     id,
     sourceNodeId: node.id,
+    sourceNodeName: node.name,
     rect: rel,
     // `node.exportAsync` (code.ts) rend le nœud tel qu'affiché — la
     // rotation est donc déjà "cuite" dans les pixels du PNG exporté (dont

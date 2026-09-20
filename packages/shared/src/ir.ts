@@ -73,6 +73,16 @@ export type IRElement = IRText | IRShape | IRImage | IRLine;
 interface IRBase {
   id: string; // objectId Slides, généré côté plugin
   sourceNodeId: string;
+  /**
+   * Nom du calque Figma source. Pendant longtemps, seul `IRWarning`
+   * transportait un nom lisible (`nodeName`) : un élément qui ne produisait
+   * AUCUN avertissement n'avait donc aucun libellé côté UI, et le rapport de
+   * template ne pouvait proposer d'assigner un rôle de placeholder qu'aux
+   * calques qui se trouvaient, par hasard, avoir un problème de fidélité
+   * (voir TemplatePanel.tsx § Content). Renseigné par le plugin au
+   * serialize ; le mapper backend ne le lit pas.
+   */
+  sourceNodeName?: string;
   /** En px Figma, relatif au coin haut-gauche de la frame. */
   rect: { x: number; y: number; w: number; h: number };
   /** Degrés, antihoraire (convention Figma). */
@@ -229,7 +239,15 @@ export interface IRWarning {
     | 'CORNER_RADIUS_RASTERIZED'
     | 'MULTIPLE_FILLS_RASTERIZED'
     | 'CONTAINER_BACKGROUND_RASTERIZED'
-    | 'PLACEHOLDER_TAG_UNKNOWN';
+    | 'PLACEHOLDER_TAG_UNKNOWN'
+    // Composition d'un layout de template (TODO.md § Mode template, point 7)
+    // Jamais bloquants : ils signalent une intention douteuse, pas une
+    // perte de fidélité, et le créateur peut avoir de bonnes raisons
+    // (slide de séparation volontairement vide, deux zones de corps de
+    // texte assumées).
+    | 'PLACEHOLDER_ROLE_DUPLICATE'
+    | 'PLACEHOLDER_ROLE_KIND_MISMATCH'
+    | 'LAYOUT_WITHOUT_PLACEHOLDER';
   severity: 'info' | 'warning' | 'blocking';
   sourceNodeId: string;
   nodeName: string;

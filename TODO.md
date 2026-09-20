@@ -176,6 +176,19 @@ les suivants) :
    (plutôt que de les dupliquer manuellement sur chaque layout comme
    aujourd'hui) ; à l'export, ces éléments sont écrits sur la page Master
    plutôt que sur chaque slide individuellement.
+   **Point bloquant relevé à l'audit 2026-09, à traiter AVANT d'écrire le
+   code** : `mapper/index.ts::mapBackground` crée, sur chaque slide, un
+   rectangle plein cadre en tout premier plan arrière quand la frame Figma
+   a un fond uni, ce qui est le cas courant. Un élément posé sur le Master
+   est rendu DERRIÈRE le contenu de la slide : le chrome hérité serait donc
+   intégralement masqué par ce rectangle, et la fonctionnalité paraîtrait
+   ne rien faire. Ce n'est donc pas un simple portage du mapper vers
+   `pageObjectId: masterObjectId` ; il faut d'abord décider ce que devient
+   ce fond de slide en mode template (le déplacer lui aussi sur le Master ?
+   ne plus l'émettre quand un chrome de master existe ? le rendre
+   transparent ?). À valider par un spike comme l'a été l'écriture du thème
+   (`spikes/masterThemeSpike.ts`), plutôt qu'en déduction : aucun
+   environnement Figma/Slides réel n'est disponible côté dev.
 4. ~~**Slide de style guide optionnelle.**~~ — abandonné (2026-08-03) :
    l'idée initiale (checkbox à l'export générant une slide swatches/rôles/
    échantillon typo en 1ère position) servait surtout de preuve visuelle de
@@ -200,22 +213,48 @@ les suivants) :
    qu'on n'utilise pas du tout aujourd'hui : on ne pose que l'alt text
    `f2s-placeholder:<RÔLE>`, jamais de token `{{title}}` dans le texte
    lui-même).
-7. **Validation de composition des templates** (approche à définir).
-   Exemples concrets à couvrir : deux calques tagués `[[title]]` dans le
-   même layout (ambigu : lequel est LE titre ?) ; layout sans aucun
-   placeholder (volontaire — slide de séparation — ou oubli ?) ; tag
-   incohérent avec le type de calque, ex. `[[image]]` posé sur un calque
-   TEXTE (reste du texte côté Slides mais étiqueté "image", trompeur pour
-   l'utilisateur final). Commencer par des warnings informatifs non
-   bloquants, durcir ensuite si l'usage le confirme.
+7. ~~**Validation de composition des templates.**~~ : fait (audit
+   2026-09) : `serialize/templateComposition.ts`, trois codes de warning
+   NON bloquants, appliqués après `enforceTemplateStrictness` (jamais
+   avant : ils n'ont rien à faire dans le jeu de codes que celle-ci
+   reclasse en bloquant) et affichés dans une section "Composition" à part
+   du rapport, avec message sur plusieurs lignes plutôt que tronqué sur
+   une seule, puisqu'ils disent quoi FAIRE.
+   - `PLACEHOLDER_ROLE_DUPLICATE` : deux calques tagués du même rôle dans
+     le même layout (lequel est LE titre ?). Signalé sur CHAQUE occurrence,
+     pour pouvoir cliquer les deux et arbitrer. Deux `[[custom:...]]` ne
+     sont des doublons que s'ils partagent le même libellé.
+   - `PLACEHOLDER_ROLE_KIND_MISMATCH` : `[[image]]`/`[[logo]]` sur un
+     calque texte, ou `[[title]]`/`[[subtitle]]`/`[[body]]` sur autre chose
+     qu'un texte. Une FORME reste acceptée pour `[[image]]` : un rectangle
+     vide qui réserve l'emplacement est le cas normal.
+   - `LAYOUT_WITHOUT_PLACEHOLDER` (`info`) : layout sans aucun placeholder,
+     porté par la frame elle-même. Volontairement le plus doux des trois,
+     une slide de séparation est un cas légitime.
 8. ~~**Réordonnancement par glisser-déposer des layouts de template.**~~ —
    fait (audit 2026-08) : même mécanique de drag au pointeur que
    `DeckPanel.tsx` (`ui/reorderFrames.ts`), portée telle quelle sur
    `TemplatePanel.tsx` (nouvelle prop `setOrder`).
-9. **Remplacer la convention de nom de calque `[[role]]`** par un contrôle
-   actif dans l'éditeur Figma (property/plugin data assignée depuis un
-   panneau du plugin), pour guider la création sans devoir renommer les
-   calques à la main.
+9. ~~**Remplacer la convention de nom de calque `[[role]]`** par un contrôle
+   actif.~~ : fait (audit 2026-09). Le sélecteur de rôle existait déjà mais
+   n'était greffé que sur les entrées du rapport de FIDÉLITÉ : seul un
+   calque ayant, par hasard, un problème de rendu (police substituée,
+   dégradé...) pouvait se voir assigner un rôle depuis le plugin. Un layout
+   parfaitement propre, donc sans aucun avertissement, n'offrait aucun
+   moyen de taguer quoi que ce soit ; il fallait aller renommer le calque à
+   la main dans Figma, exactement ce que ce point voulait supprimer.
+   Désormais : `summarizeTaggableElements` (`serialize/templateSummary.ts`)
+   remonte TOUS les calques taguables du layout (les lignes non taguées
+   exceptées), la section "Content" du rapport les liste avec leur rôle
+   courant et un sélecteur, et l'option "No role" retire le tag
+   (`clearPlaceholderTag`), ce qu'aucun contrôle ne savait faire jusqu'ici.
+   Le rôle proposé est filtré par TYPE d'élément (`placeholderRoleTagsForKind`)
+   plutôt que par code de warning. La convention de nom reste évidemment
+   valide et interopérable : le sélecteur ne fait que poser/retirer le
+   `[[role]]` sur le vrai nom de calque.
+   Le stockage en `pluginData` évoqué à l'origine reste écarté : le nom de
+   calque est visible et modifiable directement dans le panneau de calques
+   Figma, sans aller-retour avec l'UI du plugin (voir `placeholder.ts`).
 10. **Outil compagnon "dupliquer un layout + remplir ses placeholders"** —
     idée de backlog pour l'utilisateur FINAL d'un template (pas son
     créateur) : repérer automatiquement titre/image/corps de texte grâce au
@@ -231,6 +270,54 @@ les suivants) :
 bouton "Run theme spike" du footer plugin ont été retirés une fois la
 validation confirmée. `packages/backend/src/spikes/masterThemeSpike.ts`
 reste comme script CLI de diagnostic ponctuel (`npm run spike:theme`).
+
+## Audit plugin 2026-09 : corrections de bugs
+
+Trois défauts trouvés en relisant le mode template, tous silencieux (aucun
+message d'erreur, aucun plantage : le plugin donnait simplement un résultat
+qui ne correspondait pas à ce que l'utilisateur avait demandé).
+
+- ~~**Le champ de nom d'une vignette de layout ne faisait rien.**~~ : fait.
+  `onRename` (`TemplatePanel.tsx`) ne mettait à jour que l'état de l'UI. Le
+  nom n'était jamais renvoyé au sandbox : ni l'export (qui repart de
+  `frame.name` via `slide.frameName`), ni la réouverture du plugin (où
+  `loadTaggedFrames` recharge les layouts depuis Figma) ne le voyaient. Un
+  créateur qui renommait ses layouts "Cover / Section / Content" retrouvait
+  ses noms Figma d'origine au rechargement suivant, sans avertissement.
+  Corrigé : nouveau message `rename-template-layout`, qui renomme la VRAIE
+  frame Figma, à la validation seulement (blur ou Entrée) plutôt qu'à
+  chaque frappe, car renommer le nœud à chaque caractère déclencherait autant
+  de `nodechange`, donc autant de re-sérialisations du layout par le live
+  refresh. Le nom sert aussi de libellé aux erreurs par slide remontées par
+  le backend (`jobs/runner.ts`), qui deviennent donc lisibles.
+- ~~**Rôles de thème fantômes.**~~ : fait. `colorRoles` (`ui.tsx`) est
+  indexé par couleur (`colorKey`), jamais par layout, et rien ne le
+  purgeait quand une couleur disparaissait du template (layout retiré, ou
+  recoloré dans Figma puis re-sérialisé). Trois conséquences, toutes
+  silencieuses : un rôle restait marqué "(in use)" dans chaque sélecteur
+  sans qu'aucune ligne visible ne le porte ; la notification de
+  réassignation citait une clé brute (`#RRGGBB:1.00`) faute de couleur à
+  nommer ; et surtout `buildTemplateTheme` écrivait quand même un thème sur
+  le Master (l'objet `colorRoles` n'étant pas vide), imposant au template
+  toute la palette de repli `DEFAULT_THEME_ROLE_COLORS` alors qu'aucune
+  couleur visible n'avait de rôle assigné. Corrigé par un effet de purge
+  sur `templateColors`, neutre tant qu'aucune couleur n'est connue (au
+  montage, ou entre le retrait du dernier layout et l'ajout du suivant),
+  où tout effacer serait le pire moment.
+- ~~**Un rôle de placeholder ne pouvait plus être retiré.**~~ : fait. Le
+  sélecteur savait poser un tag, jamais en enlever un : son option vide
+  était `disabled` ("Set placeholder role…"). Un rôle assigné par erreur ne
+  pouvait être défait qu'en renommant le calque à la main dans Figma.
+  Ajout de `clearPlaceholderTag` (`serialize/placeholder.ts`) et de
+  l'option "No role". Un calque dont le tag était TOUT le nom ne se
+  retrouve pas sans nom (Figma le renommerait selon son type, le repère
+  visuel serait perdu dans le panneau de calques) : il garde son libellé
+  par défaut ("Title", "Body text"...).
+
+Contrat partagé touché au passage : `IRBase.sourceNodeName` (optionnel,
+jamais lu par le mapper backend). Jusqu'ici, seul `IRWarning` transportait
+un nom de calque lisible, et c'est précisément pourquoi le rapport de
+template ne savait parler que des calques ayant un avertissement.
 
 ## Checklist de test manuel — trouver les limites réelles du plugin
 
@@ -331,6 +418,22 @@ comparer les deux, puis vérification du rendu final dans Slides.
         text posé côté Slides après création.
   - [ ] Layout avec un élément qui serait rasterisé → vérifier que la
         création de template est bien bloquée tant qu'il n'est pas corrigé.
+  - [ ] Layout 100% propre (aucun avertissement) → la section "Content"
+        doit quand même lister ses calques et permettre de leur assigner un
+        rôle (audit 2026-09, point 9).
+  - [ ] Assigner un rôle depuis le sélecteur, puis choisir "No role" →
+        le tag `[[role]]` doit apparaître puis disparaître du nom de calque
+        dans Figma, et le rapport se rafraîchir tout seul (live refresh).
+  - [ ] Deux calques tagués `[[title]]` dans le même layout, puis un layout
+        sans aucun placeholder, puis `[[image]]` sur un calque texte →
+        vérifier les trois entrées de la section "Composition", et que
+        AUCUNE ne bloque le bouton "Create template".
+  - [ ] Renommer un layout dans le rail, fermer et rouvrir le plugin →
+        le nom doit persister (la frame Figma elle-même est renommée).
+  - [ ] Assigner un rôle de thème à une couleur, puis retirer le layout qui
+        la portait → le rôle ne doit plus être compté "(in use)", et un
+        template sans plus aucune couleur assignée ne doit PAS écrire de
+        thème sur le Master.
 - **Après export réel dans Slides**
   - [ ] Comparer visuellement le rendu Slides à la copie "Prepare for
         Slides" sur le canvas Figma (c'est censé être la même chose).

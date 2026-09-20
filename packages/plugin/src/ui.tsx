@@ -4,7 +4,7 @@ import type { ExportOptions, IRDocument, ThemeColorRole } from '@figma-to-slides
 import { sanitizeSessionToken } from './ui/sanitizeSessionToken.js';
 import { exportCursorFromBatches, type ExportBatch, type ExportCursor } from './ui/exportCursor.js';
 import { AVAILABLE_SLIDES_FONTS } from './serialize/fonts.js';
-import { aggregateColorSwatches, aggregateFontUsages } from './serialize/templateSummary.js';
+import { aggregateColorSwatches, aggregateFontUsages, colorKey } from './serialize/templateSummary.js';
 import {
   postToPlugin,
   readInitialSkin,
@@ -15,9 +15,9 @@ import {
   type FrameState,
   type FrameWarning,
   type TemplateColorSwatch,
+  type TemplateElement,
   type TemplateFontUsage,
   type TemplateLayoutState,
-  type TemplatePlaceholder,
   type TemplateWarning,
   type UiSkin,
 } from './ui/types.js';
@@ -326,6 +326,35 @@ function App() {
     [templateOrder, templateLayouts],
   );
 
+  /**
+   * Purge les rôles assignés à une couleur que le template ne contient plus
+   * (layout retiré, ou recoloré dans Figma puis re-sérialisé par le live
+   * refresh). `colorRoles` est indexé par couleur, pas par layout : rien ne
+   * le nettoyait, et une entrée devenue invisible continuait pourtant de
+   * compter. Trois conséquences, toutes silencieuses : le rôle restait
+   * marqué "(in use)" dans chaque sélecteur sans qu'aucune ligne ne le
+   * porte, la notif de réassignation citait une clé brute (`#RRGGBB:1.00`)
+   * faute de couleur à nommer, et `buildTemplateTheme` écrivait quand même
+   * un thème sur le Master (l'objet n'étant pas vide) alors qu'aucune
+   * couleur visible n'avait de rôle, imposant sa palette de repli au
+   * template.
+   *
+   * Ne tourne pas tant qu'aucune couleur n'est connue (montage, ou dernier
+   * layout retiré le temps d'en ajouter un autre) : ce serait tout effacer
+   * au pire moment.
+   */
+  useEffect(() => {
+    if (templateColors.length === 0) return;
+    const live = new Set(templateColors.map((c) => colorKey(c.hex, c.alpha)));
+    setColorRoles((prev) => {
+      const next: Record<string, ThemeColorRole> = {};
+      for (const [key, role] of Object.entries(prev)) {
+        if (live.has(key)) next[key] = role;
+      }
+      return Object.keys(next).length === Object.keys(prev).length ? prev : next;
+    });
+  }, [templateColors]);
+
   /** Choix manuel de l'utilisateur (police originale → police Slides), envoyé à l'export pour remplacer la résolution par défaut. */
   const [fontOverrides, setFontOverrides] = useState<Record<string, string>>({});
 
@@ -486,7 +515,7 @@ function App() {
               previewDataUrl: msg.previewDataUrl,
               warnings: (msg.warnings as TemplateWarning[]) ?? [],
               blocking: Boolean(msg.blocking),
-              placeholders: (msg.placeholders as TemplatePlaceholder[]) ?? [],
+              elements: (msg.elements as TemplateElement[]) ?? [],
               colors: (msg.colors as TemplateColorSwatch[]) ?? [],
               fonts: (msg.fonts as TemplateFontUsage[]) ?? [],
               fontSubstitutions: msg.fontSubstitutions as FontSubstitution[] | undefined,
@@ -510,7 +539,7 @@ function App() {
                     previewDataUrl: msg.previewDataUrl,
                     warnings: (msg.warnings as TemplateWarning[]) ?? [],
                     blocking: Boolean(msg.blocking),
-                    placeholders: (msg.placeholders as TemplatePlaceholder[]) ?? [],
+                    elements: (msg.elements as TemplateElement[]) ?? [],
                     colors: (msg.colors as TemplateColorSwatch[]) ?? [],
                     fonts: (msg.fonts as TemplateFontUsage[]) ?? [],
                     fontSubstitutions: msg.fontSubstitutions as FontSubstitution[] | undefined,
@@ -1076,6 +1105,24 @@ function App() {
     });
   }
 
+  /**
+   * Le champ de nom d'une vignette de layout ne modifiait que l'état de
+   * l'UI : le nom n'était jamais renvoyé au sandbox, il n'atteignait donc ni
+   * l'export (qui repart de `frame.name`), ni la réouverture du plugin (où
+   * les layouts sont rechargés depuis Figma). Il renomme désormais la vraie
+   * frame, à la validation seulement (blur/Entrée) plutôt qu'à chaque
+   * frappe. Voir TemplatePanel.onRenameCommit.
+   *
+   * Un nom vidé n'est pas propagé : Figma renommerait la frame selon son
+   * type et le rail perdrait le repère du créateur. La saisie en cours reste
+   * telle quelle, elle sera écrasée par le prochain rafraîchissement du
+   * layout.
+   */
+  function commitTemplateLayoutRename(id: string, name: string) {
+    if (name.trim().length === 0) return;
+    postToPlugin({ type: 'rename-template-layout', id, name: name.trim() });
+  }
+
   function startExport() {
     setExportState('exporting');
     setExportProgress(0);
@@ -1357,6 +1404,7 @@ function App() {
           notice={templateSelectionNotice}
           onRemove={removeTemplateLayout}
           onRename={renameTemplateLayout}
+          onRenameCommit={commitTemplateLayoutRename}
           fontOverrides={fontOverrides}
           exportCursor={exportSource === 'template' ? exportCursor : undefined}
           exportAttempt={exportSource === 'template' ? exportAttempt : undefined}
