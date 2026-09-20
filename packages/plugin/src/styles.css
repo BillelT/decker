@@ -839,6 +839,32 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   white-space: nowrap;
 }
 
+/* Section "Composition" du rapport de template : ses messages disent quoi
+   corriger, pas juste ce qui s'est passé. Ils passent donc sur plusieurs
+   lignes sous le nom du calque, au lieu de se disputer une ligne unique
+   avec lui. */
+.f2s-log-entry--wrap {
+  align-items: flex-start;
+}
+
+.f2s-log-entry--wrap .f2s-log-entry-clickarea {
+  align-items: flex-start;
+}
+
+.f2s-log-entry--wrap .f2s-log-entry-text {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+}
+
+.f2s-log-entry--wrap .f2s-log-entry-message {
+  flex: none;
+  max-width: none;
+  overflow: visible;
+  white-space: normal;
+  color: var(--color-black-70);
+}
+
 /* Seuls les éléments RASTERISÉS (perte d'édition native) méritent une
    bordure rouge qui attire l'œil sur toute la liste — un warning "blocking"
    (mode template) ou "Approximated" (police substituée, radius
@@ -850,6 +876,16 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
 
 .f2s-log-entry--rasterized {
   border-color: var(--color-error);
+}
+
+/* Liste "Content" du mode template : distingue d'un coup d'œil les calques
+   DÉJÀ tagués d'un rôle de placeholder du reste du layout. Volontairement
+   limité à la graisse du nom, sans fond ni bordure propres : les deux skins
+   repeignent `.f2s-log-entry` avec une spécificité supérieure
+   (`html.f2s-skin--…`), une couleur posée ici ne tiendrait qu'en modern.
+   Le rôle lui-même reste écrit en toutes lettres à droite du nom. */
+.f2s-log-entry--tagged .f2s-log-entry-name {
+  font-weight: 700;
 }
 
 /* Contient désormais la raison précise ("Font "Zodiak" → "Inter"",

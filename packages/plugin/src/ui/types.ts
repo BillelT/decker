@@ -53,11 +53,18 @@ export interface FrameState extends FrameCandidate {
  */
 export type TemplateWarning = FrameWarning;
 
-export interface TemplatePlaceholder {
+/**
+ * Un calque de layout auquel on peut assigner un rôle de placeholder :
+ * voir serialize/templateSummary.ts::summarizeTaggableElements. Distinct de
+ * `TemplatePlaceholder`, qui ne liste que ceux DÉJÀ tagués.
+ */
+export interface TemplateElement {
   id: string;
   sourceNodeId: string;
-  role: string;
-  label: string;
+  name: string;
+  kind: 'text' | 'shape' | 'image' | 'line';
+  role?: string;
+  label?: string;
 }
 
 export interface TemplateColorSwatch {
@@ -78,7 +85,7 @@ export interface TemplateLayoutState extends FrameCandidate {
   previewDataUrl?: string;
   warnings: TemplateWarning[];
   blocking: boolean;
-  placeholders: TemplatePlaceholder[];
+  elements: TemplateElement[];
   colors: TemplateColorSwatch[];
   fonts: TemplateFontUsage[];
   fontSubstitutions?: FontSubstitution[];

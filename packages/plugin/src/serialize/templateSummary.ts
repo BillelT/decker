@@ -30,11 +30,19 @@ export interface TemplateFontUsage {
   original?: string;
 }
 
-export interface TemplatePlaceholderSummary {
+/**
+ * Un élément de layout tel que listé dans la section "Content" du rapport
+ * de template : ce qu'il faut pour l'afficher, le sélectionner dans Figma
+ * et lui assigner (ou lui retirer) un rôle de placeholder.
+ */
+export interface TemplateElementSummary {
   id: string;
   sourceNodeId: string;
-  role: PlaceholderRole;
-  label: string;
+  name: string;
+  kind: IRElement['kind'];
+  /** Rôle actuellement tagué sur le calque, s'il y en a un. */
+  role?: PlaceholderRole;
+  label?: string;
 }
 
 export function toHex(color: IRColor): string {
@@ -117,12 +125,34 @@ export function summarizeFonts(elements: IRElement[]): TemplateFontUsage[] {
   return [...byKey.values()].map(({ family, weights, original }) => ({ family, weights: [...weights].sort((a, b) => a - b), original }));
 }
 
-/** Éléments tagués comme placeholder (convention `[[role]]`, cf. placeholder.ts), dans l'ordre d'apparition dans l'arbre aplati. */
-export function summarizePlaceholders(elements: IRElement[]): TemplatePlaceholderSummary[] {
-  const result: TemplatePlaceholderSummary[] = [];
+/**
+ * Éléments auxquels il est sensé d'assigner un rôle de placeholder : la
+ * liste que l'UI affiche sous "Content" (TemplatePanel).
+ *
+ * Existe parce que le rapport de template ne savait proposer un rôle que
+ * sur les calques qui produisaient, par hasard, un AVERTISSEMENT de
+ * fidélité (police substituée, dégradé…) : un layout parfaitement propre
+ * n'offrait donc aucun moyen de taguer quoi que ce soit depuis le plugin,
+ * il fallait aller renommer le calque à la main dans Figma
+ * (TODO.md § Mode template, point 9).
+ *
+ * Les lignes sont écartées (un trait de séparation n'est jamais un
+ * placeholder et n'aurait fait que rallonger la liste), SAUF si l'une
+ * porte déjà un tag : mieux vaut pouvoir le lui retirer depuis le panneau
+ * que de le laisser invisible.
+ */
+export function summarizeTaggableElements(elements: IRElement[]): TemplateElementSummary[] {
+  const result: TemplateElementSummary[] = [];
   for (const el of elements) {
-    if (!el.placeholder) continue;
-    result.push({ id: el.id, sourceNodeId: el.sourceNodeId, role: el.placeholder.role, label: el.placeholder.label });
+    if (el.kind === 'line' && !el.placeholder) continue;
+    result.push({
+      id: el.id,
+      sourceNodeId: el.sourceNodeId,
+      name: el.sourceNodeName ?? el.placeholder?.label ?? el.kind,
+      kind: el.kind,
+      role: el.placeholder?.role,
+      label: el.placeholder?.label,
+    });
   }
   return result;
 }

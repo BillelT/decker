@@ -1,13 +1,14 @@
-import type { ExportOptions, IRDocument, IRSlide, ThemeColorRole } from '@figma-to-slides/shared';
+import type { ExportOptions, IRDocument, IRSlide, IRWarning, ThemeColorRole } from '@figma-to-slides/shared';
 import { createIdGenerator } from './serialize/ids.js';
 import { serializeFrame } from './serialize/serializeFrame.js';
 import { lintFrame, type LintWarning } from './serialize/lintFrame.js';
 import { reformatForSlides } from './serialize/reformatForSlides.js';
 import { enforceTemplateStrictness, hasBlockingWarnings } from './serialize/templateValidation.js';
-import { aggregateColorSwatches, summarizeColors, summarizeFonts, summarizePlaceholders } from './serialize/templateSummary.js';
+import { aggregateColorSwatches, summarizeColors, summarizeFonts, summarizeTaggableElements } from './serialize/templateSummary.js';
+import { collectCompositionWarnings } from './serialize/templateComposition.js';
 import { applyThemeRolesToElements, buildTemplateTheme } from './serialize/templateTheme.js';
 import { applyPlaceholderText } from './serialize/templatePlaceholderText.js';
-import { KNOWN_ROLE_TAGS, setPlaceholderTag } from './serialize/placeholder.js';
+import { clearPlaceholderTag, KNOWN_ROLE_TAGS, setPlaceholderTag } from './serialize/placeholder.js';
 
 // Injecté au build (voir esbuild.config.mjs) — false dans le build distribué
 // aux utilisateurs. Le bouton "Download IR JSON" de la modale Settings est
@@ -518,7 +519,21 @@ async function handlePrepareForSlides(
   await addFrames(newlyCreated, pending, idGen);
 }
 
-/** Pendant `template-candidate-added`/`-updated` : sérialisation + stricture template + résumés (couleurs/typos/placeholders), partagé entre ajout, refresh en place et live refresh. */
+/**
+ * Avertissements d'un layout de template : fidélité (durcie, un template
+ * doit rester 100% natif) PUIS composition (TODO.md § Mode template,
+ * point 7). Les seconds sont ajoutés APRÈS le durcissement, jamais avant :
+ * ils sont délibérément non bloquants, et n'ont donc rien à faire dans le
+ * jeu de codes que `enforceTemplateStrictness` reclasse.
+ */
+function withCompositionWarnings(frame: ExportableNode, slide: PendingSlide['slide']): IRWarning[] {
+  return [
+    ...enforceTemplateStrictness(slide.warnings),
+    ...collectCompositionWarnings({ sourceNodeId: frame.id, frameName: frame.name, elements: slide.elements }),
+  ];
+}
+
+/** Pendant `template-candidate-added`/`-updated` : sérialisation + stricture template + composition + résumés (couleurs/typos/calques taguables), partagé entre ajout, refresh en place et live refresh. */
 function postTemplateCandidateMessage(type: 'template-candidate-added' | 'template-candidate-updated', frame: ExportableNode, previewDataUrl: string, slide: PendingSlide['slide']): void {
   figma.ui.postMessage({
     type,
@@ -526,7 +541,11 @@ function postTemplateCandidateMessage(type: 'template-candidate-added' | 'templa
     previewDataUrl,
     warnings: slide.warnings,
     blocking: hasBlockingWarnings(slide.warnings),
-    placeholders: summarizePlaceholders(slide.elements),
+    // Tous les calques taguables du layout, pas seulement ceux qui ont
+    // produit un avertissement. Voir summarizeTaggableElements : cette
+    // liste remplace l'ancien résumé des seuls placeholders DÉJÀ tagués,
+    // dont elle est un sur-ensemble (elle porte `role`/`label`).
+    elements: summarizeTaggableElements(slide.elements),
     colors: summarizeColors(slide.elements),
     fonts: summarizeFonts(slide.elements),
     fontSubstitutions: collectFontSubstitutions(slide),
@@ -539,7 +558,7 @@ function postTemplateCandidateMessage(type: 'template-candidate-added' | 'templa
  * un deck, mais avec trois différences :
  * 1. les avertissements de rasterisation sont reclassés en bloquants
  *    (`enforceTemplateStrictness`) : un template doit rester 100% natif ;
- * 2. l'UI reçoit en plus les placeholders/couleurs/typos détectés, pour le
+ * 2. l'UI reçoit en plus les calques taguables/couleurs/typos détectés, pour le
  *    rapport de contenu communicable (couleurs, typos, layouts) ;
  * 3. le plafond `TEMPLATE_MAX_LAYOUTS` est DUR (l'ajout au-delà est refusé,
  *    pas juste signalé) : c'est une limite produit du plugin — un template
@@ -564,7 +583,7 @@ async function addTemplateLayoutNodes(nodes: ExportableNode[], pending: PendingS
   for (const frame of toAdd) {
     const previewDataUrl = await generatePreview(frame);
     const { slide, nodesToRaster } = await serializeFrame(frame, { nextId: idGen });
-    slide.warnings = enforceTemplateStrictness(slide.warnings);
+    slide.warnings = withCompositionWarnings(frame, slide);
     pending.push({ frame, slide, nodesToRaster });
     // Même suivi que `addFrames` côté deck — voir le commentaire là-bas.
     if (!isTemplateReady(frame)) frame.setPluginData(TRACKED_KEY, TEMPLATE_TAG);
@@ -597,7 +616,7 @@ async function refreshTemplateEntry(frame: ExportableNode, pending: PendingSlide
 
   const previewDataUrl = await generatePreview(frame);
   const { slide, nodesToRaster } = await serializeFrame(frame, { nextId: idGen });
-  slide.warnings = enforceTemplateStrictness(slide.warnings);
+  slide.warnings = withCompositionWarnings(frame, slide);
   pending[idx] = { frame, slide, nodesToRaster };
 
   if (isTemplateReady(frame)) {
@@ -1036,11 +1055,31 @@ async function main(): Promise<void> {
     // seul pour re-sérialiser le layout et rafraîchir le rapport.
     if (msg.type === 'set-placeholder-role') {
       try {
-        const tag = msg.tag as (typeof KNOWN_ROLE_TAGS)[number];
+        // Chaîne vide = option "No role" du sélecteur : on RETIRE le tag
+        // plutôt que d'en poser un. Sans ce cas, un rôle assigné par erreur
+        // ne pouvait plus être défait que dans Figma.
+        const tag = msg.tag as (typeof KNOWN_ROLE_TAGS)[number] | '';
         const node = await figma.getNodeByIdAsync(msg.sourceNodeId as string);
         if (node && 'name' in node) {
-          node.name = setPlaceholderTag(node.name, tag);
+          node.name = tag ? setPlaceholderTag(node.name, tag) : clearPlaceholderTag(node.name);
         }
+      } catch (err) {
+        console.error(err);
+      }
+      return;
+    }
+
+    // Champ de nom d'une vignette du rail de layouts (TemplatePanel) : il
+    // ne modifiait que l'état de l'UI : le nom n'était ni renvoyé ici, ni
+    // relu à l'export (qui repart de `frame.name`), et il était perdu à la
+    // réouverture du plugin, où les layouts sont rechargés depuis Figma.
+    // Il renomme désormais la vraie frame, donc il persiste et sert de
+    // libellé dans les erreurs par slide remontées par le backend.
+    if (msg.type === 'rename-template-layout') {
+      try {
+        const node = await figma.getNodeByIdAsync(msg.id as string);
+        const name = String(msg.name ?? '').trim();
+        if (node && 'name' in node && name.length > 0) node.name = name;
       } catch (err) {
         console.error(err);
       }

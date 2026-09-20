@@ -844,6 +844,32 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   white-space: nowrap;
 }
 
+/* Section "Composition" du rapport de template : ses messages disent quoi
+   corriger, pas juste ce qui s'est passé. Ils passent donc sur plusieurs
+   lignes sous le nom du calque, au lieu de se disputer une ligne unique
+   avec lui. */
+.f2s-log-entry--wrap {
+  align-items: flex-start;
+}
+
+.f2s-log-entry--wrap .f2s-log-entry-clickarea {
+  align-items: flex-start;
+}
+
+.f2s-log-entry--wrap .f2s-log-entry-text {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+}
+
+.f2s-log-entry--wrap .f2s-log-entry-message {
+  flex: none;
+  max-width: none;
+  overflow: visible;
+  white-space: normal;
+  color: var(--color-black-70);
+}
+
 /* Seuls les éléments RASTERISÉS (perte d'édition native) méritent une
    bordure rouge qui attire l'œil sur toute la liste — un warning "blocking"
    (mode template) ou "Approximated" (police substituée, radius
@@ -855,6 +881,16 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
 
 .f2s-log-entry--rasterized {
   border-color: var(--color-error);
+}
+
+/* Liste "Content" du mode template : distingue d'un coup d'œil les calques
+   DÉJÀ tagués d'un rôle de placeholder du reste du layout. Volontairement
+   limité à la graisse du nom, sans fond ni bordure propres : les deux skins
+   repeignent `.f2s-log-entry` avec une spécificité supérieure
+   (`html.f2s-skin--…`), une couleur posée ici ne tiendrait qu'en modern.
+   Le rôle lui-même reste écrit en toutes lettres à droite du nom. */
+.f2s-log-entry--tagged .f2s-log-entry-name {
+  font-weight: 700;
 }
 
 /* Contient désormais la raison précise ("Font "Zodiak" → "Inter"",
@@ -3543,7 +3579,6 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
   }
 
   // src/serialize/placeholder.ts
-  var TAG_PATTERN = /^\s*\[\[\s*([a-zA-Z]+)\s*(?::\s*([^\]]+))?\]\]/;
   var ROLE_ALIASES = {
     title: "TITLE",
     titre: "TITLE",
@@ -3560,55 +3595,19 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     logo: "LOGO",
     custom: "CUSTOM"
   };
-  function defaultLabel(role) {
-    switch (role) {
-      case "TITLE":
-        return "Title";
-      case "SUBTITLE":
-        return "Subtitle";
-      case "BODY":
-        return "Body text";
-      case "IMAGE":
-        return "Image";
-      case "LOGO":
-        return "Logo";
-      case "CUSTOM":
-        return "Custom placeholder";
-    }
-  }
-  function parsePlaceholderTag(layerName) {
-    const match = TAG_PATTERN.exec(layerName);
-    if (!match) return void 0;
-    const role = ROLE_ALIASES[match[1].toLowerCase()];
-    if (!role) return void 0;
-    const label = match[2]?.trim();
-    return { role, label: label && label.length > 0 ? label : defaultLabel(role) };
-  }
   var KNOWN_ROLE_TAGS = ["title", "subtitle", "body", "image", "logo", "custom"];
   var CANONICAL_TAG_FOR_ROLE = Object.fromEntries(
     KNOWN_ROLE_TAGS.map((tag) => [ROLE_ALIASES[tag], tag])
   );
 
   // src/ui/placeholderRoleOptions.ts
-  var TEXT_WARNING_CODES = /* @__PURE__ */ new Set(["FONT_SUBSTITUTED", "FONT_MISSING", "LETTER_SPACING_LOST"]);
-  var IMAGE_WARNING_CODES = /* @__PURE__ */ new Set([
-    "GRADIENT_RASTERIZED",
-    "EFFECT_RASTERIZED",
-    "BLEND_MODE_RASTERIZED",
-    "MASK_RASTERIZED",
-    "VECTOR_RASTERIZED",
-    "POLYGON_SIDES_UNSUPPORTED",
-    "STAR_POINTS_UNSUPPORTED",
-    "LINE_RASTERIZED",
-    "CORNER_RADIUS_RASTERIZED",
-    "MULTIPLE_FILLS_RASTERIZED",
-    "CONTAINER_BACKGROUND_RASTERIZED"
-  ]);
   var TEXT_ROLE_TAGS = KNOWN_ROLE_TAGS.filter((tag) => tag !== "image" && tag !== "logo");
   var IMAGE_ROLE_TAGS = KNOWN_ROLE_TAGS.filter((tag) => tag !== "title" && tag !== "subtitle" && tag !== "body");
-  function placeholderRoleTagsFor(code) {
-    if (TEXT_WARNING_CODES.has(code)) return TEXT_ROLE_TAGS;
-    if (IMAGE_WARNING_CODES.has(code)) return IMAGE_ROLE_TAGS;
+  var CUSTOM_ONLY_ROLE_TAGS = KNOWN_ROLE_TAGS.filter((tag) => tag === "custom");
+  function placeholderRoleTagsForKind(kind) {
+    if (kind === "text") return TEXT_ROLE_TAGS;
+    if (kind === "image") return IMAGE_ROLE_TAGS;
+    if (kind === "line") return CUSTOM_ONLY_ROLE_TAGS;
     return KNOWN_ROLE_TAGS;
   }
 
@@ -3732,40 +3731,35 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     ] });
   }
 
+  // src/serialize/templateComposition.ts
+  var COMPOSITION_WARNING_CODES = /* @__PURE__ */ new Set([
+    "PLACEHOLDER_ROLE_DUPLICATE",
+    "PLACEHOLDER_ROLE_KIND_MISMATCH",
+    "LAYOUT_WITHOUT_PLACEHOLDER"
+  ]);
+
   // src/ui/TemplatePanel.tsx
   function setPlaceholderRole(sourceNodeId, tag) {
     postToPlugin({ type: "set-placeholder-role", sourceNodeId, tag });
   }
-  function TemplateLogList({
-    warnings,
-    fontOverrides,
-    roleSelectable
-  }) {
-    return /* @__PURE__ */ u3("ul", { className: "f2s-tmpl-list", children: warnings.map((w3, i3) => {
-      const flag = logEntryFlag(w3.code);
-      const tagText = flag ? logEntryTagText(w3, fontOverrides) : void 0;
-      const currentRole = parsePlaceholderTag(w3.nodeName)?.role;
-      return /* @__PURE__ */ u3("li", { className: `f2s-log-entry${w3.severity === "blocking" ? " f2s-log-entry--blocking" : ""}${flag ? ` f2s-log-entry--${flag}` : ""}`, children: [
-        /* @__PURE__ */ u3("button", { type: "button", className: "f2s-log-entry-clickarea", title: `${w3.nodeName}: ${logEntryTooltip(w3, tagText)}`, onClick: () => selectSourceNodes([w3.sourceNodeId]), children: [
-          /* @__PURE__ */ u3("span", { className: "f2s-log-entry-text", children: [
-            /* @__PURE__ */ u3("strong", { className: "f2s-log-entry-name", children: w3.nodeName }),
-            !tagText && /* @__PURE__ */ u3("span", { className: "f2s-log-entry-message", children: [
-              ": ",
-              w3.message
-            ] })
-          ] }),
-          tagText && /* @__PURE__ */ u3("span", { className: `f2s-log-entry-flag f2s-log-entry-flag--${flag}`, children: tagText })
+  function TemplateElementList({ elements }) {
+    return /* @__PURE__ */ u3("ul", { className: "f2s-tmpl-list", children: elements.map((el) => {
+      const role = el.role;
+      return /* @__PURE__ */ u3("li", { className: `f2s-log-entry${role ? " f2s-log-entry--tagged" : ""}`, children: [
+        /* @__PURE__ */ u3("button", { type: "button", className: "f2s-log-entry-clickarea", title: el.label ? `${el.name} (${el.label})` : el.name, onClick: () => selectSourceNodes([el.sourceNodeId]), children: [
+          /* @__PURE__ */ u3("span", { className: "f2s-log-entry-text", children: /* @__PURE__ */ u3("strong", { className: "f2s-log-entry-name", children: el.name }) }),
+          role && /* @__PURE__ */ u3("span", { className: "f2s-tmpl-role", children: role })
         ] }),
-        roleSelectable && /* @__PURE__ */ u3(
+        /* @__PURE__ */ u3(
           "select",
           {
             className: "f2s-log-entry-role",
-            value: currentRole ? CANONICAL_TAG_FOR_ROLE[currentRole] : "",
-            title: "Assign this content to a Slides template placeholder role",
-            onChange: (e3) => setPlaceholderRole(w3.sourceNodeId, e3.target.value),
+            value: role ? CANONICAL_TAG_FOR_ROLE[role] : "",
+            title: "Assign this layer to a Slides template placeholder role",
+            onChange: (e3) => setPlaceholderRole(el.sourceNodeId, e3.target.value),
             children: [
-              /* @__PURE__ */ u3("option", { value: "", disabled: true, children: "Set placeholder role\u2026" }),
-              placeholderRoleTagsFor(w3.code).map((tag) => /* @__PURE__ */ u3("option", { value: tag, children: [
+              /* @__PURE__ */ u3("option", { value: "", children: "No role" }),
+              placeholderRoleTagsForKind(el.kind).map((tag) => /* @__PURE__ */ u3("option", { value: tag, children: [
                 "[[",
                 tag,
                 "]]"
@@ -3773,7 +3767,20 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
             ]
           }
         )
-      ] }, i3);
+      ] }, el.id);
+    }) });
+  }
+  function TemplateLogList({ warnings, fontOverrides, wrap }) {
+    return /* @__PURE__ */ u3("ul", { className: "f2s-tmpl-list", children: warnings.map((w3, i3) => {
+      const flag = logEntryFlag(w3.code);
+      const tagText = flag ? logEntryTagText(w3, fontOverrides) : void 0;
+      return /* @__PURE__ */ u3("li", { className: `f2s-log-entry${wrap ? " f2s-log-entry--wrap" : ""}${w3.severity === "blocking" ? " f2s-log-entry--blocking" : ""}${flag ? ` f2s-log-entry--${flag}` : ""}`, children: /* @__PURE__ */ u3("button", { type: "button", className: "f2s-log-entry-clickarea", title: `${w3.nodeName}: ${logEntryTooltip(w3, tagText)}`, onClick: () => selectSourceNodes([w3.sourceNodeId]), children: [
+        /* @__PURE__ */ u3("span", { className: "f2s-log-entry-text", children: [
+          /* @__PURE__ */ u3("strong", { className: "f2s-log-entry-name", children: w3.nodeName }),
+          !tagText && /* @__PURE__ */ u3("span", { className: "f2s-log-entry-message", children: wrap ? w3.message : `: ${w3.message}` })
+        ] }),
+        tagText && /* @__PURE__ */ u3("span", { className: `f2s-log-entry-flag f2s-log-entry-flag--${flag}`, children: tagText })
+      ] }) }, i3);
     }) });
   }
   var DRAG_THRESHOLD_PX2 = 3;
@@ -3789,6 +3796,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     notice,
     onRemove,
     onRename,
+    onRenameCommit,
     fontOverrides,
     exportCursor,
     exportAttempt,
@@ -3871,6 +3879,9 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
       });
       return () => cancelAnimationFrame(frame);
     }, [suppressShiftTransition]);
+    const blockingWarnings = previewedLayout?.warnings.filter((w3) => w3.severity === "blocking") ?? [];
+    const compositionWarnings = previewedLayout?.warnings.filter((w3) => w3.severity !== "blocking" && COMPOSITION_WARNING_CODES.has(w3.code)) ?? [];
+    const fidelityNotes = previewedLayout?.warnings.filter((w3) => w3.severity !== "blocking" && !COMPOSITION_WARNING_CODES.has(w3.code)) ?? [];
     if (order.length === 0) {
       return /* @__PURE__ */ u3("div", { className: "f2s-body", children: [
         notice && /* @__PURE__ */ u3("div", { className: "f2s-toast", role: "status", children: notice }),
@@ -3942,7 +3953,9 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
                       value: layout.name,
                       title: layout.name,
                       "aria-label": "Layout name",
-                      onInput: (e3) => onRename(id, e3.target.value)
+                      onInput: (e3) => onRename(id, e3.target.value),
+                      onChange: (e3) => onRenameCommit(id, e3.target.value),
+                      onBlur: (e3) => onRenameCommit(id, e3.target.value)
                     }
                   ),
                   /* @__PURE__ */ u3("div", { className: "f2s-frame-controls", children: /* @__PURE__ */ u3("button", { type: "button", className: "f2s-icon-btn", title: "Remove", onClick: () => onRemove(id), children: "\u2715" }) })
@@ -3964,33 +3977,34 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
           }
         ) }) : /* @__PURE__ */ u3("div", { className: "f2s-canvas-preview f2s-tmpl-preview", children: previewedLayout.previewDataUrl && /* @__PURE__ */ u3("img", { src: previewedLayout.previewDataUrl, alt: previewedLayout.name }) }),
         /* @__PURE__ */ u3("div", { className: "f2s-tmpl-panel", children: [
+          blockingWarnings.length > 0 && /* @__PURE__ */ u3("div", { className: "f2s-logs f2s-tmpl-section--blocking", children: [
+            /* @__PURE__ */ u3("div", { className: "f2s-logs-header", children: /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Fix before creating the template" }) }),
+            /* @__PURE__ */ u3(TemplateLogList, { warnings: blockingWarnings, fontOverrides })
+          ] }),
           /* @__PURE__ */ u3("section", { className: "f2s-tmpl-section", children: [
-            /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Placeholders" }),
-            previewedLayout.placeholders.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: [
-              "No tagged placeholder yet. Prefix a layer name in Figma with ",
+            /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Content" }),
+            previewedLayout.elements.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: [
+              "Nothing to tag in this layout yet. A placeholder can also be set by prefixing a layer name in Figma with ",
               /* @__PURE__ */ u3("code", { children: "[[title]]" }),
-              ", ",
-              /* @__PURE__ */ u3("code", { children: "[[body]]" }),
               ",",
               " ",
+              /* @__PURE__ */ u3("code", { children: "[[body]]" }),
+              ", ",
               /* @__PURE__ */ u3("code", { children: "[[image]]" }),
               ", ",
               /* @__PURE__ */ u3("code", { children: "[[subtitle]]" }),
               " or ",
               /* @__PURE__ */ u3("code", { children: "[[logo]]" }),
-              " to mark it."
-            ] }) : /* @__PURE__ */ u3("ul", { className: "f2s-tmpl-list", children: previewedLayout.placeholders.map((p3) => /* @__PURE__ */ u3("li", { children: /* @__PURE__ */ u3("button", { type: "button", className: "f2s-tmpl-chip", title: p3.label, onClick: () => selectSourceNodes([p3.sourceNodeId]), children: [
-              /* @__PURE__ */ u3("span", { className: "f2s-tmpl-role", children: p3.role }),
-              /* @__PURE__ */ u3("span", { className: "f2s-tmpl-chip-label", children: p3.label })
-            ] }) }, p3.id)) })
+              "."
+            ] }) : /* @__PURE__ */ u3(TemplateElementList, { elements: previewedLayout.elements })
           ] }),
-          previewedLayout.warnings.filter((w3) => w3.severity === "blocking").length > 0 && /* @__PURE__ */ u3("div", { className: "f2s-logs f2s-tmpl-section--blocking", children: [
-            /* @__PURE__ */ u3("div", { className: "f2s-logs-header", children: /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Fix before creating the template" }) }),
-            /* @__PURE__ */ u3(TemplateLogList, { warnings: previewedLayout.warnings.filter((w3) => w3.severity === "blocking"), fontOverrides })
+          compositionWarnings.length > 0 && /* @__PURE__ */ u3("div", { className: "f2s-logs", children: [
+            /* @__PURE__ */ u3("div", { className: "f2s-logs-header", children: /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Composition" }) }),
+            /* @__PURE__ */ u3(TemplateLogList, { warnings: compositionWarnings, fontOverrides, wrap: true })
           ] }),
-          previewedLayout.warnings.filter((w3) => w3.severity !== "blocking").length > 0 && /* @__PURE__ */ u3("div", { className: "f2s-logs", children: [
-            /* @__PURE__ */ u3("div", { className: "f2s-logs-header", children: /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Content" }) }),
-            /* @__PURE__ */ u3(TemplateLogList, { warnings: previewedLayout.warnings.filter((w3) => w3.severity !== "blocking"), fontOverrides, roleSelectable: true })
+          fidelityNotes.length > 0 && /* @__PURE__ */ u3("div", { className: "f2s-logs", children: [
+            /* @__PURE__ */ u3("div", { className: "f2s-logs-header", children: /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Notes" }) }),
+            /* @__PURE__ */ u3(TemplateLogList, { warnings: fidelityNotes, fontOverrides })
           ] })
         ] })
       ] }) : /* @__PURE__ */ u3("p", { className: "f2s-canvas-empty", children: "Select a layout on the left to see its report." }) }),
@@ -4377,6 +4391,17 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
       () => aggregateFontUsages(templateOrder.map((id) => templateLayouts[id]?.fonts ?? [])),
       [templateOrder, templateLayouts]
     );
+    h2(() => {
+      if (templateColors.length === 0) return;
+      const live = new Set(templateColors.map((c3) => colorKey(c3.hex, c3.alpha)));
+      setColorRoles((prev) => {
+        const next = {};
+        for (const [key, role] of Object.entries(prev)) {
+          if (live.has(key)) next[key] = role;
+        }
+        return Object.keys(next).length === Object.keys(prev).length ? prev : next;
+      });
+    }, [templateColors]);
     const [fontOverrides, setFontOverrides] = d2({});
     const [exportState, setExportState] = d2("idle");
     const [exportAttempt, setExportAttempt] = d2(0);
@@ -4487,7 +4512,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
                 previewDataUrl: msg.previewDataUrl,
                 warnings: msg.warnings ?? [],
                 blocking: Boolean(msg.blocking),
-                placeholders: msg.placeholders ?? [],
+                elements: msg.elements ?? [],
                 colors: msg.colors ?? [],
                 fonts: msg.fonts ?? [],
                 fontSubstitutions: msg.fontSubstitutions
@@ -4510,7 +4535,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
                   previewDataUrl: msg.previewDataUrl,
                   warnings: msg.warnings ?? [],
                   blocking: Boolean(msg.blocking),
-                  placeholders: msg.placeholders ?? [],
+                  elements: msg.elements ?? [],
                   colors: msg.colors ?? [],
                   fonts: msg.fonts ?? [],
                   fontSubstitutions: msg.fontSubstitutions
@@ -4939,6 +4964,10 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
         return { ...prev, [id]: { ...layout, name } };
       });
     }
+    function commitTemplateLayoutRename(id, name) {
+      if (name.trim().length === 0) return;
+      postToPlugin({ type: "rename-template-layout", id, name: name.trim() });
+    }
     function startExport() {
       setExportState("exporting");
       setExportProgress(0);
@@ -5171,6 +5200,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
           notice: templateSelectionNotice,
           onRemove: removeTemplateLayout,
           onRename: renameTemplateLayout,
+          onRenameCommit: commitTemplateLayoutRename,
           fontOverrides,
           exportCursor: exportSource === "template" ? exportCursor : void 0,
           exportAttempt: exportSource === "template" ? exportAttempt : void 0,

@@ -87,6 +87,28 @@ export const CANONICAL_TAG_FOR_ROLE: Record<PlaceholderRole, (typeof KNOWN_ROLE_
  * Idempotent : un tag déjà présent (valide ou non) est remplacé, pas empilé.
  */
 export function setPlaceholderTag(layerName: string, tag: (typeof KNOWN_ROLE_TAGS)[number]): string {
-  const rest = layerName.replace(TAG_PATTERN, '').trimStart();
+  const rest = stripPlaceholderTag(layerName);
   return rest.length > 0 ? `[[${tag}]] ${rest}` : `[[${tag}]]`;
+}
+
+/**
+ * Retire le tag `[[role]]` en tête du nom de calque, pendant du sélecteur
+ * "No role" du rapport de contenu. Sans lui, un rôle assigné par erreur ne
+ * pouvait plus être retiré que via un renommage manuel du calque dans
+ * Figma : le sélecteur savait poser un tag, jamais en enlever un.
+ *
+ * Un calque qui ne porterait QUE son tag (`"[[title]]"`) se retrouverait
+ * sans nom du tout ; Figma le renommerait alors selon son type, ce qui
+ * perdrait le repère visuel dans le panneau de calques. Il garde donc son
+ * libellé lisible par défaut ("Title"…) plutôt qu'une chaîne vide.
+ */
+export function clearPlaceholderTag(layerName: string): string {
+  const parsed = parsePlaceholderTag(layerName);
+  const rest = stripPlaceholderTag(layerName);
+  if (rest.length > 0) return rest;
+  return parsed ? defaultLabel(parsed.role) : layerName;
+}
+
+function stripPlaceholderTag(layerName: string): string {
+  return layerName.replace(TAG_PATTERN, '').trimStart();
 }

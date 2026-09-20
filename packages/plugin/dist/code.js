@@ -455,8 +455,17 @@
     KNOWN_ROLE_TAGS.map((tag) => [ROLE_ALIASES[tag], tag])
   );
   function setPlaceholderTag(layerName, tag) {
-    const rest = layerName.replace(TAG_PATTERN, "").trimStart();
+    const rest = stripPlaceholderTag(layerName);
     return rest.length > 0 ? `[[${tag}]] ${rest}` : `[[${tag}]]`;
+  }
+  function clearPlaceholderTag(layerName) {
+    const parsed = parsePlaceholderTag(layerName);
+    const rest = stripPlaceholderTag(layerName);
+    if (rest.length > 0) return rest;
+    return parsed ? defaultLabel(parsed.role) : layerName;
+  }
+  function stripPlaceholderTag(layerName) {
+    return layerName.replace(TAG_PATTERN, "").trimStart();
   }
 
   // src/serialize/serializeFrame.ts
@@ -592,6 +601,7 @@
           kind: "text",
           id: state.ctx.nextId(),
           sourceNodeId: node.id,
+          sourceNodeName: node.name,
           rect: rel,
           rotation: "rotation" in node ? node.rotation : 0,
           opacity: "opacity" in node ? node.opacity : 1,
@@ -792,6 +802,7 @@
       kind: "shape",
       id: state.ctx.nextId(),
       sourceNodeId: node.id,
+      sourceNodeName: node.name,
       rect: rel,
       rotation: "rotation" in node ? node.rotation : 0,
       opacity: "opacity" in node ? node.opacity : 1,
@@ -816,6 +827,7 @@
       kind: "line",
       id: state.ctx.nextId(),
       sourceNodeId: node.id,
+      sourceNodeName: node.name,
       rect: rel,
       rotation: "rotation" in node ? node.rotation : 0,
       opacity: "opacity" in node ? node.opacity : 1,
@@ -857,6 +869,7 @@
       kind: "image",
       id,
       sourceNodeId: node.id,
+      sourceNodeName: node.name,
       rect: rel,
       // `node.exportAsync` (code.ts) rend le nœud tel qu'affiché — la
       // rotation est donc déjà "cuite" dans les pixels du PNG exporté (dont
@@ -1197,11 +1210,18 @@
     }
     return [...byKey.values()].map(({ family, weights, original }) => ({ family, weights: [...weights].sort((a, b) => a - b), original }));
   }
-  function summarizePlaceholders(elements) {
+  function summarizeTaggableElements(elements) {
     const result = [];
     for (const el of elements) {
-      if (!el.placeholder) continue;
-      result.push({ id: el.id, sourceNodeId: el.sourceNodeId, role: el.placeholder.role, label: el.placeholder.label });
+      if (el.kind === "line" && !el.placeholder) continue;
+      result.push({
+        id: el.id,
+        sourceNodeId: el.sourceNodeId,
+        name: el.sourceNodeName ?? el.placeholder?.label ?? el.kind,
+        kind: el.kind,
+        role: el.placeholder?.role,
+        label: el.placeholder?.label
+      });
     }
     return result;
   }
@@ -1220,6 +1240,82 @@
       }
     }
     return [...byKey.values()];
+  }
+
+  // src/serialize/templateComposition.ts
+  var TEXT_ONLY_ROLES = /* @__PURE__ */ new Set(["TITLE", "SUBTITLE", "BODY"]);
+  var VISUAL_ONLY_ROLES = /* @__PURE__ */ new Set(["IMAGE", "LOGO"]);
+  var ROLE_LABELS = {
+    TITLE: "title",
+    SUBTITLE: "subtitle",
+    BODY: "body",
+    IMAGE: "image",
+    LOGO: "logo",
+    CUSTOM: "custom"
+  };
+  function nameOf(el) {
+    return el.sourceNodeName ?? el.placeholder?.label ?? el.kind;
+  }
+  function duplicateKey(role, label) {
+    return role === "CUSTOM" ? `CUSTOM:${label.toLowerCase()}` : role;
+  }
+  function isVisualKind(kind) {
+    return kind === "image" || kind === "shape";
+  }
+  function collectCompositionWarnings(layout) {
+    const warnings = [];
+    const tagged = layout.elements.filter((el) => el.placeholder);
+    if (tagged.length === 0) {
+      warnings.push({
+        code: "LAYOUT_WITHOUT_PLACEHOLDER",
+        severity: "info",
+        sourceNodeId: layout.sourceNodeId,
+        nodeName: layout.frameName,
+        message: "This layout has no placeholder. Whoever reuses it will not know what to replace. Tag a layer with [[title]], [[body]], [[image]]\u2026 unless the layout is meant to stay fixed (a section divider, for instance)."
+      });
+    }
+    const byKey = /* @__PURE__ */ new Map();
+    for (const el of tagged) {
+      const key = duplicateKey(el.placeholder.role, el.placeholder.label);
+      const group = byKey.get(key);
+      if (group) group.push(el);
+      else byKey.set(key, [el]);
+    }
+    for (const group of byKey.values()) {
+      if (group.length < 2) continue;
+      const { role, label } = group[0].placeholder;
+      const tag = role === "CUSTOM" ? `[[custom:${label}]]` : `[[${ROLE_LABELS[role]}]]`;
+      for (const el of group) {
+        warnings.push({
+          code: "PLACEHOLDER_ROLE_DUPLICATE",
+          severity: "warning",
+          sourceNodeId: el.sourceNodeId,
+          nodeName: nameOf(el),
+          message: `${group.length} layers of this layout are tagged ${tag}. Keep one, or give the others a different role, so the placeholder stays unambiguous.`
+        });
+      }
+    }
+    for (const el of tagged) {
+      const { role } = el.placeholder;
+      if (TEXT_ONLY_ROLES.has(role) && el.kind !== "text") {
+        warnings.push({
+          code: "PLACEHOLDER_ROLE_KIND_MISMATCH",
+          severity: "warning",
+          sourceNodeId: el.sourceNodeId,
+          nodeName: nameOf(el),
+          message: `Tagged [[${ROLE_LABELS[role]}]] but this layer is not a text layer. Slides will label it as text without it being editable as such.`
+        });
+      } else if (VISUAL_ONLY_ROLES.has(role) && !isVisualKind(el.kind)) {
+        warnings.push({
+          code: "PLACEHOLDER_ROLE_KIND_MISMATCH",
+          severity: "warning",
+          sourceNodeId: el.sourceNodeId,
+          nodeName: nameOf(el),
+          message: `Tagged [[${ROLE_LABELS[role]}]] but this layer is a ${el.kind} layer, not a picture or a shape reserving its spot.`
+        });
+      }
+    }
+    return warnings;
   }
 
   // src/serialize/templateTheme.ts
@@ -1578,6 +1674,12 @@
     );
     await addFrames(newlyCreated, pending, idGen);
   }
+  function withCompositionWarnings(frame, slide) {
+    return [
+      ...enforceTemplateStrictness(slide.warnings),
+      ...collectCompositionWarnings({ sourceNodeId: frame.id, frameName: frame.name, elements: slide.elements })
+    ];
+  }
   function postTemplateCandidateMessage(type, frame, previewDataUrl, slide) {
     figma.ui.postMessage({
       type,
@@ -1585,7 +1687,11 @@
       previewDataUrl,
       warnings: slide.warnings,
       blocking: hasBlockingWarnings(slide.warnings),
-      placeholders: summarizePlaceholders(slide.elements),
+      // Tous les calques taguables du layout, pas seulement ceux qui ont
+      // produit un avertissement. Voir summarizeTaggableElements : cette
+      // liste remplace l'ancien résumé des seuls placeholders DÉJÀ tagués,
+      // dont elle est un sur-ensemble (elle porte `role`/`label`).
+      elements: summarizeTaggableElements(slide.elements),
       colors: summarizeColors(slide.elements),
       fonts: summarizeFonts(slide.elements),
       fontSubstitutions: collectFontSubstitutions(slide)
@@ -1607,7 +1713,7 @@
     for (const frame of toAdd) {
       const previewDataUrl = await generatePreview(frame);
       const { slide, nodesToRaster } = await serializeFrame(frame, { nextId: idGen });
-      slide.warnings = enforceTemplateStrictness(slide.warnings);
+      slide.warnings = withCompositionWarnings(frame, slide);
       pending.push({ frame, slide, nodesToRaster });
       if (!isTemplateReady(frame)) frame.setPluginData(TRACKED_KEY, TEMPLATE_TAG);
       postTemplateCandidateMessage("template-candidate-added", frame, previewDataUrl, slide);
@@ -1627,7 +1733,7 @@
     if (idx === -1) return false;
     const previewDataUrl = await generatePreview(frame);
     const { slide, nodesToRaster } = await serializeFrame(frame, { nextId: idGen });
-    slide.warnings = enforceTemplateStrictness(slide.warnings);
+    slide.warnings = withCompositionWarnings(frame, slide);
     pending[idx] = { frame, slide, nodesToRaster };
     if (isTemplateReady(frame)) {
       const warnings = await lintFrame(frame);
@@ -1912,8 +2018,18 @@
           const tag = msg.tag;
           const node = await figma.getNodeByIdAsync(msg.sourceNodeId);
           if (node && "name" in node) {
-            node.name = setPlaceholderTag(node.name, tag);
+            node.name = tag ? setPlaceholderTag(node.name, tag) : clearPlaceholderTag(node.name);
           }
+        } catch (err) {
+          console.error(err);
+        }
+        return;
+      }
+      if (msg.type === "rename-template-layout") {
+        try {
+          const node = await figma.getNodeByIdAsync(msg.id);
+          const name = String(msg.name ?? "").trim();
+          if (node && "name" in node && name.length > 0) node.name = name;
         } catch (err) {
           console.error(err);
         }
