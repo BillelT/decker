@@ -45,10 +45,16 @@ export const MARKETING_CSS = `
   --b-space-32: 32px; --b-space-48: 48px; --b-space-64: 64px; --b-space-96: 96px;
 
   /* Conteneur des sections principales : pas de padding latéral, la marge auto
-     fait le travail : 95% de large sous 1280px (soit 2.5% de marge de chaque
-     côté), puis 1280px centrés au-delà. */
+     fait le travail : sous 1280px, --b-side pour cent de marge de chaque
+     côté, puis 1280px centrés au-delà.
+     --b-side est la seule source de vérité de cette marge : la largeur du
+     conteneur et les deux gouttières plus bas s'en déduisent, faute de quoi
+     un changement de marge décalerait les blocs pleine largeur par rapport
+     à la colonne de texte. Un nombre nu, et non un pourcentage : il sert
+     aussi bien un calcul en % qu'un calcul en vw. */
   --b-container: 1280px;
-  --b-container-width: 95%;
+  --b-side: 4.5;
+  --b-container-width: calc(100% - var(--b-side) * 2%);
 
   --b-font-sans: "Cabinet Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --b-text-xs: 12px; --b-text-sm: 14px; --b-text-base: 16px; --b-text-lg: 18px;
@@ -77,13 +83,13 @@ export const MARKETING_CSS = `
     inset 2px 2px var(--hyb-lo-strong);
 
   /* Marge latérale laissée par le conteneur, à l'identique de son calcul :
-     2.5% de chaque côté sous 1280px, puis ce qui reste une fois les 1280px
-     centrés. Sert aux blocs qui débordent du conteneur et doivent quand même
-     démarrer sur sa colonne. Pas de vw ici : un pourcentage se mesure sur le
+     --b-side pour cent de chaque côté sous 1280px, puis ce qui reste une fois
+     les 1280px centrés. Sert aux blocs qui débordent du conteneur et doivent
+     quand même démarrer sur sa colonne. Pas de vw ici : un pourcentage se mesure sur le
      bloc parent, donc hors barre de défilement, là où 100vw la compte et
      provoquerait un débordement horizontal de la page. */
   --b-gutter: max(
-    calc((100% - var(--b-container-width)) / 2),
+    calc(var(--b-side) * 1%),
     calc((100% - var(--b-container)) / 2)
   );
   /* Meme valeur que --b-gutter, mais en vw. Un pourcentage se resout sur le
@@ -91,7 +97,7 @@ export const MARKETING_CSS = `
      resout sur la piste, et non sur la largeur de page. Seule la barre de
      defilement separe les deux valeurs (~15px), sans consequence la ou
      celle-ci sert : un calcul de largeur de card, pas un padding de page. */
-  --b-gutter-vw: max(2.5vw, calc((100vw - var(--b-container)) / 2));
+  --b-gutter-vw: max(calc(var(--b-side) * 1vw), calc((100vw - var(--b-container)) / 2));
 }
 
 * { box-sizing: border-box; }
@@ -387,31 +393,65 @@ a { color: inherit; }
 
 @media (max-width: 960px) {
   .card-grid { grid-template-columns: repeat(2, 1fr); }
-  .carousel__item { flex-basis: calc((100% + var(--b-gutter-vw) - 40px) / 2.5); }
   .hero { grid-template-columns: 1fr; gap: var(--b-space-32); }
   .hero__content { align-items: center; text-align: center; }
   .hero__actions { justify-content: center; }
 }
 
-@media (max-width: 640px) {
-  .carousel__item { flex-basis: calc((100% + var(--b-gutter-vw) - 20px) / 1.5); }
+/* Paliers du carrousel. Ils ne suivent pas ceux de la mise en page : ce qui
+   les declenche n'est pas le nombre de colonnes de la page mais la largeur en
+   dessous de laquelle une card devient trop etroite pour son texte. Sous les
+   ~300px de card, les descriptions se cassent en lignes de trois mots, et la
+   piste se lit comme une colonne compressee plutot que comme un carrousel :
+   chaque palier retire donc une card avant d'en arriver la. La formule reste
+   celle du bloc .carousel__item, avec n cards pleines plus une fraction ;
+   la fraction se resserre en descendant, faute de quoi la moitie de card en
+   trop mangerait sur mobile la place qui manque deja. */
+@media (max-width: 1160px) {
+  .carousel__item { flex-basis: calc((100% + var(--b-gutter-vw) - 40px) / 2.5); }
+}
+@media (max-width: 840px) {
+  .carousel__item { flex-basis: calc((100% + var(--b-gutter-vw) - 20px) / 1.6); }
+}
+@media (max-width: 600px) {
+  .carousel__item { flex-basis: calc((100% + var(--b-gutter-vw) - 20px) / 1.2); }
 }
 
 @media (max-width: 720px) {
   .hero__title { font-size: 48px; }
   /* Le brand, la nav et les boutons ne tiennent plus sur une seule ligne : au
      lieu de laisser les boutons se compresser (leur texte passait alors sur
-     deux lignes), la nav puis la ligne d'actions passent sous le brand. */
+     deux lignes), seule la ligne d'actions passe dessous. Les ancres restent
+     sur la ligne du brand, poussees a droite par un lead extensible, et les
+     boutons s'alignent a gauche sous l'ensemble. */
   .header__inner { flex-wrap: wrap; row-gap: var(--b-space-12); }
-  .header__lead { flex: 0 0 auto; }
-  .header__nav { order: 2; width: 100%; justify-content: flex-start; flex-wrap: wrap; gap: var(--b-space-16); }
-  .header__actions { order: 3; width: 100%; flex: 0 0 auto; }
-  /* Le header tient sur trois lignes a ce palier : les ancres doivent viser
-     d'autant plus bas pour ne pas ranger le titre de section dessous. */
+  .header__lead { flex: 1 1 auto; }
+  .header__nav { order: 1; flex: 0 1 auto; justify-content: flex-end; gap: var(--b-space-16); }
+  .header__actions { order: 2; width: 100%; flex: 0 0 auto; justify-content: flex-start; }
+  /* Le header tient sur deux lignes a ce palier, trois sur les ecrans les plus
+     etroits : les ancres visent d'autant plus bas, sur le cas le plus haut,
+     pour ne jamais ranger le surtitre de section dessous. */
   .section[id] { scroll-margin-top: var(--b-space-96); }
   .footer__top { flex-direction: column; }
   .footer__bottom { flex-direction: column; align-items: flex-start; }
   .card-grid { grid-template-columns: 1fr; }
   .section__cta { justify-content: flex-start; }
+}
+
+/* Paliers propres au header, a placer apres le bloc 720px : ils posent les
+   memes proprietes a specificite egale, et c'est donc l'ordre de cascade qui
+   decide. Ce qui les declenche est la largeur en dessous de laquelle le brand
+   et les trois ancres cessent de tenir sur une ligne. Les ancres etant un
+   repere secondaire, elles cedent avant le brand et les boutons : d'abord les
+   gouttieres, puis le corps de texte. En dessous de ~340px de large, plus rien
+   ne les fait tenir : elles reprennent alors leur propre ligne, sans deborder. */
+@media (max-width: 560px) {
+  .header__inner { gap: var(--b-space-16); }
+  .header__nav { gap: var(--b-space-12); flex-wrap: wrap; }
+  .header__nav .nav-link { font-size: 13px; }
+}
+@media (max-width: 400px) {
+  .header__nav { gap: var(--b-space-8); }
+  .header__nav .nav-link { font-size: var(--b-text-xs); }
 }
 `;
