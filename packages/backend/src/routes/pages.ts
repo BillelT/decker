@@ -11,9 +11,6 @@ import {
   FEATURE_PICK_SVG,
   FEATURE_PRIVATE_SVG,
   FEATURE_TEMPLATE_SVG,
-  ICON_ACCOUNT_SVG,
-  ICON_DRIVE_FILE_SVG,
-  ICON_NO_STORAGE_SVG,
   STEP_GET_DECK_SVG,
   STEP_MATCHED_SVG,
   STEP_PICK_FRAMES_SVG,
@@ -227,6 +224,11 @@ function header(): string {
         Decker
       </a>
     </div>
+    <nav class="header__nav" aria-label="Page sections">
+      <a class="nav-link" href="/#what-decker-does">What it does</a>
+      <a class="nav-link" href="/#how-it-works">How it works</a>
+      <a class="nav-link" href="/#google-access">Google access</a>
+    </nav>
     <div class="header__actions">
       <a class="btn tertiary" href="${COFFEE_URL}" target="_blank" rel="${REL_THIRD_PARTY}">Buy me a coffee</a>
       <a class="btn cta" href="${PLUGIN_URL}" target="_blank" rel="${REL_THIRD_PARTY}">Try it on Figma</a>
@@ -289,7 +291,7 @@ pagesRouter.get('/', (_req, res) => {
       </div>
     </section>
 
-    <section class="section section--bleed">
+    <section class="section section--bleed" id="what-decker-does">
       <div class="section__inner">
         <p class="section__eyebrow">What Decker does</p>
         <h2 class="section__title">Free, complete, and fully editable.</h2>
@@ -356,7 +358,7 @@ pagesRouter.get('/', (_req, res) => {
       </div>
     </section>
 
-    <section class="section">
+    <section class="section" id="how-it-works">
       <p class="section__eyebrow">How it works</p>
       <h2 class="section__title">Three steps to a live deck.</h2>
       <ol class="card-grid">
@@ -390,13 +392,12 @@ pagesRouter.get('/', (_req, res) => {
       </div>
     </section>
 
-    <section class="section">
+    <section class="section" id="google-access">
       <p class="section__eyebrow">Why Decker asks for Google access</p>
       <h2 class="section__title">Only what the export needs.</h2>
-      <p class="section__lede">When you sign in, Decker asks for two things, and keeps none of them.</p>
+      <p class="section__lede">Two Google permissions, used only to build your deck, and nothing kept once it lands in your Drive.</p>
       <ul class="card-grid">
         <li class="card card--compact">
-          ${ICON_DRIVE_FILE_SVG}
           <div class="card__body">
             <h3 class="card__title">Create the deck, nothing else</h3>
             <p class="card__desc">Decker only touches the presentation it creates for you. It cannot read or modify any other file in your Drive or Slides.</p>
@@ -404,7 +405,6 @@ pagesRouter.get('/', (_req, res) => {
           <p class="card__note">Scope <code>drive.file</code></p>
         </li>
         <li class="card card--compact">
-          ${ICON_ACCOUNT_SVG}
           <div class="card__body">
             <h3 class="card__title">Show which account is connected</h3>
             <p class="card__desc">Your email address is displayed inside the plugin, so you always know where an export is about to land.</p>
@@ -412,7 +412,6 @@ pagesRouter.get('/', (_req, res) => {
           <p class="card__note">Scope <code>userinfo.email</code></p>
         </li>
         <li class="card card--compact">
-          ${ICON_NO_STORAGE_SVG}
           <div class="card__body">
             <h3 class="card__title">Nothing kept after the export</h3>
             <p class="card__desc">No data is stored beyond what's needed to run that export. No tracking, no analytics, no resale.</p>

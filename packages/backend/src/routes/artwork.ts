@@ -246,30 +246,3 @@ export const FEATURE_PRIVATE_SVG = svg(
     stroke-linecap="round" stroke-linejoin="round" />
   <rect x="92" y="148" width="136" height="30" fill="none" stroke="var(--b-gray-300)" stroke-dasharray="5 4" />`,
 );
-
-/* ------------------------------------------------------------------ *
- * "Why Decker asks for Google access" : une icone par point.
- * Glyphes de 24px au trait, au meme gabarit que ceux du plugin, la ou
- * les sections precedentes portent des schemas pleine largeur.
- * ------------------------------------------------------------------ */
-
-const icon = (body: string): string =>
-  `<svg class="card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
-    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
-
-/** Une diapo neuve deposee dans le Drive : le seul fichier que Decker touche. */
-export const ICON_DRIVE_FILE_SVG = icon(
-  '<rect x="3" y="4" width="14" height="10" rx="1" /><line x1="7" y1="18" x2="13" y2="18" />' +
-    '<line x1="10" y1="14" x2="10" y2="18" /><line x1="18" y1="5" x2="18" y2="11" /><line x1="15" y1="8" x2="21" y2="8" />',
-);
-
-/** Le compte connecte, affiche dans le plugin. */
-export const ICON_ACCOUNT_SVG = icon(
-  '<circle cx="12" cy="8" r="3.5" /><path d="M5 20c0-3.6 3.1-5.5 7-5.5s7 1.9 7 5.5" />',
-);
-
-/** Un stockage qui se vide de lui-meme une fois l export termine. */
-export const ICON_NO_STORAGE_SVG = icon(
-  '<ellipse cx="12" cy="6" rx="7" ry="2.5" /><path d="M5 6v5c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5V6" />' +
-    '<path d="M5 11v5c0 1.4 3.1 2.5 7 2.5" /><line x1="15" y1="19" x2="21" y2="13" />',
-);
