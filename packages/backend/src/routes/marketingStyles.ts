@@ -51,9 +51,10 @@ export const MARKETING_CSS = `
      conteneur et les deux gouttières plus bas s'en déduisent, faute de quoi
      un changement de marge décalerait les blocs pleine largeur par rapport
      à la colonne de texte. Un nombre nu, et non un pourcentage : il sert
-     aussi bien un calcul en % qu'un calcul en vw. */
+     aussi bien un calcul en % qu'un calcul en vw, et se relève d'une seule
+     ligne sur petit écran (voir le palier juste après le :root). */
   --b-container: 1280px;
-  --b-side: 4.5;
+  --b-side: 2.5;
   --b-container-width: calc(100% - var(--b-side) * 2%);
 
   --b-font-sans: "Cabinet Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -98,6 +99,16 @@ export const MARKETING_CSS = `
      defilement separe les deux valeurs (~15px), sans consequence la ou
      celle-ci sert : un calcul de largeur de card, pas un padding de page. */
   --b-gutter-vw: max(calc(var(--b-side) * 1vw), calc((100vw - var(--b-container)) / 2));
+}
+
+/* Mobile et petite tablette : la marge passe à 3.75% de chaque côté, soit
+   7.5% au total. Sur grand écran, elle reste à 2.5% de chaque côté, et au-delà
+   de ~1347px le plafond de --b-container prend le relais de toute façon. Le
+   palier tient à cette seule ligne : la largeur du conteneur et les deux
+   gouttières dérivent de --b-side, et une propriété personnalisée ne se
+   substitue qu'à l'usage, donc les redéfinir ici serait redondant. */
+@media (max-width: 840px) {
+  :root { --b-side: 3.75; }
 }
 
 * { box-sizing: border-box; }
