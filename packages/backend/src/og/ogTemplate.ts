@@ -105,14 +105,14 @@ body {
 /* Logo seul (icône de marque), à la même marge du bord haut que le
    padding latéral : un repère de page en haut à gauche, pas un élément
    centré avec le reste du contenu. */
-.logo__mark { width: 96px; height: 96px; flex: none; display: block; }
+.logo__mark { width: 72px; height: 72px; flex: none; display: block; }
 
 /* Pleine largeur sous le logo plutôt que dans une colonne partagée avec
    l'aperçu : une seule ligne d'accroche large se lit plus vite en vignette
    qu'un bloc de texte étroit sur plusieurs lignes. */
 .headline {
   margin: 16px 0 0;
-  font-size: 50px;
+  font-size: 52px;
   font-weight: 800;
   line-height: 1.15;
   letter-spacing: -0.01em;
@@ -133,7 +133,7 @@ body {
   flex: 1;
   min-height: 0;
   margin-top: 16px;
-  padding: 10px;
+  padding: 5px;
   background: var(--b-surface);
   box-shadow: var(--hyb-in);
 }
