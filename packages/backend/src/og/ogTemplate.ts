@@ -17,19 +17,21 @@
  * internes (--hyb-out/--hyb-in) et angles droits.
  *
  * Mise en page en pile plutôt qu'en deux colonnes : logo en haut à gauche
- * (repère de page, pas un élément centré avec le reste), accroche pleine
- * largeur juste en dessous, aperçu du produit pleine largeur sous
- * l'accroche, sur le fond crème --b-white. Chaque bloc reprend toute la
- * largeur utile de la carte au lieu de se partager la page avec un autre :
- * la carte EST un extrait de la page, pas une simulation de logiciel. Pas
- * de nom de produit écrit en toutes lettres : le logo (icône seule) fait
- * déjà cette identification, un "Decker" en gros n'aurait fait que répéter
- * l'information sans rien ajouter à la vignette.
+ * (repère de page, pas un élément centré avec le reste) puis accroche
+ * pleine largeur, toutes deux dans la marge de page. L'aperçu du produit,
+ * lui, déborde volontairement de cette marge : plein bleed à gauche, à
+ * droite et en bas, comme une photo qui dépasse du cadre plutôt qu'un
+ * élément de plus aligné dans la colonne de texte. Sur le fond crème
+ * --b-white : la carte EST un extrait de la page, pas une simulation de
+ * logiciel. Pas de nom de produit écrit en toutes lettres : le logo (icône
+ * seule) fait déjà cette identification, un "Decker" en gros n'aurait fait
+ * que répéter l'information sans rien ajouter à la vignette.
  *
  * Contraintes de la carte de partage, qui expliquent les valeurs ci-dessous :
  * - 1200x630 (ratio 1.91:1), la seule taille sûre sur Facebook/LinkedIn/X ;
- * - tout le contenu qui doit rester lisible tient dans une zone centrale à
- *   48px des quatre bords, ceux-ci pouvant être rognés selon la plateforme ;
+ * - le texte (logo, accroche) reste dans une marge de page, seul l'aperçu
+ *   du produit peut aller jusqu'aux bords, quitte à être rogné selon la
+ *   plateforme : il ne porte aucune information à préserver ;
  * - typo volumineuse pour l'accroche : la carte est vue en vignette, tout ce
  *   qui passe sous ~24px n'y est plus qu'une texture ;
  * - encre sur crème, contraste maximal ;
@@ -91,7 +93,14 @@ body {
   height: 100%;
   display: flex;
   flex-direction: column;
-  padding: 48px;
+  padding-top: 32px;
+}
+
+/* Logo et accroche : seul bloc contraint à la marge de page (48px, comme
+   avant), l'aperçu plus bas s'en affranchit pour déborder jusqu'aux bords. */
+.header-block {
+  flex: none;
+  padding: 0 48px;
 }
 
 /* Logo seul (icône de marque), à la même marge du bord haut que le
@@ -103,8 +112,8 @@ body {
    l'aperçu : une seule ligne d'accroche large se lit plus vite en vignette
    qu'un bloc de texte étroit sur plusieurs lignes. */
 .headline {
-  margin: 28px 0 0;
-  font-size: 58px;
+  margin: 16px 0 0;
+  font-size: 50px;
   font-weight: 800;
   line-height: 1.15;
   letter-spacing: -0.01em;
@@ -114,16 +123,17 @@ body {
 
 /* Aperçu du produit plutôt que la marque en grand : montrer un moment du
    flow (le panneau du plugin, déjà dans son skin Modern) parle plus qu'une
-   icône statique. Pleine largeur sous l'accroche, occupe toute la hauteur
-   restante (object-fit: cover, la capture étant plus étroite que la bande
-   large qui en résulte). Puits en creux (--hyb-in), comme .card__media du
-   site et .f2s-frame-preview du plugin lui-même : une image n'y porte
-   jamais de bordure, seul l'enfoncement la distingue du crème qui
-   l'entoure. */
+   icône statique. Déborde de la marge de page (pas de padding horizontal
+   ni bas sur .layout) jusqu'aux bords gauche, droit et bas de la carte, et
+   occupe toute la hauteur restante (object-fit: cover, la capture étant
+   plus étroite que la bande large qui en résulte). Puits en creux
+   (--hyb-in), comme .card__media du site et .f2s-frame-preview du plugin
+   lui-même : une image n'y porte jamais de bordure, seul l'enfoncement la
+   distingue du crème qui l'entoure. */
 .preview {
   flex: 1;
   min-height: 0;
-  margin-top: 28px;
+  margin-top: 16px;
   padding: 10px;
   background: var(--b-surface);
   box-shadow: var(--hyb-in);
@@ -151,8 +161,10 @@ export function renderOgImageHtml(content: OgImageContent): string {
 </head>
 <body>
 <div class="layout">
-  ${markInline}
-  <h1 class="headline">${content.headline}</h1>
+  <div class="header-block">
+    ${markInline}
+    <h1 class="headline">${content.headline}</h1>
+  </div>
   <div class="preview">
     <img src="data:image/png;base64,${TOOL_PREVIEW_PNG_BASE64}" alt="" />
   </div>
