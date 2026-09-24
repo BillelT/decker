@@ -16,11 +16,11 @@
  * accent orange #f06800, Cabinet Grotesk, biseaux hybrides à quatre ombres
  * internes (--hyb-out/--hyb-in) et angles droits.
  *
- * Mise en page reprise de la page d'accueil elle-même (.hero de
- * marketingStyles.ts) plutôt que d'une fenêtre d'app : logo en haut à
- * gauche (même marge que les côtés, comme un repère de page plutôt qu'un
- * élément centré avec le reste), puis accroche et aperçu du produit
- * agrandi en 16/9 (comme .hero__demo du site) sur le fond crème --b-white :
+ * Mise en page en pile plutôt qu'en deux colonnes : logo en haut à gauche
+ * (repère de page, pas un élément centré avec le reste), accroche pleine
+ * largeur juste en dessous, aperçu du produit pleine largeur sous
+ * l'accroche, sur le fond crème --b-white. Chaque bloc reprend toute la
+ * largeur utile de la carte au lieu de se partager la page avec un autre :
  * la carte EST un extrait de la page, pas une simulation de logiciel. Pas
  * de nom de produit écrit en toutes lettres : le logo (icône seule) fait
  * déjà cette identification, un "Decker" en gros n'aurait fait que répéter
@@ -29,7 +29,7 @@
  * Contraintes de la carte de partage, qui expliquent les valeurs ci-dessous :
  * - 1200x630 (ratio 1.91:1), la seule taille sûre sur Facebook/LinkedIn/X ;
  * - tout le contenu qui doit rester lisible tient dans une zone centrale à
- *   64px des quatre bords, ceux-ci pouvant être rognés selon la plateforme ;
+ *   48px des quatre bords, ceux-ci pouvant être rognés selon la plateforme ;
  * - typo volumineuse pour l'accroche : la carte est vue en vignette, tout ce
  *   qui passe sous ~24px n'y est plus qu'une texture ;
  * - encre sur crème, contraste maximal ;
@@ -91,31 +91,20 @@ body {
   height: 100%;
   display: flex;
   flex-direction: column;
-  padding: 64px;
+  padding: 48px;
 }
 
 /* Logo seul (icône de marque), à la même marge du bord haut que le
    padding latéral : un repère de page en haut à gauche, pas un élément
    centré avec le reste du contenu. */
-.logo__mark { width: 104px; height: 104px; flex: none; display: block; }
+.logo__mark { width: 96px; height: 96px; flex: none; display: block; }
 
-.content {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  align-items: center;
-  gap: 40px;
-  margin-top: 36px;
-}
-
-.text {
-  flex: 0 0 600px;
-  min-width: 0;
-}
-
+/* Pleine largeur sous le logo plutôt que dans une colonne partagée avec
+   l'aperçu : une seule ligne d'accroche large se lit plus vite en vignette
+   qu'un bloc de texte étroit sur plusieurs lignes. */
 .headline {
-  margin: 0;
-  font-size: 50px;
+  margin: 28px 0 0;
+  font-size: 58px;
   font-weight: 800;
   line-height: 1.15;
   letter-spacing: -0.01em;
@@ -125,25 +114,28 @@ body {
 
 /* Aperçu du produit plutôt que la marque en grand : montrer un moment du
    flow (le panneau du plugin, déjà dans son skin Modern) parle plus qu'une
-   icône statique. Agrandi et recadré en 16/9, comme .hero__demo du site
-   (object-fit: cover, la capture étant plus étroite que 16/9). Puits en
-   creux (--hyb-in), comme .card__media du site et .f2s-frame-preview du
-   plugin lui-même : une image n'y porte jamais de bordure, seul
-   l'enfoncement la distingue du crème qui l'entoure. */
+   icône statique. Pleine largeur sous l'accroche, occupe toute la hauteur
+   restante (object-fit: cover, la capture étant plus étroite que la bande
+   large qui en résulte). Puits en creux (--hyb-in), comme .card__media du
+   site et .f2s-frame-preview du plugin lui-même : une image n'y porte
+   jamais de bordure, seul l'enfoncement la distingue du crème qui
+   l'entoure. */
 .preview {
-  flex: 0 0 432px;
+  flex: 1;
+  min-height: 0;
+  margin-top: 28px;
   padding: 10px;
   background: var(--b-surface);
   box-shadow: var(--hyb-in);
 }
 .preview img {
   display: block;
-  width: 412px;
-  height: 232px;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   /* Ancré en haut : la barre d'outils (bouton Export orange) et l'aperçu du
      canvas restent entiers, seul le bas du panneau (réglages, bouton café,
-     moins parlant en vignette) est rogné par le recadrage 16/9. */
+     moins parlant en vignette) est rogné par le recadrage. */
   object-position: top;
 }
 `;
@@ -160,13 +152,9 @@ export function renderOgImageHtml(content: OgImageContent): string {
 <body>
 <div class="layout">
   ${markInline}
-  <div class="content">
-    <div class="text">
-      <h1 class="headline">${content.headline}</h1>
-    </div>
-    <div class="preview">
-      <img src="data:image/png;base64,${TOOL_PREVIEW_PNG_BASE64}" alt="" />
-    </div>
+  <h1 class="headline">${content.headline}</h1>
+  <div class="preview">
+    <img src="data:image/png;base64,${TOOL_PREVIEW_PNG_BASE64}" alt="" />
   </div>
 </div>
 </body>
