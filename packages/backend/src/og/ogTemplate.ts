@@ -17,13 +17,14 @@
  * internes (--hyb-out/--hyb-in) et angles droits.
  *
  * Mise en page reprise de la page d'accueil elle-même (.hero de
- * marketingStyles.ts) plutôt que d'une fenêtre d'app : colonne de texte à
- * gauche (logo + pastille "type de produit", accroche), aperçu du produit
- * agrandi à droite en 16/9 (comme .hero__demo du site), sur le fond crème
- * --b-white : la carte EST un extrait de la page, pas une simulation de
- * logiciel. Pas de nom de produit écrit en toutes lettres : le logo (icône
- * + pastille) fait déjà cette identification, un second "Decker" en gros
- * n'aurait fait que répéter l'information sans rien ajouter à la vignette.
+ * marketingStyles.ts) plutôt que d'une fenêtre d'app : logo en haut à
+ * gauche (même marge que les côtés, comme un repère de page plutôt qu'un
+ * élément centré avec le reste), puis accroche et aperçu du produit
+ * agrandi en 16/9 (comme .hero__demo du site) sur le fond crème --b-white :
+ * la carte EST un extrait de la page, pas une simulation de logiciel. Pas
+ * de nom de produit écrit en toutes lettres : le logo (icône seule) fait
+ * déjà cette identification, un "Decker" en gros n'aurait fait que répéter
+ * l'information sans rien ajouter à la vignette.
  *
  * Contraintes de la carte de partage, qui expliquent les valeurs ci-dessous :
  * - 1200x630 (ratio 1.91:1), la seule taille sûre sur Facebook/LinkedIn/X ;
@@ -89,43 +90,32 @@ body {
   width: 100%;
   height: 100%;
   display: flex;
-  align-items: center;
-  gap: 56px;
+  flex-direction: column;
   padding: 64px;
 }
 
-.text {
-  flex: 0 0 420px;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
-}
+/* Logo seul (icône de marque), à la même marge du bord haut que le
+   padding latéral : un repère de page en haut à gauche, pas un élément
+   centré avec le reste du contenu. */
+.logo__mark { width: 104px; height: 104px; flex: none; display: block; }
 
-/* Logo : icône de marque + pastille "type de produit" accolées, comme un
-   badge de fiche produit (icône + tag) plutôt qu'un nom de marque écrit en
-   toutes lettres. Pastille aux mêmes biseaux que les boutons du site (.cta,
-   .tertiary de marketingStyles.ts), coins droits. */
-.logo {
+.content {
+  flex: 1;
+  min-height: 0;
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 40px;
+  margin-top: 36px;
 }
-.logo__mark { width: 64px; height: 64px; flex: none; display: block; }
-.logo__pill {
-  padding: 10px 20px;
-  background: var(--b-white);
-  box-shadow: var(--hyb-out);
-  font-size: 19px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  color: var(--b-muted);
+
+.text {
+  flex: 0 0 600px;
+  min-width: 0;
 }
 
 .headline {
   margin: 0;
-  font-size: 44px;
+  font-size: 50px;
   font-weight: 800;
   line-height: 1.15;
   letter-spacing: -0.01em;
@@ -141,15 +131,15 @@ body {
    plugin lui-même : une image n'y porte jamais de bordure, seul
    l'enfoncement la distingue du crème qui l'entoure. */
 .preview {
-  flex: 0 0 596px;
+  flex: 0 0 432px;
   padding: 10px;
   background: var(--b-surface);
   box-shadow: var(--hyb-in);
 }
 .preview img {
   display: block;
-  width: 576px;
-  height: 324px;
+  width: 412px;
+  height: 232px;
   object-fit: cover;
   /* Ancré en haut : la barre d'outils (bouton Export orange) et l'aperçu du
      canvas restent entiers, seul le bas du panneau (réglages, bouton café,
@@ -169,15 +159,14 @@ export function renderOgImageHtml(content: OgImageContent): string {
 </head>
 <body>
 <div class="layout">
-  <div class="text">
-    <div class="logo">
-      ${markInline}
-      <span class="logo__pill">${content.eyebrow}</span>
+  ${markInline}
+  <div class="content">
+    <div class="text">
+      <h1 class="headline">${content.headline}</h1>
     </div>
-    <h1 class="headline">${content.headline}</h1>
-  </div>
-  <div class="preview">
-    <img src="data:image/png;base64,${TOOL_PREVIEW_PNG_BASE64}" alt="" />
+    <div class="preview">
+      <img src="data:image/png;base64,${TOOL_PREVIEW_PNG_BASE64}" alt="" />
+    </div>
   </div>
 </div>
 </body>

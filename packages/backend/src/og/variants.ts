@@ -7,8 +7,6 @@
  * gabarit HTML ni de la police inlinée que trimballe `ogTemplate.ts`.
  */
 export interface OgImageContent {
-  /** Libellé de la pastille "type de produit", accolée au logo. */
-  eyebrow: string;
   /** Accroche principale, affichée en h1 : c'est ce qu'on lit en vignette. */
   headline: string;
 }
@@ -24,7 +22,6 @@ export const OG_IMAGE = {
   file: 'og.png',
   alt: 'Decker, a free Figma plugin: pixel-perfect, editable decks and templates, from Figma to Google Slides.',
   content: {
-    eyebrow: 'Figma plugin',
     headline: 'Pixel-perfect, editable decks and templates, from Figma to Google Slides.',
   },
 } as const satisfies { file: string; alt: string; content: OgImageContent };
