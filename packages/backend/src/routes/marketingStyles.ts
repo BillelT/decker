@@ -186,6 +186,10 @@ a { color: inherit; }
   display: flex; align-items: center; justify-content: center; gap: var(--b-space-24);
   flex: 0 1 auto;
 }
+/* Ancres du header seules : encre par defaut (plus de contraste qu'un
+   .nav-link générique), et on éclaircit au survol plutôt que l'inverse. */
+.header__nav .nav-link { color: var(--b-ink); }
+.header__nav .nav-link:hover, .header__nav .nav-link[aria-current="page"] { color: var(--b-text-muted); }
 .header__brand {
   display: inline-flex; align-items: center; gap: var(--b-space-8); color: var(--b-ink);
   font-size: var(--b-text-base); font-weight: var(--b-font-bold); letter-spacing: var(--b-tracking-tight);
