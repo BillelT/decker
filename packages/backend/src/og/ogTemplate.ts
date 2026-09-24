@@ -14,31 +14,28 @@
  * packages/backend/src/routes/marketingStyles.ts et
  * packages/plugin/src/styles.modern.css) : palette de marque crème/encre,
  * accent orange #f06800, Cabinet Grotesk, biseaux hybrides à quatre ombres
- * internes (--hyb-out/--hyb-in, teintés depuis le texte plutôt que sur un
- * gris système fixe) et angles droits. Remplace l'ancienne DA "fenêtre
- * Windows 95" (chrome gris système, barre de titre bleu marine, police
- * W95FA) : ce chrome-là appartenait au skin `win95` du plugin, qui n'est
- * plus le skin par défaut depuis que `win95` a cédé sa place à `modern`
- * (ex-"hybrid") : la carte de partage doit refléter ce que voit vraiment un
- * nouvel utilisateur, pas un habillage alternatif optionnel.
+ * internes (--hyb-out/--hyb-in) et angles droits.
  *
  * Mise en page reprise de la page d'accueil elle-même (.hero de
  * marketingStyles.ts) plutôt que d'une fenêtre d'app : colonne de texte à
- * gauche (badge, marque, accroche), aperçu du produit à droite dans un puits
- * en creux (--hyb-in), sur le fond crème --b-white du site : la carte EST un
- * extrait de la page, pas une simulation de logiciel.
+ * gauche (logo + pastille "type de produit", accroche), aperçu du produit
+ * agrandi à droite en 16/9 (comme .hero__demo du site), sur le fond crème
+ * --b-white : la carte EST un extrait de la page, pas une simulation de
+ * logiciel. Pas de nom de produit écrit en toutes lettres : le logo (icône
+ * + pastille) fait déjà cette identification, un second "Decker" en gros
+ * n'aurait fait que répéter l'information sans rien ajouter à la vignette.
  *
  * Contraintes de la carte de partage, qui expliquent les valeurs ci-dessous :
  * - 1200x630 (ratio 1.91:1), la seule taille sûre sur Facebook/LinkedIn/X ;
  * - tout le contenu qui doit rester lisible tient dans une zone centrale à
- *   60px des quatre bords, ceux-ci pouvant être rognés selon la plateforme ;
- * - typo volumineuse (128px pour la marque) : la carte est vue en vignette,
- *   tout ce qui passe sous ~24px n'y est plus qu'une texture ;
+ *   64px des quatre bords, ceux-ci pouvant être rognés selon la plateforme ;
+ * - typo volumineuse pour l'accroche : la carte est vue en vignette, tout ce
+ *   qui passe sous ~24px n'y est plus qu'une texture ;
  * - encre sur crème, contraste maximal ;
- * - peu d'éléments dans la zone de contenu : un badge "type de produit", la
- *   marque, la phrase qui la précise, un aperçu du produit. Une carte de
- *   partage est lue en une seconde et n'est pas cliquable élément par
- *   élément, tout ce qui s'y ajoute au-delà ne fait que diluer l'accroche ;
+ * - peu d'éléments dans la zone de contenu : un logo, une accroche, un
+ *   aperçu du produit. Une carte de partage est lue en une seconde et n'est
+ *   pas cliquable élément par élément, tout ce qui s'y ajoute au-delà ne
+ *   fait que diluer l'accroche ;
  * - une seule carte pour tout le site (voir variants.ts) : les pages
  *   légales (privacy, terms) n'ont pas de propos propre à raconter en
  *   vignette, les distinguer n'aurait décrit que leur titre, pas le produit.
@@ -66,7 +63,6 @@ const CSS = `
   --b-white: #fff9f5;
   --b-surface: #ffffff;
   --b-muted: #3b3735;
-  --b-accent: #f06800;
 
   --hyb-hi: rgba(255, 255, 255, 0.9);
   --hyb-lo: rgba(18, 15, 13, 0.22);
@@ -94,91 +90,77 @@ body {
   height: 100%;
   display: flex;
   align-items: center;
-  gap: 64px;
+  gap: 56px;
   padding: 64px;
 }
 
 .text {
-  flex: 1 1 420px;
+  flex: 0 0 420px;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 32px;
 }
 
-/* Badge "type de produit", mêmes biseaux que les boutons du site (.cta,
+/* Logo : icône de marque + pastille "type de produit" accolées, comme un
+   badge de fiche produit (icône + tag) plutôt qu'un nom de marque écrit en
+   toutes lettres. Pastille aux mêmes biseaux que les boutons du site (.cta,
    .tertiary de marketingStyles.ts), coins droits. */
-.eyebrow {
-  align-self: flex-start;
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.logo__mark { width: 64px; height: 64px; flex: none; display: block; }
+.logo__pill {
   padding: 10px 20px;
   background: var(--b-white);
   box-shadow: var(--hyb-out);
-  font-size: 20px;
+  font-size: 19px;
   font-weight: 700;
   letter-spacing: 0.03em;
   text-transform: uppercase;
   color: var(--b-muted);
 }
 
-/* Marque : icône + nom accolés, comme .header__brand du site, c'est la
-   même paire qu'un visiteur voit déjà en haut de la page d'accueil. */
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-.brand__mark { width: 84px; height: 84px; flex: none; display: block; }
-.brand__name {
-  font-size: 128px;
+.headline {
+  margin: 0;
+  font-size: 44px;
   font-weight: 800;
-  line-height: 1;
-  letter-spacing: -0.02em;
-}
-
-.subline {
-  max-width: 480px;
-  font-size: 27px;
-  font-weight: 500;
-  line-height: 1.45;
-  letter-spacing: -0.002em;
-  color: var(--b-muted);
-}
-
-/* Domaine, en repère discret sous l'accroche : la plateforme affiche déjà
-   ce domaine sous la carte, celui-ci n'est là que comme signature de page. */
-.domain {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 19px;
-  font-weight: 600;
-  color: var(--b-muted);
-}
-.domain::before {
-  content: "";
-  width: 8px;
-  height: 8px;
-  flex: none;
-  background: var(--b-accent);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--b-ink);
+  text-wrap: balance;
 }
 
 /* Aperçu du produit plutôt que la marque en grand : montrer un moment du
    flow (le panneau du plugin, déjà dans son skin Modern) parle plus qu'une
-   icône statique. Puits en creux (--hyb-in), comme .card__media du site et
-   .f2s-frame-preview du plugin lui-même : une image n'y porte jamais de
-   bordure, seul l'enfoncement la distingue du crème qui l'entoure. */
+   icône statique. Agrandi et recadré en 16/9, comme .hero__demo du site
+   (object-fit: cover, la capture étant plus étroite que 16/9). Puits en
+   creux (--hyb-in), comme .card__media du site et .f2s-frame-preview du
+   plugin lui-même : une image n'y porte jamais de bordure, seul
+   l'enfoncement la distingue du crème qui l'entoure. */
 .preview {
-  flex: 0 0 512px;
+  flex: 0 0 596px;
   padding: 10px;
   background: var(--b-surface);
   box-shadow: var(--hyb-in);
 }
-.preview img { display: block; width: 100%; height: auto; }
+.preview img {
+  display: block;
+  width: 576px;
+  height: 324px;
+  object-fit: cover;
+  /* Ancré en haut : la barre d'outils (bouton Export orange) et l'aperçu du
+     canvas restent entiers, seul le bas du panneau (réglages, bouton café,
+     moins parlant en vignette) est rogné par le recadrage 16/9. */
+  object-position: top;
+}
 `;
 
 /** HTML autonome (police et images incluses) prêt à être rasterisé. */
 export function renderOgImageHtml(content: OgImageContent): string {
-  const markInline = DECKER_MARK_SVG.replace(/^<svg/, '<svg class="brand__mark"');
+  const markInline = DECKER_MARK_SVG.replace(/^<svg/, '<svg class="logo__mark"');
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -188,16 +170,14 @@ export function renderOgImageHtml(content: OgImageContent): string {
 <body>
 <div class="layout">
   <div class="text">
-    <span class="eyebrow">${content.eyebrow}</span>
-    <div class="brand">
+    <div class="logo">
       ${markInline}
-      <span class="brand__name">${content.headline}</span>
+      <span class="logo__pill">${content.eyebrow}</span>
     </div>
-    <p class="subline">${content.subline}</p>
-    <span class="domain">${content.domain}</span>
+    <h1 class="headline">${content.headline}</h1>
   </div>
   <div class="preview">
-    <img src="data:image/png;base64,${TOOL_PREVIEW_PNG_BASE64}" width="592" height="391" alt="" />
+    <img src="data:image/png;base64,${TOOL_PREVIEW_PNG_BASE64}" alt="" />
   </div>
 </div>
 </body>
