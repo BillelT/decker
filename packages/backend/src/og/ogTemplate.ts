@@ -4,46 +4,48 @@
  * Ce fichier n'est PAS servi tel quel : il n'existe que pour être rasterisé
  * en PNG 1200x630 par `src/og/render.ts` (Chromium/Playwright, script de
  * maintenance lancé à la main), dont la sortie est écrite en base64 dans
- * `src/og/ogImageData.ts` — le seul module lu à l'exécution. Les réseaux
+ * `src/og/ogImageData.ts`, le seul module lu à l'exécution. Les réseaux
  * sociaux ne rendent pas de SVG ni de HTML pour une carte de partage : il
  * leur faut un bitmap, d'où cette étape de rendu hors ligne plutôt qu'une
  * génération à la volée (qui demanderait un moteur de rendu dans la
  * fonction serverless).
  *
- * DA : hybride "Windows 95 + marque Billel", même parti pris que le skin du
- * plugin (packages/plugin/src/styles.modern.css) — chrome 95 (biseaux à
- * quatre ombres internes, barre de titre bleu marine, barre d'état) habillé
- * de la palette et de la typo de marque (orange #f06800, Cabinet Grotesk).
+ * DA : skin "Modern" du produit (mêmes tokens que
+ * packages/backend/src/routes/marketingStyles.ts et
+ * packages/plugin/src/styles.modern.css) : palette de marque crème/encre,
+ * accent orange #f06800, Cabinet Grotesk, biseaux hybrides à quatre ombres
+ * internes (--hyb-out/--hyb-in, teintés depuis le texte plutôt que sur un
+ * gris système fixe) et angles droits. Remplace l'ancienne DA "fenêtre
+ * Windows 95" (chrome gris système, barre de titre bleu marine, police
+ * W95FA) : ce chrome-là appartenait au skin `win95` du plugin, qui n'est
+ * plus le skin par défaut depuis que `win95` a cédé sa place à `modern`
+ * (ex-"hybrid") : la carte de partage doit refléter ce que voit vraiment un
+ * nouvel utilisateur, pas un habillage alternatif optionnel.
  *
- * La fenêtre est à fond perdu, ses biseaux collés aux quatre bords : une
- * fenêtre posée sur un bureau coloré aurait demandé de justifier ce bureau
- * (il n'existe nulle part ailleurs dans le produit) et aurait rétréci
- * d'autant la surface utile de la carte. À fond perdu, la carte EST la
- * fenêtre.
+ * Mise en page reprise de la page d'accueil elle-même (.hero de
+ * marketingStyles.ts) plutôt que d'une fenêtre d'app : colonne de texte à
+ * gauche (badge, marque, accroche), aperçu du produit à droite dans un puits
+ * en creux (--hyb-in), sur le fond crème --b-white du site : la carte EST un
+ * extrait de la page, pas une simulation de logiciel.
  *
  * Contraintes de la carte de partage, qui expliquent les valeurs ci-dessous :
  * - 1200x630 (ratio 1.91:1), la seule taille sûre sur Facebook/LinkedIn/X ;
- * - tout le contenu qui doit rester lisible tient dans la zone centrale
- *   1080x600 (marges de 60px), les bords pouvant être rognés selon la
- *   plateforme — seul le chrome de la fenêtre y déborde, et il ne porte
- *   aucune information ;
- * - typo volumineuse (92px pour l'accroche, 31px pour la phrase dessous) :
- *   la carte est vue en vignette, tout ce qui passe sous ~24px n'y est plus
- *   qu'une texture ;
- * - texte noir sur papier crème, contraste maximal ;
- * - peu d'éléments dans la zone de contenu : un badge "type de produit", le
- *   nom du produit, la phrase qui le précise, un aperçu du produit. Une
- *   carte de partage est lue en une seconde et n'est pas cliquable élément
- *   par élément — tout ce qui s'y ajoute au-delà ne fait que diluer l'accroche ;
+ * - tout le contenu qui doit rester lisible tient dans une zone centrale à
+ *   60px des quatre bords, ceux-ci pouvant être rognés selon la plateforme ;
+ * - typo volumineuse (128px pour la marque) : la carte est vue en vignette,
+ *   tout ce qui passe sous ~24px n'y est plus qu'une texture ;
+ * - encre sur crème, contraste maximal ;
+ * - peu d'éléments dans la zone de contenu : un badge "type de produit", la
+ *   marque, la phrase qui la précise, un aperçu du produit. Une carte de
+ *   partage est lue en une seconde et n'est pas cliquable élément par
+ *   élément, tout ce qui s'y ajoute au-delà ne fait que diluer l'accroche ;
  * - une seule carte pour tout le site (voir variants.ts) : les pages
  *   légales (privacy, terms) n'ont pas de propos propre à raconter en
  *   vignette, les distinguer n'aurait décrit que leur titre, pas le produit.
  */
-
 import { CABINET_GROTESK_BASE64 } from '../routes/fontData.js';
 import { DECKER_MARK_SVG } from '../routes/brand.js';
 import { TOOL_PREVIEW_PNG_BASE64 } from './toolPreviewData.js';
-import { W95FA_BASE64 } from './w95faFontData.js';
 import type { OgImageContent } from './variants.js';
 
 const CSS = `
@@ -54,38 +56,25 @@ const CSS = `
   font-style: normal;
 }
 
-/* Recréation vectorielle de MS Sans Serif (assets/w95fa, SIL OFL 1.1) —
-   contrairement à Tahoma/MS Sans Serif (qui n'existent pas sur la machine
-   de rendu et retombaient sur Liberation Sans, un grotesk générique sans
-   rapport avec Windows 95), celle-ci est inlinée comme Cabinet Grotesk et
-   donne le vrai rendu pixel-art du chrome système. */
-@font-face {
-  font-family: "W95FA";
-  src: url("data:font/woff2;base64,${W95FA_BASE64}") format("woff2");
-  font-weight: 400 700;
-  font-style: normal;
-}
-
-/* Palette système 95 + tokens de marque, repris tels quels de
-   packages/plugin/src/styles.win95.css et routes/marketingStyles.ts. */
+/* Palette et biseaux hybrides, repris tels quels de
+   packages/backend/src/routes/marketingStyles.ts (:root) et
+   packages/plugin/src/styles.modern.css (--hyb-*), valeurs "clair" : cette
+   carte statique ne suit pas le thème sombre de Figma, pas plus que les
+   pages HTML rendues côté serveur (auth.ts). */
 :root {
-  --w95-face: #c0c0c0;
-  --w95-shadow: #808080;
-  --w95-dark: #0a0a0a;
-  --w95-light: #dfdfdf;
-  --w95-white: #ffffff;
-  --w95-navy: #000080;
-  --w95-navy-light: #1084d0;
-  --w95-out: inset -2px -2px var(--w95-dark), inset 2px 2px var(--w95-white),
-    inset -4px -4px var(--w95-shadow), inset 4px 4px var(--w95-light);
-  --w95-in: inset -2px -2px var(--w95-white), inset 2px 2px var(--w95-shadow),
-    inset -4px -4px var(--w95-light), inset 4px 4px var(--w95-dark);
-
   --b-ink: #120f0d;
-  --b-paper: #ffffff;
+  --b-white: #fff9f5;
+  --b-surface: #ffffff;
   --b-muted: #3b3735;
   --b-accent: #f06800;
-  --chrome-font: "W95FA", "Liberation Sans", Tahoma, "MS Sans Serif", Arial, sans-serif;
+
+  --hyb-hi: rgba(255, 255, 255, 0.9);
+  --hyb-lo: rgba(18, 15, 13, 0.22);
+  --hyb-lo-strong: rgba(18, 15, 13, 0.4);
+  --hyb-out: inset -1px -1px var(--hyb-lo), inset 1px 1px var(--hyb-hi), inset -2px -2px var(--hyb-lo-strong),
+    inset 2px 2px var(--hyb-hi);
+  --hyb-in: inset -1px -1px var(--hyb-hi), inset 1px 1px var(--hyb-lo), inset -2px -2px var(--hyb-hi),
+    inset 2px 2px var(--hyb-lo-strong);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -96,178 +85,100 @@ body {
   overflow: hidden;
   font-family: "Cabinet Grotesk", sans-serif;
   color: var(--b-ink);
+  background: var(--b-white);
   -webkit-font-smoothing: antialiased;
 }
 
-.window {
-  width: 1200px;
-  height: 630px;
-  padding: 4px;
-  display: flex;
-  flex-direction: column;
-  background: var(--w95-face);
-  box-shadow: var(--w95-out);
-}
-
-.titlebar {
-  height: 56px;
-  flex: none;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 0 4px 0 10px;
-  background: linear-gradient(90deg, var(--w95-navy) 0%, var(--w95-navy-light) 100%);
-}
-.titlebar__icon { width: 32px; height: 32px; flex: none; display: block; }
-.titlebar__label {
-  flex: 1;
-  font-family: var(--chrome-font);
-  font-size: 22px;
-  font-weight: 700;
-  color: #fff;
-}
-.titlebar__buttons { display: flex; gap: 4px; }
-.titlebar__btn {
-  width: 40px;
-  height: 34px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding-bottom: 8px;
-  background: var(--w95-face);
-  box-shadow: var(--w95-out);
-}
-.titlebar__btn span { display: block; width: 16px; height: 3px; background: #000; }
-.titlebar__btn--box span { height: 14px; border: 2px solid #000; border-top-width: 4px; background: none; }
-.titlebar__btn--close { align-items: center; padding-bottom: 0; }
-.titlebar__btn--close svg { width: 16px; height: 16px; display: block; }
-
-/* Zone client creusée, gris système --w95-face plutôt que le blanc du
-   "papier" de marque : la carte reprend ainsi le fond réel du plugin (le
-   corps de l'app est gris face, le blanc n'y sert qu'aux puits creusés —
-   vignettes, canvas), pas un fond neutre qui n'existe nulle part dans le
-   produit. Noir sur ce gris reste ~9:1 de contraste, largement lisible en
-   vignette. */
-.client {
-  flex: 1;
-  margin-top: 4px;
-  padding: 4px;
-  background: var(--w95-face);
-  box-shadow: var(--w95-in);
-}
-.paper {
+.layout {
+  width: 100%;
   height: 100%;
-  padding: 24px;
   display: flex;
   align-items: center;
-  gap: 40px;
-  background: var(--w95-face);
+  gap: 64px;
+  padding: 64px;
 }
-.paper__text {
-  flex: 1;
+
+.text {
+  flex: 1 1 420px;
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 28px;
 }
 
-/* Badge "type de produit" façon tag 95 : mêmes biseaux que les boutons de la
-   barre de titre, coins droits — Windows 95 n'a pas de coin arrondi, une
-   pilule y aurait détonné. Fond au gris système --w95-face, le même que la
-   barre d'état tout en bas de la carte : un blanc pur ou un bleu marine
-   auraient introduit une teinte que rien d'autre sur la carte ne porte.
-   Ce qui manquait à la lisibilité n'était pas le contraste texte/fond (déjà
-   ~9:1, noir sur ce gris) mais la taille — 19px et un padding généreux
-   au lieu des 17px du premier essai. */
+/* Badge "type de produit", mêmes biseaux que les boutons du site (.cta,
+   .tertiary de marketingStyles.ts), coins droits. */
 .eyebrow {
   align-self: flex-start;
-  padding: 10px 20px 11px;
-  background: var(--w95-face);
-  box-shadow: var(--w95-out);
-  font-family: var(--chrome-font);
+  padding: 10px 20px;
+  background: var(--b-white);
+  box-shadow: var(--hyb-out);
   font-size: 20px;
   font-weight: 700;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  color: #000;
-  /* W95FA n'a qu'un seul style ("Regular") : font-weight seul ne change
-     rien à son tracé, cf. .headline plus bas. Léger -webkit-text-stroke
-     pour un rendu "medium" plutôt que la régulière brute du fichier. */
-  -webkit-text-stroke: 0.4px #000;
+  color: var(--b-muted);
 }
-/* Aperçu du produit plutôt que la marque en grand : montrer un moment du
-   flow (le panneau du plugin en train de préparer un export, deux frames
-   déjà marquées [Slides Ready] derrière lui) parle plus qu'une icône
-   statique. Capture fournie directement (assets/tool-preview-source.png,
-   voir toolPreviewData.ts) cadrée sur le seul panneau du plugin — pas sa
-   propre fenêtre 95 ni le canvas Figma autour, qui auraient fait un chrome
-   dans le chrome. Puits creusé (biseau --w95-in) sans bordure, comme les
-   vignettes et le canvas du vrai plugin (.f2s-frame-preview) : le cadre
-   sombre + biseau en relief posés dessus dans un essai précédent donnaient
-   une image encadrée façon photo, jamais le traitement réel du produit, où
-   une image ne porte jamais de bordure — seul l'enfoncement la distingue
-   du gris qui l'entoure. .paper a le même padding des quatre côtés (24px)
-   — marge gauche du bloc de texte = marge droite du cadre, les deux
-   colonnes respirent pareil par rapport aux bords de la carte. */
-.paper__preview {
-  width: 660px;
-  flex: none;
-  padding: 8px;
-  background: var(--w95-face);
-  box-shadow: var(--w95-in);
-}
-.paper__preview img { display: block; width: 100%; height: auto; }
 
-/* Accroche et phrase en W95FA (police du chrome), pas Cabinet Grotesk : le
-   titre porte tout le poids de marque sur cette carte, autant qu'il porte
-   la police système du produit lui-même. W95FA est une police statique (un
-   seul style "Regular") : la plage déclarée en @font-face (400 700, cf.
-   plus haut) fait croire au navigateur qu'un poids gras existe déjà dans ce
-   fichier, ce qui désactive la synthèse automatique de graisse —
-   font-weight seul ne produit donc rien de visible ici. -webkit-text-stroke
-   simule la graisse à la main : ~1px pour un rendu semibold sur le titre,
-   plus fin encore pour un simple medium sur la phrase — au lieu de
-   l'embolissement fixe (non proportionnel à la taille) que le navigateur
-   appliquerait de toute façon. */
-.headline {
-  font-family: var(--chrome-font);
-  font-size: 132px;
-  font-weight: 700;
-  line-height: 1.05;
-  letter-spacing: -0.01em;
-  -webkit-text-stroke: 1px var(--b-ink);
+/* Marque : icône + nom accolés, comme .header__brand du site, c'est la
+   même paire qu'un visiteur voit déjà en haut de la page d'accueil. */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.brand__mark { width: 84px; height: 84px; flex: none; display: block; }
+.brand__name {
+  font-size: 128px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
 }
 
 .subline {
-  font-family: var(--chrome-font);
-  max-width: 430px;
+  max-width: 480px;
   font-size: 27px;
-  font-weight: 700;
-  line-height: 1.5;
-  letter-spacing: 0.003em;
+  font-weight: 500;
+  line-height: 1.45;
+  letter-spacing: -0.002em;
   color: var(--b-muted);
-  -webkit-text-stroke: 0.5px var(--b-muted);
 }
 
-/* Barre d'état réduite au domaine : la plateforme affiche déjà le nom de
-   domaine sous la carte, celui-ci n'est là que comme élément de chrome. */
-.statusbar {
-  height: 44px;
-  flex: none;
-  margin-top: 4px;
+/* Domaine, en repère discret sous l'accroche : la plateforme affiche déjà
+   ce domaine sous la carte, celui-ci n'est là que comme signature de page. */
+.domain {
   display: flex;
   align-items: center;
-  padding: 0 14px;
-  box-shadow: inset -1px -1px var(--w95-white), inset 1px 1px var(--w95-shadow);
-  font-family: var(--chrome-font);
-  font-size: 18px;
-  font-weight: 700;
+  gap: 10px;
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--b-muted);
 }
+.domain::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  flex: none;
+  background: var(--b-accent);
+}
+
+/* Aperçu du produit plutôt que la marque en grand : montrer un moment du
+   flow (le panneau du plugin, déjà dans son skin Modern) parle plus qu'une
+   icône statique. Puits en creux (--hyb-in), comme .card__media du site et
+   .f2s-frame-preview du plugin lui-même : une image n'y porte jamais de
+   bordure, seul l'enfoncement la distingue du crème qui l'entoure. */
+.preview {
+  flex: 0 0 512px;
+  padding: 10px;
+  background: var(--b-surface);
+  box-shadow: var(--hyb-in);
+}
+.preview img { display: block; width: 100%; height: auto; }
 `;
 
 /** HTML autonome (police et images incluses) prêt à être rasterisé. */
 export function renderOgImageHtml(content: OgImageContent): string {
-  const iconInline = DECKER_MARK_SVG.replace(/^<svg/, '<svg class="titlebar__icon"');
+  const markInline = DECKER_MARK_SVG.replace(/^<svg/, '<svg class="brand__mark"');
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -275,33 +186,19 @@ export function renderOgImageHtml(content: OgImageContent): string {
 <style>${CSS}</style>
 </head>
 <body>
-<div class="window">
-  <div class="titlebar">
-    ${iconInline}
-    <span class="titlebar__label">${content.windowTitle}</span>
-    <span class="titlebar__buttons">
-      <span class="titlebar__btn"><span></span></span>
-      <span class="titlebar__btn titlebar__btn--box"><span></span></span>
-      <span class="titlebar__btn titlebar__btn--close">
-        <svg viewBox="0 0 16 16" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">
-          <path d="M2 2h3v2h2v2h2V4h2V2h3v3h-2v2h-2v2h2v2h2v3h-3v-2h-2v-2H7v2H5v2H2v-3h2V9h2V7H4V5H2z" fill="#000"/>
-        </svg>
-      </span>
-    </span>
-  </div>
-  <div class="client">
-    <div class="paper">
-      <div class="paper__text">
-        <span class="eyebrow">${content.eyebrow}</span>
-        <h1 class="headline">${content.headline}</h1>
-        <p class="subline">${content.subline}</p>
-      </div>
-      <div class="paper__preview">
-        <img src="data:image/png;base64,${TOOL_PREVIEW_PNG_BASE64}" width="644" height="425" alt="" />
-      </div>
+<div class="layout">
+  <div class="text">
+    <span class="eyebrow">${content.eyebrow}</span>
+    <div class="brand">
+      ${markInline}
+      <span class="brand__name">${content.headline}</span>
     </div>
+    <p class="subline">${content.subline}</p>
+    <span class="domain">${content.domain}</span>
   </div>
-  <div class="statusbar">decker.billeltighidet.fr</div>
+  <div class="preview">
+    <img src="data:image/png;base64,${TOOL_PREVIEW_PNG_BASE64}" width="592" height="391" alt="" />
+  </div>
 </div>
 </body>
 </html>`;

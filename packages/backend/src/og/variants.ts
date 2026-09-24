@@ -7,14 +7,14 @@
  * gabarit HTML ni de la police inlinée que trimballe `ogTemplate.ts`.
  */
 export interface OgImageContent {
-  /** Libellé du badge "type de produit", posé au-dessus du titre. */
+  /** Libellé du badge "type de produit", posé au-dessus de la marque. */
   eyebrow: string;
-  /** Libellé de la barre de titre de la fenêtre (chrome, décoratif). */
-  windowTitle: string;
   /** Accroche principale — le nom du produit, c'est ce qu'on lit en vignette. */
   headline: string;
   /** Phrase de contexte sous l'accroche, une à deux lignes. */
   subline: string;
+  /** Domaine du site, affiché comme signature discrète sous la phrase. */
+  domain: string;
 }
 
 /**
@@ -26,11 +26,11 @@ export interface OgImageContent {
  */
 export const OG_IMAGE = {
   file: 'og.png',
-  alt: 'Decker, a free Figma plugin: pixel-perfect, editable decks and templates, from Figma to Google Slides. Shown as a Windows 95 window.',
+  alt: 'Decker, a free Figma plugin: pixel-perfect, editable decks and templates, from Figma to Google Slides.',
   content: {
     eyebrow: 'Figma plugin',
-    windowTitle: 'Decker.exe',
     headline: 'Decker',
     subline: 'Pixel-perfect, editable decks and templates, from Figma to Google Slides.',
+    domain: 'decker.billeltighidet.fr',
   },
 } as const satisfies { file: string; alt: string; content: OgImageContent };
