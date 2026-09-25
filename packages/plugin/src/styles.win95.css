@@ -307,10 +307,6 @@ html.f2s-skin--win95 .f2s-font-combobox-list {
   box-shadow: var(--w95-out);
 }
 
-html.f2s-skin--win95 .f2s-font-combobox-option {
-  border-radius: 0;
-}
-
 /* Sélection bleu marine classique plutôt que l'orange de marque, cf.
    --w95-navy déjà utilisé partout ailleurs dans ce skin en lieu et place
    de --color-orange. */
@@ -624,10 +620,7 @@ html.f2s-skin--win95 ::-webkit-scrollbar-thumb {
 }
 
 html.f2s-skin--win95 ::-webkit-scrollbar-button {
-  background: var(--w95-face);
-  box-shadow: var(--w95-out);
-  height: 16px;
-  width: 16px;
+  display: none;
 }
 
 html.f2s-skin--win95 * {

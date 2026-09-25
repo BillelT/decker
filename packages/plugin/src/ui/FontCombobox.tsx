@@ -35,7 +35,7 @@ export function FontCombobox({ value, options, onChange, ariaLabel }: FontCombob
   // coordonnées calculées échappe à ce rognage (un `fixed` n'est clippé que
   // par un ancêtre qui a lui-même transform/filter/perspective, ce qui
   // n'est pas le cas ici).
-  const [listRect, setListRect] = useState<{ top: number; left: number; minWidth: number } | null>(null);
+  const [listRect, setListRect] = useState<{ top: number; left: number; width: number } | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -48,7 +48,7 @@ export function FontCombobox({ value, options, onChange, ariaLabel }: FontCombob
     function updateRect() {
       const box = rootRef.current?.getBoundingClientRect();
       if (!box) return;
-      setListRect({ top: box.bottom + 4, left: box.left, minWidth: box.width });
+      setListRect({ top: box.bottom + 4, left: box.left, width: box.width });
     }
     updateRect();
     window.addEventListener('scroll', updateRect, true);
@@ -181,7 +181,7 @@ export function FontCombobox({ value, options, onChange, ariaLabel }: FontCombob
         <ul
           className="f2s-font-combobox-list"
           role="listbox"
-          style={{ top: `${listRect.top}px`, left: `${listRect.left}px`, minWidth: `${listRect.minWidth}px` }}
+          style={{ top: `${listRect.top}px`, left: `${listRect.left}px`, width: `${listRect.width}px` }}
         >
           {filtered.length === 0 ? (
             <li className="f2s-font-combobox-empty">No matching font</li>

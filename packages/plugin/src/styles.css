@@ -193,10 +193,9 @@ a {
   background: var(--color-scrollbar);
   border-radius: 8px;
 }
+/* Pas de boutons fléchés aux extrémités : juste la piste et la poignée. */
 ::-webkit-scrollbar-button {
-  background: var(--color-scrollbar);
-  height: 6px;
-  width: 6px;
+  display: none;
 }
 * {
   scrollbar-color: var(--color-scrollbar) transparent;
@@ -507,11 +506,13 @@ a {
 }
 
 .f2s-font-combobox-list {
-  /* `top`/`left`/`min-width` arrivent en style inline (FontCombobox.tsx),
-     calculés depuis la position réelle de la boîte à l'écran. */
+  /* `top`/`left`/`width` arrivent en style inline (FontCombobox.tsx),
+     calculés depuis la position et la largeur réelles de la boîte à
+     l'écran : la liste fait exactement la largeur de l'input, jamais plus
+     large (voir l'ellipsis sur .f2s-font-combobox-option ci-dessous pour
+     les noms de police trop longs pour tenir). */
   position: fixed;
   z-index: 20;
-  max-width: 260px;
   max-height: 220px;
   overflow-y: auto;
   margin: 0;
@@ -524,15 +525,20 @@ a {
 }
 
 .f2s-font-combobox-option {
-  padding: 4px 8px;
-  border-radius: 4px;
+  overflow: hidden;
   font-size: 12px;
   white-space: nowrap;
+  text-overflow: ellipsis;
   cursor: pointer;
 }
 
+/* Survol et sélection clavier partagent le même style (voir `highlight`
+   dans FontCombobox.tsx) : gris neutre plutôt que l'orange de marque, même
+   convention que .f2s-icon-btn:hover (aplat de survol neutre), sans
+   arrondi ni marge intérieure propres à l'état, juste l'aplat sur la ligne
+   telle quelle. */
 .f2s-font-combobox-option--active {
-  background: var(--color-orange-20);
+  background: var(--color-gray-300);
 }
 
 .f2s-font-combobox-option--selected {

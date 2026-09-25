@@ -198,10 +198,9 @@ a {
   background: var(--color-scrollbar);
   border-radius: 8px;
 }
+/* Pas de boutons fléchés aux extrémités : juste la piste et la poignée. */
 ::-webkit-scrollbar-button {
-  background: var(--color-scrollbar);
-  height: 6px;
-  width: 6px;
+  display: none;
 }
 * {
   scrollbar-color: var(--color-scrollbar) transparent;
@@ -512,11 +511,13 @@ a {
 }
 
 .f2s-font-combobox-list {
-  /* `top`/`left`/`min-width` arrivent en style inline (FontCombobox.tsx),
-     calculés depuis la position réelle de la boîte à l'écran. */
+  /* `top`/`left`/`width` arrivent en style inline (FontCombobox.tsx),
+     calculés depuis la position et la largeur réelles de la boîte à
+     l'écran : la liste fait exactement la largeur de l'input, jamais plus
+     large (voir l'ellipsis sur .f2s-font-combobox-option ci-dessous pour
+     les noms de police trop longs pour tenir). */
   position: fixed;
   z-index: 20;
-  max-width: 260px;
   max-height: 220px;
   overflow-y: auto;
   margin: 0;
@@ -529,15 +530,20 @@ a {
 }
 
 .f2s-font-combobox-option {
-  padding: 4px 8px;
-  border-radius: 4px;
+  overflow: hidden;
   font-size: 12px;
   white-space: nowrap;
+  text-overflow: ellipsis;
   cursor: pointer;
 }
 
+/* Survol et sélection clavier partagent le même style (voir `highlight`
+   dans FontCombobox.tsx) : gris neutre plutôt que l'orange de marque, même
+   convention que .f2s-icon-btn:hover (aplat de survol neutre), sans
+   arrondi ni marge intérieure propres à l'état, juste l'aplat sur la ligne
+   telle quelle. */
 .f2s-font-combobox-option--active {
-  background: var(--color-orange-20);
+  background: var(--color-gray-300);
 }
 
 .f2s-font-combobox-option--selected {
@@ -2224,10 +2230,6 @@ html.f2s-skin--win95 .f2s-font-combobox-list {
   box-shadow: var(--w95-out);
 }
 
-html.f2s-skin--win95 .f2s-font-combobox-option {
-  border-radius: 0;
-}
-
 /* Sélection bleu marine classique plutôt que l'orange de marque, cf.
    --w95-navy déjà utilisé partout ailleurs dans ce skin en lieu et place
    de --color-orange. */
@@ -2541,10 +2543,7 @@ html.f2s-skin--win95 ::-webkit-scrollbar-thumb {
 }
 
 html.f2s-skin--win95 ::-webkit-scrollbar-button {
-  background: var(--w95-face);
-  box-shadow: var(--w95-out);
-  height: 16px;
-  width: 16px;
+  display: none;
 }
 
 html.f2s-skin--win95 * {
@@ -4427,7 +4426,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
       function updateRect() {
         const box = rootRef.current?.getBoundingClientRect();
         if (!box) return;
-        setListRect({ top: box.bottom + 4, left: box.left, minWidth: box.width });
+        setListRect({ top: box.bottom + 4, left: box.left, width: box.width });
       }
       updateRect();
       window.addEventListener("scroll", updateRect, true);
@@ -4550,7 +4549,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
             {
               className: "f2s-font-combobox-list",
               role: "listbox",
-              style: { top: `${listRect.top}px`, left: `${listRect.left}px`, minWidth: `${listRect.minWidth}px` },
+              style: { top: `${listRect.top}px`, left: `${listRect.left}px`, width: `${listRect.width}px` },
               children: filtered.length === 0 ? /* @__PURE__ */ u3("li", { className: "f2s-font-combobox-empty", children: "No matching font" }) : filtered.map((font, i3) => /* @__PURE__ */ u3(
                 "li",
                 {
