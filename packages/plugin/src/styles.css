@@ -13,12 +13,15 @@
   --color-orange-20: rgba(240, 104, 0, 0.2);
   --color-orange-40: rgba(240, 104, 0, 0.4);
   --color-orange-red: #f04000;
-  /* Rouge PLEIN réservé aux états d'erreur/bloquants, distinct de la
-     bordure de sélection active (--color-orange-40, plus douce) : les deux
-     étaient identiques et une vignette bloquante était indiscernable d'une
-     vignette sélectionnée (audit template). La sélection active utilisait
-     --color-orange-red mais restait trop proche visuellement d'un rouge
-     d'erreur, d'où le passage à --color-orange-40 (retour utilisateur). */
+  /* Rouge PLEIN réservé aux états d'erreur/bloquants. Historique de la
+     bordure de sélection d'une vignette, qu'il a fallu en éloigner deux
+     fois : --color-orange-red d'abord, identique à ce rouge, une vignette
+     bloquante étant alors indiscernable d'une vignette sélectionnée (audit
+     template) ; puis --color-orange-40, plus douce, mais encore lue comme un
+     rouge d'erreur (retour utilisateur) ; aujourd'hui --color-gray-500, qui
+     règle les deux confusions d'un coup ET passe enfin le seuil de contraste
+     (1.56:1 pour l'orange-40, 4.31:1 ici, cf. .f2s-frame-preview.is-active).
+     L'orange reste ce qui APPELLE à agir, le gris ce qui décrit un état. */
   --color-error: #e00000;
   --color-bg: #fff9f5;
   --color-text: #120f0d;
@@ -389,9 +392,14 @@ a {
   width: 170px;
 }
 
+/* Même raisonnement que l'anneau de focus du skin par défaut
+   (styles.modern.css) : un focus au clavier doit se voir, l'orange-40 était
+   à 1.56:1. Cette règle de base est masquée par les deux skins, qui
+   remplacent la bordure par un biseau ; elle reste alignée pour que le
+   comportement ne dépende pas de quel skin survit. */
 .f2s-title-input:focus {
   outline: none;
-  border-color: var(--color-orange-40);
+  border-color: var(--color-gray-500);
 }
 
 .f2s-title-input::placeholder {
@@ -427,7 +435,7 @@ a {
 
 .f2s-font-dropdown:focus {
   outline: none;
-  border-color: var(--color-orange-40);
+  border-color: var(--color-gray-500);
 }
 
 /* ---- Liste de polices de remplacement (bandeau "Fonts") ----
@@ -460,7 +468,11 @@ a {
 }
 
 .f2s-font-combobox:focus-within {
-  border-color: var(--color-orange-40);
+  /* Aligné sur .f2s-title-input:focus et .f2s-font-dropdown:focus juste
+     au-dessus : un repère de focus doit passer 3:1, l'orange-40 est à
+     1.56:1. Le skin par défaut le repeint déjà en gris 500 par son anneau
+     (styles.modern.css) ; la feuille de base dit la même chose. */
+  border-color: var(--color-gray-500);
 }
 
 .f2s-font-combobox-input {
@@ -719,10 +731,16 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
+/* Ce champ remplace le contour système (`outline: none`) par sa propre
+   bordure : elle est donc le seul repère de focus au clavier, et elle était
+   au gris 100, soit 1.11:1 sur le fond du rail, pendant que le changement de
+   fond qui l'accompagne joue à 1.04:1. Autrement dit, tabuler jusqu'à ce
+   champ ne produisait aucun signal visible (WCAG 2.4.7 en plus de 1.4.11).
+   Le gris 500 le porte à 4.31:1. */
 .f2s-frame-info:hover .f2s-frame-name-input,
 .f2s-frame-name-input:focus {
   background: var(--color-surface);
-  border-color: var(--color-border);
+  border-color: var(--color-gray-500);
   color: var(--color-text);
   outline: none;
 }
@@ -781,7 +799,14 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
 }
 
 .f2s-frame-preview.is-active {
-  border-color: var(--color-orange-40);
+  /* Gris 500 et non l'orange de marque : c'est le SEUL indice qui dit quelle
+     vignette est ouverte (pas de fond ni de puce en plus), et l'orange-40
+     n'atteignait que 1.56:1 une fois aplati sur le fond du rail, contre
+     4.31:1 ici. Sous le seuil de 3:1 du critère 1.4.11, qui couvre
+     précisément l'indication d'un ÉTAT, la sélection se devinait plus
+     qu'elle ne se voyait. Reste au-dessus du survol, laissé au gris 300
+     (1.39:1) : l'ordre de lecture survol < sélection est préservé. */
+  border-color: var(--color-gray-500);
 }
 
 .f2s-frame-preview img {

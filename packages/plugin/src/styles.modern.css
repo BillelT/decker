@@ -78,11 +78,15 @@ html.f2s-skin--modern .f2s-dim-box {
   box-shadow: var(--hyb-in);
 }
 
+/* L'anneau de focus remplace le contour système : au 2px orange-40 il ne
+   valait que 1.56:1 une fois aplati sur le fond, sous le seuil de 3:1, donc
+   un utilisateur au clavier ne voyait pas où il était. Gris 500, 4.31:1. Le
+   biseau creusé qui délimite le champ au repos ne bouge pas, lui. */
 html.f2s-skin--modern .f2s-title-input:focus,
 html.f2s-skin--modern .f2s-font-dropdown:focus,
 html.f2s-skin--modern .f2s-font-combobox:focus-within {
   outline: none;
-  box-shadow: var(--hyb-in), 0 0 0 2px var(--color-orange-40);
+  box-shadow: var(--hyb-in), 0 0 0 2px var(--color-gray-500);
 }
 
 html.f2s-skin--modern .f2s-font-combobox-list {
