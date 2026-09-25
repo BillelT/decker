@@ -13,10 +13,12 @@
   --color-orange-20: rgba(240, 104, 0, 0.2);
   --color-orange-40: rgba(240, 104, 0, 0.4);
   --color-orange-red: #f04000;
-  /* Rouge PLEIN réservé aux états d'erreur/bloquants — distinct de
-     --color-orange-red, qui marque la sélection active : les deux étaient
-     identiques et une vignette bloquante était indiscernable d'une vignette
-     sélectionnée (audit template). */
+  /* Rouge PLEIN réservé aux états d'erreur/bloquants, distinct de la
+     bordure de sélection active (--color-orange-40, plus douce) : les deux
+     étaient identiques et une vignette bloquante était indiscernable d'une
+     vignette sélectionnée (audit template). La sélection active utilisait
+     --color-orange-red mais restait trop proche visuellement d'un rouge
+     d'erreur, d'où le passage à --color-orange-40 (retour utilisateur). */
   --color-error: #e00000;
   --color-bg: #fff9f5;
   --color-text: #120f0d;
@@ -663,7 +665,7 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
 }
 
 .f2s-frame-preview.is-active {
-  border-color: var(--color-orange-red);
+  border-color: var(--color-orange-40);
 }
 
 .f2s-frame-preview img {
@@ -1162,9 +1164,9 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   min-width: 0;
 }
 
-/* Rouge plein, distinct de la bordure de sélection active (orange-red).
+/* Rouge plein, distinct de la bordure de sélection active (orange-40).
    La bordure seule se remarquait mal quand la vignette est déjà bordée par
-   du contenu clair/coloré au raz du cadre — un badge explicite en plus,
+   du contenu clair/coloré au raz du cadre, un badge explicite en plus,
    lisible même en un coup d'œil sur tout le rail (audit template, TODO.md
    point "retour d'erreur sur une vignette bloquante"). */
 .f2s-frame-preview--blocking {
