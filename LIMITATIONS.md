@@ -66,8 +66,8 @@ différences par rapport à l'export de deck :
   la page Master s'hérite bien sur toute slide qui référence un layout
   descendant de ce Master** (confirmé visuellement : un bandeau posé
   UNIQUEMENT sur le Master apparaît sur toutes les slides). Donc si le
-  master lui-même ne porte typiquement que le chrome récurrent (logo,
-  footer, mention de confidentialité) plutôt que les variantes de mise en
+  master lui-même ne porte typiquement que les éléments récurrents (logo,
+  footer, numéro de page) plutôt que les variantes de mise en
   page — qui restent, elles, des slides normales avec leurs placeholders
   — cette limite n'empêche pas de reproduire un vrai comportement de
   thème/master pour ce qui compte : couleurs globales + éléments

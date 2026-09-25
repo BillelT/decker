@@ -119,15 +119,16 @@ affirmaient tous les deux le contraire :
   plutôt qu'un `rgbColor` figé. Voir `LIMITATIONS.md` § Création de template.
 - **Un élément posé sur le Master s'hérite bien** sur toute slide qui
   référence un layout descendant — confirmé visuellement, pas juste déduit
-  du schéma. Le master peut donc porter le chrome récurrent (logo, footer,
-  mention de confidentialité) une seule fois plutôt que dupliqué par slide.
+  du schéma. Le master peut donc porter les éléments récurrents (logo,
+  footer, numéro de page, mention de confidentialité) une seule fois
+  plutôt que dupliqués slide par slide.
 
 Ce qui NE change pas : toujours aucun nouvel objet `Layout` créable en
 écriture (`CreateSlideRequest` ne fait que référencer un des ~8 layouts
 prédéfinis) — les variantes de mise en page restent des slides normales
 avec leurs placeholders, ce n'est pas un problème puisque c'est là
 qu'était la vraie valeur de toute façon (le master lui-même ne porte
-typiquement que le chrome, pas les variantes).
+typiquement que les éléments récurrents, pas les variantes).
 
 Backlog, dans un ordre de dépendance logique (le premier point débloque
 les suivants) :
@@ -171,21 +172,31 @@ les suivants) :
      quasi-identique vers le hex canonique du rôle) — resté un rapport en
      lecture seule pour les polices, l'assignation de rôle couleur ne
      modifie aucun calque Figma en retour.
-3. **Chrome de master (logo/footer/watermark) posé une seule fois.** UI
-   pour désigner un ou plusieurs éléments Figma comme "chrome récurrent"
-   (plutôt que de les dupliquer manuellement sur chaque layout comme
-   aujourd'hui) ; à l'export, ces éléments sont écrits sur la page Master
-   plutôt que sur chaque slide individuellement.
+3. **Éléments récurrents (logo, footer, numéro de page) posés une seule
+   fois sur le Master.** Dans Google Slides, la page `Master` ("THÈME" dans
+   l'UI française, au-dessus de la liste "MISES EN PAGE") est l'étage dont
+   héritent toutes les slides : ce qui y est posé apparaît sur chacune
+   d'elles sans y être recopié, exactement comme le `#` du numéro de page
+   d'un thème natif. Aujourd'hui, pour avoir son logo partout, le créateur
+   doit le dupliquer à la main dans chaque frame Figma, et l'export en fait
+   autant d'objets indépendants que de slides : l'utilisateur final peut en
+   déplacer ou en supprimer un sans s'en apercevoir, et changer de logo
+   oblige à reprendre chaque slide. Il s'agit donc d'une UI pour désigner
+   un ou plusieurs éléments Figma comme récurrents, puis de les écrire sur
+   la page Master à l'export plutôt que sur chaque slide.
+   (Ce point s'appelait "chrome de master" ; "chrome" est du jargon
+   d'interface pour l'habillage fixe autour du contenu, comme dans "browser
+   chrome". Renommé, personne ne le décodait.)
    **Point bloquant relevé à l'audit 2026-09, à traiter AVANT d'écrire le
    code** : `mapper/index.ts::mapBackground` crée, sur chaque slide, un
    rectangle plein cadre en tout premier plan arrière quand la frame Figma
    a un fond uni, ce qui est le cas courant. Un élément posé sur le Master
-   est rendu DERRIÈRE le contenu de la slide : le chrome hérité serait donc
+   est rendu DERRIÈRE le contenu de la slide : le logo hérité serait donc
    intégralement masqué par ce rectangle, et la fonctionnalité paraîtrait
    ne rien faire. Ce n'est donc pas un simple portage du mapper vers
    `pageObjectId: masterObjectId` ; il faut d'abord décider ce que devient
    ce fond de slide en mode template (le déplacer lui aussi sur le Master ?
-   ne plus l'émettre quand un chrome de master existe ? le rendre
+   ne plus l'émettre quand un élément récurrent existe ? le rendre
    transparent ?). À valider par un spike comme l'a été l'écriture du thème
    (`spikes/masterThemeSpike.ts`), plutôt qu'en déduction : aucun
    environnement Figma/Slides réel n'est disponible côté dev.
@@ -198,8 +209,8 @@ les suivants) :
    une fois le template exporté, pas besoin d'une slide fabriquée pour la
    prouver.
 5. **Étiquette "Cover/Master" purement visuelle** sur une vignette du rail
-   de layouts — distincte du chrome réellement écrit sur le Master (point
-   3), juste pour que le rail se lise comme un vrai jeu de layouts
+   de layouts, distincte des éléments réellement écrits sur le Master
+   (point 3), juste pour que le rail se lise comme un vrai jeu de layouts
    (Cover → Section → Content).
 6. ~~**Texte de placeholder visuellement explicite.**~~ — fait (audit
    2026-08) : `serialize/templatePlaceholderText.ts::applyPlaceholderText`
