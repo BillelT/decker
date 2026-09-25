@@ -1866,7 +1866,7 @@
     const initialSkin = storedSkin === "win95" || storedSkin === "modern" ? storedSkin : "modern";
     const initialThemeClass = storedTheme === "light" ? "f2s-theme-light" : storedTheme === "dark" ? "f2s-theme-dark" : "";
     const html = __html__.replace("__F2S_INITIAL_SKIN__", `f2s-skin--${initialSkin}`).replace("__F2S_INITIAL_THEME__", initialThemeClass);
-    figma.showUI(html, { width: 960, height: 640, themeColors: true });
+    figma.showUI(html, { width: 1200, height: 760, themeColors: true });
     const pending = [];
     const templatePending = [];
     const idGen = createIdGenerator(figma.root.id.slice(0, 8));

@@ -840,7 +840,13 @@ async function main(): Promise<void> {
   // prévisualisation. `themeColors: true` fait poser par Figma la classe
   // `figma-dark`/`figma-light` sur <html> — le CSS de l'UI s'en sert pour
   // basculer sa palette (styles.css).
-  figma.showUI(html, { width: 960, height: 640, themeColors: true });
+  // 960px suffisait au rail seul (190px) + canvas, mais en mode template
+  // le canvas est encadré des DEUX côtés (rail 190px à gauche, aside
+  // Styles 280px à droite : TemplatePanel) : la preview/les logs (plafonnés
+  // à 640px CSS, cf. .f2s-canvas-preview) n'avaient plus la place de
+  // respirer et se retrouvaient écrasés (retour utilisateur). 1200x760
+  // laisse 640px pleins au canvas central même avec les deux asides.
+  figma.showUI(html, { width: 1200, height: 760, themeColors: true });
 
   const pending: PendingSlide[] = [];
   // Store distinct du deck : basculer entre "Export" et "Create a template"
