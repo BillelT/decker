@@ -14,7 +14,7 @@
  * packages/backend/src/routes/marketingStyles.ts et
  * packages/plugin/src/styles.modern.css) : palette de marque crème/encre,
  * accent orange #f06800, Cabinet Grotesk, biseaux hybrides à quatre ombres
- * internes (--hyb-out/--hyb-in) et angles droits.
+ * internes (--hyb-out/--hyb-in/--hyb-pressed) et angles droits.
  *
  * Mise en page en pile plutôt qu'en deux colonnes : logo en haut à gauche
  * (repère de page, pas un élément centré avec le reste), accroche pleine
@@ -27,6 +27,16 @@
  * écrit en toutes lettres : le logo (icône seule) fait déjà cette
  * identification, un "Decker" en gros n'aurait fait que répéter
  * l'information sans rien ajouter à la vignette.
+ *
+ * L'aperçu du produit (.demo) est une recréation HTML/CSS du panneau réel du
+ * plugin (skin Modern, packages/plugin/src/styles.css + styles.modern.css),
+ * pas une capture d'écran bitmap : les classes, libellés et couleurs
+ * ci-dessous sont recopiés depuis ces fichiers et depuis ui.tsx (topbar,
+ * onglets Deck/Templates, rail de vignettes, canvas). Rasterisée en même
+ * temps que le reste de la carte (voir l'en-tête ci-dessus), elle reste
+ * nette à n'importe quelle taille d'affichage, contrairement à l'ancienne
+ * capture PNG (assets/tool-preview-source.png, retirée), qui pixellisait en
+ * grand format et se périmait à chaque changement de l'UI réelle.
  *
  * Contraintes de la carte de partage, qui expliquent les valeurs ci-dessous :
  * - 1200x630 (ratio 1.91:1), la seule taille sûre sur Facebook/LinkedIn/X ;
@@ -47,7 +57,6 @@
  */
 import { CABINET_GROTESK_BASE64 } from '../routes/fontData.js';
 import { DECKER_MARK_SVG } from '../routes/brand.js';
-import { TOOL_PREVIEW_PNG_BASE64 } from './toolPreviewData.js';
 import type { OgImageContent } from './variants.js';
 
 const CSS = `
@@ -62,12 +71,17 @@ const CSS = `
    packages/backend/src/routes/marketingStyles.ts (:root) et
    packages/plugin/src/styles.modern.css (--hyb-*), valeurs "clair" : cette
    carte statique ne suit pas le thème sombre de Figma, pas plus que les
-   pages HTML rendues côté serveur (auth.ts). */
+   pages HTML rendues côté serveur (auth.ts). --b-border/--b-surface-muted
+   recopiés de --color-border/--color-surface-muted (styles.css du plugin). */
 :root {
   --b-ink: #120f0d;
   --b-white: #fff9f5;
   --b-surface: #ffffff;
-  --b-muted: #3b3735;
+  --b-surface-muted: #f2ece8;
+  --b-border: #f1edeb;
+  --b-muted: rgba(18, 15, 13, 0.7);
+  --b-accent: #f06800;
+  --b-accent-red: #f04000;
 
   --hyb-hi: rgba(255, 255, 255, 0.9);
   --hyb-lo: rgba(18, 15, 13, 0.22);
@@ -76,6 +90,8 @@ const CSS = `
     inset 2px 2px var(--hyb-hi);
   --hyb-in: inset -1px -1px var(--hyb-hi), inset 1px 1px var(--hyb-lo), inset -2px -2px var(--hyb-hi),
     inset 2px 2px var(--hyb-lo-strong);
+  --hyb-pressed: inset -1px -1px var(--hyb-hi), inset 1px 1px var(--hyb-lo-strong), inset -2px -2px var(--hyb-hi),
+    inset 2px 2px var(--hyb-lo);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -120,15 +136,16 @@ body {
   text-wrap: balance;
 }
 
-/* Aperçu du produit plutôt que la marque en grand : montrer un moment du
-   flow (le panneau du plugin, déjà dans son skin Modern) parle plus qu'une
-   icône statique. Pleine largeur dans la marge de page (comme le logo et
-   l'accroche), mais déborde jusqu'au bord bas de la carte (pas de padding
-   bas sur .layout) et occupe toute la hauteur restante (object-fit: cover,
-   la capture étant plus étroite que la bande large qui en résulte). Puits
-   en creux (--hyb-in), comme .card__media du site et .f2s-frame-preview du
-   plugin lui-même : une image n'y porte jamais de bordure, seul
-   l'enfoncement la distingue du crème qui l'entoure. */
+/* Aperçu du produit plutôt que la marque en grand : montrer le panneau du
+   plugin en train de préparer un export parle plus qu'une icône statique.
+   Pleine largeur dans la marge de page (comme le logo et l'accroche), mais
+   déborde jusqu'au bord bas de la carte (pas de padding bas sur .layout) et
+   occupe toute la hauteur restante : le panneau .demo est plus grand que la
+   place disponible (comme le vrai panneau du plugin, qui défile), overflow
+   masque le surplus au lieu de le comprimer. Puits en creux (--hyb-in),
+   comme .card__media du site et .f2s-frame-preview du plugin lui-même : le
+   panneau n'y porte jamais de bordure, seul l'enfoncement le distingue du
+   crème qui l'entoure. */
 .preview {
   flex: 1;
   min-height: 0;
@@ -136,18 +153,141 @@ body {
   padding: 5px;
   background: var(--b-surface);
   box-shadow: var(--hyb-in);
+  overflow: hidden;
 }
-.preview img {
-  display: block;
+
+/* ============================================================================
+   Recréation du panneau du plugin (skin Modern) : mêmes classes logiques que
+   packages/plugin/src/styles.css + styles.modern.css, valeurs recopiées
+   telles quelles (tailles, paddings, couleurs), voir l'en-tête du fichier.
+   ============================================================================ */
+.demo {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  /* Ancré en haut : la barre d'outils (bouton Export orange) et l'aperçu du
-     canvas restent entiers, seul le bas du panneau (réglages, bouton café,
-     moins parlant en vignette) est rogné par le recadrage. */
-  object-position: top;
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+  background: var(--b-white);
 }
+
+.demo-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 16px 0;
+  flex: none;
+}
+.demo-topbar-left { display: flex; align-items: center; gap: 16px; }
+
+.demo-tabs { display: inline-flex; gap: 2px; padding: 2px; background: var(--b-surface-muted); box-shadow: var(--hyb-in); }
+.demo-tab { font-size: 12px; font-weight: 700; color: var(--b-muted); padding: 5px 14px; }
+.demo-tab.is-active { background: var(--b-white); color: var(--b-ink); box-shadow: var(--hyb-pressed); }
+
+.demo-title-group { display: flex; align-items: center; gap: 8px; }
+.demo-label { font-size: 12px; font-weight: 700; color: var(--b-muted); white-space: nowrap; }
+.demo-input { font-size: 12px; color: var(--b-muted); background: var(--b-surface); box-shadow: var(--hyb-in); padding: 3px 8px; width: 150px; }
+
+.demo-topbar-actions { display: flex; align-items: center; gap: 16px; }
+.demo-btn { font-size: 13px; font-weight: 700; padding: 8px 16px; white-space: nowrap; box-shadow: var(--hyb-out); }
+.demo-btn--tertiary { background: transparent; color: var(--b-ink); }
+.demo-btn--secondary { background: transparent; color: var(--b-accent); }
+.demo-btn--primary { background: var(--b-accent); color: var(--b-white); }
+
+.demo-toolbar { display: flex; align-items: center; gap: 8px; padding: 12px 16px; flex: none; }
+.demo-muted { font-size: 12px; font-weight: 500; color: var(--b-muted); }
+
+.demo-body { flex: 1; min-height: 0; display: flex; border-top: 1px solid var(--b-border); }
+
+.demo-sidebar { flex: none; width: 190px; padding: 8px 16px 16px; display: flex; flex-direction: column; gap: 16px; border-right: 1px solid var(--b-border); }
+.demo-thumb { aspect-ratio: 16 / 9; width: 100%; box-shadow: var(--hyb-in); border: 2px solid transparent; background: var(--b-surface-muted); overflow: hidden; position: relative; }
+.demo-thumb.is-active { border-color: var(--b-accent-red); }
+.demo-thumb__index { position: absolute; left: 0; bottom: -18px; font-size: 12px; color: var(--b-muted); }
+
+.demo-canvas { flex: 1; min-width: 0; padding: 20px 24px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.demo-canvas-preview { width: 100%; max-width: 640px; aspect-ratio: 16 / 9; border: 1px solid var(--b-border); overflow: hidden; position: relative; flex: none; }
+
+.demo-dims { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--b-muted); flex: none; }
+.demo-dim-box { box-shadow: var(--hyb-in); background: var(--b-surface); padding: 2px 10px; min-width: 24px; text-align: center; color: var(--b-ink); }
+
+/* Contenu de la vignette de slide (thumb + grand aperçu partagent ce
+   gabarit) : fond encre, accroche + titre + filet, quelques aplats de
+   couleur en pied évoquant un graphique : un slide plausible plutôt qu'une
+   texture générique, sans dépendre d'un visuel client externe. */
+.slide { position: absolute; inset: 0; background: #17231c; display: flex; flex-direction: column; }
+.slide__body { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 10px; padding: 8% 9%; }
+.slide__eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(242, 236, 232, 0.55); }
+.slide__title { font-size: 26px; font-weight: 800; color: #f2ece8; line-height: 1.1; }
+.slide__rule { width: 64px; height: 2px; background: rgba(242, 236, 232, 0.3); }
+.slide__bars { display: flex; align-items: flex-end; gap: 6px; padding: 0 9% 9%; height: 30%; }
+.slide__bar { flex: 1; background: linear-gradient(180deg, #ffb238, #c1651c); }
+
+.slide--mini .slide__body { padding: 10% 12%; gap: 8%; }
+.slide--mini .slide__eyebrow { display: none; }
+.slide--mini .slide__title { font-size: 11px; }
+.slide--mini .slide__rule { width: 30%; height: 1px; }
+.slide--mini .slide__bars { padding: 0 12% 12%; }
 `;
+
+/** Barres du bloc "graphique" en pied de slide, hauteurs variées pour un rendu naturel. */
+function slideBars(heights: number[]): string {
+  return `<div class="slide__bars">${heights.map((h) => `<div class="slide__bar" style="height:${h}%"></div>`).join('')}</div>`;
+}
+
+function slideMock(mini: boolean, title: string): string {
+  return `<div class="slide${mini ? ' slide--mini' : ''}">
+    <div class="slide__body">
+      ${mini ? '' : '<span class="slide__eyebrow">Sample deck</span>'}
+      <span class="slide__title">${title}</span>
+      <span class="slide__rule"></span>
+    </div>
+    ${slideBars(mini ? [40, 70, 55, 90] : [35, 65, 50, 85, 60])}
+  </div>`;
+}
+
+/** Recrée le panneau du plugin (skin Modern) : mêmes libellés que ui.tsx/DeckPanel.tsx. */
+function renderDemoHtml(): string {
+  return `<div class="demo">
+  <div class="demo-topbar">
+    <div class="demo-topbar-left">
+      <div class="demo-tabs" role="tablist">
+        <span class="demo-tab is-active">Deck</span>
+        <span class="demo-tab">Templates</span>
+      </div>
+      <div class="demo-title-group">
+        <span class="demo-label">Name:</span>
+        <span class="demo-input">Decker export</span>
+      </div>
+    </div>
+    <div class="demo-topbar-actions">
+      <span class="demo-btn demo-btn--tertiary">Select frames to add</span>
+      <span class="demo-btn demo-btn--secondary">Prepare for Slides</span>
+      <span class="demo-btn demo-btn--primary">Export</span>
+    </div>
+  </div>
+  <div class="demo-toolbar">
+    <span class="demo-label">Fonts:</span>
+    <span class="demo-muted">All fonts will appear here and can be replaced automatically.</span>
+  </div>
+  <div class="demo-body">
+    <div class="demo-sidebar">
+      <div class="demo-thumb is-active">${slideMock(true, 'Built for the long run')}</div>
+      <div class="demo-thumb">${slideMock(true, 'Three pillars')}</div>
+      <div class="demo-thumb">${slideMock(true, 'Where we go next')}</div>
+    </div>
+    <div class="demo-canvas">
+      <div class="demo-canvas-preview">${slideMock(false, 'Built for the long run.')}</div>
+      <div class="demo-dims">
+        <span>Dimensions :</span>
+        <span class="demo-dim-box">1920</span>
+        <span>×</span>
+        <span class="demo-dim-box">1080</span>
+        <span>px</span>
+      </div>
+    </div>
+  </div>
+</div>`;
+}
 
 /** HTML autonome (police et images incluses) prêt à être rasterisé. */
 export function renderOgImageHtml(content: OgImageContent): string {
@@ -165,7 +305,7 @@ export function renderOgImageHtml(content: OgImageContent): string {
     <h1 class="headline">${content.headline}</h1>
   </div>
   <div class="preview">
-    <img src="data:image/png;base64,${TOOL_PREVIEW_PNG_BASE64}" alt="" />
+    ${renderDemoHtml()}
   </div>
 </div>
 </body>
