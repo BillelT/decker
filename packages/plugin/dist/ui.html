@@ -25,9 +25,30 @@
   --color-error: #e00000;
   --color-bg: #fff9f5;
   --color-text: #120f0d;
-  --color-black-70: rgba(18, 15, 13, 0.7);
-  --color-scrollbar: #dcd5d0;
-  --color-gray-light: #f1edeb;
+
+  /* Rampe de gris du site (backend/src/routes/marketingStyles.ts :
+     --b-gray-700 / --b-gray-300 / --b-gray-100), reprise ici sous les mêmes
+     numéros pour que le plugin et le site cessent de diverger chacun de son
+     côté. `--b-gray-500` n'est pas repris : rien dans le plugin ne s'en sert,
+     et un token mort ne rend service à personne. En thème sombre, c'est la
+     rampe SEULE qui s'inverse (voir le bloc plus bas) : les tokens
+     sémantiques ci-dessous n'ont alors plus rien à redéfinir. */
+  --color-gray-700: #3b3735;
+  --color-gray-300: #dcd5d0;
+  --color-gray-100: #f1edeb;
+
+  /* Texte secondaire : libellés de section, légendes, rôles de placeholder.
+     S'appelait --color-black-70 et valait rgba(18, 15, 13, 0.7), soit environ
+     #59554f une fois aplati sur --color-bg, plus pâle que le gris employé au
+     même endroit par le site (--b-text-muted = gray-700). Aligné, donc
+     légèrement plus contrasté qu'avant. Le nom aussi devenait faux, la valeur
+     n'étant plus un noir translucide. */
+  --color-text-muted: var(--color-gray-700);
+  /* Gris 300 : survols neutres (croix de suppression du rail, qui virait à
+     l'orange de marque alors que supprimer une vignette n'est pas l'action
+     que le produit met en avant) et barre de défilement. */
+  --color-scrollbar: var(--color-gray-300);
+  --color-gray-light: var(--color-gray-100);
   --color-border: var(--color-gray-light);
   /* Surfaces additionnelles pour le layout à deux colonnes — même famille
      que le monogramme (#F2ECE8) plutôt que des gris neutres génériques. */
@@ -59,29 +80,30 @@ html.figma-dark:not(.f2s-theme-light),
 html.f2s-theme-dark {
   --color-bg: #171310;
   --color-text: #f2ece8;
-  --color-black-70: rgba(242, 236, 232, 0.7);
-  --color-scrollbar: #4d453e;
-  --color-border: #332c26;
+  /* La rampe s'inverse d'un bloc, et elle seule : le 700 reste le gris du
+     texte secondaire, donc il devient CLAIR sur fond sombre ; le 300 et le
+     100 restent les gris de surface, donc ils s'assombrissent.
+     --color-text-muted, --color-scrollbar, --color-gray-light et
+     --color-border s'y raccrochent depuis :root et suivent tout seuls, au
+     lieu d'être réénumérés ici un par un comme avant. #b0aca6 est l'aplat
+     exact de l'ancien rgba(242, 236, 232, 0.7) posé sur --color-bg : opaque,
+     il ne change plus de teinte selon la surface qui passe dessous. */
+  --color-gray-700: #b0aca6;
+  --color-gray-300: #4d453e;
+  --color-gray-100: #332c26;
   --color-surface: #211c17;
   --color-surface-muted: #2a231d;
-  /* Non redéfini jusqu'ici : .f2s-log-entry (background: var(--color-gray-light))
-     restait un gris clair fixe même en thème sombre — illisible et
-     incohérent posé sur --color-bg (audit). Même teinte que --color-border
-     ci-dessus : c'est déjà l'équivalent sombre établi de ce gris clair
-     (--color-border = var(--color-gray-light) en thème clair, cf. :root). */
-  --color-gray-light: #332c26;
 }
 
 @media (prefers-color-scheme: dark) {
   html:not(.figma-light):not(.f2s-theme-light) {
+    --color-gray-700: #b0aca6;
+    --color-gray-300: #4d453e;
+    --color-gray-100: #332c26;
     --color-bg: #171310;
     --color-text: #f2ece8;
-    --color-black-70: rgba(242, 236, 232, 0.7);
-    --color-scrollbar: #4d453e;
-    --color-border: #332c26;
     --color-surface: #211c17;
     --color-surface-muted: #2a231d;
-    --color-gray-light: #332c26;
   }
 }
 
@@ -310,14 +332,14 @@ a {
 .f2s-toolbar-label {
   font-size: 12px;
   font-weight: 700;
-  color: var(--color-black-70);
+  color: var(--color-text-muted);
   white-space: nowrap;
 }
 
 .f2s-toolbar-muted {
   font-size: 12px;
   font-weight: 500;
-  color: var(--color-black-70);
+  color: var(--color-text-muted);
   text-wrap: balance;
 }
 
@@ -332,12 +354,12 @@ a {
 }
 
 .f2s-dim-sep {
-  color: var(--color-black-70);
+  color: var(--color-text-muted);
 }
 
 .f2s-dim-unit {
   font-size: 11px;
-  color: var(--color-black-70);
+  color: var(--color-text-muted);
 }
 
 /* Champ de nommage du deck/template (topbar) — largeur fixe (voir le
@@ -361,7 +383,7 @@ a {
 }
 
 .f2s-title-input::placeholder {
-  color: var(--color-black-70);
+  color: var(--color-text-muted);
   opacity: 0.7;
 }
 
@@ -374,11 +396,11 @@ a {
 }
 
 .f2s-font-original {
-  color: var(--color-black-70);
+  color: var(--color-text-muted);
 }
 
 .f2s-font-arrow {
-  color: var(--color-black-70);
+  color: var(--color-text-muted);
 }
 
 .f2s-font-dropdown {
@@ -544,7 +566,7 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
 }
 
 .f2s-empty {
-  color: var(--color-black-70);
+  color: var(--color-text-muted);
   font-size: 14px;
   font-weight: 500;
   padding: 24px 0;
@@ -562,12 +584,12 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
 
 .f2s-frame-text {
   font-size: 12px;
-  color: var(--color-black-70);
+  color: var(--color-text-muted);
 }
 
 .f2s-frame-index {
   font-size: 12px;
-  color: var(--color-black-70);
+  color: var(--color-text-muted);
   flex: none;
 }
 
@@ -580,7 +602,7 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   min-width: 0;
   font: inherit;
   font-size: 12px;
-  color: var(--color-black-70);
+  color: var(--color-text-muted);
   background: transparent;
   border: 1px solid transparent;
   border-radius: 4px;
@@ -620,8 +642,10 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   color: var(--color-text);
 }
 
+/* Gris neutre, pas l'orange de marque : cette croix supprime une vignette
+   du rail, ce n'est pas l'action que le produit met en avant. */
 .f2s-icon-btn:hover:not(:disabled) {
-  background: var(--color-orange-40);
+  background: var(--color-gray-300);
 }
 
 .f2s-frame-preview {
@@ -702,7 +726,7 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
 }
 
 .f2s-canvas-empty {
-  color: var(--color-black-70);
+  color: var(--color-text-muted);
   font-size: 12px;
   text-align: center;
 }
@@ -807,7 +831,7 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   flex: none;
   font-size: 10px;
   font-family: inherit;
-  color: var(--color-black-70);
+  color: var(--color-text-muted);
   background: var(--color-bg);
   border: 1px solid var(--color-border);
   border-radius: 4px;
@@ -867,7 +891,7 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   max-width: none;
   overflow: visible;
   white-space: normal;
-  color: var(--color-black-70);
+  color: var(--color-text-muted);
 }
 
 /* Seuls les éléments RASTERISÉS (perte d'édition native) méritent une
@@ -976,7 +1000,7 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   margin: 0;
   font-size: 12px;
   font-weight: 700;
-  color: var(--color-black-70);
+  color: var(--color-text-muted);
 }
 
 .f2s-tmpl-section--blocking .f2s-tmpl-heading {
@@ -988,7 +1012,7 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
 .f2s-tmpl-note {
   margin: 0;
   font-size: 12px;
-  color: var(--color-black-70);
+  color: var(--color-text-muted);
   max-width: 720px;
   text-wrap: balance;
 }
@@ -1031,7 +1055,7 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  color: var(--color-black-70);
+  color: var(--color-text-muted);
 }
 
 /* Le nom du calque tagué devient le label du placeholder (p.label) : sur un
@@ -1268,7 +1292,7 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   display: flex;
   align-items: center;
   gap: 4px;
-  color: var(--color-black-70);
+  color: var(--color-text-muted);
   font-size: 12px;
   font-weight: 700;
   font-family: inherit;
@@ -1446,7 +1470,7 @@ html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-icon-
 .f2s-setting-desc {
   margin: 2px 0 0;
   font-size: 12px;
-  color: var(--color-black-70);
+  color: var(--color-text-muted);
   text-wrap: balance;
 }
 
@@ -1462,7 +1486,7 @@ html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-icon-
 .f2s-modal-footer a {
   font-size: 11px;
   font-weight: 600;
-  color: var(--color-black-70);
+  color: var(--color-text-muted);
   text-decoration: none;
 }
 
@@ -1486,7 +1510,7 @@ html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-icon-
   font-family: inherit;
   font-size: 12px;
   font-weight: 700;
-  color: var(--color-black-70);
+  color: var(--color-text-muted);
   background: transparent;
   border: none;
   border-radius: 6px;
@@ -1786,9 +1810,18 @@ html.f2s-skin--win95.f2s-skin--win95 {
      de marque (orange) devient le bleu de sélection Windows. */
   --color-bg: var(--w95-face);
   --color-text: #000000;
-  --color-black-70: #3f3f3f;
-  --color-scrollbar: var(--w95-face);
-  --color-gray-light: var(--w95-light);
+  /* La rampe de gris de la marque est remappée elle aussi, pas seulement les
+     tokens sémantiques qui s'en servent : sans ça, la première règle de
+     styles.css qui utiliserait --color-gray-* directement (le survol de la
+     croix de suppression, par exemple) ferait entrer un gris chaud de marque
+     dans une fenêtre Windows 95, sans que personne s'en aperçoive avant de
+     changer de skin. */
+  --color-gray-700: #3f3f3f;
+  --color-gray-300: var(--w95-face);
+  --color-gray-100: var(--w95-light);
+  --color-text-muted: var(--color-gray-700);
+  --color-scrollbar: var(--color-gray-300);
+  --color-gray-light: var(--color-gray-100);
   --color-border: var(--w95-shadow);
   --color-surface: var(--w95-white);
   --color-surface-muted: var(--w95-face);
