@@ -396,6 +396,98 @@ a {
   border-color: var(--color-orange-40);
 }
 
+/* ---- Liste de polices de remplacement (bandeau "Fonts") ----
+   Remplace le `<select>` natif par un `<input>` + une liste custom : même
+   apparence et même usage "select" (fermé par défaut, une valeur parmi
+   AVAILABLE_SLIDES_FONTS), mais tapable pour filtrer. Un `<select>` a son
+   flèche dessinée par le navigateur APRÈS le padding-right déclaré, d'où un
+   espace visuel à droite plus grand qu'à gauche malgré un padding CSS
+   symétrique ; ici la flèche est un élément normal dans le flux flex, donc
+   le padding du conteneur (3px 8px, mêmes valeurs que .f2s-font-dropdown)
+   reste identique des deux côtés. */
+
+.f2s-font-combobox {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  /* La police choisie fixe la largeur (via `size` sur l'input, voir
+     FontCombobox.tsx) plutôt qu'une largeur figée ou étirée par le flex du
+     bandeau : deux polices de longueurs différentes n'imposent pas la même
+     boîte. */
+  width: fit-content;
+  font-family: inherit;
+  font-size: 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-radius: 4px;
+  padding: 3px 8px;
+  cursor: text;
+}
+
+.f2s-font-combobox:focus-within {
+  border-color: var(--color-orange-40);
+}
+
+.f2s-font-combobox-input {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: none;
+  padding: 0;
+  outline: none;
+  min-width: 0;
+}
+
+.f2s-font-combobox-arrow {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid var(--color-black-70);
+  border-bottom: 1.5px solid var(--color-black-70);
+  transform: rotate(45deg);
+  margin-top: -3px;
+}
+
+.f2s-font-combobox-list {
+  /* `top`/`left`/`min-width` arrivent en style inline (FontCombobox.tsx),
+     calculés depuis la position réelle de la boîte à l'écran. */
+  position: fixed;
+  z-index: 20;
+  max-width: 260px;
+  max-height: 220px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  box-shadow: 0 8px 20px rgba(18, 15, 13, 0.18);
+}
+
+.f2s-font-combobox-option {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.f2s-font-combobox-option--active {
+  background: var(--color-orange-20);
+}
+
+.f2s-font-combobox-option--selected {
+  font-weight: 700;
+}
+
+.f2s-font-combobox-empty {
+  padding: 4px 8px;
+  font-size: 12px;
+  color: var(--color-black-70);
+}
+
 /* ---- Buttons ---- */
 
 .f2s-btn {
@@ -2005,6 +2097,7 @@ html.f2s-skin--win95 .f2s-btn:disabled {
 
 html.f2s-skin--win95 .f2s-title-input,
 html.f2s-skin--win95 .f2s-font-dropdown,
+html.f2s-skin--win95 .f2s-font-combobox,
 html.f2s-skin--win95 .f2s-dim-box {
   font-size: 11px;
   border: none;
@@ -2016,9 +2109,29 @@ html.f2s-skin--win95 .f2s-dim-box {
 }
 
 html.f2s-skin--win95 .f2s-title-input:focus,
-html.f2s-skin--win95 .f2s-font-dropdown:focus {
+html.f2s-skin--win95 .f2s-font-dropdown:focus,
+html.f2s-skin--win95 .f2s-font-combobox:focus-within {
   outline: none;
   box-shadow: var(--w95-in);
+}
+
+html.f2s-skin--win95 .f2s-font-combobox-list {
+  border: 1px solid var(--w95-dark);
+  border-radius: 0;
+  background: var(--w95-white);
+  box-shadow: var(--w95-out);
+}
+
+html.f2s-skin--win95 .f2s-font-combobox-option {
+  border-radius: 0;
+}
+
+/* Sélection bleu marine classique plutôt que l'orange de marque, cf.
+   --w95-navy déjà utilisé partout ailleurs dans ce skin en lieu et place
+   de --color-orange. */
+html.f2s-skin--win95 .f2s-font-combobox-option--active {
+  background: var(--w95-navy);
+  color: var(--w95-white);
 }
 
 html.f2s-skin--win95 .f2s-title-input::placeholder {
@@ -2338,7 +2451,8 @@ html.f2s-skin--win95 * {
 }
 
 /* Le menu déroulant natif n'a pas la place d'un ascenseur de 16px. */
-html.f2s-skin--win95 .f2s-font-dropdown::-webkit-scrollbar {
+html.f2s-skin--win95 .f2s-font-dropdown::-webkit-scrollbar,
+html.f2s-skin--win95 .f2s-font-combobox-list::-webkit-scrollbar {
   width: 16px;
   height: 16px;
 }
@@ -2427,6 +2541,7 @@ html.f2s-skin--modern .f2s-btn:active:not(:disabled) {
 
 html.f2s-skin--modern .f2s-title-input,
 html.f2s-skin--modern .f2s-font-dropdown,
+html.f2s-skin--modern .f2s-font-combobox,
 html.f2s-skin--modern .f2s-dim-box {
   border: none;
   border-radius: 0;
@@ -2434,9 +2549,19 @@ html.f2s-skin--modern .f2s-dim-box {
 }
 
 html.f2s-skin--modern .f2s-title-input:focus,
-html.f2s-skin--modern .f2s-font-dropdown:focus {
+html.f2s-skin--modern .f2s-font-dropdown:focus,
+html.f2s-skin--modern .f2s-font-combobox:focus-within {
   outline: none;
   box-shadow: var(--hyb-in), 0 0 0 2px var(--color-orange-40);
+}
+
+html.f2s-skin--modern .f2s-font-combobox-list {
+  border-radius: 0;
+  box-shadow: var(--hyb-out);
+}
+
+html.f2s-skin--modern .f2s-font-combobox-option--active {
+  box-shadow: var(--hyb-etched);
 }
 
 /* ---- Vignettes du rail ---- */
@@ -2642,8 +2767,8 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     }
   }
   function L(n2, l3, u4, t3, i3, r3, o3, e3, f4, c3, a3) {
-    var s3, h3, p3, v3, y3, _2, g2, m3 = t3 && t3.__k || w, b2 = l3.length;
-    for (f4 = T(u4, l3, m3, f4, b2), s3 = 0; s3 < b2; s3++) null != (p3 = u4.__k[s3]) && (h3 = -1 != p3.__i && m3[p3.__i] || d, p3.__i = s3, _2 = q(n2, p3, h3, i3, r3, o3, e3, f4, c3, a3), v3 = p3.__e, p3.ref && h3.ref != p3.ref && (h3.ref && J(h3.ref, null, p3), a3.push(p3.ref, p3.__c || v3, p3)), null == y3 && null != v3 && (y3 = v3), (g2 = !!(4 & p3.__u)) || h3.__k === p3.__k ? (f4 = j(p3, f4, n2, g2), g2 && h3.__e && (h3.__e = null)) : "function" == typeof p3.type && void 0 !== _2 ? f4 = _2 : v3 && (f4 = v3.nextSibling), p3.__u &= -7);
+    var s3, h3, p3, v3, y3, _3, g2, m3 = t3 && t3.__k || w, b2 = l3.length;
+    for (f4 = T(u4, l3, m3, f4, b2), s3 = 0; s3 < b2; s3++) null != (p3 = u4.__k[s3]) && (h3 = -1 != p3.__i && m3[p3.__i] || d, p3.__i = s3, _3 = q(n2, p3, h3, i3, r3, o3, e3, f4, c3, a3), v3 = p3.__e, p3.ref && h3.ref != p3.ref && (h3.ref && J(h3.ref, null, p3), a3.push(p3.ref, p3.__c || v3, p3)), null == y3 && null != v3 && (y3 = v3), (g2 = !!(4 & p3.__u)) || h3.__k === p3.__k ? (f4 = j(p3, f4, n2, g2), g2 && h3.__e && (h3.__e = null)) : "function" == typeof p3.type && void 0 !== _3 ? f4 = _3 : v3 && (f4 = v3.nextSibling), p3.__u &= -7);
     return u4.__e = y3, f4;
   }
   function T(n2, l3, u4, t3, i3) {
@@ -2704,7 +2829,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     };
   }
   function q(n2, u4, t3, i3, r3, o3, e3, f4, c3, a3) {
-    var s3, h3, p3, v3, y3, d3, _2, k3, x2, M, $2, I2, P2, A3, H2, T3, j3 = u4.type;
+    var s3, h3, p3, v3, y3, d3, _3, k3, x2, M, $2, I2, P2, A3, H2, T3, j3 = u4.type;
     if (void 0 !== u4.constructor) return null;
     128 & t3.__u && (c3 = !!(32 & t3.__u), o3 = [f4 = u4.__e = t3.__e]), (s3 = l.__b) && s3(u4);
     n: if ("function" == typeof j3) {
@@ -2719,14 +2844,14 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
             break n;
           }
           null != p3.componentWillUpdate && p3.componentWillUpdate(x2, p3.__s, I2), M && null != p3.componentDidUpdate && p3.__h.push(function() {
-            p3.componentDidUpdate(y3, d3, _2);
+            p3.componentDidUpdate(y3, d3, _3);
           });
         }
         if (p3.context = I2, p3.props = x2, p3.__P = n2, p3.__e = false, P2 = l.__r, A3 = 0, M) p3.state = p3.__s, p3.__d = false, P2 && P2(u4), s3 = p3.render(p3.props, p3.state, p3.context), w.push.apply(p3.__h, p3._sb), p3._sb = [];
         else do {
           p3.__d = false, P2 && P2(u4), s3 = p3.render(p3.props, p3.state, p3.context), p3.state = p3.__s;
         } while (p3.__d && ++A3 < 25);
-        p3.state = p3.__s, null != p3.getChildContext && (i3 = m(m({}, i3), p3.getChildContext())), M && !v3 && null != p3.getSnapshotBeforeUpdate && (_2 = p3.getSnapshotBeforeUpdate(y3, d3)), H2 = null != s3 && s3.type === S && null == s3.key ? E(s3.props.children) : s3, f4 = L(n2, g(H2) ? H2 : [H2], u4, t3, i3, r3, o3, e3, f4, c3, a3), p3.base = u4.__e, u4.__u &= -161, p3.__h.length && e3.push(p3), k3 && (p3.__E = p3.__ = null);
+        p3.state = p3.__s, null != p3.getChildContext && (i3 = m(m({}, i3), p3.getChildContext())), M && !v3 && null != p3.getSnapshotBeforeUpdate && (_3 = p3.getSnapshotBeforeUpdate(y3, d3)), H2 = null != s3 && s3.type === S && null == s3.key ? E(s3.props.children) : s3, f4 = L(n2, g(H2) ? H2 : [H2], u4, t3, i3, r3, o3, e3, f4, c3, a3), p3.base = u4.__e, u4.__u &= -161, p3.__h.length && e3.push(p3), k3 && (p3.__E = p3.__ = null);
       } catch (n3) {
         if (e3.length = h3, u4.__v = null, c3 || null != o3) {
           if (n3.then) {
@@ -2758,7 +2883,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     return "object" != typeof n2 || null == n2 || n2.__b > 0 ? n2 : g(n2) ? n2.map(E) : void 0 !== n2.constructor ? null : m({}, n2);
   }
   function G(u4, t3, i3, r3, o3, e3, f4, c3, a3) {
-    var s3, h3, p3, v3, y3, w3, _2, m3 = i3.props || d, k3 = t3.props, x2 = t3.type;
+    var s3, h3, p3, v3, y3, w3, _3, m3 = i3.props || d, k3 = t3.props, x2 = t3.type;
     if ("svg" == x2 ? o3 = "http://www.w3.org/2000/svg" : "math" == x2 ? o3 = "http://www.w3.org/1998/Math/MathML" : o3 || (o3 = "http://www.w3.org/1999/xhtml"), null != e3) {
       for (s3 = 0; s3 < e3.length; s3++) if ((y3 = e3[s3]) && "setAttribute" in y3 == !!x2 && (x2 ? y3.localName == x2 : 3 == y3.nodeType)) {
         u4 = y3, e3[s3] = null;
@@ -2773,10 +2898,10 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     else {
       if (e3 = "textarea" == x2 && null != k3.defaultValue ? null : e3 && n.call(u4.childNodes), !c3 && null != e3) for (m3 = {}, s3 = 0; s3 < u4.attributes.length; s3++) m3[(y3 = u4.attributes[s3]).name] = y3.value;
       for (s3 in m3) y3 = m3[s3], "dangerouslySetInnerHTML" == s3 ? p3 = y3 : "children" == s3 || s3 in k3 || "value" == s3 && "defaultValue" in k3 || "checked" == s3 && "defaultChecked" in k3 || N(u4, s3, null, y3, o3);
-      for (s3 in k3) y3 = k3[s3], "children" == s3 ? v3 = y3 : "dangerouslySetInnerHTML" == s3 ? h3 = y3 : "value" == s3 ? w3 = y3 : "checked" == s3 ? _2 = y3 : c3 && "function" != typeof y3 || m3[s3] === y3 || N(u4, s3, y3, m3[s3], o3);
+      for (s3 in k3) y3 = k3[s3], "children" == s3 ? v3 = y3 : "dangerouslySetInnerHTML" == s3 ? h3 = y3 : "value" == s3 ? w3 = y3 : "checked" == s3 ? _3 = y3 : c3 && "function" != typeof y3 || m3[s3] === y3 || N(u4, s3, y3, m3[s3], o3);
       if (h3) c3 || p3 && (h3.__html == p3.__html || h3.__html == u4.innerHTML) || (u4.innerHTML = h3.__html), t3.__k = [];
       else if (p3 && (u4.innerHTML = ""), L("template" == t3.type ? u4.content : u4, g(v3) ? v3 : [v3], t3, i3, r3, "foreignObject" == x2 ? "http://www.w3.org/1999/xhtml" : o3, e3, f4, e3 ? e3[0] : i3.__k && $(i3, 0), c3, a3), null != e3) for (s3 = e3.length; s3--; ) b(e3[s3]);
-      c3 && "textarea" != x2 || (s3 = "value", "progress" == x2 && null == w3 ? u4.removeAttribute("value") : null != w3 && (w3 !== u4[s3] || "progress" == x2 && !w3 || "option" == x2 && w3 != m3[s3]) && N(u4, s3, w3, m3[s3], o3), s3 = "checked", null != _2 && _2 != u4[s3] && N(u4, s3, _2, m3[s3], o3));
+      c3 && "textarea" != x2 || (s3 = "value", "progress" == x2 && null == w3 ? u4.removeAttribute("value") : null != w3 && (w3 !== u4[s3] || "progress" == x2 && !w3 || "option" == x2 && w3 != m3[s3]) && N(u4, s3, w3, m3[s3], o3), s3 = "checked", null != _3 && _3 != u4[s3] && N(u4, s3, _3, m3[s3], o3));
     }
     return u4;
   }
@@ -2886,6 +3011,10 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
   function h2(n2, u4) {
     var i3 = s2(t2++, 3);
     !c2.__s && C2(i3.__H, u4) && (i3.__ = n2, i3.u = u4, r2.__H.__h.push(i3));
+  }
+  function _2(n2, u4) {
+    var i3 = s2(t2++, 4);
+    !c2.__s && C2(i3.__H, u4) && (i3.__ = n2, i3.u = u4, r2.__h.push(i3));
   }
   function A2(n2) {
     return o2 = 5, T2(function() {
@@ -4173,6 +4302,171 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     );
   }
 
+  // src/ui/FontCombobox.tsx
+  var MIN_SIZE = 10;
+  var MAX_SIZE = 26;
+  function FontCombobox({ value, options, onChange, ariaLabel }) {
+    const [open, setOpen] = d2(false);
+    const [query, setQuery] = d2(value);
+    const [typed, setTyped] = d2(false);
+    const [highlight, setHighlight] = d2(0);
+    const [listRect, setListRect] = d2(null);
+    const rootRef = A2(null);
+    const inputRef = A2(null);
+    h2(() => {
+      if (!open) setQuery(value);
+    }, [value, open]);
+    _2(() => {
+      if (!open) return;
+      function updateRect() {
+        const box = rootRef.current?.getBoundingClientRect();
+        if (!box) return;
+        setListRect({ top: box.bottom + 4, left: box.left, minWidth: box.width });
+      }
+      updateRect();
+      window.addEventListener("scroll", updateRect, true);
+      window.addEventListener("resize", updateRect);
+      return () => {
+        window.removeEventListener("scroll", updateRect, true);
+        window.removeEventListener("resize", updateRect);
+      };
+    }, [open]);
+    h2(() => {
+      if (!open) return;
+      function handlePointerDown(e3) {
+        if (rootRef.current && !rootRef.current.contains(e3.target)) {
+          setOpen(false);
+          setQuery(value);
+          setTyped(false);
+        }
+      }
+      document.addEventListener("pointerdown", handlePointerDown);
+      return () => document.removeEventListener("pointerdown", handlePointerDown);
+    }, [open, value]);
+    h2(() => {
+      if (!open) return;
+      rootRef.current?.querySelector(".f2s-font-combobox-option--active")?.scrollIntoView({ block: "nearest" });
+    }, [open, highlight]);
+    const trimmed = typed ? query.trim().toLowerCase() : "";
+    const filtered = trimmed ? options.filter((f4) => f4.toLowerCase().includes(trimmed)) : options;
+    function commit(font) {
+      onChange(font);
+      setQuery(font);
+      setTyped(false);
+      setOpen(false);
+    }
+    function openList() {
+      setOpen(true);
+      setTyped(false);
+      const current = options.findIndex((f4) => f4 === value);
+      setHighlight(Math.max(0, current));
+    }
+    function handleKeyDown(e3) {
+      if (e3.key === "ArrowDown") {
+        e3.preventDefault();
+        if (!open) {
+          openList();
+          return;
+        }
+        setHighlight((h3) => Math.min(h3 + 1, filtered.length - 1));
+      } else if (e3.key === "ArrowUp") {
+        e3.preventDefault();
+        if (!open) {
+          openList();
+          return;
+        }
+        setHighlight((h3) => Math.max(h3 - 1, 0));
+      } else if (e3.key === "Enter") {
+        if (open && filtered[highlight]) {
+          e3.preventDefault();
+          commit(filtered[highlight]);
+        }
+      } else if (e3.key === "Escape") {
+        if (open) {
+          e3.preventDefault();
+          setOpen(false);
+          setQuery(value);
+          setTyped(false);
+        }
+      }
+    }
+    const displayText = open ? query : value;
+    const sizeAttr = Math.min(MAX_SIZE, Math.max(MIN_SIZE, displayText.length + 1));
+    return /* @__PURE__ */ u3(
+      "div",
+      {
+        className: `f2s-font-combobox${open ? " f2s-font-combobox--open" : ""}`,
+        ref: rootRef,
+        onMouseDown: (e3) => {
+          if (e3.target === inputRef.current) return;
+          e3.preventDefault();
+          inputRef.current?.focus();
+        },
+        children: [
+          /* @__PURE__ */ u3(
+            "input",
+            {
+              ref: inputRef,
+              type: "text",
+              className: "f2s-font-combobox-input",
+              size: sizeAttr,
+              value: displayText,
+              "aria-label": ariaLabel,
+              role: "combobox",
+              "aria-expanded": open,
+              "aria-autocomplete": "list",
+              autocomplete: "off",
+              onFocus: () => {
+                openList();
+                inputRef.current?.select();
+              },
+              onClick: () => {
+                if (!open) openList();
+              },
+              onInput: (e3) => {
+                const v3 = e3.target.value;
+                setQuery(v3);
+                setTyped(true);
+                if (!open) setOpen(true);
+                setHighlight(0);
+              },
+              onKeyDown: handleKeyDown,
+              onBlur: () => {
+                setOpen(false);
+                setQuery(value);
+                setTyped(false);
+              }
+            }
+          ),
+          /* @__PURE__ */ u3("span", { className: "f2s-font-combobox-arrow", "aria-hidden": "true" }),
+          open && listRect && /* @__PURE__ */ u3(
+            "ul",
+            {
+              className: "f2s-font-combobox-list",
+              role: "listbox",
+              style: { top: `${listRect.top}px`, left: `${listRect.left}px`, minWidth: `${listRect.minWidth}px` },
+              children: filtered.length === 0 ? /* @__PURE__ */ u3("li", { className: "f2s-font-combobox-empty", children: "No matching font" }) : filtered.map((font, i3) => /* @__PURE__ */ u3(
+                "li",
+                {
+                  role: "option",
+                  "aria-selected": font === value,
+                  className: `f2s-font-combobox-option${i3 === highlight ? " f2s-font-combobox-option--active" : ""}${font === value ? " f2s-font-combobox-option--selected" : ""}`,
+                  onMouseDown: (e3) => {
+                    e3.preventDefault();
+                    commit(font);
+                  },
+                  onMouseEnter: () => setHighlight(i3),
+                  children: font
+                },
+                font
+              ))
+            }
+          )
+        ]
+      }
+    );
+  }
+
   // src/ui/theme.ts
   var OVERRIDE_CLASS = {
     light: "f2s-theme-light",
@@ -5157,15 +5451,12 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
           /* @__PURE__ */ u3("span", { className: "f2s-font-original", children: s3.original }),
           /* @__PURE__ */ u3("span", { className: "f2s-font-arrow", children: "\u2192" }),
           /* @__PURE__ */ u3(
-            "select",
+            FontCombobox,
             {
-              className: "f2s-font-dropdown",
               value: fontOverrides[s3.original] ?? s3.resolved,
-              onChange: (e3) => {
-                const value = e3.target.value;
-                setFontOverrides((prev) => ({ ...prev, [s3.original]: value }));
-              },
-              children: AVAILABLE_SLIDES_FONTS.map((font) => /* @__PURE__ */ u3("option", { value: font, children: font }, font))
+              options: AVAILABLE_SLIDES_FONTS,
+              ariaLabel: `Replacement font for "${s3.original}"`,
+              onChange: (value) => setFontOverrides((prev) => ({ ...prev, [s3.original]: value }))
             }
           )
         ] }, s3.original))

@@ -71,6 +71,7 @@ html.f2s-skin--modern .f2s-btn:active:not(:disabled) {
 
 html.f2s-skin--modern .f2s-title-input,
 html.f2s-skin--modern .f2s-font-dropdown,
+html.f2s-skin--modern .f2s-font-combobox,
 html.f2s-skin--modern .f2s-dim-box {
   border: none;
   border-radius: 0;
@@ -78,9 +79,19 @@ html.f2s-skin--modern .f2s-dim-box {
 }
 
 html.f2s-skin--modern .f2s-title-input:focus,
-html.f2s-skin--modern .f2s-font-dropdown:focus {
+html.f2s-skin--modern .f2s-font-dropdown:focus,
+html.f2s-skin--modern .f2s-font-combobox:focus-within {
   outline: none;
   box-shadow: var(--hyb-in), 0 0 0 2px var(--color-orange-40);
+}
+
+html.f2s-skin--modern .f2s-font-combobox-list {
+  border-radius: 0;
+  box-shadow: var(--hyb-out);
+}
+
+html.f2s-skin--modern .f2s-font-combobox-option--active {
+  box-shadow: var(--hyb-etched);
 }
 
 /* ---- Vignettes du rail ---- */

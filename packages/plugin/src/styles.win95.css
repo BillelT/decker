@@ -272,6 +272,7 @@ html.f2s-skin--win95 .f2s-btn:disabled {
 
 html.f2s-skin--win95 .f2s-title-input,
 html.f2s-skin--win95 .f2s-font-dropdown,
+html.f2s-skin--win95 .f2s-font-combobox,
 html.f2s-skin--win95 .f2s-dim-box {
   font-size: 11px;
   border: none;
@@ -283,9 +284,29 @@ html.f2s-skin--win95 .f2s-dim-box {
 }
 
 html.f2s-skin--win95 .f2s-title-input:focus,
-html.f2s-skin--win95 .f2s-font-dropdown:focus {
+html.f2s-skin--win95 .f2s-font-dropdown:focus,
+html.f2s-skin--win95 .f2s-font-combobox:focus-within {
   outline: none;
   box-shadow: var(--w95-in);
+}
+
+html.f2s-skin--win95 .f2s-font-combobox-list {
+  border: 1px solid var(--w95-dark);
+  border-radius: 0;
+  background: var(--w95-white);
+  box-shadow: var(--w95-out);
+}
+
+html.f2s-skin--win95 .f2s-font-combobox-option {
+  border-radius: 0;
+}
+
+/* Sélection bleu marine classique plutôt que l'orange de marque, cf.
+   --w95-navy déjà utilisé partout ailleurs dans ce skin en lieu et place
+   de --color-orange. */
+html.f2s-skin--win95 .f2s-font-combobox-option--active {
+  background: var(--w95-navy);
+  color: var(--w95-white);
 }
 
 html.f2s-skin--win95 .f2s-title-input::placeholder {
@@ -605,7 +626,8 @@ html.f2s-skin--win95 * {
 }
 
 /* Le menu déroulant natif n'a pas la place d'un ascenseur de 16px. */
-html.f2s-skin--win95 .f2s-font-dropdown::-webkit-scrollbar {
+html.f2s-skin--win95 .f2s-font-dropdown::-webkit-scrollbar,
+html.f2s-skin--win95 .f2s-font-combobox-list::-webkit-scrollbar {
   width: 16px;
   height: 16px;
 }

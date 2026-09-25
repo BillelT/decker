@@ -391,6 +391,98 @@ a {
   border-color: var(--color-orange-40);
 }
 
+/* ---- Liste de polices de remplacement (bandeau "Fonts") ----
+   Remplace le `<select>` natif par un `<input>` + une liste custom : même
+   apparence et même usage "select" (fermé par défaut, une valeur parmi
+   AVAILABLE_SLIDES_FONTS), mais tapable pour filtrer. Un `<select>` a son
+   flèche dessinée par le navigateur APRÈS le padding-right déclaré, d'où un
+   espace visuel à droite plus grand qu'à gauche malgré un padding CSS
+   symétrique ; ici la flèche est un élément normal dans le flux flex, donc
+   le padding du conteneur (3px 8px, mêmes valeurs que .f2s-font-dropdown)
+   reste identique des deux côtés. */
+
+.f2s-font-combobox {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  /* La police choisie fixe la largeur (via `size` sur l'input, voir
+     FontCombobox.tsx) plutôt qu'une largeur figée ou étirée par le flex du
+     bandeau : deux polices de longueurs différentes n'imposent pas la même
+     boîte. */
+  width: fit-content;
+  font-family: inherit;
+  font-size: 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-radius: 4px;
+  padding: 3px 8px;
+  cursor: text;
+}
+
+.f2s-font-combobox:focus-within {
+  border-color: var(--color-orange-40);
+}
+
+.f2s-font-combobox-input {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: none;
+  padding: 0;
+  outline: none;
+  min-width: 0;
+}
+
+.f2s-font-combobox-arrow {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid var(--color-black-70);
+  border-bottom: 1.5px solid var(--color-black-70);
+  transform: rotate(45deg);
+  margin-top: -3px;
+}
+
+.f2s-font-combobox-list {
+  /* `top`/`left`/`min-width` arrivent en style inline (FontCombobox.tsx),
+     calculés depuis la position réelle de la boîte à l'écran. */
+  position: fixed;
+  z-index: 20;
+  max-width: 260px;
+  max-height: 220px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  box-shadow: 0 8px 20px rgba(18, 15, 13, 0.18);
+}
+
+.f2s-font-combobox-option {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.f2s-font-combobox-option--active {
+  background: var(--color-orange-20);
+}
+
+.f2s-font-combobox-option--selected {
+  font-weight: 700;
+}
+
+.f2s-font-combobox-empty {
+  padding: 4px 8px;
+  font-size: 12px;
+  color: var(--color-black-70);
+}
+
 /* ---- Buttons ---- */
 
 .f2s-btn {

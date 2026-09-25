@@ -24,6 +24,7 @@ import {
 import { DeckPanel } from './ui/DeckPanel';
 import { TemplatePanel } from './ui/TemplatePanel';
 import { SettingsModal } from './ui/SettingsModal';
+import { FontCombobox } from './ui/FontCombobox';
 import {
   applyThemeOverride,
   isThemePreference,
@@ -1355,20 +1356,12 @@ function App() {
                 <label className="f2s-font-select" key={s.original} title={`"${s.original}" isn't available in Slides. Pick the replacement to use.`}>
                   <span className="f2s-font-original">{s.original}</span>
                   <span className="f2s-font-arrow">→</span>
-                  <select
-                    className="f2s-font-dropdown"
+                  <FontCombobox
                     value={fontOverrides[s.original] ?? s.resolved}
-                    onChange={(e) => {
-                      const value = (e.target as HTMLSelectElement).value;
-                      setFontOverrides((prev) => ({ ...prev, [s.original]: value }));
-                    }}
-                  >
-                    {AVAILABLE_SLIDES_FONTS.map((font) => (
-                      <option key={font} value={font}>
-                        {font}
-                      </option>
-                    ))}
-                  </select>
+                    options={AVAILABLE_SLIDES_FONTS}
+                    ariaLabel={`Replacement font for "${s.original}"`}
+                    onChange={(value) => setFontOverrides((prev) => ({ ...prev, [s.original]: value }))}
+                  />
                 </label>
               ))
             )}
