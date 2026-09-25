@@ -13,15 +13,26 @@
   --color-orange-20: rgba(240, 104, 0, 0.2);
   --color-orange-40: rgba(240, 104, 0, 0.4);
   --color-orange-red: #f04000;
+  /* Version plus profonde du orange de marque, pour la bordure de sélection
+     active (.f2s-frame-preview.is-active) : même teinte que --color-orange
+     (26°, calculée en gardant son ratio R/G), juste assombrie. À pleine
+     opacité --color-orange ne tient que 3.01:1 sur --color-bg (à peine le
+     seuil 1.4.11) ; assombrir sans changer de teinte monte à 4.41:1, tout en
+     restant clairement dans la famille orange, loin des 16° de
+     --color-orange-red et des 0° de --color-error qui avaient fait lire la
+     sélection comme une erreur (voir l'historique juste en dessous). Plus
+     sombre que l'orange plein, donc moins criant qu'un aplat de marque. */
+  --color-orange-deep: #c25400;
   /* Rouge PLEIN réservé aux états d'erreur/bloquants. Historique de la
-     bordure de sélection d'une vignette, qu'il a fallu en éloigner deux
-     fois : --color-orange-red d'abord, identique à ce rouge, une vignette
-     bloquante étant alors indiscernable d'une vignette sélectionnée (audit
-     template) ; puis --color-orange-40, plus douce, mais encore lue comme un
-     rouge d'erreur (retour utilisateur) ; aujourd'hui --color-gray-500, qui
-     règle les deux confusions d'un coup ET passe enfin le seuil de contraste
-     (1.56:1 pour l'orange-40, 4.31:1 ici, cf. .f2s-frame-preview.is-active).
-     L'orange reste ce qui APPELLE à agir, le gris ce qui décrit un état. */
+     bordure de sélection d'une vignette : --color-orange-red d'abord,
+     identique à ce rouge, une vignette bloquante étant alors indiscernable
+     d'une vignette sélectionnée (audit template) ; puis --color-orange-40,
+     plus douce, mais encore lue comme un rouge d'erreur (retour
+     utilisateur) ; puis --color-gray-500, qui réglait les deux confusions
+     et passait le seuil de contraste (4.31:1), mais faisait perdre l'orange
+     de marque comme repère de sélection (retour utilisateur) ; aujourd'hui
+     --color-orange-deep, qui garde la teinte de marque tout en passant ce
+     même seuil (4.41:1, cf. .f2s-frame-preview.is-active). */
   --color-error: #e00000;
   --color-bg: #fff9f5;
   --color-text: #120f0d;
@@ -789,24 +800,21 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   /* Gris 300 nommé directement, plutôt qu'emprunté à --color-scrollbar :
      c'est un retour de survol, pas une barre de défilement, et le curseur
      vient de passer au gris 500.
-     Le gris 500 avait été essayé ici aussi (1.39:1 -> 4.31:1, tentant), mais
-     il passe DEVANT l'état sélectionné juste en dessous : .is-active est à
-     l'orange-40, soit 1.56:1 une fois aplati sur le fond. Une vignette
-     survolée se serait lue trois fois plus fort que la vignette réellement
-     sélectionnée. Les deux sont sous le seuil de 3:1 du critère 1.4.11 et
-     mériteraient d'être repris ensemble ; pas en remontant le survol seul. */
+     Volontairement sous le seuil de 3:1 du critère 1.4.11 (1.39:1) : c'est
+     l'état sélectionné juste en dessous (.is-active, orange-deep, 4.41:1
+     en plein) qui doit rester le repère fort, le survol un simple indice.
+     Un gris 500 ici lirait aussi fort, voire plus, que la sélection. */
   border-color: var(--color-gray-300);
 }
 
 .f2s-frame-preview.is-active {
-  /* Gris 500 et non l'orange de marque : c'est le SEUL indice qui dit quelle
-     vignette est ouverte (pas de fond ni de puce en plus), et l'orange-40
-     n'atteignait que 1.56:1 une fois aplati sur le fond du rail, contre
-     4.31:1 ici. Sous le seuil de 3:1 du critère 1.4.11, qui couvre
-     précisément l'indication d'un ÉTAT, la sélection se devinait plus
-     qu'elle ne se voyait. Reste au-dessus du survol, laissé au gris 300
-     (1.39:1) : l'ordre de lecture survol < sélection est préservé. */
-  border-color: var(--color-gray-500);
+  /* Orange profond (--color-orange-deep) plutôt que l'orange plein de marque
+     ou le gris 500 essayé entre-temps : garde le repère "orange = cette
+     vignette est ouverte" (le gris ne se voyait qu'au bord, sans lien avec
+     le reste de la DA), tout en passant le seuil de 3:1 du critère 1.4.11
+     que l'orange plein (3.01:1) et l'orange-40 (1.56:1 aplati) ratent tous
+     les deux. Voir le détail teinte/contraste dans :root. */
+  border-color: var(--color-orange-deep);
 }
 
 .f2s-frame-preview img {
