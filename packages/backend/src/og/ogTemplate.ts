@@ -57,6 +57,11 @@
  */
 import { CABINET_GROTESK_BASE64 } from '../routes/fontData.js';
 import { DECKER_MARK_SVG } from '../routes/brand.js';
+import {
+  DEMO_SLIDE_INTRO_JPEG_BASE64,
+  DEMO_SLIDE_PILLARS_PNG_BASE64,
+  DEMO_SLIDE_CONCLUSION_JPEG_BASE64,
+} from './demoSlideImages.js';
 import type { OgImageContent } from './variants.js';
 
 const CSS = `
@@ -229,38 +234,15 @@ body {
 .demo-log-entry-flag { flex: 0 0 auto; font-size: 9px; font-weight: 700; letter-spacing: 0.01em; padding: 2px 6px; background: var(--b-accent-soft); color: var(--b-ink); }
 
 /* Contenu de la vignette de slide (thumb + grand aperçu partagent ce
-   gabarit) : fond encre, accroche + titre + filet, quelques aplats de
-   couleur en pied évoquant un graphique : un slide plausible plutôt qu'une
-   texture générique, sans dépendre d'un visuel client externe. */
-.slide { position: absolute; inset: 0; background: #17231c; display: flex; flex-direction: column; }
-.slide__body { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 10px; padding: 8% 9%; }
-.slide__eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(242, 236, 232, 0.55); }
-.slide__title { font-size: 26px; font-weight: 800; color: #f2ece8; line-height: 1.1; }
-.slide__rule { width: 64px; height: 2px; background: rgba(242, 236, 232, 0.3); }
-.slide__bars { display: flex; align-items: flex-end; gap: 6px; padding: 0 9% 9%; height: 30%; }
-.slide__bar { flex: 1; background: linear-gradient(180deg, #ffb238, #c1651c); }
-
-.slide--mini .slide__body { padding: 10% 12%; gap: 8%; }
-.slide--mini .slide__eyebrow { display: none; }
-.slide--mini .slide__title { font-size: 11px; }
-.slide--mini .slide__rule { width: 30%; height: 1px; }
-.slide--mini .slide__bars { padding: 0 12% 12%; }
+   gabarit) : une vraie image du deck de démo "Trailworn" (voir
+   assets/mockup slides/ et demoSlideImages.ts), pas un mock dessiné en
+   CSS : le rail de vignettes et le canvas ont exactement la même proportion
+   16:9 que ces images, cover les remplit donc sans rogner. */
+.slide { position: absolute; inset: 0; background-size: cover; background-position: center; }
 `;
 
-/** Barres du bloc "graphique" en pied de slide, hauteurs variées pour un rendu naturel. */
-function slideBars(heights: number[]): string {
-  return `<div class="slide__bars">${heights.map((h) => `<div class="slide__bar" style="height:${h}%"></div>`).join('')}</div>`;
-}
-
-function slideMock(mini: boolean, title: string): string {
-  return `<div class="slide${mini ? ' slide--mini' : ''}">
-    <div class="slide__body">
-      ${mini ? '' : '<span class="slide__eyebrow">Sample deck</span>'}
-      <span class="slide__title">${title}</span>
-      <span class="slide__rule"></span>
-    </div>
-    ${slideBars(mini ? [40, 70, 55, 90] : [35, 65, 50, 85, 60])}
-  </div>`;
+function slideImage(base64: string, mimeType: 'jpeg' | 'png'): string {
+  return `<div class="slide" style="background-image:url('data:image/${mimeType};base64,${base64}')"></div>`;
 }
 
 /** Recrée le panneau du plugin (skin Modern) : mêmes libellés que ui.tsx/DeckPanel.tsx. */
@@ -293,12 +275,12 @@ function renderDemoHtml(): string {
   </div>
   <div class="demo-body">
     <div class="demo-sidebar">
-      <div class="demo-thumb is-active">${slideMock(true, 'Built for the long run')}</div>
-      <div class="demo-thumb">${slideMock(true, 'Three pillars')}</div>
-      <div class="demo-thumb">${slideMock(true, 'Where we go next')}</div>
+      <div class="demo-thumb is-active">${slideImage(DEMO_SLIDE_INTRO_JPEG_BASE64, 'jpeg')}</div>
+      <div class="demo-thumb">${slideImage(DEMO_SLIDE_PILLARS_PNG_BASE64, 'png')}</div>
+      <div class="demo-thumb">${slideImage(DEMO_SLIDE_CONCLUSION_JPEG_BASE64, 'jpeg')}</div>
     </div>
     <div class="demo-canvas">
-      <div class="demo-canvas-preview">${slideMock(false, 'Built for the long run.')}</div>
+      <div class="demo-canvas-preview">${slideImage(DEMO_SLIDE_INTRO_JPEG_BASE64, 'jpeg')}</div>
       <div class="demo-dims">
         <span>Dimensions :</span>
         <span class="demo-dim-box">1920</span>
