@@ -299,7 +299,7 @@ a { color: inherit; }
   letter-spacing: var(--b-tracking-wide); text-transform: uppercase; color: var(--b-text-faint);
 }
 .card__title { margin: 0; font-size: var(--b-text-lg); font-weight: var(--b-font-bold); color: var(--b-ink); text-wrap: balance; }
-.card__desc { margin: 0; font-size: var(--b-text-base); font-weight: var(--b-font-medium); line-height: var(--b-leading-relaxed); color: var(--b-text-muted); text-wrap: pretty; }
+.card__desc { margin: 0; font-size: var(--b-text-base); font-weight: var(--b-font-medium); line-height: var(--b-leading-relaxed); color: var(--b-text-muted); text-wrap: balance; }
 .card--compact { gap: var(--b-space-16); }
 /* Poussée en pied de card (margin-top: auto) pour que les notes s'alignent
    d'une card à l'autre malgré des descriptions de longueurs différentes.
