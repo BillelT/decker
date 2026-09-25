@@ -395,7 +395,6 @@ pagesRouter.get('/', (_req, res) => {
     <section class="section" id="google-access">
       <p class="section__eyebrow">Why Decker asks for Google access</p>
       <h2 class="section__title">Only what the export needs.</h2>
-      <p class="section__lede">Two Google permissions, used only to build your deck, and nothing kept once it lands in your Drive.</p>
       <ul class="card-grid">
         <li class="card card--compact">
           <div class="card__body">
