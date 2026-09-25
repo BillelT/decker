@@ -23,6 +23,7 @@ export const MARKETING_CSS = `
   --b-white: #fff9f5;
   --b-ink: #120f0d;
   --b-gray-700: #3b3735;
+  --b-gray-500: #7f756c;
   --b-gray-300: #dcd5d0;
   --b-gray-100: #f1edeb;
   --b-text: var(--b-ink);
@@ -189,7 +190,7 @@ a { color: inherit; }
 /* Ancres du header seules : encre par defaut (plus de contraste qu'un
    .nav-link générique), et on éclaircit au survol plutôt que l'inverse. */
 .header__nav .nav-link { color: var(--b-ink); }
-.header__nav .nav-link:hover, .header__nav .nav-link[aria-current="page"] { color: var(--b-text-muted); }
+.header__nav .nav-link:hover, .header__nav .nav-link[aria-current="page"] { color: var(--b-gray-500); }
 .header__brand {
   display: inline-flex; align-items: center; gap: var(--b-space-8); color: var(--b-ink);
   font-size: var(--b-text-base); font-weight: var(--b-font-bold); letter-spacing: var(--b-tracking-tight);
