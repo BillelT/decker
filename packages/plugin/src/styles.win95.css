@@ -53,9 +53,19 @@ html.f2s-skin--win95.f2s-skin--win95 {
      de marque (orange) devient le bleu de sélection Windows. */
   --color-bg: var(--w95-face);
   --color-text: #000000;
-  --color-black-70: #3f3f3f;
-  --color-scrollbar: var(--w95-face);
-  --color-gray-light: var(--w95-light);
+  /* La rampe de gris de la marque est remappée elle aussi, pas seulement les
+     tokens sémantiques qui s'en servent : sans ça, la première règle de
+     styles.css qui utiliserait --color-gray-* directement (le survol de la
+     croix de suppression, par exemple) ferait entrer un gris chaud de marque
+     dans une fenêtre Windows 95, sans que personne s'en aperçoive avant de
+     changer de skin. */
+  --color-gray-700: #3f3f3f;
+  --color-gray-500: var(--w95-shadow);
+  --color-gray-300: var(--w95-face);
+  --color-gray-100: var(--w95-light);
+  --color-text-muted: var(--color-gray-700);
+  --color-scrollbar: var(--color-gray-300);
+  --color-gray-light: var(--color-gray-100);
   --color-border: var(--w95-shadow);
   --color-surface: var(--w95-white);
   --color-surface-muted: var(--w95-face);
