@@ -60,6 +60,7 @@ html.f2s-skin--win95.f2s-skin--win95 {
      dans une fenêtre Windows 95, sans que personne s'en aperçoive avant de
      changer de skin. */
   --color-gray-700: #3f3f3f;
+  --color-gray-500: var(--w95-shadow);
   --color-gray-300: var(--w95-face);
   --color-gray-100: var(--w95-light);
   --color-text-muted: var(--color-gray-700);

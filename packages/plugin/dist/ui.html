@@ -29,13 +29,24 @@
   --color-text: #120f0d;
 
   /* Rampe de gris du site (backend/src/routes/marketingStyles.ts :
-     --b-gray-700 / --b-gray-300 / --b-gray-100), reprise ici sous les mêmes
-     numéros pour que le plugin et le site cessent de diverger chacun de son
-     côté. `--b-gray-500` n'est pas repris : rien dans le plugin ne s'en sert,
-     et un token mort ne rend service à personne. En thème sombre, c'est la
-     rampe SEULE qui s'inverse (voir le bloc plus bas) : les tokens
-     sémantiques ci-dessous n'ont alors plus rien à redéfinir. */
+     --b-gray-700 / -500 / -300 / -100), reprise ici sous les mêmes numéros
+     pour que le plugin et le site cessent de diverger chacun de son côté.
+     En thème sombre, c'est la rampe SEULE qui s'inverse (voir le bloc plus
+     bas) : les tokens sémantiques ci-dessous n'ont alors plus rien à
+     redéfinir.
+
+     Répartition des rôles, mesurée (WCAG 2.1) plutôt que choisie à l'oeil :
+     - 700 : tout ce qui est TEXTE secondaire. 11.28:1 sur --color-bg.
+     - 500 : tout ce qui est affordance NON textuelle et doit se voir
+       (curseur de défilement, bordure de survol d'une vignette). 4.31:1 sur
+       --color-bg, seule valeur de la rampe à passer le seuil de 3:1 du
+       critère 1.4.11 ; le 300 y est à 1.39:1, soit invisible en pratique.
+     - 300 : aplats de survol neutres et filets décoratifs.
+     - 100 : bordures fines et surfaces creusées.
+     Le 500 n'est JAMAIS un texte : 4.31:1 contre 11.28:1 pour le 700, ce
+     serait perdre plus de la moitié du contraste du texte secondaire. */
   --color-gray-700: #3b3735;
+  --color-gray-500: #7f756c;
   --color-gray-300: #dcd5d0;
   --color-gray-100: #f1edeb;
 
@@ -46,10 +57,12 @@
      légèrement plus contrasté qu'avant. Le nom aussi devenait faux, la valeur
      n'étant plus un noir translucide. */
   --color-text-muted: var(--color-gray-700);
-  /* Gris 300 : survols neutres (croix de suppression du rail, qui virait à
-     l'orange de marque alors que supprimer une vignette n'est pas l'action
-     que le produit met en avant) et barre de défilement. */
-  --color-scrollbar: var(--color-gray-300);
+  /* Le curseur de défilement était au gris 300, soit 1.39:1 sur le fond :
+     mesurable, mais pas visible. Au gris 500 il atteint 4.31:1 et redevient
+     une vraie prise. Le gris 300, lui, reste sur les aplats de survol (la
+     croix de suppression du rail, qui virait à l'orange de marque alors que
+     supprimer une vignette n'est pas l'action que le produit met en avant). */
+  --color-scrollbar: var(--color-gray-500);
   --color-gray-light: var(--color-gray-100);
   --color-border: var(--color-gray-light);
   /* Surfaces additionnelles pour le layout à deux colonnes — même famille
@@ -91,6 +104,7 @@ html.f2s-theme-dark {
      exact de l'ancien rgba(242, 236, 232, 0.7) posé sur --color-bg : opaque,
      il ne change plus de teinte selon la surface qui passe dessous. */
   --color-gray-700: #b0aca6;
+  --color-gray-500: #8b8279;
   --color-gray-300: #4d453e;
   --color-gray-100: #332c26;
   --color-surface: #211c17;
@@ -100,6 +114,7 @@ html.f2s-theme-dark {
 @media (prefers-color-scheme: dark) {
   html:not(.figma-light):not(.f2s-theme-light) {
     --color-gray-700: #b0aca6;
+    --color-gray-500: #8b8279;
     --color-gray-300: #4d453e;
     --color-gray-100: #332c26;
     --color-bg: #171310;
@@ -666,7 +681,16 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
 /* Retour hover = sélection (pas le drag, qui reste discret tant qu'aucun
    mouvement n'est détecté — voir .is-dragging plus bas). */
 .f2s-frame-preview:hover:not(.is-active) {
-  border-color: var(--color-scrollbar);
+  /* Gris 300 nommé directement, plutôt qu'emprunté à --color-scrollbar :
+     c'est un retour de survol, pas une barre de défilement, et le curseur
+     vient de passer au gris 500.
+     Le gris 500 avait été essayé ici aussi (1.39:1 -> 4.31:1, tentant), mais
+     il passe DEVANT l'état sélectionné juste en dessous : .is-active est à
+     l'orange-40, soit 1.56:1 une fois aplati sur le fond. Une vignette
+     survolée se serait lue trois fois plus fort que la vignette réellement
+     sélectionnée. Les deux sont sous le seuil de 3:1 du critère 1.4.11 et
+     mériteraient d'être repris ensemble ; pas en remontant le survol seul. */
+  border-color: var(--color-gray-300);
 }
 
 .f2s-frame-preview.is-active {
@@ -742,7 +766,11 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
      toujours visible (audit) — .f2s-canvas reste scrollable pour le reste. */
   max-height: 65%;
   flex: none;
-  border: 1px solid var(--color-scrollbar);
+  /* Filet décoratif autour de l'aperçu : gris 300, la valeur qu'il avait
+     déjà via --color-scrollbar. Nommé explicitement pour qu'il ne suive plus
+     le curseur de défilement, qui vient de passer au gris 500 et
+     transformerait ce cheveu en cadre appuyé. */
+  border: 1px solid var(--color-gray-300);
 }
 
 .f2s-canvas-preview img {
@@ -1819,6 +1847,7 @@ html.f2s-skin--win95.f2s-skin--win95 {
      dans une fenêtre Windows 95, sans que personne s'en aperçoive avant de
      changer de skin. */
   --color-gray-700: #3f3f3f;
+  --color-gray-500: var(--w95-shadow);
   --color-gray-300: var(--w95-face);
   --color-gray-100: var(--w95-light);
   --color-text-muted: var(--color-gray-700);
