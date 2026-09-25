@@ -1151,6 +1151,16 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   gap: 20px;
 }
 
+/* .f2s-logs plafonne à 640px pour le mode deck, où il flotte seul, centré,
+   sous l'aperçu (voir plus haut). En mode template il est empilé dans
+   .f2s-tmpl-panel, déjà large de la largeur du canvas central : le même
+   plafond y laissait une bande vide à droite de "Composition"/"Notes"
+   (retour utilisateur). Ne s'applique qu'ici, pas à .f2s-tmpl-preview qui
+   est déjà en max-width: 100% au-dessus. */
+.f2s-tmpl-panel .f2s-logs {
+  max-width: 100%;
+}
+
 .f2s-tmpl-section {
   display: flex;
   flex-direction: column;

@@ -25,19 +25,35 @@ function setPlaceholderRole(sourceNodeId: string, tag: string): void {
  * défaut de fidélité ne produisant aucun avertissement, il n'offrait alors
  * AUCUN moyen d'assigner un rôle depuis le plugin, alors que c'est
  * précisément le layout le plus abouti (TODO.md § Mode template, point 9).
+ *
+ * `noteByNode` : la note de fidélité (police substituée, radius approximé…)
+ * du calque, quand une existe, affichée en tag juste à côté du sélecteur de
+ * rôle plutôt que dans une liste "Notes" séparée qui répétait alors les
+ * mêmes calques (retour utilisateur). Construit par le parent, qui n'y met
+ * que les notes AVEC tag court (police/radius) : un message générique sans
+ * tag (ex. "Unknown placeholder tag") ne tiendrait pas sur cette ligne et
+ * reste dans "Notes", qui ne liste donc plus que ce que "Content" ne peut
+ * pas porter.
  */
-function TemplateElementList({ elements }: { elements: TemplateElement[] }) {
+function TemplateElementList({ elements, noteByNode }: { elements: TemplateElement[]; noteByNode: Map<string, { flag: 'rasterized' | 'visual-diff'; text: string; tooltip: string }> }) {
   return (
     <ul className="f2s-tmpl-list">
       {elements.map((el) => {
         const role = el.role as PlaceholderRole | undefined;
+        const note = noteByNode.get(el.sourceNodeId);
         return (
           <li key={el.id} className={`f2s-log-entry${role ? ' f2s-log-entry--tagged' : ''}`}>
-            <button type="button" className="f2s-log-entry-clickarea" title={el.label ? `${el.name} (${el.label})` : el.name} onClick={() => selectSourceNodes([el.sourceNodeId])}>
+            <button
+              type="button"
+              className="f2s-log-entry-clickarea"
+              title={note ? note.tooltip : el.label ? `${el.name} (${el.label})` : el.name}
+              onClick={() => selectSourceNodes([el.sourceNodeId])}
+            >
               <span className="f2s-log-entry-text">
                 <strong className="f2s-log-entry-name">{el.name}</strong>
               </span>
               {role && <span className="f2s-tmpl-role">{role}</span>}
+              {note && <span className={`f2s-log-entry-flag f2s-log-entry-flag--${note.flag}`}>{note.text}</span>}
             </button>
             <select
               className="f2s-log-entry-role"
@@ -289,6 +305,28 @@ export function TemplatePanel({
   const compositionWarnings = previewedLayout?.warnings.filter((w) => w.severity !== 'blocking' && COMPOSITION_WARNING_CODES.has(w.code)) ?? [];
   const fidelityNotes = previewedLayout?.warnings.filter((w) => w.severity !== 'blocking' && !COMPOSITION_WARNING_CODES.has(w.code)) ?? [];
 
+  // Une note de fidélité sur un calque déjà listé dans "Content" (le cas
+  // courant : police substituée/radius approximé, sur un calque taguable)
+  // s'affiche désormais en tag à côté de son sélecteur de rôle plutôt que
+  // répétée plus bas dans "Notes" (retour utilisateur : les deux listes
+  // montraient les mêmes calques). Seules les notes AVEC tag court sont
+  // absorbées : un message générique sans tag n'a pas sa place sur cette
+  // ligne. "Notes" ne garde donc que ce qui reste : messages sans tag, et
+  // notes sur un calque hors "Content" (ex. faute de frappe de tag détectée
+  // sur un calque non taguable), jamais perdues, juste pas dupliquées.
+  const contentNodeIds = new Set(previewedLayout?.elements.map((el) => el.sourceNodeId) ?? []);
+  const noteByNode = new Map<string, { flag: 'rasterized' | 'visual-diff'; text: string; tooltip: string }>();
+  const consumedNotes = new Set<TemplateWarning>();
+  for (const w of fidelityNotes) {
+    if (!contentNodeIds.has(w.sourceNodeId) || noteByNode.has(w.sourceNodeId)) continue;
+    const flag = logEntryFlag(w.code);
+    if (!flag) continue;
+    const text = logEntryTagText(w, fontOverrides);
+    noteByNode.set(w.sourceNodeId, { flag, text, tooltip: logEntryTooltip(w, text) });
+    consumedNotes.add(w);
+  }
+  const leftoverNotes = fidelityNotes.filter((w) => !consumedNotes.has(w));
+
   if (order.length === 0) {
     return (
       <div className="f2s-body">
@@ -428,7 +466,7 @@ export function TemplatePanel({
                     <code>[[body]]</code>, <code>[[image]]</code>, <code>[[subtitle]]</code> or <code>[[logo]]</code>.
                   </p>
                 ) : (
-                  <TemplateElementList elements={previewedLayout.elements} />
+                  <TemplateElementList elements={previewedLayout.elements} noteByNode={noteByNode} />
                 )}
               </section>
 
@@ -445,12 +483,12 @@ export function TemplatePanel({
                 </div>
               )}
 
-              {fidelityNotes.length > 0 && (
+              {leftoverNotes.length > 0 && (
                 <div className="f2s-logs">
                   <div className="f2s-logs-header">
                     <h3 className="f2s-tmpl-heading">Notes</h3>
                   </div>
-                  <TemplateLogList warnings={fidelityNotes} fontOverrides={fontOverrides} />
+                  <TemplateLogList warnings={leftoverNotes} fontOverrides={fontOverrides} />
                 </div>
               )}
             </div>
