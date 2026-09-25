@@ -79,9 +79,11 @@ const CSS = `
   --b-surface: #ffffff;
   --b-surface-muted: #f2ece8;
   --b-border: #f1edeb;
+  --b-scrollbar: #dcd5d0;
   --b-muted: rgba(18, 15, 13, 0.7);
   --b-accent: #f06800;
   --b-accent-red: #f04000;
+  --b-accent-soft: #ffc599;
 
   --hyb-hi: rgba(255, 255, 255, 0.9);
   --hyb-lo: rgba(18, 15, 13, 0.22);
@@ -92,6 +94,7 @@ const CSS = `
     inset 2px 2px var(--hyb-lo-strong);
   --hyb-pressed: inset -1px -1px var(--hyb-hi), inset 1px 1px var(--hyb-lo-strong), inset -2px -2px var(--hyb-hi),
     inset 2px 2px var(--hyb-lo);
+  --hyb-etched: inset -1px -1px var(--hyb-hi), inset 1px 1px var(--hyb-lo);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -180,7 +183,7 @@ body {
 }
 .demo-topbar-left { display: flex; align-items: center; gap: 16px; }
 
-.demo-tabs { display: inline-flex; gap: 2px; padding: 2px; background: var(--b-surface-muted); box-shadow: var(--hyb-in); }
+.demo-tabs { display: inline-flex; gap: 2px; padding: 2px; background: var(--b-surface-muted); border: 1px solid var(--b-border); }
 .demo-tab { font-size: 12px; font-weight: 700; color: var(--b-muted); padding: 5px 14px; }
 .demo-tab.is-active { background: var(--b-white); color: var(--b-ink); box-shadow: var(--hyb-pressed); }
 
@@ -189,13 +192,20 @@ body {
 .demo-input { font-size: 12px; color: var(--b-muted); background: var(--b-surface); box-shadow: var(--hyb-in); padding: 3px 8px; width: 150px; }
 
 .demo-topbar-actions { display: flex; align-items: center; gap: 16px; }
-.demo-btn { font-size: 13px; font-weight: 700; padding: 8px 16px; white-space: nowrap; box-shadow: var(--hyb-out); }
-.demo-btn--tertiary { background: transparent; color: var(--b-ink); }
-.demo-btn--secondary { background: transparent; color: var(--b-accent); }
+/* Bordure transparente en base (comme .f2s-btn) : chaque variante redéfinit
+   sa couleur, sauf primary qui la garde transparente (le fond orange suffit) :
+   même déclaration sur les trois évite un écart de taille entre boutons. */
+.demo-btn { font-size: 13px; font-weight: 700; padding: 8px 16px; white-space: nowrap; border: 1px solid transparent; box-shadow: var(--hyb-out); }
+.demo-btn--tertiary { background: transparent; color: var(--b-ink); border-color: var(--b-ink); }
+.demo-btn--secondary { background: transparent; color: var(--b-accent); border-color: var(--b-accent); }
 .demo-btn--primary { background: var(--b-accent); color: var(--b-white); }
 
 .demo-toolbar { display: flex; align-items: center; gap: 8px; padding: 12px 16px; flex: none; }
 .demo-muted { font-size: 12px; font-weight: 500; color: var(--b-muted); }
+.demo-font-select { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; }
+.demo-font-original,
+.demo-font-arrow { color: var(--b-muted); }
+.demo-font-dropdown { font-size: 12px; font-weight: 700; color: var(--b-ink); background: var(--b-surface); box-shadow: var(--hyb-in); padding: 3px 8px; }
 
 .demo-body { flex: 1; min-height: 0; display: flex; border-top: 1px solid var(--b-border); }
 
@@ -204,11 +214,19 @@ body {
 .demo-thumb.is-active { border-color: var(--b-accent-red); }
 .demo-thumb__index { position: absolute; left: 0; bottom: -18px; font-size: 12px; color: var(--b-muted); }
 
-.demo-canvas { flex: 1; min-width: 0; padding: 20px 24px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
-.demo-canvas-preview { width: 100%; max-width: 640px; aspect-ratio: 16 / 9; border: 1px solid var(--b-border); overflow: hidden; position: relative; flex: none; }
+.demo-canvas { flex: 1; min-width: 0; padding: 20px 24px; display: flex; flex-direction: column; align-items: center; gap: 24px; }
+.demo-canvas-preview { width: 100%; max-width: 640px; aspect-ratio: 16 / 9; border: 1px solid var(--b-scrollbar); overflow: hidden; position: relative; flex: none; }
 
 .demo-dims { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--b-muted); flex: none; }
 .demo-dim-box { box-shadow: var(--hyb-in); background: var(--b-surface); padding: 2px 10px; min-width: 24px; text-align: center; color: var(--b-ink); }
+
+/* ---- Rapport "Content" (voir .f2s-logs / .f2s-log-entry de styles.css) ---- */
+.demo-logs { width: 100%; max-width: 640px; flex: none; display: flex; flex-direction: column; gap: 8px; background: var(--b-surface); box-shadow: var(--hyb-etched); padding: 12px 16px; }
+.demo-logs-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.demo-logs-title { font-size: 13px; font-weight: 700; }
+.demo-log-entry { display: flex; align-items: center; gap: 8px; width: 100%; font-size: 12px; color: var(--b-ink); background: var(--b-border); box-shadow: var(--hyb-out); padding: 6px 10px; }
+.demo-log-entry-name { flex: 1 1 auto; min-width: 0; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.demo-log-entry-flag { flex: 0 0 auto; font-size: 9px; font-weight: 700; letter-spacing: 0.01em; padding: 2px 6px; background: var(--b-accent-soft); color: var(--b-ink); }
 
 /* Contenu de la vignette de slide (thumb + grand aperçu partagent ce
    gabarit) : fond encre, accroche + titre + filet, quelques aplats de
@@ -267,7 +285,11 @@ function renderDemoHtml(): string {
   </div>
   <div class="demo-toolbar">
     <span class="demo-label">Fonts:</span>
-    <span class="demo-muted">All fonts will appear here and can be replaced automatically.</span>
+    <span class="demo-font-select">
+      <span class="demo-font-original">General Sans Variable</span>
+      <span class="demo-font-arrow">→</span>
+      <span class="demo-font-dropdown">Inter</span>
+    </span>
   </div>
   <div class="demo-body">
     <div class="demo-sidebar">
@@ -283,6 +305,20 @@ function renderDemoHtml(): string {
         <span>×</span>
         <span class="demo-dim-box">1080</span>
         <span>px</span>
+      </div>
+      <div class="demo-logs">
+        <div class="demo-logs-header">
+          <span class="demo-logs-title">Content</span>
+          <span class="demo-muted">16 native · 0 rasterized</span>
+        </div>
+        <div class="demo-log-entry">
+          <span class="demo-log-entry-name">Built for the long run.</span>
+          <span class="demo-log-entry-flag">General Sans Variable → Inter</span>
+        </div>
+        <div class="demo-log-entry">
+          <span class="demo-log-entry-name">BRAND CASE STUDY</span>
+          <span class="demo-log-entry-flag">General Sans Variable → Inter</span>
+        </div>
       </div>
     </div>
   </div>
