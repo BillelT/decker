@@ -1,8 +1,8 @@
 /* Design system (voir /root/.claude/uploads/.../designsystem.md) */
 
 @font-face {
-  font-family: 'Cabinet Grotesk';
-  src: url(__FONT_DATA_URI__) format('woff2');
+  font-family: "Cabinet Grotesk";
+  src: url(__FONT_DATA_URI__) format("woff2");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -12,27 +12,9 @@
   --color-orange: #f06800;
   --color-orange-20: rgba(240, 104, 0, 0.2);
   --color-orange-40: rgba(240, 104, 0, 0.4);
+  --color-orange-80: rgba(240, 104, 0, 0.8);
   --color-orange-red: #f04000;
-  /* Version plus profonde du orange de marque, pour la bordure de sélection
-     active (.f2s-frame-preview.is-active) : même teinte que --color-orange
-     (26°, calculée en gardant son ratio R/G), juste assombrie. À pleine
-     opacité --color-orange ne tient que 3.01:1 sur --color-bg (à peine le
-     seuil 1.4.11) ; assombrir sans changer de teinte monte à 4.41:1, tout en
-     restant clairement dans la famille orange, loin des 16° de
-     --color-orange-red et des 0° de --color-error qui avaient fait lire la
-     sélection comme une erreur (voir l'historique juste en dessous). Plus
-     sombre que l'orange plein, donc moins criant qu'un aplat de marque. */
-  --color-orange-deep: #c25400;
-  /* Rouge PLEIN réservé aux états d'erreur/bloquants. Historique de la
-     bordure de sélection d'une vignette : --color-orange-red d'abord,
-     identique à ce rouge, une vignette bloquante étant alors indiscernable
-     d'une vignette sélectionnée (audit template) ; puis --color-orange-40,
-     plus douce, mais encore lue comme un rouge d'erreur (retour
-     utilisateur) ; puis --color-gray-500, qui réglait les deux confusions
-     et passait le seuil de contraste (4.31:1), mais faisait perdre l'orange
-     de marque comme repère de sélection (retour utilisateur) ; aujourd'hui
-     --color-orange-deep, qui garde la teinte de marque tout en passant ce
-     même seuil (4.41:1, cf. .f2s-frame-preview.is-active). */
+  /* Rouge PLEIN réservé aux états d'erreur/bloquants.*/
   --color-error: #e00000;
   --color-bg: #fff9f5;
   --color-text: #120f0d;
@@ -148,7 +130,7 @@ body {
 }
 
 body {
-  font-family: 'Cabinet Grotesk', system-ui, sans-serif;
+  font-family: "Cabinet Grotesk", system-ui, sans-serif;
   font-size: 12px;
   font-weight: 400;
   color: var(--color-text);
@@ -182,24 +164,18 @@ a {
    cohérence avec scrollbar-width: thin ci-dessous pour Firefox — sauf en
    win95 (styles.win95.css), qui garde volontairement l'ascenseur
    16px/motif tramé d'origine. */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+*::-webkit-scrollbar {
+  display: block;
+  width: 13px;
 }
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
+*::-webkit-scrollbar-thumb {
   background: var(--color-scrollbar);
-  border-radius: 8px;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
 }
-/* Pas de boutons fléchés aux extrémités : juste la piste et la poignée. */
-::-webkit-scrollbar-button {
-  display: none;
-}
-* {
-  scrollbar-color: var(--color-scrollbar) transparent;
-  scrollbar-width: thin;
+*::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 /* ---- Top bar ---- */
@@ -530,6 +506,7 @@ a {
   white-space: nowrap;
   text-overflow: ellipsis;
   cursor: pointer;
+  padding: 4px;
 }
 
 /* Survol et sélection clavier partagent le même style (voir `highlight`
@@ -561,7 +538,11 @@ a {
   border: 1px solid transparent;
   white-space: nowrap;
   text-decoration: none;
-  transition: background-color 0.15s ease, color 0.15s ease, outline-color 0.15s ease, transform 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    outline-color 0.15s ease,
+    transform 0.15s ease;
 }
 
 /* Transform translateY() uniquement en mode modern (Win95 gère le pressed via box-shadow) */
@@ -745,7 +726,10 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   overflow: hidden;
   text-overflow: ellipsis;
   cursor: text;
-  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
 }
 
 /* Ce champ remplace le contour système (`outline: none`) par sa propre
@@ -789,7 +773,7 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
 
 .f2s-frame-preview {
   border-radius: 8px;
-  border: 2px solid transparent;
+  border: 2.5px solid transparent;
   background: var(--color-surface-muted);
   aspect-ratio: 16 / 9;
   width: 100%;
@@ -803,24 +787,11 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
 /* Retour hover = sélection (pas le drag, qui reste discret tant qu'aucun
    mouvement n'est détecté — voir .is-dragging plus bas). */
 .f2s-frame-preview:hover:not(.is-active) {
-  /* Gris 300 nommé directement, plutôt qu'emprunté à --color-scrollbar :
-     c'est un retour de survol, pas une barre de défilement, et le curseur
-     vient de passer au gris 500.
-     Volontairement sous le seuil de 3:1 du critère 1.4.11 (1.39:1) : c'est
-     l'état sélectionné juste en dessous (.is-active, orange-deep, 4.41:1
-     en plein) qui doit rester le repère fort, le survol un simple indice.
-     Un gris 500 ici lirait aussi fort, voire plus, que la sélection. */
-  border-color: var(--color-gray-300);
+  border-color: var(--color-gray-500);
 }
 
 .f2s-frame-preview.is-active {
-  /* Orange profond (--color-orange-deep) plutôt que l'orange plein de marque
-     ou le gris 500 essayé entre-temps : garde le repère "orange = cette
-     vignette est ouverte" (le gris ne se voyait qu'au bord, sans lien avec
-     le reste de la DA), tout en passant le seuil de 3:1 du critère 1.4.11
-     que l'orange plein (3.01:1) et l'orange-40 (1.56:1 aplati) ratent tous
-     les deux. Voir le détail teinte/contraste dans :root. */
-  border-color: var(--color-orange-deep);
+  border-color: var(--color-orange-80);
 }
 
 .f2s-frame-preview img {
@@ -1292,10 +1263,25 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
    (rend son alpha visible plutôt que de la faire fondre dans le fond du
    panneau) — une couleur opaque n'a pas de raison de l'afficher. */
 .f2s-style-swatch--transparent {
-  background-image: linear-gradient(45deg, rgba(127, 127, 127, 0.25) 25%, transparent 25%, transparent 75%, rgba(127, 127, 127, 0.25) 75%),
-    linear-gradient(45deg, rgba(127, 127, 127, 0.25) 25%, transparent 25%, transparent 75%, rgba(127, 127, 127, 0.25) 75%);
+  background-image:
+    linear-gradient(
+      45deg,
+      rgba(127, 127, 127, 0.25) 25%,
+      transparent 25%,
+      transparent 75%,
+      rgba(127, 127, 127, 0.25) 75%
+    ),
+    linear-gradient(
+      45deg,
+      rgba(127, 127, 127, 0.25) 25%,
+      transparent 25%,
+      transparent 75%,
+      rgba(127, 127, 127, 0.25) 75%
+    );
   background-size: 8px 8px;
-  background-position: 0 0, 4px 4px;
+  background-position:
+    0 0,
+    4px 4px;
   background-origin: border-box;
 }
 
@@ -1349,7 +1335,7 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
 }
 
 .f2s-frame-preview--blocking::after {
-  content: '!';
+  content: "!";
   position: absolute;
   top: 4px;
   right: 4px;
@@ -1472,11 +1458,14 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   border-radius: 8px;
   padding: 6px 10px;
   margin-left: -10px;
-  transition: color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease,
+    transform 0.15s ease;
 }
 
 .f2s-footer-settings:hover:not(:disabled),
-.f2s-footer-settings[aria-expanded='true'] {
+.f2s-footer-settings[aria-expanded="true"] {
   color: var(--color-text);
   background: var(--color-surface-muted);
 }
@@ -1502,7 +1491,9 @@ html:not(.f2s-skin--win95) .f2s-icon-gear {
    1.56 -> 1.15) et transition ralentie (0.35s -> 0.45s) : la version
    précédente rendait trop violente au hover. scale réduit (1.04 -> 1.02)
    pour rester discret. */
-html:not(.f2s-skin--win95) .f2s-footer-settings:hover:not(:disabled) .f2s-icon-gear {
+html:not(.f2s-skin--win95)
+  .f2s-footer-settings:hover:not(:disabled)
+  .f2s-icon-gear {
   transform: rotate(60deg) scale(1.02);
 }
 
@@ -1510,7 +1501,9 @@ html:not(.f2s-skin--win95) .f2s-footer-settings:hover:not(:disabled) .f2s-icon-g
    de s'arrêter pile à 60° — et compresse légèrement pour le ressenti
    d'enfoncement. Transition plus courte et sans rebond : l'appui doit
    être net, le rebond est réservé à l'arrivée en hover. */
-html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-icon-gear {
+html:not(.f2s-skin--win95)
+  .f2s-footer-settings:active:not(:disabled)
+  .f2s-icon-gear {
   transform: rotate(68deg) scale(0.95);
   transition-duration: 0.12s;
   transition-timing-function: ease-out;
@@ -1574,7 +1567,9 @@ html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-icon-
   overflow: hidden;
   opacity: 0;
   transform: translateY(8px) scale(0.98);
-  transition: opacity var(--f2s-modal-duration) var(--f2s-modal-ease), transform var(--f2s-modal-duration) var(--f2s-modal-ease);
+  transition:
+    opacity var(--f2s-modal-duration) var(--f2s-modal-ease),
+    transform var(--f2s-modal-duration) var(--f2s-modal-ease);
 }
 
 .f2s-modal:focus {
@@ -1681,12 +1676,15 @@ html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) .f2s-icon-
   font-family: inherit;
   font-size: 12px;
   font-weight: 700;
-  color: var(--color-text-muted);
+  min-width: 82px;
+  color: var(--color-gray-500);
   background: transparent;
   border: none;
   border-radius: 6px;
   padding: 5px 14px;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .f2s-tab:hover:not(.is-active) {
