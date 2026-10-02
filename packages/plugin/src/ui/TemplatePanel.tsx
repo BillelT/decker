@@ -433,6 +433,32 @@ export function TemplatePanel({
       <main className="f2s-canvas f2s-canvas--template">
         {previewedLayout ? (
           <div className="f2s-tmpl-report">
+            {(blockingWarnings.length > 0 || compositionWarnings.length > 0) && (
+              <div className="f2s-tmpl-panel">
+              {blockingWarnings.length > 0 && (
+                <div className="f2s-logs f2s-tmpl-section--blocking">
+                  <div className="f2s-logs-header">
+                    <h3 className="f2s-tmpl-heading">Fix before creating the template</h3>
+                  </div>
+                  <TemplateLogList warnings={blockingWarnings} fontOverrides={fontOverrides} />
+                </div>
+              )}
+
+              {/* Composition (TODO.md § Mode template, point 7) : ni un défaut de
+                  fidélité, ni un blocage, mais une intention douteuse qui retombera sur
+                  tous les futurs utilisateurs du template. Gardée à part des "Notes"
+                  de fidélité, qui, elles, ne parlent que du rendu. */}
+              {compositionWarnings.length > 0 && (
+                <div className="f2s-logs">
+                  <div className="f2s-logs-header">
+                    <h3 className="f2s-tmpl-heading">Composition</h3>
+                  </div>
+                  <TemplateLogList warnings={compositionWarnings} fontOverrides={fontOverrides} wrap />
+                </div>
+              )}
+              </div>
+            )}
+
             {exportingLayout && pacedCursor ? (
               <div className="f2s-canvas-preview f2s-canvas-preview--retro f2s-tmpl-preview">
                 <RetroExportPreview
@@ -449,15 +475,6 @@ export function TemplatePanel({
             )}
 
             <div className="f2s-tmpl-panel">
-              {blockingWarnings.length > 0 && (
-                <div className="f2s-logs f2s-tmpl-section--blocking">
-                  <div className="f2s-logs-header">
-                    <h3 className="f2s-tmpl-heading">Fix before creating the template</h3>
-                  </div>
-                  <TemplateLogList warnings={blockingWarnings} fontOverrides={fontOverrides} />
-                </div>
-              )}
-
               <section className="f2s-tmpl-section">
                 <h3 className="f2s-tmpl-heading">Content</h3>
                 {previewedLayout.elements.length === 0 ? (
@@ -469,19 +486,6 @@ export function TemplatePanel({
                   <TemplateElementList elements={previewedLayout.elements} noteByNode={noteByNode} />
                 )}
               </section>
-
-              {/* Composition (TODO.md § Mode template, point 7) : ni un défaut de
-                  fidélité, ni un blocage, mais une intention douteuse qui retombera sur
-                  tous les futurs utilisateurs du template. Gardée à part des "Notes"
-                  de fidélité, qui, elles, ne parlent que du rendu. */}
-              {compositionWarnings.length > 0 && (
-                <div className="f2s-logs">
-                  <div className="f2s-logs-header">
-                    <h3 className="f2s-tmpl-heading">Composition</h3>
-                  </div>
-                  <TemplateLogList warnings={compositionWarnings} fontOverrides={fontOverrides} wrap />
-                </div>
-              )}
 
               {leftoverNotes.length > 0 && (
                 <div className="f2s-logs">
