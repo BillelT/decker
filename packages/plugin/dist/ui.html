@@ -272,7 +272,7 @@ a {
 /* 85% plutôt que 100% : le symbole flottait au ras de la bordure, un peu
    trop grand dans son cadre. Un pourcentage (plutôt qu'une taille fixe en
    px) garde le même ratio cadre/symbole sur les deux tailles de boîte
-   existantes (28px ici, 22px en win95, cf. styles.win95.css) sans dupliquer
+   existantes (28px ici, 24px en win95, cf. styles.win95.css) sans dupliquer
    la règle par skin. */
 .f2s-logo svg {
   width: 85%;
@@ -1743,7 +1743,7 @@ html:not(.f2s-skin--win95)
   background: var(--w95-face);
   color: #000000;
   font-family: Tahoma, Verdana, "MS Sans Serif", Geneva, sans-serif;
-  font-size: 11px;
+  font-size: 12px;
   /* Biseau sortant : clair en haut/gauche, deux niveaux d'ombre en bas/droite. */
   border-top: 1px solid var(--w95-light);
   border-left: 1px solid var(--w95-light);
@@ -2018,7 +2018,7 @@ html.f2s-skin--win95 body {
      chaîne autonome, cf. esbuild.config.mjs) : Tahoma est la police système
      la plus proche de MS Sans Serif, présente partout. */
   font-family: Tahoma, 'MS Sans Serif', Geneva, Verdana, sans-serif;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 400;
   color: #000;
   background: var(--w95-face);
@@ -2110,10 +2110,10 @@ html.f2s-skin--win95 .f2s-footer-left {
    le stretch n'a rien à partir de quoi se calculer (dépendance circulaire)
    et le logo explose à la taille de remplacement par défaut (300×300) —
    vérifié en rendu. Valeur fixe donc, à réajuster si le gabarit du bouton
-   change. */
+   change (24px depuis le passage du texte des boutons en 12px). */
 html.f2s-skin--win95 .f2s-logo {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
 }
 
 html.f2s-skin--win95 .f2s-toolbar {
@@ -2164,7 +2164,7 @@ html.f2s-skin--win95 .f2s-body {
    hauteurs alignées. */
 
 html.f2s-skin--win95 .f2s-btn {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 400;
   border: 1px solid transparent;
   background-clip: padding-box;
@@ -2217,7 +2217,7 @@ html.f2s-skin--win95 .f2s-title-input,
 html.f2s-skin--win95 .f2s-font-dropdown,
 html.f2s-skin--win95 .f2s-font-combobox,
 html.f2s-skin--win95 .f2s-dim-box {
-  font-size: 11px;
+  font-size: 12px;
   border: none;
   border-radius: 0;
   background: var(--w95-white);
@@ -2357,7 +2357,7 @@ html.f2s-skin--win95 .f2s-tmpl-section--blocking .f2s-tmpl-heading {
    arrondi qui changent de couleur au survol. */
 html.f2s-skin--win95 .f2s-log-entry,
 html.f2s-skin--win95 .f2s-tmpl-chip {
-  font-size: 11px;
+  font-size: 12px;
   border: none;
   border-radius: 0;
   background: var(--w95-face);
@@ -2457,7 +2457,7 @@ html.f2s-skin--win95 .f2s-setting-title {
 }
 
 html.f2s-skin--win95 .f2s-setting-desc {
-  font-size: 11px;
+  font-size: 12px;
   color: #000;
 }
 
@@ -2472,7 +2472,7 @@ html.f2s-skin--win95 .f2s-tabs {
 }
 
 html.f2s-skin--win95 .f2s-tab {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 400;
   border-radius: 0;
   padding: 3px 10px;
