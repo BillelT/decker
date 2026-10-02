@@ -313,7 +313,7 @@ le détail de l'intention) :
 plusieurs slides :
 
 1. Dans Figma, crée les 10 frames, ajoute-les TOUTES au plugin (mode deck,
-   "Select frames to add") et mets-les dans l'ordre voulu (l'ordre de la
+   "Select frames") et mets-les dans l'ordre voulu (l'ordre de la
    liste de réorganisation du plugin = l'ordre `i` des références ci-dessous
    — pas l'ordre du canvas Figma).
 2. **Download IR JSON** avec les 10 sélectionnées : produit UN SEUL

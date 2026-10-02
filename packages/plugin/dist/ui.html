@@ -364,7 +364,7 @@ a {
 }
 
 .f2s-dim-unit {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-text-muted);
 }
 
@@ -961,7 +961,7 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
    n'est pas le repère principal de la ligne, juste une action disponible. */
 .f2s-log-entry-role {
   flex: none;
-  font-size: 10px;
+  font-size: 12px;
   font-family: inherit;
   color: var(--color-text-muted);
   background: var(--color-bg);
@@ -1198,7 +1198,7 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
    lisible — décoration retirée, cf. audit). */
 .f2s-tmpl-role {
   flex: none;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -1290,24 +1290,26 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   background-origin: border-box;
 }
 
-/* min-width couvre au moins un hex complet ("#XXXXXX") sans le tronquer —
+/* min-width couvre au moins un hex complet ("#XXXXXX", 56px au plus large en 12px) sans le tronquer :
    seul un long nom de variable Figma (colorLabel dans TemplateStylePanel)
    passe par l'ellipsis. */
 .f2s-style-label {
   flex: 1;
-  min-width: 64px;
-  font-size: 11px;
+  min-width: 56px;
+  font-size: 12px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 /* Largeur fixe : tous les selects de la liste s'alignent, quelle que soit
-   la longueur du libellé de couleur sur leur ligne. */
+   la longueur du libellé de couleur sur leur ligne. 142px = largeur
+   naturelle du plus long libellé visible ("Text & background 1") en 12px,
+   flèche et padding compris : rien n'est rogné. */
 .f2s-style-role-select {
   flex: none;
-  width: 130px;
-  font-size: 11px;
+  width: 142px;
+  font-size: 12px;
 }
 
 .f2s-style-font-swatch {
@@ -1655,7 +1657,7 @@ html:not(.f2s-skin--win95)
 }
 
 .f2s-modal-footer a {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--color-text-muted);
   text-decoration: none;
@@ -3712,7 +3714,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
       return /* @__PURE__ */ u3("div", { className: "f2s-body", children: [
         notice && /* @__PURE__ */ u3("div", { className: "f2s-toast", role: "status", children: notice }),
         /* @__PURE__ */ u3("main", { className: "f2s-canvas", children: /* @__PURE__ */ u3("p", { className: "f2s-empty", children: [
-          'Click "Select frames to add", then select the frames',
+          'Click "Select frames", then select the frames',
           /* @__PURE__ */ u3("br", {}),
           "you want to export on the Figma canvas, and click the button again to add your selection."
         ] }) })
@@ -4151,7 +4153,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
       return /* @__PURE__ */ u3("div", { className: "f2s-body", children: [
         notice && /* @__PURE__ */ u3("div", { className: "f2s-toast", role: "status", children: notice }),
         /* @__PURE__ */ u3("main", { className: "f2s-canvas", children: /* @__PURE__ */ u3("p", { className: "f2s-empty", children: [
-          'Click "Select layout to add", then select the frames',
+          'Click "Select frames", then select the frames',
           /* @__PURE__ */ u3("br", {}),
           "you want to use as a layout on the Figma canvas, and click the button again to add your selection."
         ] }) }),
@@ -5535,7 +5537,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
               disabled: exporting,
               title: exporting ? "An export is running. Wait for it to finish before changing the deck." : void 0,
               onClick: handleAddFramesClick,
-              children: selecting ? "Add selection" : "Select frames to add"
+              children: selecting ? "Add selection" : "Select frames"
             }
           ),
           /* @__PURE__ */ u3(
@@ -5559,7 +5561,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
               disabled: exporting,
               title: exporting ? "A template creation is running. Wait for it to finish before changing the layouts." : void 0,
               onClick: handleAddTemplateLayoutClick,
-              children: templateSelecting ? "Add selection" : "Select layout to add"
+              children: templateSelecting ? "Add selection" : "Select frames"
             }
           ),
           /* @__PURE__ */ u3(

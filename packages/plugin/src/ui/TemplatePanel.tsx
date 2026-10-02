@@ -337,7 +337,7 @@ export function TemplatePanel({
         )}
         <main className="f2s-canvas">
           <p className="f2s-empty">
-            Click "Select layout to add", then select the frames
+            Click "Select frames", then select the frames
             <br />
             you want to use as a layout on the Figma canvas, and click the button again to add your selection.
           </p>

@@ -260,7 +260,7 @@ function renderDemoHtml(): string {
       </div>
     </div>
     <div class="demo-topbar-actions">
-      <span class="demo-btn demo-btn--tertiary">Select frames to add</span>
+      <span class="demo-btn demo-btn--tertiary">Select frames</span>
       <span class="demo-btn demo-btn--secondary">Prepare for Slides</span>
       <span class="demo-btn demo-btn--primary">Export</span>
     </div>

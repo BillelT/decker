@@ -1294,7 +1294,7 @@ function App() {
               title={exporting ? 'An export is running. Wait for it to finish before changing the deck.' : undefined}
               onClick={handleAddFramesClick}
             >
-              {selecting ? 'Add selection' : 'Select frames to add'}
+              {selecting ? 'Add selection' : 'Select frames'}
             </button>
             <button
               type="button"
@@ -1320,7 +1320,7 @@ function App() {
               title={exporting ? 'A template creation is running. Wait for it to finish before changing the layouts.' : undefined}
               onClick={handleAddTemplateLayoutClick}
             >
-              {templateSelecting ? 'Add selection' : 'Select layout to add'}
+              {templateSelecting ? 'Add selection' : 'Select frames'}
             </button>
             <button
               type="button"

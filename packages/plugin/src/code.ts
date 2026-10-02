@@ -280,7 +280,7 @@ async function refreshPendingEntry(frame: ExportableNode, pending: PendingSlide[
 
 /**
  * Ajoute au deck les frames actuellement sélectionnées sur le canvas Figma
- * (déclenché par le bouton « Select frames to add » de l'UI) — l'utilisateur
+ * (déclenché par le bouton « Select frames » de l'UI) : l'utilisateur
  * choisit explicitement quoi exporter et dans quel ordre construire sa liste.
  */
 async function addSelectedFrames(pending: PendingSlide[], idGen: ReturnType<typeof createIdGenerator>): Promise<void> {
@@ -495,7 +495,7 @@ async function handlePrepareForSlides(
       // (voir `loadTaggedFrames`/`TRACKED_KEY`).
       frame.setPluginData(TRACKED_KEY, '');
       // La frame BRUTE d'origine était déjà dans le panneau (ex. ajoutée via
-      // "Select frames to add" avant d'être préparée) : remplacée par sa
+      // "Select frames" avant d'être préparée) : remplacée par sa
       // copie prête pour Slides plutôt que doublée dans la liste.
       const rawIdx = pending.findIndex((p) => p.frame.id === frame.id);
       if (rawIdx !== -1) {
@@ -592,7 +592,7 @@ async function addTemplateLayoutNodes(nodes: ExportableNode[], pending: PendingS
   }
 }
 
-/** Ajoute au template les frames actuellement sélectionnées sur le canvas (bouton « Select layout to add »). */
+/** Ajoute au template les frames actuellement sélectionnées sur le canvas (bouton « Select frames » du mode template). */
 async function addSelectedTemplateLayouts(pending: PendingSlide[], idGen: ReturnType<typeof createIdGenerator>): Promise<void> {
   const selected = figma.currentPage.selection.filter(isExportable);
   if (selected.length === 0) {
