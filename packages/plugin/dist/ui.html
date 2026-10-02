@@ -1533,6 +1533,12 @@ html:not(.f2s-skin--win95)
   gap: 16px;
 }
 
+/* 10px entre le logo et "Buy me a coffee" (le gap du conteneur reste 16px
+   pour les autres boutons) : 16px - 6px. */
+html:not(.f2s-skin--win95) .f2s-footer-actions .f2s-logo-link {
+  margin-right: -6px;
+}
+
 /* Message d'export échoué (session expirée, 400 Slides API, backend
    injoignable…) : tronqué sur une ligne pour ne pas casser la mise en page
    fixe du footer — le message complet reste dans `title`. */
