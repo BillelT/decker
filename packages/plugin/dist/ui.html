@@ -4251,6 +4251,16 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
         })
       ] }),
       /* @__PURE__ */ u3("main", { className: "f2s-canvas f2s-canvas--template", children: previewedLayout ? /* @__PURE__ */ u3("div", { className: "f2s-tmpl-report", children: [
+        (blockingWarnings.length > 0 || compositionWarnings.length > 0) && /* @__PURE__ */ u3("div", { className: "f2s-tmpl-panel", children: [
+          blockingWarnings.length > 0 && /* @__PURE__ */ u3("div", { className: "f2s-logs f2s-tmpl-section--blocking", children: [
+            /* @__PURE__ */ u3("div", { className: "f2s-logs-header", children: /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Fix before creating the template" }) }),
+            /* @__PURE__ */ u3(TemplateLogList, { warnings: blockingWarnings, fontOverrides })
+          ] }),
+          compositionWarnings.length > 0 && /* @__PURE__ */ u3("div", { className: "f2s-logs", children: [
+            /* @__PURE__ */ u3("div", { className: "f2s-logs-header", children: /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Composition" }) }),
+            /* @__PURE__ */ u3(TemplateLogList, { warnings: compositionWarnings, fontOverrides, wrap: true })
+          ] })
+        ] }),
         exportingLayout && pacedCursor ? /* @__PURE__ */ u3("div", { className: "f2s-canvas-preview f2s-canvas-preview--retro f2s-tmpl-preview", children: /* @__PURE__ */ u3(
           RetroExportPreview,
           {
@@ -4261,10 +4271,6 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
           }
         ) }) : /* @__PURE__ */ u3("div", { className: "f2s-canvas-preview f2s-tmpl-preview", children: previewedLayout.previewDataUrl && /* @__PURE__ */ u3("img", { src: previewedLayout.previewDataUrl, alt: previewedLayout.name }) }),
         /* @__PURE__ */ u3("div", { className: "f2s-tmpl-panel", children: [
-          blockingWarnings.length > 0 && /* @__PURE__ */ u3("div", { className: "f2s-logs f2s-tmpl-section--blocking", children: [
-            /* @__PURE__ */ u3("div", { className: "f2s-logs-header", children: /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Fix before creating the template" }) }),
-            /* @__PURE__ */ u3(TemplateLogList, { warnings: blockingWarnings, fontOverrides })
-          ] }),
           /* @__PURE__ */ u3("section", { className: "f2s-tmpl-section", children: [
             /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Content" }),
             previewedLayout.elements.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: [
@@ -4281,10 +4287,6 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
               /* @__PURE__ */ u3("code", { children: "[[logo]]" }),
               "."
             ] }) : /* @__PURE__ */ u3(TemplateElementList, { elements: previewedLayout.elements, noteByNode })
-          ] }),
-          compositionWarnings.length > 0 && /* @__PURE__ */ u3("div", { className: "f2s-logs", children: [
-            /* @__PURE__ */ u3("div", { className: "f2s-logs-header", children: /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Composition" }) }),
-            /* @__PURE__ */ u3(TemplateLogList, { warnings: compositionWarnings, fontOverrides, wrap: true })
           ] }),
           leftoverNotes.length > 0 && /* @__PURE__ */ u3("div", { className: "f2s-logs", children: [
             /* @__PURE__ */ u3("div", { className: "f2s-logs-header", children: /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Notes" }) }),
