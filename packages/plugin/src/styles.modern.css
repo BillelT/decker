@@ -106,8 +106,14 @@ html.f2s-skin--modern .f2s-frame-preview {
 }
 
 /* Badge carré (angles droits), cohérent avec le reste du skin. */
-html.f2s-skin--modern .f2s-frame-preview--blocking::after {
+html.f2s-skin--modern .f2s-frame-preview--blocking::after,
+html.f2s-skin--modern .f2s-frame-preview--failed::after {
   border-radius: 0;
+}
+
+/* Pastille d'état (footer, toasts) carrée elle aussi. */
+html.f2s-skin--modern .f2s-status-icon-disc {
+  rx: 0;
 }
 
 /* ---- Petit bouton carré (croix de suppression) : chrome seulement au

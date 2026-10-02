@@ -363,13 +363,15 @@ html.f2s-skin--win95 .f2s-frame-preview.is-active {
   border-color: var(--w95-navy);
 }
 
-html.f2s-skin--win95 .f2s-frame-preview--blocking {
+html.f2s-skin--win95 .f2s-frame-preview--blocking,
+html.f2s-skin--win95 .f2s-frame-preview--failed {
   border-color: var(--color-error);
 }
 
 /* Badge carré (pas de coin arrondi en Windows 95) — même principe que le
    skin moderne (styles.css), juste la géométrie qui change. */
-html.f2s-skin--win95 .f2s-frame-preview--blocking::after {
+html.f2s-skin--win95 .f2s-frame-preview--blocking::after,
+html.f2s-skin--win95 .f2s-frame-preview--failed::after {
   border-radius: 0;
   box-shadow: var(--w95-out);
 }
@@ -472,6 +474,20 @@ html.f2s-skin--win95 .f2s-toast {
   border-radius: 0;
   background: var(--w95-face);
   box-shadow: var(--w95-out);
+}
+
+/* Size grip 95 complet : rehaut blanc + ombre grise, sur la face grise. */
+html.f2s-skin--win95 .f2s-resize-grip .f2s-grip-hi {
+  stroke: var(--w95-white);
+}
+
+html.f2s-skin--win95 .f2s-resize-grip .f2s-grip-lo {
+  stroke: var(--w95-shadow);
+}
+
+/* Pastille carrée, comme les badges du rail. */
+html.f2s-skin--win95 .f2s-status-icon-disc {
+  rx: 0;
 }
 
 /* ---- Modale de réglages (habillage + thème) ----

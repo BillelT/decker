@@ -1431,6 +1431,20 @@
   var SESSION_TOKEN_STORAGE_KEY = "f2s:sessionToken";
   var UI_SKIN_STORAGE_KEY = "f2s:uiSkin";
   var THEME_STORAGE_KEY = "f2s:theme";
+  var UI_SIZE_STORAGE_KEY = "f2s:uiSize";
+  var DEFAULT_UI_SIZE = { width: 1200, height: 760 };
+  var MIN_UI_SIZE = { width: 960, height: 560 };
+  var MAX_UI_SIZE = { width: 2400, height: 1600 };
+  function clampUiSize(raw) {
+    const candidate = raw;
+    const width = Number(candidate?.width);
+    const height = Number(candidate?.height);
+    if (!Number.isFinite(width) || !Number.isFinite(height)) return DEFAULT_UI_SIZE;
+    return {
+      width: Math.round(Math.min(MAX_UI_SIZE.width, Math.max(MIN_UI_SIZE.width, width))),
+      height: Math.round(Math.min(MAX_UI_SIZE.height, Math.max(MIN_UI_SIZE.height, height)))
+    };
+  }
   function isExportable(node) {
     return node.type === "FRAME" || node.type === "COMPONENT" || node.type === "INSTANCE";
   }
@@ -1855,10 +1869,12 @@
   async function main() {
     let storedSkin;
     let storedTheme;
+    let storedSize;
     try {
-      [storedSkin, storedTheme] = await Promise.all([
+      [storedSkin, storedTheme, storedSize] = await Promise.all([
         figma.clientStorage.getAsync(UI_SKIN_STORAGE_KEY),
-        figma.clientStorage.getAsync(THEME_STORAGE_KEY)
+        figma.clientStorage.getAsync(THEME_STORAGE_KEY),
+        figma.clientStorage.getAsync(UI_SIZE_STORAGE_KEY)
       ]);
     } catch (err) {
       console.error(err);
@@ -1866,7 +1882,8 @@
     const initialSkin = storedSkin === "win95" || storedSkin === "modern" ? storedSkin : "modern";
     const initialThemeClass = storedTheme === "light" ? "f2s-theme-light" : storedTheme === "dark" ? "f2s-theme-dark" : "";
     const html = __html__.replace("__F2S_INITIAL_SKIN__", `f2s-skin--${initialSkin}`).replace("__F2S_INITIAL_THEME__", initialThemeClass);
-    figma.showUI(html, { width: 1200, height: 760, themeColors: true });
+    const initialSize = storedSize === void 0 ? DEFAULT_UI_SIZE : clampUiSize(storedSize);
+    figma.showUI(html, { ...initialSize, themeColors: true });
     const pending = [];
     const templatePending = [];
     const idGen = createIdGenerator(figma.root.id.slice(0, 8));
@@ -1924,6 +1941,21 @@
         }
         return;
       }
+      if (msg.type === "resize-ui") {
+        const size = clampUiSize(msg);
+        figma.ui.resize(size.width, size.height);
+        return;
+      }
+      if (msg.type === "save-ui-size" || msg.type === "reset-ui-size") {
+        const size = msg.type === "reset-ui-size" ? DEFAULT_UI_SIZE : clampUiSize(msg);
+        if (msg.type === "reset-ui-size") figma.ui.resize(size.width, size.height);
+        try {
+          await figma.clientStorage.setAsync(UI_SIZE_STORAGE_KEY, size);
+        } catch (err) {
+          console.error(err);
+        }
+        return;
+      }
       if (msg.type === "save-ui-skin") {
         try {
           await figma.clientStorage.setAsync(UI_SKIN_STORAGE_KEY, msg.skin);
@@ -1949,7 +1981,7 @@
           await addSelectedFrames(pending, idGen);
         } catch (err) {
           console.error(err);
-          figma.ui.postMessage({ type: "export-error", message: err.message });
+          figma.ui.postMessage({ type: "action-error", message: `Couldn't add the selection: ${err.message}` });
         }
         return;
       }
@@ -1975,7 +2007,7 @@
           await addSelectedTemplateLayouts(templatePending, idGen);
         } catch (err) {
           console.error(err);
-          figma.ui.postMessage({ type: "export-error", message: err.message });
+          figma.ui.postMessage({ type: "action-error", message: `Couldn't add the selection: ${err.message}` });
         }
         return;
       }
@@ -2066,7 +2098,7 @@
           }
         } catch (err) {
           console.error(err);
-          figma.ui.postMessage({ type: "export-error", message: err.message });
+          figma.ui.postMessage({ type: "action-error", message: `Couldn't build the IR JSON: ${err.message}` });
         }
         return;
       }

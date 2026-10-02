@@ -94,6 +94,17 @@ export interface TemplateLayoutState extends FrameCandidate {
 export type AppMode = 'deck' | 'template';
 
 /**
+ * Toast temporaire posé en haut du panneau (DeckPanel/TemplatePanel) :
+ * `error` pour une sélection refusée ou un ajout qui a planté, `success`
+ * pour la fin d'un export réussi, affichée là où l'œil se trouve (l'aperçu)
+ * plutôt que seulement dans le footer.
+ */
+export interface Notice {
+  message: string;
+  tone: 'error' | 'success';
+}
+
+/**
  * Habillage visuel de l'UI. `modern` est le skin PAR DÉFAUT (demande
  * produit) : palette et typo de marque (orange, Cabinet Grotesk), avec
  * biseaux et angles droits empruntés au chrome Windows 95 — sans reprendre

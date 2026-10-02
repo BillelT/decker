@@ -629,13 +629,22 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   border: 1px solid var(--color-border);
   border-radius: 8px;
   box-shadow: 0 8px 20px rgba(18, 15, 13, 0.18);
+  display: flex;
+  align-items: center;
+  gap: 8px;
   color: var(--color-error);
   font-size: 12px;
   font-weight: 600;
-  text-align: center;
+  text-align: left;
   text-wrap: balance;
   pointer-events: none;
   animation: f2s-toast-in 160ms var(--f2s-modal-ease);
+}
+
+/* Succès (fin d'export) : le texte reste à l'encre normale, c'est la
+   pastille orange qui porte le ton, comme sur la page de retour OAuth. */
+.f2s-toast--success {
+  color: var(--color-text);
 }
 
 @keyframes f2s-toast-in {
@@ -750,8 +759,8 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
    fond qui l'accompagne joue à 1.04:1. Autrement dit, tabuler jusqu'à ce
    champ ne produisait aucun signal visible (WCAG 2.4.7 en plus de 1.4.11).
    Le gris 500 le porte à 4.31:1. */
-.f2s-frame-info:hover .f2s-frame-name-input,
-.f2s-frame-name-input:focus {
+.f2s-frame-info:hover .f2s-frame-name-input:not(:read-only),
+.f2s-frame-name-input:focus:not(:read-only) {
   background: var(--color-surface);
   border-color: var(--color-gray-500);
   color: var(--color-text);
@@ -1365,6 +1374,46 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   pointer-events: none;
 }
 
+/* Slide dont le lot a échoué au dernier export : même grammaire que le
+   badge bloquant ci-dessus (bordure + pastille rouges), avec une croix au
+   lieu du "!" : l'un dit "à corriger avant", l'autre "n'est pas passée". */
+.f2s-frame-preview--failed {
+  border-color: var(--color-error);
+  position: relative;
+}
+
+.f2s-frame-preview--failed::after {
+  content: "\2715";
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-error);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* Raison de l'échec de la slide affichée, au-dessus de son aperçu : reprend
+   la boîte "Fix before creating the template" (titre rouge). */
+.f2s-export-failure-message {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+/* Mode template : l'aperçu s'étire sur toute la colonne, la boîte d'échec
+   au-dessus suit la même largeur plutôt que le plafond de 640px du deck. */
+.f2s-tmpl-report > .f2s-export-failure {
+  max-width: none;
+}
+
 /* ---- Barre de statut (login / progression / erreurs) ---- */
 
 .f2s-statusbar {
@@ -1534,15 +1583,95 @@ html:not(.f2s-skin--win95) .f2s-footer-actions .f2s-logo-link {
   margin-right: -6px;
 }
 
-/* Message d'export échoué (session expirée, 400 Slides API, backend
-   injoignable…) : tronqué sur une ligne pour ne pas casser la mise en page
-   fixe du footer — le message complet reste dans `title`. */
-.f2s-footer-error {
+/* Statut du dernier export (réussi ou non) : pastille + texte tronqué sur
+   une ligne pour ne pas casser la mise en page fixe du footer, le message
+   complet reste dans `title`. Calé à droite, contre les boutons qui en
+   découlent (Retry, Open presentation). */
+.f2s-footer-status {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.f2s-footer-status--error {
+  color: var(--color-error);
+}
+
+.f2s-footer-status--success {
+  color: var(--color-text);
+}
+
+.f2s-footer-status-text {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Pastille d'état (footer, toasts) : tracés de la page de retour OAuth du
+   site, disque aux couleurs du ton, coche/croix à l'encre du fond. */
+.f2s-status-icon {
+  flex: none;
+  display: block;
+}
+
+.f2s-status-icon--success {
+  color: var(--color-bg);
+}
+
+.f2s-status-icon--success .f2s-status-icon-disc {
+  fill: var(--color-orange);
+}
+
+.f2s-status-icon--error {
+  color: #fff;
+}
+
+.f2s-status-icon--error .f2s-status-icon-disc {
+  fill: var(--color-error);
+}
+
+/* ---- Poignée de redimensionnement (coin bas droit) ----
+   Le "size grip" de Windows 95, trois diagonales en escalier : le skin
+   modern n'en garde que le trait sombre, le skin win95 y ajoute le rehaut
+   clair (styles.win95.css). Au-dessus du footer, qui est fixe lui aussi. */
+.f2s-resize-grip {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  /* 12px : tient dans la marge droite du footer (12px), sans mordre sur
+     le coin du dernier bouton. */
+  width: 12px;
+  height: 12px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: nwse-resize;
+  touch-action: none;
+  color: var(--color-gray-500);
+}
+
+.f2s-resize-grip svg {
+  display: block;
+}
+
+.f2s-resize-grip .f2s-grip-hi {
+  stroke: transparent;
+}
+
+.f2s-resize-grip .f2s-grip-lo {
+  stroke: currentColor;
+}
+
+.f2s-resize-grip:hover {
+  color: var(--color-text);
 }
 
 /* ---- Modale de réglages ---- */

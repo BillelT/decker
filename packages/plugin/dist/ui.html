@@ -634,13 +634,22 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   border: 1px solid var(--color-border);
   border-radius: 8px;
   box-shadow: 0 8px 20px rgba(18, 15, 13, 0.18);
+  display: flex;
+  align-items: center;
+  gap: 8px;
   color: var(--color-error);
   font-size: 12px;
   font-weight: 600;
-  text-align: center;
+  text-align: left;
   text-wrap: balance;
   pointer-events: none;
   animation: f2s-toast-in 160ms var(--f2s-modal-ease);
+}
+
+/* Succès (fin d'export) : le texte reste à l'encre normale, c'est la
+   pastille orange qui porte le ton, comme sur la page de retour OAuth. */
+.f2s-toast--success {
+  color: var(--color-text);
 }
 
 @keyframes f2s-toast-in {
@@ -755,8 +764,8 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
    fond qui l'accompagne joue à 1.04:1. Autrement dit, tabuler jusqu'à ce
    champ ne produisait aucun signal visible (WCAG 2.4.7 en plus de 1.4.11).
    Le gris 500 le porte à 4.31:1. */
-.f2s-frame-info:hover .f2s-frame-name-input,
-.f2s-frame-name-input:focus {
+.f2s-frame-info:hover .f2s-frame-name-input:not(:read-only),
+.f2s-frame-name-input:focus:not(:read-only) {
   background: var(--color-surface);
   border-color: var(--color-gray-500);
   color: var(--color-text);
@@ -1370,6 +1379,46 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   pointer-events: none;
 }
 
+/* Slide dont le lot a échoué au dernier export : même grammaire que le
+   badge bloquant ci-dessus (bordure + pastille rouges), avec une croix au
+   lieu du "!" : l'un dit "à corriger avant", l'autre "n'est pas passée". */
+.f2s-frame-preview--failed {
+  border-color: var(--color-error);
+  position: relative;
+}
+
+.f2s-frame-preview--failed::after {
+  content: "\2715";
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-error);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* Raison de l'échec de la slide affichée, au-dessus de son aperçu : reprend
+   la boîte "Fix before creating the template" (titre rouge). */
+.f2s-export-failure-message {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+/* Mode template : l'aperçu s'étire sur toute la colonne, la boîte d'échec
+   au-dessus suit la même largeur plutôt que le plafond de 640px du deck. */
+.f2s-tmpl-report > .f2s-export-failure {
+  max-width: none;
+}
+
 /* ---- Barre de statut (login / progression / erreurs) ---- */
 
 .f2s-statusbar {
@@ -1539,15 +1588,95 @@ html:not(.f2s-skin--win95) .f2s-footer-actions .f2s-logo-link {
   margin-right: -6px;
 }
 
-/* Message d'export échoué (session expirée, 400 Slides API, backend
-   injoignable…) : tronqué sur une ligne pour ne pas casser la mise en page
-   fixe du footer — le message complet reste dans `title`. */
-.f2s-footer-error {
+/* Statut du dernier export (réussi ou non) : pastille + texte tronqué sur
+   une ligne pour ne pas casser la mise en page fixe du footer, le message
+   complet reste dans `title`. Calé à droite, contre les boutons qui en
+   découlent (Retry, Open presentation). */
+.f2s-footer-status {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.f2s-footer-status--error {
+  color: var(--color-error);
+}
+
+.f2s-footer-status--success {
+  color: var(--color-text);
+}
+
+.f2s-footer-status-text {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Pastille d'état (footer, toasts) : tracés de la page de retour OAuth du
+   site, disque aux couleurs du ton, coche/croix à l'encre du fond. */
+.f2s-status-icon {
+  flex: none;
+  display: block;
+}
+
+.f2s-status-icon--success {
+  color: var(--color-bg);
+}
+
+.f2s-status-icon--success .f2s-status-icon-disc {
+  fill: var(--color-orange);
+}
+
+.f2s-status-icon--error {
+  color: #fff;
+}
+
+.f2s-status-icon--error .f2s-status-icon-disc {
+  fill: var(--color-error);
+}
+
+/* ---- Poignée de redimensionnement (coin bas droit) ----
+   Le "size grip" de Windows 95, trois diagonales en escalier : le skin
+   modern n'en garde que le trait sombre, le skin win95 y ajoute le rehaut
+   clair (styles.win95.css). Au-dessus du footer, qui est fixe lui aussi. */
+.f2s-resize-grip {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  /* 12px : tient dans la marge droite du footer (12px), sans mordre sur
+     le coin du dernier bouton. */
+  width: 12px;
+  height: 12px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: nwse-resize;
+  touch-action: none;
+  color: var(--color-gray-500);
+}
+
+.f2s-resize-grip svg {
+  display: block;
+}
+
+.f2s-resize-grip .f2s-grip-hi {
+  stroke: transparent;
+}
+
+.f2s-resize-grip .f2s-grip-lo {
+  stroke: currentColor;
+}
+
+.f2s-resize-grip:hover {
+  color: var(--color-text);
 }
 
 /* ---- Modale de réglages ---- */
@@ -2313,13 +2442,15 @@ html.f2s-skin--win95 .f2s-frame-preview.is-active {
   border-color: var(--w95-navy);
 }
 
-html.f2s-skin--win95 .f2s-frame-preview--blocking {
+html.f2s-skin--win95 .f2s-frame-preview--blocking,
+html.f2s-skin--win95 .f2s-frame-preview--failed {
   border-color: var(--color-error);
 }
 
 /* Badge carré (pas de coin arrondi en Windows 95) — même principe que le
    skin moderne (styles.css), juste la géométrie qui change. */
-html.f2s-skin--win95 .f2s-frame-preview--blocking::after {
+html.f2s-skin--win95 .f2s-frame-preview--blocking::after,
+html.f2s-skin--win95 .f2s-frame-preview--failed::after {
   border-radius: 0;
   box-shadow: var(--w95-out);
 }
@@ -2422,6 +2553,20 @@ html.f2s-skin--win95 .f2s-toast {
   border-radius: 0;
   background: var(--w95-face);
   box-shadow: var(--w95-out);
+}
+
+/* Size grip 95 complet : rehaut blanc + ombre grise, sur la face grise. */
+html.f2s-skin--win95 .f2s-resize-grip .f2s-grip-hi {
+  stroke: var(--w95-white);
+}
+
+html.f2s-skin--win95 .f2s-resize-grip .f2s-grip-lo {
+  stroke: var(--w95-shadow);
+}
+
+/* Pastille carrée, comme les badges du rail. */
+html.f2s-skin--win95 .f2s-status-icon-disc {
+  rx: 0;
 }
 
 /* ---- Modale de réglages (habillage + thème) ----
@@ -2704,8 +2849,14 @@ html.f2s-skin--modern .f2s-frame-preview {
 }
 
 /* Badge carré (angles droits), cohérent avec le reste du skin. */
-html.f2s-skin--modern .f2s-frame-preview--blocking::after {
+html.f2s-skin--modern .f2s-frame-preview--blocking::after,
+html.f2s-skin--modern .f2s-frame-preview--failed::after {
   border-radius: 0;
+}
+
+/* Pastille d'état (footer, toasts) carrée elle aussi. */
+html.f2s-skin--modern .f2s-status-icon-disc {
+  rx: 0;
 }
 
 /* ---- Petit bouton carré (croix de suppression) : chrome seulement au
@@ -3636,6 +3787,20 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     return { frameId, index: displayIndex, total };
   }
 
+  // src/ui/StatusIcon.tsx
+  function StatusIcon({ tone }) {
+    return /* @__PURE__ */ u3("svg", { className: `f2s-status-icon f2s-status-icon--${tone}`, width: "16", height: "16", viewBox: "0 0 66 66", fill: "none", "aria-hidden": "true", children: [
+      /* @__PURE__ */ u3("rect", { className: "f2s-status-icon-disc", width: "66", height: "66", rx: "33" }),
+      tone === "success" ? /* @__PURE__ */ u3("path", { d: "M20 34 L29 43 L46 24", stroke: "currentColor", strokeWidth: "9", strokeLinecap: "round", strokeLinejoin: "round", fill: "none" }) : /* @__PURE__ */ u3("path", { d: "M24 24 L42 42 M42 24 L24 42", stroke: "currentColor", strokeWidth: "9", strokeLinecap: "round" })
+    ] });
+  }
+  function Toast({ notice }) {
+    return /* @__PURE__ */ u3("div", { className: `f2s-toast f2s-toast--${notice.tone}`, role: notice.tone === "error" ? "alert" : "status", children: [
+      /* @__PURE__ */ u3(StatusIcon, { tone: notice.tone }),
+      /* @__PURE__ */ u3("span", { children: notice.message })
+    ] });
+  }
+
   // src/ui/DeckPanel.tsx
   var DRAG_THRESHOLD_PX = 3;
   var DRAG_SWAP_MARGIN = 0.32;
@@ -3652,7 +3817,10 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     exportCursor,
     exportAttempt,
     exportConcluded,
-    notice
+    notice,
+    locked,
+    failedSlides,
+    onPreviewSettled
   }) {
     const [dragId, setDragId] = d2();
     const [dragOffsetY, setDragOffsetY] = d2(0);
@@ -3668,6 +3836,15 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     const exportingFrame = pacedCursor ? frames[pacedCursor.frameId] : void 0;
     const previewedFrame = exportingFrame ?? activeFrame;
     const highlightedId = pacedCursor?.frameId ?? activeId;
+    const previewedFailure = previewedFrame ? failedSlides?.[previewedFrame.id] : void 0;
+    const previewSettled = exportConcluded && !pacedCursor;
+    h2(() => {
+      if (previewSettled) onPreviewSettled();
+    }, [previewSettled]);
+    const firstFailedId = failedSlides ? order.find((id) => id in failedSlides) : void 0;
+    h2(() => {
+      if (firstFailedId) setActiveId(firstFailedId);
+    }, [firstFailedId]);
     h2(() => {
       if (!highlightedId) return;
       sidebarItemRefs.current.get(highlightedId)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
@@ -3683,6 +3860,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
       return Math.max(0, Math.min(lastIndex, dragStartIndexRef.current + steps));
     }
     function handleDragPointerDown(e3, id) {
+      if (locked) return;
       dragStartYRef.current = e3.clientY;
       setDragOffsetY(0);
       setDragActive(false);
@@ -3729,7 +3907,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     }, [suppressShiftTransition]);
     if (order.length === 0) {
       return /* @__PURE__ */ u3("div", { className: "f2s-body", children: [
-        notice && /* @__PURE__ */ u3("div", { className: "f2s-toast", role: "status", children: notice }),
+        notice && /* @__PURE__ */ u3(Toast, { notice }),
         /* @__PURE__ */ u3("main", { className: "f2s-canvas", children: /* @__PURE__ */ u3("p", { className: "f2s-empty", children: [
           'Click "Select frames", then select the frames',
           /* @__PURE__ */ u3("br", {}),
@@ -3738,10 +3916,11 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
       ] });
     }
     return /* @__PURE__ */ u3("div", { className: "f2s-body", children: [
-      notice && /* @__PURE__ */ u3("div", { className: "f2s-toast", role: "status", children: notice }),
+      notice && /* @__PURE__ */ u3(Toast, { notice }),
       /* @__PURE__ */ u3("aside", { className: "f2s-sidebar", children: [
         selecting && !hasCanvasSelection && /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: 'Select one or more frames on the Figma canvas, then click "Add selection".' }),
         order.map((id, index) => {
+          const failure = failedSlides?.[id];
           const f4 = frames[id];
           if (!f4) return null;
           const isDragging = dragId === id && dragActive;
@@ -3768,15 +3947,27 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
                   "button",
                   {
                     type: "button",
-                    className: `f2s-frame-preview${highlightedId === id ? " is-active" : ""}${pacedCursor?.frameId === id ? " is-exporting" : ""}`,
+                    className: `f2s-frame-preview${highlightedId === id ? " is-active" : ""}${failure ? " f2s-frame-preview--failed" : ""}${pacedCursor?.frameId === id ? " is-exporting" : ""}`,
                     onClick: () => selectFrame(id),
                     onPointerDown: (e3) => handleDragPointerDown(e3, id),
+                    title: failure ? `Export failed: ${failure}` : void 0,
                     children: f4.previewDataUrl && /* @__PURE__ */ u3("img", { src: f4.previewDataUrl, alt: f4.name, draggable: false })
                   }
                 ),
                 /* @__PURE__ */ u3("div", { className: "f2s-frame-info", children: [
                   /* @__PURE__ */ u3("span", { className: "f2s-frame-text", children: index + 1 }),
-                  /* @__PURE__ */ u3("div", { className: "f2s-frame-controls", children: /* @__PURE__ */ u3("button", { type: "button", className: "f2s-icon-btn", title: "Remove", onClick: () => onRemove(id), children: "\u2715" }) })
+                  /* @__PURE__ */ u3("div", { className: "f2s-frame-controls", children: /* @__PURE__ */ u3(
+                    "button",
+                    {
+                      type: "button",
+                      className: "f2s-icon-btn",
+                      disabled: locked,
+                      title: locked ? "An export is running. Wait for it to finish before changing the list." : "Remove",
+                      "aria-label": "Remove",
+                      onClick: () => onRemove(id),
+                      children: "\u2715"
+                    }
+                  ) })
                 ] })
               ]
             },
@@ -3785,6 +3976,10 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
         })
       ] }),
       /* @__PURE__ */ u3("main", { className: "f2s-canvas", children: previewedFrame ? /* @__PURE__ */ u3(S, { children: [
+        previewedFailure && !exportingFrame && /* @__PURE__ */ u3("div", { className: "f2s-logs f2s-tmpl-section--blocking f2s-export-failure", role: "alert", children: [
+          /* @__PURE__ */ u3("div", { className: "f2s-logs-header", children: /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "This slide failed to export" }) }),
+          /* @__PURE__ */ u3("p", { className: "f2s-export-failure-message", children: previewedFailure })
+        ] }),
         exportingFrame && pacedCursor ? /* @__PURE__ */ u3("div", { className: "f2s-canvas-preview f2s-canvas-preview--retro", children: /* @__PURE__ */ u3(
           RetroExportPreview,
           {
@@ -4066,6 +4261,9 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     selecting,
     hasCanvasSelection,
     notice,
+    locked,
+    failedSlides,
+    onPreviewSettled,
     onRemove,
     onRename,
     onRenameCommit,
@@ -4092,6 +4290,15 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     const exportingLayout = pacedCursor ? layouts[pacedCursor.frameId] : void 0;
     const previewedLayout = exportingLayout ?? activeLayout;
     const highlightedId = pacedCursor?.frameId ?? activeId;
+    const previewedFailure = previewedLayout ? failedSlides?.[previewedLayout.id] : void 0;
+    const previewSettled = exportConcluded && !pacedCursor;
+    h2(() => {
+      if (previewSettled) onPreviewSettled();
+    }, [previewSettled]);
+    const firstFailedId = failedSlides ? order.find((id) => id in failedSlides) : void 0;
+    h2(() => {
+      if (firstFailedId) setActiveId(firstFailedId);
+    }, [firstFailedId]);
     h2(() => {
       if (!highlightedId) return;
       sidebarItemRefs.current.get(highlightedId)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
@@ -4107,6 +4314,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
       return Math.max(0, Math.min(lastIndex, dragStartIndexRef.current + steps));
     }
     function handleDragPointerDown(e3, id) {
+      if (locked) return;
       dragStartYRef.current = e3.clientY;
       setDragOffsetY(0);
       setDragActive(false);
@@ -4168,7 +4376,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     const leftoverNotes = fidelityNotes.filter((w3) => !consumedNotes.has(w3));
     if (order.length === 0) {
       return /* @__PURE__ */ u3("div", { className: "f2s-body", children: [
-        notice && /* @__PURE__ */ u3("div", { className: "f2s-toast", role: "status", children: notice }),
+        notice && /* @__PURE__ */ u3(Toast, { notice }),
         /* @__PURE__ */ u3("main", { className: "f2s-canvas", children: /* @__PURE__ */ u3("p", { className: "f2s-empty", children: [
           'Click "Select frames", then select the frames',
           /* @__PURE__ */ u3("br", {}),
@@ -4187,10 +4395,11 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
       ] });
     }
     return /* @__PURE__ */ u3("div", { className: "f2s-body", children: [
-      notice && /* @__PURE__ */ u3("div", { className: "f2s-toast", role: "status", children: notice }),
+      notice && /* @__PURE__ */ u3(Toast, { notice }),
       /* @__PURE__ */ u3("aside", { className: "f2s-sidebar", children: [
         selecting && !hasCanvasSelection && /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: 'Select one or more frames on the Figma canvas, then click "Add selection".' }),
         order.map((id, index) => {
+          const failure = failedSlides?.[id];
           const layout = layouts[id];
           if (!layout) return null;
           const isDragging = dragId === id && dragActive;
@@ -4217,10 +4426,10 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
                   "button",
                   {
                     type: "button",
-                    className: `f2s-frame-preview${highlightedId === id ? " is-active" : ""}${layout.blocking ? " f2s-frame-preview--blocking" : ""}${pacedCursor?.frameId === id ? " is-exporting" : ""}`,
+                    className: `f2s-frame-preview${highlightedId === id ? " is-active" : ""}${layout.blocking ? " f2s-frame-preview--blocking" : ""}${failure ? " f2s-frame-preview--failed" : ""}${pacedCursor?.frameId === id ? " is-exporting" : ""}`,
                     onClick: () => selectLayout(id),
                     onPointerDown: (e3) => handleDragPointerDown(e3, id),
-                    title: layout.blocking ? "Contains an element that would be rasterized. Open it to see the details." : void 0,
+                    title: failure ? `Export failed: ${failure}` : layout.blocking ? "Contains an element that would be rasterized. Open it to see the details." : void 0,
                     children: layout.previewDataUrl && /* @__PURE__ */ u3("img", { src: layout.previewDataUrl, alt: layout.name, draggable: false })
                   }
                 ),
@@ -4237,12 +4446,24 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
                       value: layout.name,
                       title: layout.name,
                       "aria-label": "Layout name",
+                      readOnly: locked,
                       onInput: (e3) => onRename(id, e3.target.value),
                       onChange: (e3) => onRenameCommit(id, e3.target.value),
                       onBlur: (e3) => onRenameCommit(id, e3.target.value)
                     }
                   ),
-                  /* @__PURE__ */ u3("div", { className: "f2s-frame-controls", children: /* @__PURE__ */ u3("button", { type: "button", className: "f2s-icon-btn", title: "Remove", onClick: () => onRemove(id), children: "\u2715" }) })
+                  /* @__PURE__ */ u3("div", { className: "f2s-frame-controls", children: /* @__PURE__ */ u3(
+                    "button",
+                    {
+                      type: "button",
+                      className: "f2s-icon-btn",
+                      disabled: locked,
+                      title: locked ? "An export is running. Wait for it to finish before changing the list." : "Remove",
+                      "aria-label": "Remove",
+                      onClick: () => onRemove(id),
+                      children: "\u2715"
+                    }
+                  ) })
                 ] })
               ]
             },
@@ -4251,6 +4472,10 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
         })
       ] }),
       /* @__PURE__ */ u3("main", { className: "f2s-canvas f2s-canvas--template", children: previewedLayout ? /* @__PURE__ */ u3("div", { className: "f2s-tmpl-report", children: [
+        previewedFailure && !exportingLayout && /* @__PURE__ */ u3("div", { className: "f2s-logs f2s-tmpl-section--blocking f2s-export-failure", role: "alert", children: [
+          /* @__PURE__ */ u3("div", { className: "f2s-logs-header", children: /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "This layout failed to export" }) }),
+          /* @__PURE__ */ u3("p", { className: "f2s-export-failure-message", children: previewedFailure })
+        ] }),
         (blockingWarnings.length > 0 || compositionWarnings.length > 0) && /* @__PURE__ */ u3("div", { className: "f2s-tmpl-panel", children: [
           blockingWarnings.length > 0 && /* @__PURE__ */ u3("div", { className: "f2s-logs f2s-tmpl-section--blocking", children: [
             /* @__PURE__ */ u3("div", { className: "f2s-logs-header", children: /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Fix before creating the template" }) }),
@@ -4624,6 +4849,60 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     );
   }
 
+  // src/ui/ResizeGrip.tsx
+  function ResizeGrip() {
+    const offsetRef = A2();
+    const lastSizeRef = A2();
+    const frameRef = A2(0);
+    function sizeFrom(e3) {
+      const offset = offsetRef.current;
+      return { width: Math.round(e3.clientX + offset.x), height: Math.round(e3.clientY + offset.y) };
+    }
+    return /* @__PURE__ */ u3(
+      "button",
+      {
+        type: "button",
+        className: "f2s-resize-grip",
+        tabIndex: -1,
+        title: "Drag to resize the plugin. Double-click to reset its size.",
+        "aria-label": "Resize the plugin window",
+        onPointerDown: (e3) => {
+          if (e3.button !== 0) return;
+          e3.preventDefault();
+          e3.currentTarget.setPointerCapture(e3.pointerId);
+          offsetRef.current = { x: window.innerWidth - e3.clientX, y: window.innerHeight - e3.clientY };
+        },
+        onPointerMove: (e3) => {
+          if (!offsetRef.current) return;
+          lastSizeRef.current = sizeFrom(e3);
+          if (frameRef.current) return;
+          frameRef.current = requestAnimationFrame(() => {
+            frameRef.current = 0;
+            if (lastSizeRef.current) postToPlugin({ type: "resize-ui", ...lastSizeRef.current });
+          });
+        },
+        onPointerUp: (e3) => {
+          if (!offsetRef.current) return;
+          const moved = lastSizeRef.current !== void 0;
+          const size = sizeFrom(e3);
+          cancelAnimationFrame(frameRef.current);
+          frameRef.current = 0;
+          offsetRef.current = void 0;
+          lastSizeRef.current = void 0;
+          e3.currentTarget.releasePointerCapture(e3.pointerId);
+          if (!moved) return;
+          postToPlugin({ type: "resize-ui", ...size });
+          postToPlugin({ type: "save-ui-size", ...size });
+        },
+        onDblClick: () => postToPlugin({ type: "reset-ui-size" }),
+        children: /* @__PURE__ */ u3("svg", { width: "12", height: "12", viewBox: "0 0 14 14", fill: "none", "aria-hidden": "true", children: [
+          /* @__PURE__ */ u3("path", { className: "f2s-grip-hi", d: "M3 13 13 3M7 13l6-6M11 13l2-2", strokeWidth: "1" }),
+          /* @__PURE__ */ u3("path", { className: "f2s-grip-lo", d: "M4 13 13 4M8 13l5-5M12 13l1-1", strokeWidth: "1" })
+        ] })
+      }
+    );
+  }
+
   // src/ui/theme.ts
   var OVERRIDE_CLASS = {
     light: "f2s-theme-light",
@@ -4665,6 +4944,8 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
   var POLL_INTERVAL_MS = 1e3;
   var POLL_TIMEOUT_MS = 3 * 60 * 1e3;
   var SELECTION_NOTICE_MS = 4e3;
+  var ACTION_ERROR_NOTICE_MS = 7e3;
+  var FAILED_SLIDE_FALLBACK = "This slide could not be written to Google Slides.";
   var SITE_URL = "https://decker.billeltighidet.fr";
   var AuthExpiredError = class extends Error {
     constructor() {
@@ -4702,6 +4983,10 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
         ]
       }
     );
+  }
+  function successMessage(mode, slideCount) {
+    if (mode === "template") return `Template created in Google Slides (${slideCount} layout${slideCount === 1 ? "" : "s"}).`;
+    return `${slideCount} slide${slideCount === 1 ? "" : "s"} exported to Google Slides.`;
   }
   function TitleBar({ mode }) {
     return /* @__PURE__ */ u3("div", { className: "f2s-titlebar", children: [
@@ -4747,10 +5032,10 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     const [templateSelecting, setTemplateSelecting] = d2(false);
     const [templateSelectionNotice, setTemplateSelectionNotice] = d2();
     const templateSelectionNoticeTimerRef = A2();
-    function showTemplateSelectionNotice(message) {
+    function showTemplateSelectionNotice(message, durationMs = SELECTION_NOTICE_MS, tone = "error") {
       if (templateSelectionNoticeTimerRef.current !== void 0) clearTimeout(templateSelectionNoticeTimerRef.current);
-      setTemplateSelectionNotice(message);
-      templateSelectionNoticeTimerRef.current = setTimeout(() => setTemplateSelectionNotice(void 0), SELECTION_NOTICE_MS);
+      setTemplateSelectionNotice({ message, tone });
+      templateSelectionNoticeTimerRef.current = setTimeout(() => setTemplateSelectionNotice(void 0), durationMs);
     }
     function clearTemplateSelectionNotice() {
       if (templateSelectionNoticeTimerRef.current !== void 0) {
@@ -4762,10 +5047,10 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     const [selecting, setSelecting] = d2(false);
     const [selectionNotice, setSelectionNotice] = d2();
     const selectionNoticeTimerRef = A2();
-    function showSelectionNotice(message) {
+    function showSelectionNotice(message, durationMs = SELECTION_NOTICE_MS, tone = "error") {
       if (selectionNoticeTimerRef.current !== void 0) clearTimeout(selectionNoticeTimerRef.current);
-      setSelectionNotice(message);
-      selectionNoticeTimerRef.current = setTimeout(() => setSelectionNotice(void 0), SELECTION_NOTICE_MS);
+      setSelectionNotice({ message, tone });
+      selectionNoticeTimerRef.current = setTimeout(() => setSelectionNotice(void 0), durationMs);
     }
     function clearSelectionNotice() {
       if (selectionNoticeTimerRef.current !== void 0) {
@@ -4862,7 +5147,10 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     const [exportSource, setExportSource] = d2();
     const [exportCursor, setExportCursor] = d2();
     const [exportJobId, setExportJobId] = d2();
-    const [failedFrameIds, setFailedFrameIds] = d2([]);
+    const [failedSlides, setFailedSlides] = d2({});
+    const failedCount = Object.keys(failedSlides).length;
+    const [exportedCount, setExportedCount] = d2(0);
+    const [previewSettled, setPreviewSettled] = d2(true);
     const [retryable, setRetryable] = d2(false);
     const [retrying, setRetrying] = d2(false);
     const pendingAssets = T2(() => /* @__PURE__ */ new Map(), []);
@@ -4872,13 +5160,14 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
         setExportState("done");
         setExportProgress(100);
         setResultUrl(concluded.resultUrl);
-        setFailedFrameIds([]);
+        setFailedSlides({});
         setRetryable(false);
+        setExportedCount(concluded.slideCount);
       } else {
         setExportState("error");
         setExportError(concluded.error);
         setResultUrl(concluded.resultUrl);
-        setFailedFrameIds(concluded.failedFrameIds);
+        setFailedSlides(concluded.failedSlides);
         setRetryable(concluded.retryable);
       }
     }
@@ -5064,6 +5353,18 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
             setExportState("error");
             setExportError(msg.message);
             break;
+          // Échec côté sandbox d'une action qui n'est PAS un export (ajout de
+          // la sélection au deck/template, dump debug). Passait avant par
+          // `export-error` : muet tant qu'aucun export n'avait été lancé (le
+          // footer n'affiche l'erreur que pour le mode qui a lancé l'export),
+          // et maquillé en échec d'export dans le cas contraire. Affiché ici
+          // dans le toast du mode courant, là où l'utilisateur vient de cliquer.
+          case "action-error": {
+            const text = String(msg.message);
+            if (modeRef.current === "template") showTemplateSelectionNotice(text, ACTION_ERROR_NOTICE_MS);
+            else showSelectionNotice(text, ACTION_ERROR_NOTICE_MS);
+            break;
+          }
           // Modale Settings, section Developer : dump de l'IRDocument courant
           // en JSON téléchargeable, pour construire les fixtures de
           // calibration `fixtures/<nom>.json` (voir LIMITATIONS.md, spec §9) —
@@ -5189,8 +5490,12 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
         console.error(err);
       }
     }
-    function failedIdsFrom(batches) {
-      return (batches ?? []).filter((b2) => b2.status === "failed").map((b2) => b2.sourceSlideId);
+    function failedSlidesFrom(batches) {
+      const failed = {};
+      for (const b2 of batches ?? []) {
+        if (b2.status === "failed") failed[b2.sourceSlideId] = b2.error ?? FAILED_SLIDE_FALLBACK;
+      }
+      return failed;
     }
     async function pollJob(jobId, onUpdate) {
       let lastPresentationUrl;
@@ -5204,17 +5509,22 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
           lastPresentationId = job.presentationId ?? lastPresentationId;
           onUpdate(batches);
           if (job.status === "done") {
-            return { status: "done", resultUrl: job.presentationUrl };
+            return { status: "done", resultUrl: job.presentationUrl, slideCount: batches?.length ?? 0 };
           }
           if (job.status === "failed") {
             const batchErrors = batches?.map((b2) => b2.error).filter((e3) => Boolean(e3));
-            const failedFrameIds2 = failedIdsFrom(batches);
+            const failedSlides2 = failedSlidesFrom(batches);
+            const failedCount2 = Object.keys(failedSlides2).length;
+            const noun = modeRef.current === "template" ? "layout" : "slide";
             return {
               status: "failed",
-              error: batchErrors && batchErrors.length > 0 ? batchErrors.join(" \xB7 ") : job.error ?? "Unknown server-side failure.",
+              // Le détail de chaque slide vit désormais sur sa vignette : le
+              // footer n'a plus qu'à dire combien ont échoué, au lieu de
+              // concaténer tous les messages bruts sur une ligne tronquée.
+              error: failedCount2 > 0 ? `${failedCount2} ${noun}${failedCount2 === 1 ? "" : "s"} failed. Select the flagged thumbnail${failedCount2 === 1 ? "" : "s"} to see why.` : batchErrors && batchErrors.length > 0 ? batchErrors.join(" \xB7 ") : job.error ?? "Unknown server-side failure.",
               resultUrl: job.presentationUrl,
-              failedFrameIds: failedFrameIds2,
-              retryable: Boolean(job.presentationId) && failedFrameIds2.length > 0
+              failedSlides: failedSlides2,
+              retryable: Boolean(job.presentationId) && failedCount2 > 0
             };
           }
           await new Promise((r3) => setTimeout(r3, POLL_INTERVAL_MS));
@@ -5223,7 +5533,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
           status: "failed",
           error: "Export timed out after 3 minutes. The presentation may still be processing; check your Google Drive, or retry once it settles.",
           resultUrl: lastPresentationUrl,
-          failedFrameIds: [],
+          failedSlides: {},
           retryable: Boolean(lastPresentationId)
         };
       } catch (err) {
@@ -5231,7 +5541,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
           status: "failed",
           error: err instanceof Error ? err.message : String(err),
           resultUrl: lastPresentationUrl,
-          failedFrameIds: [],
+          failedSlides: {},
           retryable: Boolean(lastPresentationId)
         };
       }
@@ -5239,6 +5549,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     async function handleRetryFailedSlides() {
       if (!exportJobId) return;
       setRetrying(true);
+      setPreviewSettled(false);
       setExportState("exporting");
       setExportAttempt((n2) => n2 + 1);
       setExportError(void 0);
@@ -5423,9 +5734,10 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
       setExportState("exporting");
       setExportProgress(0);
       setExportSource("deck");
+      setPreviewSettled(false);
       setExportCursor(void 0);
       setExportJobId(void 0);
-      setFailedFrameIds([]);
+      setFailedSlides({});
       setRetryable(false);
       const options = {
         mode: "new-presentation",
@@ -5447,9 +5759,10 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
       setExportState("exporting");
       setExportProgress(0);
       setExportSource("template");
+      setPreviewSettled(false);
       setExportCursor(void 0);
       setExportJobId(void 0);
-      setFailedFrameIds([]);
+      setFailedSlides({});
       setRetryable(false);
       postToPlugin({
         type: "request-template",
@@ -5461,11 +5774,21 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
       });
     }
     const exporting = exportState === "exporting";
+    const successVisible = exportState === "done" && (previewSettled || exportSource !== mode);
+    h2(() => {
+      if (!successVisible || exportSource === void 0) return;
+      const text = successMessage(exportSource, exportedCount);
+      if (exportSource === "template") showTemplateSelectionNotice(text, SELECTION_NOTICE_MS, "success");
+      else showSelectionNotice(text, SELECTION_NOTICE_MS, "success");
+    }, [successVisible]);
     const busyFromOtherMode = exporting && exportSource !== void 0 && exportSource !== mode;
     const busyTitle = exportSource === "deck" ? "A deck export is still running. Wait for it to finish." : "A template creation is still running. Wait for it to finish.";
-    function renderPrimaryAction(label, disabled, disabledTitle, onClick) {
+    const exportedHere = exportSource === mode && (exportState === "done" || exportState === "error") && Boolean(resultUrl);
+    const againTitle = "Creates a new presentation in your Google Drive. The one you just exported stays as it is.";
+    const failedSlidesHere = exportState === "error" && exportSource === mode ? failedSlides : void 0;
+    function renderPrimaryAction(label, disabled, title, onClick) {
       if (sessionToken) {
-        return /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--primary", disabled, title: disabledTitle, onClick, children: label });
+        return /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--primary", disabled, title, onClick, children: label });
       }
       if (authUrl) {
         return /* @__PURE__ */ u3(
@@ -5570,7 +5893,12 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
               children: "Prepare for Slides"
             }
           ),
-          renderPrimaryAction("Export", exporting || order.length === 0, busyFromOtherMode ? busyTitle : void 0, startExport)
+          renderPrimaryAction(
+            exportedHere ? "Export again" : "Export",
+            exporting || order.length === 0,
+            busyFromOtherMode ? busyTitle : exportedHere ? againTitle : void 0,
+            startExport
+          )
         ] }) : /* @__PURE__ */ u3("div", { className: "f2s-topbar-actions", children: [
           /* @__PURE__ */ u3(
             "button",
@@ -5595,9 +5923,9 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
             }
           ),
           renderPrimaryAction(
-            "Create template",
+            exportedHere ? "Create again" : "Create template",
             exporting || templateOrder.length === 0 || templateHasBlockingLayout,
-            busyFromOtherMode ? busyTitle : templateHasBlockingLayout ? "Fix the blocking issues listed below before creating the template." : void 0,
+            busyFromOtherMode ? busyTitle : templateHasBlockingLayout ? "Fix the blocking issues listed below before creating the template." : exportedHere ? againTitle : void 0,
             startTemplateCreate
           )
         ] })
@@ -5633,7 +5961,10 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
           exportCursor: exportSource === "deck" ? exportCursor : void 0,
           exportAttempt: exportSource === "deck" ? exportAttempt : void 0,
           exportConcluded: exportSource === "deck" && (exportState === "done" || exportState === "error"),
-          notice: selectionNotice
+          notice: selectionNotice,
+          locked: exporting,
+          failedSlides: failedSlidesHere,
+          onPreviewSettled: () => setPreviewSettled(true)
         }
       ) : /* @__PURE__ */ u3(
         TemplatePanel,
@@ -5646,6 +5977,9 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
           selecting: templateSelecting,
           hasCanvasSelection,
           notice: templateSelectionNotice,
+          locked: exporting,
+          failedSlides: failedSlidesHere,
+          onPreviewSettled: () => setPreviewSettled(true),
           onRemove: removeTemplateLayout,
           onRename: renameTemplateLayout,
           onRenameCommit: commitTemplateLayoutRename,
@@ -5675,10 +6009,17 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
           }
         ) }),
         /* @__PURE__ */ u3("div", { className: "f2s-footer-actions", children: [
-          exportState === "error" && exportSource === mode && exportError && /* @__PURE__ */ u3("p", { className: "f2s-error f2s-footer-error", title: exportError, children: exportError }),
+          exportState === "error" && exportSource === mode && exportError && /* @__PURE__ */ u3("p", { className: "f2s-footer-status f2s-footer-status--error", role: "alert", title: exportError, children: [
+            /* @__PURE__ */ u3(StatusIcon, { tone: "error" }),
+            /* @__PURE__ */ u3("span", { className: "f2s-footer-status-text", children: exportError })
+          ] }),
+          successVisible && exportSource === mode && /* @__PURE__ */ u3("p", { className: "f2s-footer-status f2s-footer-status--success", role: "status", children: [
+            /* @__PURE__ */ u3(StatusIcon, { tone: "success" }),
+            /* @__PURE__ */ u3("span", { className: "f2s-footer-status-text", children: successMessage(mode, exportedCount) })
+          ] }),
           /* @__PURE__ */ u3(Logo, {}),
           /* @__PURE__ */ u3("a", { href: "https://buymeacoffee.com/billelt", target: "_blank", rel: "noreferrer", className: "f2s-btn f2s-btn--tertiary", children: "Buy me a coffee" }),
-          exportState === "error" && exportSource === mode && retryable && /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--secondary", disabled: retrying, onClick: handleRetryFailedSlides, children: retrying ? "Retrying\u2026" : `Retry ${failedFrameIds.length} failed slide${failedFrameIds.length === 1 ? "" : "s"}` }),
+          exportState === "error" && exportSource === mode && retryable && /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--secondary", disabled: retrying, onClick: handleRetryFailedSlides, children: retrying ? "Retrying\u2026" : `Retry ${failedCount} failed ${mode === "template" ? "layout" : "slide"}${failedCount === 1 ? "" : "s"}` }),
           (exportState === "done" || exportState === "error") && exportSource === mode && resultUrl && /* @__PURE__ */ u3("a", { href: resultUrl, target: "_blank", rel: "noreferrer", className: "f2s-btn f2s-btn--primary", children: "Open presentation" })
         ] })
       ] }),
@@ -5698,7 +6039,8 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
           onExportDebugIr: handleExportDebugIr,
           siteUrl: SITE_URL
         }
-      )
+      ),
+      /* @__PURE__ */ u3(ResizeGrip, {})
     ] });
   }
   R(/* @__PURE__ */ u3(App, {}), document.getElementById("app"));

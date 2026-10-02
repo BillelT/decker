@@ -4,9 +4,10 @@ import { placeholderRoleTagsForKind } from './placeholderRoleOptions.js';
 import { moveToIndex } from './reorderFrames.js';
 import { usePacedExportCursor } from './pacedExportCursor.js';
 import { RetroExportPreview } from './RetroExportPreview.js';
+import { Toast } from './StatusIcon.js';
 import { TemplateStylePanel, type TemplateStylePanelProps } from './TemplateStylePanel.js';
 import type { ExportCursor } from './exportCursor.js';
-import { postToPlugin, selectSourceNodes, type TemplateElement, type TemplateLayoutState, type TemplateWarning } from './types.js';
+import { postToPlugin, selectSourceNodes, type Notice, type TemplateElement, type TemplateLayoutState, type TemplateWarning } from './types.js';
 import { CANONICAL_TAG_FOR_ROLE } from '../serialize/placeholder.js';
 import { COMPOSITION_WARNING_CODES } from '../serialize/templateComposition.js';
 import type { PlaceholderRole } from '@figma-to-slides/shared';
@@ -136,7 +137,13 @@ export interface TemplatePanelProps extends TemplateStylePanelProps {
   setActiveId: (id: string) => void;
   selecting: boolean;
   hasCanvasSelection: boolean;
-  notice: string | undefined;
+  notice: Notice | undefined;
+  /** Création en cours : rail figé (retrait, réordonnancement, renommage), voir DeckPanel. */
+  locked: boolean;
+  /** Layouts en échec de la dernière création (id → message du lot), voir ui.tsx. */
+  failedSlides: Record<string, string> | undefined;
+  /** L'export est conclu ET l'aperçu a fini de défiler : le succès peut s'annoncer (voir ui.tsx). */
+  onPreviewSettled: () => void;
   onRemove: (id: string) => void;
   onRename: (id: string, name: string) => void;
   /**
@@ -169,6 +176,9 @@ export function TemplatePanel({
   selecting,
   hasCanvasSelection,
   notice,
+  locked,
+  failedSlides,
+  onPreviewSettled,
   onRemove,
   onRename,
   onRenameCommit,
@@ -210,6 +220,24 @@ export function TemplatePanel({
   const exportingLayout = pacedCursor ? layouts[pacedCursor.frameId] : undefined;
   const previewedLayout = exportingLayout ?? activeLayout;
   const highlightedId = pacedCursor?.frameId ?? activeId;
+  const previewedFailure = previewedLayout ? failedSlides?.[previewedLayout.id] : undefined;
+
+  // Job conclu ET séquence d'aperçu terminée : ui.tsx peut annoncer le
+  // succès sans contredire un aperçu encore en train de "générer".
+  const previewSettled = exportConcluded && !pacedCursor;
+  useEffect(() => {
+    if (previewSettled) onPreviewSettled();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [previewSettled]);
+
+  // Fin d'un export en échec partiel : l'aperçu saute sur la première slide
+  // en échec (dans l'ordre du rail), pour que la raison s'affiche sans avoir
+  // à chercher quelle vignette porte le badge.
+  const firstFailedId = failedSlides ? order.find((id) => id in failedSlides) : undefined;
+  useEffect(() => {
+    if (firstFailedId) setActiveId(firstFailedId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [firstFailedId]);
 
   // Fait défiler le rail jusqu'à la vignette surlignée dès qu'elle change —
   // utile pendant une création de template plus longue que la hauteur
@@ -240,6 +268,7 @@ export function TemplatePanel({
   }
 
   function handleDragPointerDown(e: { clientY: number }, id: string) {
+    if (locked) return;
     dragStartYRef.current = e.clientY;
     setDragOffsetY(0);
     setDragActive(false);
@@ -330,11 +359,7 @@ export function TemplatePanel({
   if (order.length === 0) {
     return (
       <div className="f2s-body">
-        {notice && (
-          <div className="f2s-toast" role="status">
-            {notice}
-          </div>
-        )}
+        {notice && <Toast notice={notice} />}
         <main className="f2s-canvas">
           <p className="f2s-empty">
             Click "Select frames", then select the frames
@@ -357,16 +382,13 @@ export function TemplatePanel({
 
   return (
     <div className="f2s-body">
-      {notice && (
-        <div className="f2s-toast" role="status">
-          {notice}
-        </div>
-      )}
+      {notice && <Toast notice={notice} />}
       <aside className="f2s-sidebar">
         {selecting && !hasCanvasSelection && (
           <p className="f2s-toolbar-muted">Select one or more frames on the Figma canvas, then click "Add selection".</p>
         )}
         {order.map((id, index) => {
+          const failure = failedSlides?.[id];
           const layout = layouts[id];
           if (!layout) return null;
           const isDragging = dragId === id && dragActive;
@@ -400,10 +422,16 @@ export function TemplatePanel({
             >
               <button
                 type="button"
-                className={`f2s-frame-preview${highlightedId === id ? ' is-active' : ''}${layout.blocking ? ' f2s-frame-preview--blocking' : ''}${pacedCursor?.frameId === id ? ' is-exporting' : ''}`}
+                className={`f2s-frame-preview${highlightedId === id ? ' is-active' : ''}${layout.blocking ? ' f2s-frame-preview--blocking' : ''}${failure ? ' f2s-frame-preview--failed' : ''}${pacedCursor?.frameId === id ? ' is-exporting' : ''}`}
                 onClick={() => selectLayout(id)}
                 onPointerDown={(e) => handleDragPointerDown(e, id)}
-                title={layout.blocking ? 'Contains an element that would be rasterized. Open it to see the details.' : undefined}
+                title={
+                  failure
+                    ? `Export failed: ${failure}`
+                    : layout.blocking
+                      ? 'Contains an element that would be rasterized. Open it to see the details.'
+                      : undefined
+                }
               >
                 {layout.previewDataUrl && <img src={layout.previewDataUrl} alt={layout.name} draggable={false} />}
               </button>
@@ -415,12 +443,20 @@ export function TemplatePanel({
                   value={layout.name}
                   title={layout.name}
                   aria-label="Layout name"
+                  readOnly={locked}
                   onInput={(e) => onRename(id, (e.target as HTMLInputElement).value)}
                   onChange={(e) => onRenameCommit(id, (e.target as HTMLInputElement).value)}
                   onBlur={(e) => onRenameCommit(id, (e.target as HTMLInputElement).value)}
                 />
                 <div className="f2s-frame-controls">
-                  <button type="button" className="f2s-icon-btn" title="Remove" onClick={() => onRemove(id)}>
+                  <button
+                    type="button"
+                    className="f2s-icon-btn"
+                    disabled={locked}
+                    title={locked ? 'An export is running. Wait for it to finish before changing the list.' : 'Remove'}
+                    aria-label="Remove"
+                    onClick={() => onRemove(id)}
+                  >
                     ✕
                   </button>
                 </div>
@@ -433,6 +469,14 @@ export function TemplatePanel({
       <main className="f2s-canvas f2s-canvas--template">
         {previewedLayout ? (
           <div className="f2s-tmpl-report">
+            {previewedFailure && !exportingLayout && (
+              <div className="f2s-logs f2s-tmpl-section--blocking f2s-export-failure" role="alert">
+                <div className="f2s-logs-header">
+                  <h3 className="f2s-tmpl-heading">This layout failed to export</h3>
+                </div>
+                <p className="f2s-export-failure-message">{previewedFailure}</p>
+              </div>
+            )}
             {(blockingWarnings.length > 0 || compositionWarnings.length > 0) && (
               <div className="f2s-tmpl-panel">
               {blockingWarnings.length > 0 && (

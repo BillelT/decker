@@ -95,6 +95,30 @@ const UI_SKIN_STORAGE_KEY = 'f2s:uiSkin';
 // l'UI suit le thème de Figma (`themeColors: true`).
 const THEME_STORAGE_KEY = 'f2s:theme';
 
+// Taille de la fenêtre du plugin, choisie via la poignée du coin bas droit
+// (ui/ResizeGrip.tsx) et persistée via clientStorage : 1200x760 laisse toute
+// sa place au mode template, mais couvre presque tout le canvas d'un
+// portable, celui-là même où l'on sélectionne les frames à ajouter.
+const UI_SIZE_STORAGE_KEY = 'f2s:uiSize';
+const DEFAULT_UI_SIZE = { width: 1200, height: 760 };
+// En dessous, le header (onglets, nom, trois boutons) passe à la ligne et
+// le mode template (rail 190px + aside Styles 280px) écrase son aperçu.
+const MIN_UI_SIZE = { width: 960, height: 560 };
+// Garde-fou contre une valeur aberrante (écran externe débranché depuis).
+const MAX_UI_SIZE = { width: 2400, height: 1600 };
+
+/** Taille demandée bornée aux limites de l'UI ; la taille par défaut si l'entrée est invalide. */
+function clampUiSize(raw: unknown): { width: number; height: number } {
+  const candidate = raw as { width?: unknown; height?: unknown } | undefined;
+  const width = Number(candidate?.width);
+  const height = Number(candidate?.height);
+  if (!Number.isFinite(width) || !Number.isFinite(height)) return DEFAULT_UI_SIZE;
+  return {
+    width: Math.round(Math.min(MAX_UI_SIZE.width, Math.max(MIN_UI_SIZE.width, width))),
+    height: Math.round(Math.min(MAX_UI_SIZE.height, Math.max(MIN_UI_SIZE.height, height))),
+  };
+}
+
 type ExportableNode = FrameNode | ComponentNode | InstanceNode;
 
 function isExportable(node: SceneNode): node is ExportableNode {
@@ -821,10 +845,12 @@ async function main(): Promise<void> {
   // premier rendu, il n'y a plus rien à corriger après coup.
   let storedSkin: unknown;
   let storedTheme: unknown;
+  let storedSize: unknown;
   try {
-    [storedSkin, storedTheme] = await Promise.all([
+    [storedSkin, storedTheme, storedSize] = await Promise.all([
       figma.clientStorage.getAsync(UI_SKIN_STORAGE_KEY),
       figma.clientStorage.getAsync(THEME_STORAGE_KEY),
+      figma.clientStorage.getAsync(UI_SIZE_STORAGE_KEY),
     ]);
   } catch (err) {
     console.error(err);
@@ -845,8 +871,10 @@ async function main(): Promise<void> {
   // Styles 280px à droite : TemplatePanel) : la preview/les logs (plafonnés
   // à 640px CSS, cf. .f2s-canvas-preview) n'avaient plus la place de
   // respirer et se retrouvaient écrasés (retour utilisateur). 1200x760
-  // laisse 640px pleins au canvas central même avec les deux asides.
-  figma.showUI(html, { width: 1200, height: 760, themeColors: true });
+  // (DEFAULT_UI_SIZE) laisse 640px pleins au canvas central même avec les
+  // deux asides ; une taille choisie à la poignée l'emporte.
+  const initialSize = storedSize === undefined ? DEFAULT_UI_SIZE : clampUiSize(storedSize);
+  figma.showUI(html, { ...initialSize, themeColors: true });
 
   const pending: PendingSlide[] = [];
   // Store distinct du deck : basculer entre "Export" et "Create a template"
@@ -945,6 +973,27 @@ async function main(): Promise<void> {
       return;
     }
 
+    // Poignée de redimensionnement (ui/ResizeGrip.tsx) : `resize-ui` à
+    // chaque mouvement, `save-ui-size` au relâchement seulement (pas une
+    // écriture clientStorage par frame de drag). `reset-ui-size` : double
+    // clic sur la poignée, retour à la taille par défaut.
+    if (msg.type === 'resize-ui') {
+      const size = clampUiSize(msg);
+      figma.ui.resize(size.width, size.height);
+      return;
+    }
+
+    if (msg.type === 'save-ui-size' || msg.type === 'reset-ui-size') {
+      const size = msg.type === 'reset-ui-size' ? DEFAULT_UI_SIZE : clampUiSize(msg);
+      if (msg.type === 'reset-ui-size') figma.ui.resize(size.width, size.height);
+      try {
+        await figma.clientStorage.setAsync(UI_SIZE_STORAGE_KEY, size);
+      } catch (err) {
+        console.error(err);
+      }
+      return;
+    }
+
     if (msg.type === 'save-ui-skin') {
       try {
         await figma.clientStorage.setAsync(UI_SKIN_STORAGE_KEY, msg.skin as string);
@@ -977,7 +1026,10 @@ async function main(): Promise<void> {
         await addSelectedFrames(pending, idGen);
       } catch (err) {
         console.error(err);
-        figma.ui.postMessage({ type: 'export-error', message: (err as Error).message });
+        // `action-error` et non `export-error` : aucun export n'est en cours,
+        // l'UI l'affiche dans le toast du panneau plutôt que dans le statut
+        // d'export du footer (où il restait muet, voir ui.tsx).
+        figma.ui.postMessage({ type: 'action-error', message: `Couldn't add the selection: ${(err as Error).message}` });
       }
       return;
     }
@@ -1007,7 +1059,10 @@ async function main(): Promise<void> {
         await addSelectedTemplateLayouts(templatePending, idGen);
       } catch (err) {
         console.error(err);
-        figma.ui.postMessage({ type: 'export-error', message: (err as Error).message });
+        // `action-error` et non `export-error` : aucun export n'est en cours,
+        // l'UI l'affiche dans le toast du panneau plutôt que dans le statut
+        // d'export du footer (où il restait muet, voir ui.tsx).
+        figma.ui.postMessage({ type: 'action-error', message: `Couldn't add the selection: ${(err as Error).message}` });
       }
       return;
     }
@@ -1153,7 +1208,7 @@ async function main(): Promise<void> {
         }
       } catch (err) {
         console.error(err);
-        figma.ui.postMessage({ type: 'export-error', message: (err as Error).message });
+        figma.ui.postMessage({ type: 'action-error', message: `Couldn't build the IR JSON: ${(err as Error).message}` });
       }
       return;
     }
