@@ -550,6 +550,18 @@ a {
     transform 0.15s ease;
 }
 
+/* Boutons du header : padding 6px 12px, texte 14px. */
+.f2s-topbar .f2s-btn {
+  font-size: 14px;
+  padding: 6px 12px;
+}
+
+/* "Buy me a coffee" dans le footer : texte 12px, padding 6px 12px. */
+.f2s-footer-actions a[href*="buymeacoffee"].f2s-btn {
+  font-size: 12px;
+  padding: 6px 12px;
+}
+
 /* Transform translateY() uniquement en mode modern (Win95 gère le pressed via box-shadow) */
 html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   transform: translateY(0.5px);
@@ -1439,7 +1451,7 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 12px 16px;
+  padding: 8px 12px;
   border-top: 1px solid var(--color-border);
   background: var(--color-bg);
   z-index: 50;
