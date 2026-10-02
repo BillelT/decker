@@ -166,12 +166,12 @@ a {
    16px/motif tramé d'origine. */
 *::-webkit-scrollbar {
   display: block;
-  width: 13px;
+  width: 11px;
 }
 *::-webkit-scrollbar-thumb {
   background: var(--color-scrollbar);
   border-radius: 999px;
-  border: 2px solid transparent;
+  border: 3px solid transparent;
   background-clip: content-box;
 }
 *::-webkit-scrollbar-track {
