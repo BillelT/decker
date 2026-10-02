@@ -87,7 +87,23 @@ describe('createPresentation', () => {
 
     const result = await createPresentation('token', 'My deck');
 
-    expect(result).toEqual({ presentationId: 'p1', firstSlideObjectId: 's1', masterObjectId: 'm1' });
+    expect(result).toEqual({ presentationId: 'p1', firstSlideObjectId: 's1', masterObjectId: 'm1', masterAndLayoutElementIds: [] });
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('collects the default page elements of the master and of every layout', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse(200, {
+        presentationId: 'p1',
+        slides: [{ objectId: 's1' }],
+        masters: [{ objectId: 'm1', pageElements: [{ objectId: 'mt' }, { objectId: 'mb' }] }],
+        layouts: [{ objectId: 'l1', pageElements: [{ objectId: 'lt' }] }, { objectId: 'l2' }],
+      }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await createPresentation('token', 'My deck');
+
+    expect(result.masterAndLayoutElementIds).toEqual(['mt', 'mb', 'lt']);
   });
 });

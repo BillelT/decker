@@ -1,6 +1,6 @@
 import type { CalibrationData, IRDocument } from '@figma-to-slides/shared';
 import { chunkBatchesForApi, mapDocumentToBatches, THEME_BATCH_SOURCE_ID, type AssetUrlResolver, type RequestBatch } from '../mapper/index.js';
-import { applyBatch, createPresentation } from '../slides/client.js';
+import { applyBatch, clearMasterAndLayoutElements, createPresentation } from '../slides/client.js';
 import { pendingBatchIds, updateBatchStatus, updateJob, type JobRecord } from './jobStore.js';
 
 /**
@@ -54,16 +54,24 @@ export async function runExportJob(
     let presentationId = doc.targetPresentationId;
     let defaultSlideObjectId: string | undefined;
     let masterObjectId: string | undefined;
+    let masterAndLayoutElementIds: string[] = [];
 
     if (!presentationId) {
       const created = await createPresentation(accessToken, doc.presentationTitle, doc.slideSize);
       presentationId = created.presentationId;
       defaultSlideObjectId = created.firstSlideObjectId;
       masterObjectId = created.masterObjectId;
+      masterAndLayoutElementIds = created.masterAndLayoutElementIds;
       // Persisté sur le job (pas seulement gardé en variable locale) : sans
       // ça, `retryExportJob` n'a aucun moyen de reconstruire le lot thème
       // via `mapDocumentToBatches` en cas de reprise (audit 2026-08).
       await updateJob(job.id, { presentationId, presentationUrl: presentationUrl(presentationId), masterObjectId });
+    }
+
+    // Mode template (doc.theme présent) : on vide le contenu par défaut du
+    // Master et des layouts avant d'écrire quoi que ce soit.
+    if (doc.theme && presentationId && masterAndLayoutElementIds.length > 0) {
+      await clearMasterAndLayoutElements(accessToken, presentationId, masterAndLayoutElementIds);
     }
 
     const batches = mapDocumentToBatches(doc, resolveAssetUrl, calibration, masterObjectId);

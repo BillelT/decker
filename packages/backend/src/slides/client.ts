@@ -68,7 +68,7 @@ export async function createPresentation(
   accessToken: string,
   title: string,
   pageSizePt?: { widthPt: number; heightPt: number },
-): Promise<{ presentationId: string; firstSlideObjectId: string; masterObjectId: string }> {
+): Promise<{ presentationId: string; firstSlideObjectId: string; masterObjectId: string; masterAndLayoutElementIds: string[] }> {
   // Le pageSize (comme le ratio d'aspect de la présentation entière) ne se
   // règle qu'à la création — la Slides API n'a aucune requête batchUpdate
   // pour le modifier après coup. Sans ça, une frame Figma qui n'est pas en
@@ -84,12 +84,27 @@ export async function createPresentation(
   // (masters/layouts inclus, pas juste les slides) — pas besoin d'un
   // second appel `getPresentation` pour récupérer l'id du Master (audit
   // 2026-08, mode template : voir `mapper/theme.ts`).
-  const body = await callApi<{ presentationId: string; slides: { objectId: string }[]; masters: { objectId: string }[] }>(
+  type PageWithElements = { objectId: string; pageElements?: { objectId: string }[] };
+  const body = await callApi<{
+    presentationId: string;
+    slides: { objectId: string }[];
+    masters: PageWithElements[];
+    layouts?: PageWithElements[];
+  }>(
     accessToken,
     '/presentations',
     { method: 'POST', body: JSON.stringify({ title, ...(pageSize ? { pageSize } : {}) }) },
   );
-  return { presentationId: body.presentationId, firstSlideObjectId: body.slides[0].objectId, masterObjectId: body.masters[0].objectId };
+  // Placeholders par défaut du Master et des layouts ("Cliquez ici pour
+  // modifier le style du titre du thème", "Premier niveau"…), à vider en
+  // mode template (voir `clearMasterAndLayoutElements`).
+  const masterAndLayoutElementIds = [...body.masters, ...(body.layouts ?? [])].flatMap((page) => (page.pageElements ?? []).map((el) => el.objectId));
+  return {
+    presentationId: body.presentationId,
+    firstSlideObjectId: body.slides[0].objectId,
+    masterObjectId: body.masters[0].objectId,
+    masterAndLayoutElementIds,
+  };
 }
 
 export async function batchUpdate(
@@ -126,4 +141,22 @@ export async function getPageThumbnail(
  */
 export async function applyBatch(accessToken: string, presentationId: string, batch: RequestBatch): Promise<unknown> {
   return batchUpdate(accessToken, presentationId, batch.requests);
+}
+
+/**
+ * Mode template : supprime le contenu par défaut de Google Slides sur le
+ * Master et les layouts (placeholders de titre, de corps à 9 niveaux, etc.)
+ * pour ne laisser que ce que le template apporte. Un seul batchUpdate d'abord ;
+ * si l'API en rejette un (placeholder non supprimable), on retombe sur une
+ * suppression élément par élément, en ignorant les refus.
+ */
+export async function clearMasterAndLayoutElements(accessToken: string, presentationId: string, objectIds: string[]): Promise<void> {
+  if (objectIds.length === 0) return;
+  try {
+    await batchUpdate(accessToken, presentationId, objectIds.map((objectId) => ({ deleteObject: { objectId } })));
+  } catch {
+    for (const objectId of objectIds) {
+      await batchUpdate(accessToken, presentationId, [{ deleteObject: { objectId } }]).catch(() => undefined);
+    }
+  }
 }
