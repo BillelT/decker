@@ -1471,7 +1471,6 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 6px 10px;
-  margin-left: -10px;
   transition:
     color 0.15s ease,
     background-color 0.15s ease,
