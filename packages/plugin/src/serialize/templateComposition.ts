@@ -74,7 +74,7 @@ export function collectCompositionWarnings(layout: CompositionInput): IRWarning[
       sourceNodeId: layout.sourceNodeId,
       nodeName: layout.frameName,
       message:
-        'This layout has no placeholder. Whoever reuses it will not know what to replace. Tag a layer with [[title]], [[body]], [[image]]… unless the layout is meant to stay fixed (a section divider, for instance).',
+        'No placeholder in this layout. Assign one in the Content panel.',
     });
   }
 
@@ -98,7 +98,7 @@ export function collectCompositionWarnings(layout: CompositionInput): IRWarning[
         severity: 'warning',
         sourceNodeId: el.sourceNodeId,
         nodeName: nameOf(el),
-        message: `${group.length} layers of this layout are tagged ${tag}. Keep one, or give the others a different role, so the placeholder stays unambiguous.`,
+        message: `${group.length} layers tagged ${tag}.`,
       });
     }
   }
@@ -115,7 +115,7 @@ export function collectCompositionWarnings(layout: CompositionInput): IRWarning[
         severity: 'warning',
         sourceNodeId: el.sourceNodeId,
         nodeName: nameOf(el),
-        message: `Tagged [[${ROLE_LABELS[role]}]] but this layer is not a text layer. Slides will label it as text without it being editable as such.`,
+        message: `Tagged [[${ROLE_LABELS[role]}]] but not a text layer.`,
       });
     } else if (VISUAL_ONLY_ROLES.has(role) && !isVisualKind(el.kind)) {
       warnings.push({
@@ -123,7 +123,7 @@ export function collectCompositionWarnings(layout: CompositionInput): IRWarning[
         severity: 'warning',
         sourceNodeId: el.sourceNodeId,
         nodeName: nameOf(el),
-        message: `Tagged [[${ROLE_LABELS[role]}]] but this layer is a ${el.kind} layer, not a picture or a shape reserving its spot.`,
+        message: `Tagged [[${ROLE_LABELS[role]}]] but this is a ${el.kind} layer, not an image or shape.`,
       });
     }
   }
