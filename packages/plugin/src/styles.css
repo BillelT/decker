@@ -71,6 +71,17 @@
   /* Encre des tags, fixe elle aussi : --color-text s'inverse en thème sombre
      et retournerait le problème. */
   --color-badge-ink: #120f0d;
+
+  /* Mouvement : courbes et durées du DS (token.css), à la place des mots-clés
+     CSS natifs et des valeurs en dur. */
+  --b-ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --b-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --b-ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --b-ease-icon: cubic-bezier(0.2, 0, 0, 1);
+  --b-duration-instant: 0.05s;
+  --b-duration-fast: 0.12s;
+  --b-duration: 0.15s;
+  --b-duration-slow: 0.2s;
 }
 
 /* Thème sombre : Figma pose `figma-dark`/`figma-light` sur <html> quand le
@@ -127,6 +138,28 @@ html,
 body {
   height: 100%;
   margin: 0;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+/* Tap sans latence et sans sélection de libellé au appui long : uniquement
+   sur les surfaces pressables, jamais sur le texte de contenu. */
+button,
+a[href],
+[role="button"] {
+  touch-action: manipulation;
+}
+
+button {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 body {
@@ -261,7 +294,7 @@ a {
   justify-content: center;
   border: 1px solid var(--color-text);
   border-radius: 0;
-  transition: transform 0.15s ease;
+  transition: transform var(--b-duration) var(--b-ease-default);
 }
 
 /* 85% plutôt que 100% : le symbole flottait au ras de la bordure, un peu
@@ -491,6 +524,7 @@ a {
   z-index: 20;
   max-height: 220px;
   overflow-y: auto;
+  overscroll-behavior: contain;
   margin: 0;
   padding: 4px;
   list-style: none;
@@ -539,10 +573,10 @@ a {
   white-space: nowrap;
   text-decoration: none;
   transition:
-    background-color 0.15s ease,
-    color 0.15s ease,
-    outline-color 0.15s ease,
-    transform 0.15s ease;
+    background-color var(--b-duration) var(--b-ease-default),
+    color var(--b-duration) var(--b-ease-default),
+    outline-color var(--b-duration) var(--b-ease-default),
+    transform var(--b-duration) var(--b-ease-out);
 }
 
 /* Boutons du header : padding 6px 12px, texte 14px. */
@@ -557,9 +591,9 @@ a {
   padding: 6px 12px;
 }
 
-/* Transform translateY() uniquement en mode modern (Win95 gère le pressed via box-shadow) */
+/* Appui : scale(0.96) en mode modern uniquement (Win95 gère le pressed via box-shadow). */
 html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
-  transform: translateY(0.5px);
+  transform: scale(0.96);
 }
 
 /* Contour seul au repos (le noir plein pesait visuellement plus lourd que le
@@ -658,9 +692,19 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   }
 }
 
+/* Mouvement réduit : le toast apparaît en fondu, sans glissement. */
+@keyframes f2s-toast-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .f2s-toast {
-    animation-duration: 0.01ms;
+    animation-name: f2s-toast-fade;
   }
 }
 
@@ -668,6 +712,7 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   flex: none;
   width: 190px;
   overflow-y: auto;
+  overscroll-behavior: contain;
   /* Réserve la place de la scrollbar même quand le contenu ne déborde pas
      encore : sans ça, les vignettes gagnent/perdent quelques px de large
      pile au moment où une frame de plus fait apparaître l'ascenseur. */
@@ -684,7 +729,7 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
      cran entier plutôt qu'un saut instantané. La vignette activement
      déplacée désactive cette transition (elle doit suivre le curseur au
      pixel près, sans lag). */
-  transition: transform 180ms ease;
+  transition: transform var(--b-duration-slow) var(--b-ease-in-out);
 }
 
 /* Aside droit du mode template (TemplatePanel + TemplateStylePanel) :
@@ -695,6 +740,7 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   flex: none;
   width: 280px;
   overflow-y: auto;
+  overscroll-behavior: contain;
   scrollbar-gutter: stable;
   padding: 16px;
   border-left: 1px solid var(--color-border);
@@ -748,9 +794,9 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   text-overflow: ellipsis;
   cursor: text;
   transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease;
+    background-color var(--b-duration) var(--b-ease-default),
+    border-color var(--b-duration) var(--b-ease-default),
+    color var(--b-duration) var(--b-ease-default);
 }
 
 /* Ce champ remplace le contour système (`outline: none`) par sa propre
@@ -782,7 +828,7 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-text);
 }
 
@@ -856,6 +902,7 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   flex: 1;
   min-width: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 20px 24px;
   display: flex;
   flex-direction: column;
@@ -1079,7 +1126,7 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.01em;
   padding: 3px 6px;
@@ -1214,7 +1261,7 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
    lisible — décoration retirée, cf. audit). */
 .f2s-tmpl-role {
   flex: none;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -1246,7 +1293,7 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
 }
 
 .f2s-style-heading {
-  font-size: 11px;
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -1367,7 +1414,7 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   border-radius: 50%;
   background: var(--color-error);
   color: #fff;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   line-height: 16px;
   text-align: center;
@@ -1521,9 +1568,9 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   border-radius: 8px;
   padding: 6px 10px;
   transition:
-    color 0.15s ease,
-    background-color 0.15s ease,
-    transform 0.15s ease;
+    color var(--b-duration) var(--b-ease-default),
+    background-color var(--b-duration) var(--b-ease-default),
+    transform var(--b-duration) var(--b-ease-out);
 }
 
 .f2s-footer-settings:hover:not(:disabled),
@@ -1532,16 +1579,16 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   background: var(--color-surface-muted);
 }
 
-/* Transform translateY() uniquement en mode modern */
+/* Appui : scale(0.96) uniquement en mode modern */
 html:not(.f2s-skin--win95) .f2s-footer-settings:active:not(:disabled) {
-  transform: translateY(0.5px);
+  transform: scale(0.96);
 }
 
 /* Micro-interaction de l'icône settings (gear retenu, le slider comparé
    en parallèle a été retiré) — comme le translateY() ci-dessus,
    désactivée en win95 (esprit rétro, pas d'animation). */
 html:not(.f2s-skin--win95) .f2s-icon-gear {
-  transition: transform 0.45s cubic-bezier(0.34, 1.15, 0.64, 1);
+  transition: transform 0.3s var(--b-ease-icon);
 }
 
 /* 60° = un sixième de tour, l'esprit d'un décalage d'une dent pour un
@@ -1567,8 +1614,8 @@ html:not(.f2s-skin--win95)
   .f2s-footer-settings:active:not(:disabled)
   .f2s-icon-gear {
   transform: rotate(68deg) scale(0.95);
-  transition-duration: 0.12s;
-  transition-timing-function: ease-out;
+  transition-duration: var(--b-duration-fast);
+  transition-timing-function: var(--b-ease-out);
 }
 
 .f2s-footer-actions {
@@ -1680,7 +1727,7 @@ html:not(.f2s-skin--win95) .f2s-footer-actions .f2s-logo-link {
   /* Aligné sur TRANSITION_MS (ui/SettingsModal.tsx), qui pilote le démontage
      du composant à la fin de l'animation de sortie. */
   --f2s-modal-duration: 220ms;
-  --f2s-modal-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --f2s-modal-ease: var(--b-ease-out);
 }
 
 .f2s-modal-overlay {
@@ -1732,13 +1779,10 @@ html:not(.f2s-skin--win95) .f2s-footer-actions .f2s-logo-link {
 /* Figma n'expose pas de réglage "réduire les animations" à l'iframe : on suit
    la préférence système, la modale apparaît alors sans glissement. */
 @media (prefers-reduced-motion: reduce) {
-  .f2s-modal-overlay,
-  .f2s-modal {
-    transition-duration: 0.01ms;
-  }
-
+  /* Fondu seul (moins, plus doux, pas zéro) : plus de glissement ni d'échelle. */
   .f2s-modal {
     transform: none;
+    transition-property: opacity;
   }
 }
 
@@ -1831,8 +1875,8 @@ html:not(.f2s-skin--win95) .f2s-footer-actions .f2s-logo-link {
   border-radius: 6px;
   padding: 5px 14px;
   transition:
-    background-color 0.15s ease,
-    color 0.15s ease;
+    background-color var(--b-duration) var(--b-ease-default),
+    color var(--b-duration) var(--b-ease-default);
 }
 
 .f2s-tab:hover:not(.is-active) {

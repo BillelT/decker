@@ -70,6 +70,10 @@ export const MARKETING_CSS = `
   --b-focus-offset: 2px;
   --b-ease: cubic-bezier(.16, 1, .3, 1);
   --b-ease-default: cubic-bezier(.4, 0, .2, 1);
+  --b-ease-out: cubic-bezier(.23, 1, .32, 1);
+  --b-ease-in-out: cubic-bezier(.77, 0, .175, 1);
+  --b-ease-drawer: cubic-bezier(.32, .72, 0, 1);
+  --b-ease-icon: cubic-bezier(.2, 0, 0, 1);
   --b-duration-instant: .05s; --b-duration-fast: .12s; --b-duration: .15s; --b-duration-slow: .2s;
 
   /* Biseau "hybride" (mêmes tokens que packages/plugin/src/styles.modern.css)
@@ -114,6 +118,13 @@ export const MARKETING_CSS = `
 
 * { box-sizing: border-box; }
 html, body { margin: 0; }
+/* Socle mobile et lissage : pas de flash au tap, pas d'agrandissement du texte
+   au passage en paysage, pas de rebond qui détourne le défilement. */
+html {
+  -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
 /* Defilement doux sur les ancres du header, coupe des que l'utilisateur a
    demande moins d'animation (cf. le bloc prefers-reduced-motion en bas). */
 html { scroll-behavior: smooth; }
@@ -133,17 +144,17 @@ a { color: inherit; }
   line-height: var(--b-leading-tight); white-space: nowrap; flex-shrink: 0;
   transition: background-color var(--b-duration) var(--b-ease-default),
     color var(--b-duration-fast) var(--b-ease-default),
-    transform var(--b-duration-instant) var(--b-ease-default);
+    transform var(--b-duration) var(--b-ease-out);
+  touch-action: manipulation; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
 }
 .btn:focus-visible { outline: var(--b-focus-outline); outline-offset: var(--b-focus-offset); }
-.btn:active { transform: translateY(0.5px); }
+.btn:active:not(:disabled) { transform: scale(0.96); }
 .cta {
   gap: var(--b-space-16); padding: var(--b-space-6) var(--b-space-12); border: 0;
   border-radius: 0; color: var(--b-ink); font-size: var(--b-text-base);
   font-weight: var(--b-font-bold); background-color: var(--b-accent);
   box-shadow: var(--hyb-out);
 }
-.cta:hover { background-color: var(--b-accent-red); }
 .cta:active { box-shadow: var(--hyb-pressed); }
 .tertiary {
   gap: var(--b-space-16); padding: var(--b-space-6) var(--b-space-12); border: 1px solid transparent;
@@ -151,15 +162,25 @@ a { color: inherit; }
   font-weight: var(--b-font-bold); background-color: transparent;
   box-shadow: var(--hyb-out);
 }
-.tertiary:hover { background-color: var(--b-surface-muted); }
 .tertiary:active { box-shadow: var(--hyb-pressed); }
+
+/* Survol : seulement avec une vraie souris, sinon il colle après un tap sur
+   écran tactile (le retour tactile passe par :active). */
+@media (hover: hover) and (pointer: fine) {
+  .cta:hover { background-color: var(--b-accent-red); }
+  .tertiary:hover { background-color: var(--b-surface-muted); }
+  .nav-link:hover { color: var(--b-ink); }
+  .header__nav .nav-link:hover { color: var(--b-gray-500); }
+  .carousel__btn:hover:not(:disabled) { background-color: var(--b-gray-300); }
+}
 
 /* ---------- Links (b-button) ---------- */
 .nav-link {
   font-size: var(--b-text-sm); font-weight: var(--b-font-medium); color: var(--b-text-muted);
-  text-decoration: none; transition: color var(--b-duration-slow) ease-out;
+  text-decoration: none; transition: color var(--b-duration-slow) var(--b-ease-default);
+  touch-action: manipulation;
 }
-.nav-link:hover, .nav-link[aria-current="page"] { color: var(--b-ink); }
+.nav-link[aria-current="page"] { color: var(--b-ink); }
 .text-link {
   color: var(--b-ink); font: inherit; text-decoration: underline;
 }
@@ -171,7 +192,7 @@ a { color: inherit; }
 .header {
   position: sticky; top: 0; z-index: 20; width: 100%;
   background: var(--b-surface); border-bottom: 1px solid transparent;
-  transition: border-color var(--b-duration-slow) ease-out;
+  transition: border-color var(--b-duration-slow) var(--b-ease-default);
 }
 .header--scrolled { border-bottom-color: var(--b-border); }
 .header__inner {
@@ -190,7 +211,7 @@ a { color: inherit; }
 /* Ancres du header seules : encre par defaut (plus de contraste qu'un
    .nav-link générique), et on éclaircit au survol plutôt que l'inverse. */
 .header__nav .nav-link { color: var(--b-ink); }
-.header__nav .nav-link:hover, .header__nav .nav-link[aria-current="page"] { color: var(--b-gray-500); }
+.header__nav .nav-link[aria-current="page"] { color: var(--b-gray-500); }
 .header__brand {
   display: inline-flex; align-items: center; gap: var(--b-space-8); color: var(--b-ink);
   font-size: var(--b-text-base); font-weight: var(--b-font-bold); letter-spacing: var(--b-tracking-tight);
@@ -258,13 +279,13 @@ a { color: inherit; }
    ce qui empêchait le carrousel de revenir à scrollLeft 0, et .section p
    forçait les surtitres à 16px. Dire "un paragraphe sans classe" plutôt que
    "tout paragraphe" met tout composant à l'abri, présent comme futur. */
-.section > p:not([class]) { margin: 0 0 var(--b-space-16); font-size: var(--b-text-base); line-height: var(--b-leading-relaxed); color: var(--b-text-muted); text-wrap: balance; }
+.section > p:not([class]) { margin: 0 0 var(--b-space-16); font-size: var(--b-text-base); line-height: var(--b-leading-relaxed); color: var(--b-text-muted); text-wrap: pretty; }
 .section > p:not([class]):last-child { margin-bottom: 0; }
 .section > ul:not([class]) { margin: var(--b-space-8) 0 var(--b-space-16); padding-left: var(--b-space-24); }
-.section > ul:not([class]) > li { font-size: var(--b-text-base); line-height: var(--b-leading-relaxed); color: var(--b-text-muted); margin-bottom: var(--b-space-8); text-wrap: balance; }
+.section > ul:not([class]) > li { font-size: var(--b-text-base); line-height: var(--b-leading-relaxed); color: var(--b-text-muted); margin-bottom: var(--b-space-8); text-wrap: pretty; }
 .legal .section { max-width: 680px; }
 .legal .section__title--page { font-size: var(--b-text-3xl); text-align: center; padding-top: var(--b-space-32); }
-.legal .meta { text-align: center; font-size: var(--b-text-xs); line-height: var(--b-leading-relaxed); color: var(--b-text-faint); margin: 0 0 var(--b-space-48); text-wrap: balance; }
+.legal .meta { text-align: center; font-size: var(--b-text-xs); line-height: var(--b-leading-relaxed); color: var(--b-text-faint); margin: 0 0 var(--b-space-48); text-wrap: pretty; }
 
 /* ---------- Grille de cards (étapes, points d'accès Google) ---------- */
 .card-grid {
@@ -299,7 +320,7 @@ a { color: inherit; }
   letter-spacing: var(--b-tracking-wide); text-transform: uppercase; color: var(--b-text-faint);
 }
 .card__title { margin: 0; font-size: var(--b-text-lg); font-weight: var(--b-font-bold); color: var(--b-ink); text-wrap: balance; }
-.card__desc { margin: 0; font-size: var(--b-text-base); font-weight: var(--b-font-medium); line-height: var(--b-leading-relaxed); color: var(--b-text-muted); text-wrap: balance; }
+.card__desc { margin: 0; font-size: var(--b-text-base); font-weight: var(--b-font-medium); line-height: var(--b-leading-relaxed); color: var(--b-text-muted); text-wrap: pretty; }
 .card--compact { gap: var(--b-space-16); }
 /* Poussée en pied de card (margin-top: auto) pour que les notes s'alignent
    d'une card à l'autre malgré des descriptions de longueurs différentes.
@@ -363,7 +384,6 @@ a { color: inherit; }
   width: 40px; height: 40px; padding: 0; border: 0; border-radius: 0;
   background-color: var(--b-surface-muted); color: var(--b-ink); box-shadow: var(--hyb-out);
 }
-.carousel__btn:hover:not(:disabled) { background-color: var(--b-gray-300); }
 .carousel__btn:active:not(:disabled) { box-shadow: var(--hyb-pressed); }
 .carousel__btn:disabled { color: var(--b-gray-300); cursor: default; }
 .carousel__btn:disabled:active { transform: none; }
@@ -391,7 +411,7 @@ a { color: inherit; }
 .footer__brand { display: flex; flex-direction: column; align-items: flex-start; gap: var(--b-space-16); }
 .footer__brand-row { display: flex; align-items: center; gap: var(--b-space-12); }
 .footer__brand-mark { width: 24px; height: 24px; flex: 0 0 auto; display: block; }
-.footer__meta { margin: 0; font-size: var(--b-text-xs); line-height: var(--b-leading-relaxed); color: var(--b-text-muted); text-wrap: balance; }
+.footer__meta { margin: 0; font-size: var(--b-text-xs); line-height: var(--b-leading-relaxed); color: var(--b-text-muted); text-wrap: pretty; }
 .footer__cols { display: flex; gap: var(--b-space-64); flex-wrap: wrap; }
 .footer__col { display: flex; flex-direction: column; gap: var(--b-space-12); }
 .footer__col-title { margin: 0 0 var(--b-space-4); font-size: var(--b-text-sm); font-weight: var(--b-font-semibold); color: var(--b-ink); }
@@ -399,8 +419,41 @@ a { color: inherit; }
   display: flex; justify-content: space-between; align-items: center; gap: var(--b-space-24);
   padding-top: var(--b-space-32); border-top: 1px solid var(--b-border); flex-wrap: wrap;
 }
-.footer__note { margin: 0; font-size: var(--b-text-xs); color: var(--b-text-muted); text-wrap: balance; }
+.footer__note { margin: 0; font-size: var(--b-text-xs); color: var(--b-text-muted); text-wrap: pretty; }
 .footer__legal { display: flex; gap: var(--b-space-24); }
+
+/* Lien d'évitement : premier élément focalisable, visible au focus seulement. */
+.skip-link {
+  position: absolute; inset-inline-start: var(--b-space-16); top: var(--b-space-8); z-index: 30;
+  padding: var(--b-space-8) var(--b-space-12); background: var(--b-surface); color: var(--b-ink);
+  font-size: var(--b-text-sm); font-weight: var(--b-font-semibold); text-decoration: none;
+  box-shadow: var(--hyb-out); transform: translateY(-200%);
+}
+.skip-link:focus-visible { transform: none; outline: var(--b-focus-outline); outline-offset: var(--b-focus-offset); }
+main:focus { outline: none; }
+
+/* Entrée du hero, une seule fois au chargement (première impression, tier
+   "plaisir"). Blocs sémantiques échelonnés de 100 ms : opacity + flou 4px +
+   translateY(12px), 300 ms ease-out. Jamais bloquant : le contenu reste
+   cliquable et visible sans JS. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes hero-enter {
+    from { opacity: 0; filter: blur(4px); transform: translateY(12px); }
+    to { opacity: 1; filter: blur(0); transform: none; }
+  }
+  .hero__content > *, .hero__demo {
+    animation: hero-enter 300ms var(--b-ease-out) both;
+  }
+  .hero__content > :nth-child(2) { animation-delay: 100ms; }
+  .hero__content > :nth-child(3) { animation-delay: 200ms; }
+  .hero__content > :nth-child(4) { animation-delay: 300ms; }
+  .hero__demo { animation-delay: 200ms; }
+}
+/* Mouvement réduit : fondu seul, plus de glissement ni de flou. */
+@media (prefers-reduced-motion: reduce) {
+  @keyframes hero-fade { from { opacity: 0; } to { opacity: 1; } }
+  .hero__content > *, .hero__demo { animation: hero-fade 300ms var(--b-ease-out) both; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }

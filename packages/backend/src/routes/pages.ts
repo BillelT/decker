@@ -92,7 +92,9 @@ function shell(opts: {
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="light" />
+<meta name="theme-color" content="#fff9f5" />
 <meta name="google-site-verification" content="bsri34RXa34pqM8rsNoUtVcV_jX0TmUwegbbFWpVLwQ" />
 <meta name="description" content="${escapeHtml(opts.description)}" />
 <link rel="canonical" href="${canonical}" />
@@ -119,8 +121,9 @@ function shell(opts: {
 <style>${MARKETING_CSS}</style>
 </head>
 <body>
+<a class="skip-link" href="#main">Skip to content</a>
 ${header()}
-<main>
+<main id="main" tabindex="-1">
 ${opts.main}
 </main>
 ${footer()}
