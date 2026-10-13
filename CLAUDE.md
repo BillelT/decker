@@ -41,6 +41,9 @@
   Figma desktop** : *Plugins → Development → Decker → Publish new
   version...*. Ce n'est PAS un plugin en dev local uniquement — Figma ne
   relit pas le repo GitHub tout seul, donc rebuild + commit ne suffisent
-  pas à mettre à jour ce que voient les utilisateurs. Le signaler
-  systématiquement à la fin d'une tâche qui touche `packages/plugin/`,
-  sans redemander si le plugin est publié ou en local — il l'est.
+  pas à mettre à jour ce que voient les utilisateurs. **Ne PAS le
+  rappeler à chaque tâche** : les mises à jour s'enchaînent par séries et
+  la publication se fait une fois la série finie. Ne le mentionner que si
+  l'utilisateur dit avoir terminé ses mises à jour ou demande comment
+  mettre en ligne. Ne jamais redemander si le plugin est publié ou en
+  local : il l'est.
