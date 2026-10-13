@@ -100,8 +100,12 @@ export type AppMode = 'deck' | 'template';
  * plutôt que seulement dans le footer.
  */
 export interface Notice {
+  /** Change à chaque notice, même au texte identique : le toast repart de zéro (barre de durée pleine). */
+  id: number;
   message: string;
   tone: 'error' | 'success';
+  /** Durée d'affichage avant fermeture automatique, survol exclu. */
+  durationMs: number;
 }
 
 /**

@@ -193,7 +193,7 @@ export function RetroExportPreview({ src, frameName, index, total }: RetroExport
           <span className="f2s-retro-ellipsis">...</span>
         </span>
         <div className="f2s-retro-bar">
-          <div className="f2s-retro-bar-fill" style={{ width: `${Math.round(deckProgress * 100)}%` }} />
+          <div className="f2s-retro-bar-fill" style={{ '--f2s-retro-progress': String(Math.round(deckProgress * 100) / 100) }} />
         </div>
       </div>
     </div>

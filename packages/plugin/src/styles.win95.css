@@ -71,7 +71,7 @@ html.f2s-skin--win95.f2s-skin--win95 {
   --color-surface-muted: var(--w95-face);
   --color-orange: var(--w95-navy);
   --color-orange-40: var(--w95-navy-light);
-  --color-orange-red: var(--w95-navy);
+  --color-orange-hover: var(--w95-navy);
   --color-error: #a80000;
   /* Tapis du tag "approximé" : le bleu clair du dégradé de barre de titre
      plutôt que l'orange de marque, comme les autres remaps ci-dessus. Lu
@@ -256,7 +256,14 @@ html.f2s-skin--win95 .f2s-btn--tertiary:hover:not(:disabled) {
   background-color: var(--w95-face);
   color: #000;
   box-shadow: var(--w95-out);
-  outline-color: transparent;
+}
+
+/* Focus 95 : le pointillé noir À L'INTÉRIEUR du bouton, comme sous
+   Windows 95, à la place de l'anneau moderne (voir styles.css). */
+html.f2s-skin--win95 .f2s-btn:focus-visible,
+html.f2s-skin--win95 .f2s-tab:focus-visible {
+  outline: 1px dotted #000;
+  outline-offset: -4px;
 }
 
 /* L'enfoncement décale le libellé d'un pixel vers le bas/droite. */
@@ -474,6 +481,19 @@ html.f2s-skin--win95 .f2s-toast {
   border-radius: 0;
   background: var(--w95-face);
   box-shadow: var(--w95-out);
+  color: #000;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+/* Barre de durée en bleu de barre de titre, quel que soit le ton : la
+   pastille dit déjà erreur ou succès. Logée à l'intérieur du biseau. */
+html.f2s-skin--win95 .f2s-toast-timer {
+  left: 2px;
+  right: 2px;
+  bottom: 2px;
+  height: 2px;
+  background: var(--w95-navy);
 }
 
 /* Size grip 95 complet : rehaut blanc + ombre grise, sur la face grise. */

@@ -2,6 +2,7 @@ import { render } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { ExportOptions, IRDocument, ThemeColorRole } from '@figma-to-slides/shared';
 import { sanitizeSessionToken } from './ui/sanitizeSessionToken.js';
+import { describeHttpFailure, describeJobFailure, describeNetworkFailure, describeSlideFailure, POLL_INTERRUPTED_MESSAGE, type RequestStep } from './ui/requestErrors.js';
 import { exportCursorFromBatches, type ExportBatch, type ExportCursor } from './ui/exportCursor.js';
 import { AVAILABLE_SLIDES_FONTS } from './serialize/fonts.js';
 import { aggregateColorSwatches, aggregateFontUsages, colorKey } from './serialize/templateSummary.js';
@@ -91,6 +92,25 @@ class AuthExpiredError extends Error {
   constructor() {
     super('Your Google session has expired. Sign in again, then retry.');
   }
+}
+
+/** `fetch` qui, si le réseau lâche, lève un message lisible au lieu du "Failed to fetch" du navigateur (voir ui/requestErrors.ts). */
+async function request(step: RequestStep, url: string, init: RequestInit): Promise<Response> {
+  try {
+    return await fetch(url, init);
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error(`[decker] ${step}: no response`, err);
+    throw new Error(describeNetworkFailure(step));
+  }
+}
+
+/** Erreur lisible pour une réponse non-OK du backend ; le corps brut (code d'erreur, message technique) part dans la console. */
+async function requestFailure(step: RequestStep, res: Response): Promise<Error> {
+  const body = await res.text().catch(() => '');
+  // eslint-disable-next-line no-console
+  console.error(`[decker] ${step}: HTTP ${res.status}`, body);
+  return new Error(describeHttpFailure(step, res.status));
 }
 
 /**
@@ -208,50 +228,39 @@ function App() {
   // avant, c'était un texte rouge inline en tête du rail, incohérent avec le
   // mode deck et sans auto-dismiss.
   const [templateSelectionNotice, setTemplateSelectionNotice] = useState<Notice | undefined>();
-  const templateSelectionNoticeTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>();
+  // Identifiant de la dernière notice : une notice au texte identique (même
+  // erreur deux fois de suite) reste un nouveau toast, qui repart de zéro.
+  const noticeIdRef = useRef(0);
 
   function showTemplateSelectionNotice(message: string, durationMs = SELECTION_NOTICE_MS, tone: Notice['tone'] = 'error') {
-    if (templateSelectionNoticeTimerRef.current !== undefined) clearTimeout(templateSelectionNoticeTimerRef.current);
-    setTemplateSelectionNotice({ message, tone });
-    templateSelectionNoticeTimerRef.current = setTimeout(() => setTemplateSelectionNotice(undefined), durationMs);
+    setTemplateSelectionNotice({ id: ++noticeIdRef.current, message, tone, durationMs });
   }
 
   function clearTemplateSelectionNotice() {
-    if (templateSelectionNoticeTimerRef.current !== undefined) {
-      clearTimeout(templateSelectionNoticeTimerRef.current);
-      templateSelectionNoticeTimerRef.current = undefined;
-    }
     setTemplateSelectionNotice(undefined);
   }
 
   const [selecting, setSelecting] = useState(false);
   // Notice de sélection du mode deck ("no-frames-selected" / "too-many-frames") :
   // affichée en toast absolu par DeckPanel (pas de zone dédiée dans le layout
-  // du rail) — auto-dismiss après SELECTION_NOTICE_MS.
+  // du rail). Le toast se ferme seul au bout de `durationMs` (voir Toast).
   const [selectionNotice, setSelectionNotice] = useState<Notice | undefined>();
-  const selectionNoticeTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>();
 
   function showSelectionNotice(message: string, durationMs = SELECTION_NOTICE_MS, tone: Notice['tone'] = 'error') {
-    if (selectionNoticeTimerRef.current !== undefined) clearTimeout(selectionNoticeTimerRef.current);
-    setSelectionNotice({ message, tone });
-    selectionNoticeTimerRef.current = setTimeout(() => setSelectionNotice(undefined), durationMs);
+    setSelectionNotice({ id: ++noticeIdRef.current, message, tone, durationMs });
   }
 
   function clearSelectionNotice() {
-    if (selectionNoticeTimerRef.current !== undefined) {
-      clearTimeout(selectionNoticeTimerRef.current);
-      selectionNoticeTimerRef.current = undefined;
-    }
     setSelectionNotice(undefined);
   }
 
-  useEffect(
-    () => () => {
-      if (selectionNoticeTimerRef.current !== undefined) clearTimeout(selectionNoticeTimerRef.current);
-      if (templateSelectionNoticeTimerRef.current !== undefined) clearTimeout(templateSelectionNoticeTimerRef.current);
-    },
-    [],
-  );
+  // Un toast appartient au mode qui l'a levé : il ne réapparaît pas, minuteur
+  // remis à zéro, quand on revient sur ce mode plus tard.
+  useEffect(() => {
+    clearSelectionNotice();
+    clearTemplateSelectionNotice();
+  }, [mode]);
+
   const [hasCanvasSelection, setHasCanvasSelection] = useState(false);
 
   const [sessionToken, setSessionToken] = useState<string | undefined>();
@@ -733,17 +742,14 @@ function App() {
       for (const [assetKey, buf] of batch) {
         form.append(assetKey, new Blob([buf], { type: 'image/png' }), assetKey);
       }
-      const res = await fetch(`${backend.baseUrl}/assets`, {
+      const res = await request('upload', `${backend.baseUrl}/assets`, {
         method: 'POST',
         body: form,
         headers: sessionTokenRef.current ? { Authorization: `Bearer ${sessionTokenRef.current}` } : undefined,
         credentials: 'include',
       });
       if (res.status === 401) throw new AuthExpiredError();
-      if (!res.ok) {
-        const body = await res.json().catch(() => undefined);
-        throw new Error(body?.error ? `${body.error} (${res.status})` : `Asset upload rejected (${res.status})`);
-      }
+      if (!res.ok) throw await requestFailure('upload', res);
       batch = [];
       batchBytes = 0;
     };
@@ -772,7 +778,7 @@ function App() {
       await new Promise((r) => setTimeout(r, 25));
     }
     const missing = expectedKeys.filter((k) => !pendingAssets.has(k)).length;
-    throw new Error(`${missing} image asset(s) never arrived from Figma. Close and reopen the plugin, then retry.`);
+    throw new Error(`${missing === 1 ? 'An image' : `${missing} images`} never arrived from Figma. Close and reopen the plugin, then try again.`);
   }
 
   async function handleExportPayload(doc: IRDocument, expectedAssetKeys: string[]) {
@@ -795,17 +801,14 @@ function App() {
       const form = new FormData();
       form.append('document', JSON.stringify(doc));
 
-      const res = await fetch(`${backend.baseUrl}/export`, {
+      const res = await request('export', `${backend.baseUrl}/export`, {
         method: 'POST',
         body: form,
         headers: sessionTokenRef.current ? { Authorization: `Bearer ${sessionTokenRef.current}` } : undefined,
         credentials: 'include',
       });
       if (res.status === 401) throw new AuthExpiredError();
-      if (!res.ok) {
-        const body = await res.json().catch(() => undefined);
-        throw new Error(body?.error ? `${body.error} (${res.status})` : `Export rejected (${res.status})`);
-      }
+      if (!res.ok) throw await requestFailure('export', res);
       const { jobId } = await res.json();
       setExportJobId(jobId);
       const concluded = await pollJob(jobId, applyLiveBatches);
@@ -827,11 +830,21 @@ function App() {
     }
   }
 
-  /** Lots `failed` d'un poll `/export/:jobId`, sous la forme utilisée par `JobConclusion`. */
+  /**
+   * Lots `failed` d'un poll `/export/:jobId`, sous la forme utilisée par
+   * `JobConclusion`. Le message brut de Google Slides est traduit en conseil
+   * (ui/requestErrors.ts) et gardé tel quel dans la console.
+   */
   function failedSlidesFrom(batches: ExportBatch[] | undefined): Record<string, string> {
+    const noun = modeRef.current === 'template' ? 'layout' : 'slide';
     const failed: Record<string, string> = {};
     for (const b of batches ?? []) {
-      if (b.status === 'failed') failed[b.sourceSlideId] = b.error ?? FAILED_SLIDE_FALLBACK;
+      if (b.status !== 'failed') continue;
+      if (b.error) {
+        // eslint-disable-next-line no-console
+        console.error(`[decker] ${noun} ${b.sourceSlideId} failed:`, b.error);
+      }
+      failed[b.sourceSlideId] = b.error ? describeSlideFailure(b.error, noun) : FAILED_SLIDE_FALLBACK;
     }
     return failed;
   }
@@ -862,12 +875,13 @@ function App() {
           // actionnables que le message générique de `job.error`, qui ne
           // couvre que l'échec global (ex. la création de présentation
           // elle-même a échoué, avant même le premier lot).
-          const batchErrors = batches?.map((b) => b.error).filter((e): e is string => Boolean(e));
           const failedSlides = failedSlidesFrom(batches);
           const failedCount = Object.keys(failedSlides).length;
           // Le mode courant est celui qui a lancé le job (onglets désactivés
           // pendant l'export) ; `modeRef`, fonction appelée depuis `onMessage`.
           const noun = modeRef.current === 'template' ? 'layout' : 'slide';
+          // eslint-disable-next-line no-console
+          if (failedCount === 0) console.error('[decker] export job failed:', job.error);
           return {
             status: 'failed',
             // Le détail de chaque slide vit désormais sur sa vignette : le
@@ -876,7 +890,7 @@ function App() {
             error:
               failedCount > 0
                 ? `${failedCount} ${noun}${failedCount === 1 ? '' : 's'} failed. Select the flagged thumbnail${failedCount === 1 ? '' : 's'} to see why.`
-                : (batchErrors && batchErrors.length > 0 ? batchErrors.join(' · ') : (job.error ?? 'Unknown server-side failure.')),
+                : describeJobFailure(noun),
             resultUrl: job.presentationUrl,
             failedSlides,
             retryable: Boolean(job.presentationId) && failedCount > 0,
@@ -895,9 +909,11 @@ function App() {
         retryable: Boolean(lastPresentationId),
       };
     } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[decker] export polling interrupted', err);
       return {
         status: 'failed',
-        error: err instanceof Error ? err.message : String(err),
+        error: POLL_INTERRUPTED_MESSAGE,
         resultUrl: lastPresentationUrl,
         failedSlides: {},
         retryable: Boolean(lastPresentationId),
@@ -919,16 +935,13 @@ function App() {
     setExportAttempt((n) => n + 1);
     setExportError(undefined);
     try {
-      const res = await fetch(`${backend.baseUrl}/export/${exportJobId}/retry`, {
+      const res = await request('retry', `${backend.baseUrl}/export/${exportJobId}/retry`, {
         method: 'POST',
         headers: sessionTokenRef.current ? { Authorization: `Bearer ${sessionTokenRef.current}` } : undefined,
         credentials: 'include',
       });
       if (res.status === 401) throw new AuthExpiredError();
-      if (!res.ok) {
-        const body = await res.json().catch(() => undefined);
-        throw new Error(body?.error ? `${body.error} (${res.status})` : `Retry rejected (${res.status})`);
-      }
+      if (!res.ok) throw await requestFailure('retry', res);
       const concluded = await pollJob(exportJobId, applyLiveBatches);
       applyConclusion(concluded);
     } catch (err) {
@@ -967,7 +980,9 @@ function App() {
           return;
         }
         if (result.status === 'error') {
-          setLoginError(result.message);
+          // eslint-disable-next-line no-console
+          console.error('[decker] Google sign-in failed:', result.message);
+          setLoginError("Google sign-in didn't complete. Try again.");
           setAuthUrl(undefined);
           return;
         }
@@ -1001,16 +1016,13 @@ function App() {
     // `skin` voyage jusqu'à la page /auth/callback (onglet de navigateur hors
     // iframe Figma) pour qu'elle reprenne le même habillage que le plugin —
     // voir routes/auth.ts côté backend.
-    fetch(`${backend.baseUrl}/auth/google`, {
+    request('sign-in', `${backend.baseUrl}/auth/google`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ skin }),
     })
       .then(async (res) => {
-        if (!res.ok) {
-          const body = await res.json().catch(() => undefined);
-          throw new Error(body?.message ?? `Backend responded ${res.status}`);
-        }
+        if (!res.ok) throw await requestFailure('sign-in', res);
         return res.json();
       })
       .then(({ authUrl, pollId }) => {
@@ -1354,9 +1366,14 @@ function App() {
             </button>
           </div>
           <div className="f2s-topbar-title-group">
-            <span className="f2s-toolbar-label">Name:</span>
+            {/* Un vrai <label> relié au champ : le placeholder seul ne
+                donnait aucun nom accessible au champ (WCAG 4.1.2). */}
+            <label className="f2s-toolbar-label" htmlFor="f2s-title-input">
+              Name:
+            </label>
             {mode === 'deck' ? (
               <input
+                id="f2s-title-input"
                 type="text"
                 className="f2s-title-input"
                 placeholder="Decker export"
@@ -1365,6 +1382,7 @@ function App() {
               />
             ) : (
               <input
+                id="f2s-title-input"
                 type="text"
                 className="f2s-title-input"
                 placeholder="Figma template"
@@ -1485,6 +1503,7 @@ function App() {
           exportAttempt={exportSource === 'deck' ? exportAttempt : undefined}
           exportConcluded={exportSource === 'deck' && (exportState === 'done' || exportState === 'error')}
           notice={selectionNotice}
+          onDismissNotice={clearSelectionNotice}
           locked={exporting}
           failedSlides={failedSlidesHere}
           onPreviewSettled={() => setPreviewSettled(true)}
@@ -1499,6 +1518,7 @@ function App() {
           selecting={templateSelecting}
           hasCanvasSelection={hasCanvasSelection}
           notice={templateSelectionNotice}
+          onDismissNotice={clearTemplateSelectionNotice}
           locked={exporting}
           failedSlides={failedSlidesHere}
           onPreviewSettled={() => setPreviewSettled(true)}

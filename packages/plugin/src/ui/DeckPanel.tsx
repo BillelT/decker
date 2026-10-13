@@ -1,21 +1,11 @@
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useEffect } from 'preact/hooks';
 import { logEntryFlag, logEntryTagText, logEntryTooltip } from './logEntryFlag.js';
-import { moveToIndex } from './reorderFrames.js';
 import { usePacedExportCursor } from './pacedExportCursor.js';
 import { RetroExportPreview } from './RetroExportPreview.js';
 import { Toast } from './StatusIcon.js';
+import { useRailReorder } from './useRailReorder.js';
 import type { ExportCursor } from './exportCursor.js';
 import { selectSourceNodes, type FrameState, type Notice } from './types.js';
-
-/** En dessous de ce mouvement, un pointerdown reste un simple clic de sélection. */
-const DRAG_THRESHOLD_PX = 3;
-
-/**
- * Fraction (0–1) d'un slot qu'il reste à parcourir, avant un recouvrement
- * complet avec la vignette voisine, pour que le réordonnancement se
- * déclenche déjà — plutôt que d'attendre d'être quasiment empilé dessus.
- */
-const DRAG_SWAP_MARGIN = 0.32;
 
 export interface DeckPanelProps {
   order: string[];
@@ -41,6 +31,8 @@ export interface DeckPanelProps {
    * 190px, un message un peu long y casserait la mise en page des vignettes.
    */
   notice: Notice | undefined;
+  /** Ferme le toast (croix, ou fin de sa durée d'affichage). */
+  onDismissNotice: () => void;
   /**
    * Un export tourne : le rail est figé (ni retrait, ni réordonnancement).
    * Les deux modifient `order`, la liste même que l'aperçu d'export parcourt
@@ -75,29 +67,12 @@ export function DeckPanel({
   exportAttempt,
   exportConcluded,
   notice,
+  onDismissNotice,
   locked,
   failedSlides,
   onPreviewSettled,
 }: DeckPanelProps) {
-  const [dragId, setDragId] = useState<string | undefined>();
-  const [dragOffsetY, setDragOffsetY] = useState(0);
-  // Le retour visuel "grab" ne doit apparaître qu'une fois un vrai
-  // déplacement détecté (pas au simple hover ni au clic de sélection).
-  const [dragActive, setDragActive] = useState(false);
-  // Index (dans `order`, figé pendant tout le drag) où la vignette
-  // atterrirait si on relâchait maintenant — pilote le décalage visuel des
-  // autres vignettes.
-  const [dragTargetIndex, setDragTargetIndex] = useState(0);
-  // Au relâchement, `order` se réorganise ET les transforms repassent à zéro
-  // dans le MÊME rendu ; la transition CSS animerait ce retour à zéro
-  // par-dessus une position de flux qui a déjà sauté — on coupe donc la
-  // transition pour cet unique rendu de relâchement.
-  const [suppressShiftTransition, setSuppressShiftTransition] = useState(false);
-  const dragStartYRef = useRef(0);
-  const dragStartIndexRef = useRef(0);
-  // Hauteur d'un "pas" (slot + gap), mesurée une seule fois au pointerdown.
-  const slotHeightRef = useRef(0);
-  const sidebarItemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const { itemRefs, itemState, registerItem, onThumbPointerDown, onThumbKeyDown, announcement } = useRailReorder(order, setOrder, locked);
 
   const activeFrame = activeId ? frames[activeId] : undefined;
   // Aperçu d'export "paced" : avance d'une frame à la fois plutôt que de
@@ -140,7 +115,7 @@ export function DeckPanel({
   // rail, où sinon la vignette en cours de traitement peut être hors champ.
   useEffect(() => {
     if (!highlightedId) return;
-    sidebarItemRefs.current.get(highlightedId)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    itemRefs.current.get(highlightedId)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }, [highlightedId]);
 
   /**
@@ -155,83 +130,10 @@ export function DeckPanel({
     setActiveId(id);
   }
 
-  /**
-   * Index (dans l'`order` FIGÉ du début de drag) où la vignette atterrirait,
-   * calculé à partir du déplacement du POINTEUR (`offsetY`, relatif au point
-   * de saisie) : un pas se déclenche dès que `offsetY` dépasse
-   * `slotHeight * (1 - DRAG_SWAP_MARGIN)`.
-   */
-  function targetIndexFromOffset(offsetY: number): number {
-    const slotHeight = slotHeightRef.current;
-    const lastIndex = order.length - 1;
-    if (slotHeight <= 0) return dragStartIndexRef.current;
-    const steps = Math.sign(offsetY) * Math.floor(Math.abs(offsetY) / slotHeight + DRAG_SWAP_MARGIN);
-    return Math.max(0, Math.min(lastIndex, dragStartIndexRef.current + steps));
-  }
-
-  function handleDragPointerDown(e: { clientY: number }, id: string) {
-    if (locked) return;
-    dragStartYRef.current = e.clientY;
-    setDragOffsetY(0);
-    setDragActive(false);
-    setDragId(id);
-
-    const currentOrder = order;
-    const startIndex = currentOrder.indexOf(id);
-    dragStartIndexRef.current = startIndex;
-    setDragTargetIndex(startIndex);
-
-    const firstTop = sidebarItemRefs.current.get(currentOrder[0])?.getBoundingClientRect().top;
-    const secondTop = currentOrder.length > 1 ? sidebarItemRefs.current.get(currentOrder[1])?.getBoundingClientRect().top : undefined;
-    slotHeightRef.current =
-      firstTop !== undefined && secondTop !== undefined
-        ? secondTop - firstTop
-        : (sidebarItemRefs.current.get(id)?.getBoundingClientRect().height ?? 0);
-  }
-
-  useEffect(() => {
-    if (!dragId) return;
-    const draggedId = dragId;
-
-    function onPointerMove(e: PointerEvent) {
-      const offset = e.clientY - dragStartYRef.current;
-      setDragOffsetY(offset);
-      const active = Math.abs(offset) > DRAG_THRESHOLD_PX;
-      setDragActive((prev) => prev || active);
-      if (active) setDragTargetIndex(targetIndexFromOffset(offset));
-    }
-    function onPointerUp(e: PointerEvent) {
-      const finalIndex = targetIndexFromOffset(e.clientY - dragStartYRef.current);
-      setSuppressShiftTransition(true);
-      setOrder((prev) => moveToIndex(prev, draggedId, finalIndex));
-      setDragId(undefined);
-      setDragOffsetY(0);
-      setDragActive(false);
-    }
-
-    window.addEventListener('pointermove', onPointerMove);
-    window.addEventListener('pointerup', onPointerUp);
-    return () => {
-      window.removeEventListener('pointermove', onPointerMove);
-      window.removeEventListener('pointerup', onPointerUp);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dragId]);
-
-  // Réactive la transition juste après que le rendu "instantané" du
-  // relâchement a été peint.
-  useEffect(() => {
-    if (!suppressShiftTransition) return;
-    const frame = requestAnimationFrame(() => {
-      requestAnimationFrame(() => setSuppressShiftTransition(false));
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [suppressShiftTransition]);
-
   if (order.length === 0) {
     return (
       <div className="f2s-body">
-        {notice && <Toast notice={notice} />}
+        {notice && <Toast key={notice.id} notice={notice} onDismiss={onDismissNotice} />}
         <main className="f2s-canvas">
           <p className="f2s-empty">
             Click "Select frames", then select the frames
@@ -245,7 +147,13 @@ export function DeckPanel({
 
   return (
     <div className="f2s-body">
-      {notice && <Toast notice={notice} />}
+      {notice && <Toast key={notice.id} notice={notice} onDismiss={onDismissNotice} />}
+      {/* Région d'annonce stable, montée avant tout export : un lecteur
+          d'écran y entend l'avancée de l'export ("Generating slide 2 of 4",
+          muette jusque-là) et les déplacements de vignette au clavier. */}
+      <p className="f2s-sr-only" role="status">
+        {pacedCursor ? `Generating slide ${pacedCursor.index + 1} of ${pacedCursor.total}` : announcement}
+      </p>
       <aside className="f2s-sidebar">
         {selecting && !hasCanvasSelection && (
           <p className="f2s-toolbar-muted">Select one or more frames on the Figma canvas, then click "Add selection".</p>
@@ -254,40 +162,16 @@ export function DeckPanel({
           const failure = failedSlides?.[id];
           const f = frames[id];
           if (!f) return null;
-          const isDragging = dragId === id && dragActive;
-          // Décalage "fantôme" des autres vignettes pour ouvrir/refermer la
-          // place, d'un cran entier, selon que l'index d'origine de CETTE
-          // vignette se trouve entre le départ et la cible du drag.
-          let ghostShift = 0;
-          if (dragId && dragActive && !isDragging) {
-            const start = dragStartIndexRef.current;
-            if (start < dragTargetIndex && index > start && index <= dragTargetIndex) {
-              ghostShift = -slotHeightRef.current;
-            } else if (start > dragTargetIndex && index >= dragTargetIndex && index < start) {
-              ghostShift = slotHeightRef.current;
-            }
-          }
+          const item = itemState(id, index);
           return (
-            <div
-              key={id}
-              ref={(el) => {
-                if (el) sidebarItemRefs.current.set(id, el);
-                else sidebarItemRefs.current.delete(id);
-              }}
-              className={`f2s-sidebar-item${isDragging ? ' is-dragging' : ''}${suppressShiftTransition ? ' is-releasing' : ''}`}
-              style={
-                isDragging
-                  ? { transform: `translateY(${dragOffsetY}px)` }
-                  : ghostShift !== 0
-                    ? { transform: `translateY(${ghostShift}px)` }
-                    : undefined
-              }
-            >
+            <div key={id} ref={registerItem(id)} className={item.className} style={item.style}>
               <button
                 type="button"
                 className={`f2s-frame-preview${highlightedId === id ? ' is-active' : ''}${failure ? ' f2s-frame-preview--failed' : ''}${pacedCursor?.frameId === id ? ' is-exporting' : ''}`}
                 onClick={() => selectFrame(id)}
-                onPointerDown={(e) => handleDragPointerDown(e, id)}
+                onPointerDown={(e) => onThumbPointerDown(e, id)}
+                onKeyDown={(e) => onThumbKeyDown(e, id)}
+                aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
                 title={failure ? `Export failed: ${failure}` : undefined}
               >
                 {f.previewDataUrl && <img src={f.previewDataUrl} alt={f.name} draggable={false} />}
@@ -299,8 +183,8 @@ export function DeckPanel({
                     type="button"
                     className="f2s-icon-btn"
                     disabled={locked}
-                    title={locked ? 'An export is running. Wait for it to finish before changing the list.' : 'Remove'}
-                    aria-label="Remove"
+                    title={locked ? 'An export is running. Wait for it to finish before changing the list.' : `Remove slide ${index + 1}`}
+                    aria-label={`Remove slide ${index + 1}`}
                     onClick={() => onRemove(id)}
                   >
                     ✕
@@ -351,7 +235,7 @@ export function DeckPanel({
               <div className="f2s-logs-header">
                 <h3 className="f2s-tmpl-heading">Content</h3>
                 {previewedFrame.nativeCount !== undefined && previewedFrame.rasterCount !== undefined && (
-                  <span className="f2s-toolbar-muted">
+                  <span className="f2s-toolbar-muted f2s-tabular">
                     {previewedFrame.nativeCount} native · {previewedFrame.rasterCount} rasterized
                   </span>
                 )}

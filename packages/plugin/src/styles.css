@@ -13,7 +13,11 @@
   --color-orange-20: rgba(240, 104, 0, 0.2);
   --color-orange-40: rgba(240, 104, 0, 0.4);
   --color-orange-80: rgba(240, 104, 0, 0.8);
-  --color-orange-red: #f04000;
+  /* Survol du bouton principal : un orange ÉCLAIRCI, hsl(20, 100%, 62%).
+     L'ancien orange-red (#f04000) est un accent graphique que la DA interdit
+     sur un état d'interaction, et il tombait à 6° du rouge d'erreur. Encre
+     dessus : 7.56:1 (6.09:1 sur l'orange au repos). */
+  --color-orange-hover: hsl(20, 100%, 62%); /* #ff7e3d */
   /* Rouge PLEIN réservé aux états d'erreur/bloquants.*/
   --color-error: #e00000;
   /* Encre et blanc de marque : --b-ink / --b-white de la DA (token.css,
@@ -389,6 +393,25 @@ a {
   text-wrap: balance;
 }
 
+/* Compteurs qui changent sous les yeux ("14 native · 2 rasterized") : chiffres
+   à chasse fixe, pour que le texte ne tressaute pas d'une frame à l'autre. */
+.f2s-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Lu par les lecteurs d'écran, invisible à l'écran (régions d'annonce). */
+.f2s-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
 .f2s-dim-box {
   font-size: 12px;
   border: 1px solid var(--color-border);
@@ -587,8 +610,21 @@ a {
   transition:
     background-color var(--b-duration) var(--b-ease-default),
     color var(--b-duration) var(--b-ease-default),
-    outline-color var(--b-duration) var(--b-ease-default),
+    border-color var(--b-duration) var(--b-ease-default),
     transform var(--b-duration) var(--b-ease-out);
+}
+
+/* Focus clavier : l'anneau de la DA (--b-focus-outline, 2px plein décalé de
+   2px), sur tout ce qui se clique. Avant, rien ne le posait : "Prepare for
+   Slides" écrasait l'anneau du navigateur (contour transparent) et les autres
+   boutons gardaient celui de Chromium, arrondi sur des boutons carrés et collé
+   au biseau. À l'encre de --color-text, qui s'inverse en thème sombre : 18.35:1
+   sur les deux fonds. `:where` le laisse à la spécificité la plus basse, pour
+   que les champs qui dessinent leur propre anneau (`outline: none` + ombre
+   grise) et le skin Windows 95 (pointillé) gardent la main. */
+:where(button, a[href], select, summary, [tabindex]:not([tabindex='-1'])):focus-visible {
+  outline: 2px solid var(--color-text);
+  outline-offset: 2px;
 }
 
 /* Boutons du header : padding 6px 12px, texte 14px. */
@@ -624,18 +660,19 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
 
 .f2s-btn--secondary {
   background: transparent;
-  border-color: var(--color-orange);
-  color: var(--color-orange);
+  border-color: var(--color-text);
+  color: var(--color-text);
   display: inline-flex;
   align-items: center;
-  outline: 1px solid transparent;
-  outline-offset: -2px;
 }
 
+/* Texte et bordure à l'encre : l'orange sur le fond ne faisait que 3.01:1,
+   sous les 4.5:1 d'un texte. L'orange arrive au survol, en fond plein, ce qui
+   le distingue du tertiaire (fond encre au survol). */
 .f2s-btn--secondary:hover:not(:disabled) {
   background: var(--color-orange);
+  border-color: var(--color-orange);
   color: var(--color-on-accent);
-  outline-color: var(--color-orange);
 }
 
 .f2s-btn--primary {
@@ -644,7 +681,7 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
 }
 
 .f2s-btn--primary:hover:not(:disabled) {
-  background: var(--color-orange-red);
+  background: var(--color-orange-hover);
 }
 
 /* ---- Body : rail de miniatures + canvas ---- */
@@ -660,37 +697,85 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
 
 /* ---- Toast temporaire ----
    Pour les messages sans place dédiée dans le layout (ex. notices de
-   sélection du mode deck) : un overlay auto-dismiss (délai piloté par
-   ui.tsx) plutôt qu'un texte inline qui pousserait le contenu autour de lui. */
+   sélection du mode deck) : un overlay qui se ferme seul plutôt qu'un texte
+   inline qui pousserait le contenu autour de lui.
+
+   Une ligne : pastille d'état, message, croix. Le message reste à l'encre,
+   erreur comprise : c'est la pastille (et la barre de durée) qui porte le
+   ton, comme pour un succès. L'ancien texte rouge gras en 12px se lisait
+   mal et criait plus fort que le reste du panneau. */
 
 .f2s-toast {
+  --f2s-toast-tone: var(--color-error);
   position: absolute;
   top: 10px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
-  max-width: calc(100% - 32px);
-  padding: 8px 14px;
-  background: var(--color-bg);
+  width: max-content;
+  max-width: min(440px, calc(100% - 32px));
+  padding: 8px 6px 10px 12px;
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 8px;
   box-shadow: 0 8px 20px rgba(18, 15, 13, 0.18);
   display: flex;
   align-items: center;
   gap: 8px;
-  color: var(--color-error);
-  font-size: 12px;
-  font-weight: 600;
-  text-align: left;
-  text-wrap: balance;
-  pointer-events: none;
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  text-align: start;
   animation: f2s-toast-in 160ms var(--f2s-modal-ease);
 }
 
-/* Succès (fin d'export) : le texte reste à l'encre normale, c'est la
-   pastille orange qui porte le ton, comme sur la page de retour OAuth. */
 .f2s-toast--success {
-  color: var(--color-text);
+  --f2s-toast-tone: var(--color-orange);
+}
+
+.f2s-toast-text {
+  flex: 1;
+  min-width: 0;
+  text-wrap: pretty;
+  overflow-wrap: break-word;
+}
+
+.f2s-toast-close {
+  flex: none;
+  align-self: flex-start;
+  margin-block: -2px;
+}
+
+/* Durée d'affichage restante : la barre se vide de gauche à droite, et la
+   fin de son animation ferme le toast (voir Toast). En pause tant que le
+   pointeur ou le focus est sur le toast, pour qu'on ait le temps de le lire. */
+.f2s-toast-timer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: var(--f2s-toast-tone);
+  transform-origin: left;
+  animation-name: f2s-toast-timer;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+.f2s-toast:hover .f2s-toast-timer,
+.f2s-toast:focus-within .f2s-toast-timer {
+  animation-play-state: paused;
+}
+
+@keyframes f2s-toast-timer {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
 }
 
 @keyframes f2s-toast-in {
@@ -704,7 +789,9 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   }
 }
 
-/* Mouvement réduit : le toast apparaît en fondu, sans glissement. */
+/* Mouvement réduit : le toast apparaît en fondu, sans glissement, et la
+   barre de durée pâlit au lieu de rétrécir. Elle garde une animation (même
+   durée) : c'est sa fin qui ferme le toast. */
 @keyframes f2s-toast-fade {
   from {
     opacity: 0;
@@ -714,9 +801,22 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   }
 }
 
+@keyframes f2s-toast-timer-fade {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.15;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .f2s-toast {
     animation-name: f2s-toast-fade;
+  }
+
+  .f2s-toast-timer {
+    animation-name: f2s-toast-timer-fade;
   }
 }
 
@@ -2077,6 +2177,7 @@ html:not(.f2s-skin--win95) .f2s-footer-actions .f2s-logo-link {
 .f2s-retro-status-text {
   flex: none;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .f2s-retro-ellipsis {
@@ -2112,7 +2213,12 @@ html:not(.f2s-skin--win95) .f2s-footer-actions .f2s-logo-link {
     transparent 8px,
     transparent 10px
   );
-  transition: width 120ms linear;
+  /* Le remplissage occupe toute la piste et se découvre par la droite :
+     `clip-path` plutôt que `width`, qui relançait la mise en page à chaque
+     pas. Pas de `scaleX`, qui écraserait les blocs. Valeur posée en ligne
+     par RetroExportPreview (--f2s-retro-progress, de 0 à 1). */
+  clip-path: inset(0 calc((1 - var(--f2s-retro-progress, 0)) * 100%) 0 0);
+  transition: clip-path 120ms linear;
 }
 
 /* Vignette du rail correspondant à la frame en cours d'export. */

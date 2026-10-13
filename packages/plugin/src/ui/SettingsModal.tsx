@@ -15,6 +15,7 @@
  */
 
 import { useEffect, useRef, useState } from 'preact/hooks';
+import { CloseIcon } from './StatusIcon.js';
 import type { ThemePreference } from './theme.js';
 import type { UiSkin } from './types.js';
 
@@ -50,13 +51,67 @@ const SKIN_TABS: { value: UiSkin; label: string; hint: string }[] = [
   { value: 'win95', label: 'Windows 95', hint: 'Retro Windows 95 chrome: title bar, bevels, system gray.' },
 ];
 
-function CloseIcon() {
+/**
+ * Choix exclusif entre deux ou trois valeurs, peint en segmented control
+ * (`.f2s-tabs`) mais annoncé comme ce qu'il est : un groupe de boutons radio.
+ * Les anciens `role="tab"` promettaient des panneaux d'onglets qui n'existent
+ * pas. Clavier des radios natifs : un seul arrêt de tabulation (l'option
+ * cochée), les flèches changent l'option et la sélectionnent.
+ */
+function RadioSegment<T extends string>({
+  label,
+  options,
+  value,
+  disabled,
+  disabledTitle,
+  onChange,
+}: {
+  label: string;
+  options: { value: T; label: string; hint: string }[];
+  value: T;
+  disabled?: boolean;
+  /** Infobulle de chaque option quand le groupe est désactivé : dit pourquoi. */
+  disabledTitle?: string;
+  onChange: (value: T) => void;
+}) {
+  const checkedIndex = Math.max(
+    0,
+    options.findIndex((option) => option.value === value),
+  );
+
+  function onKeyDown(event: KeyboardEvent, index: number) {
+    const step = event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 1 : event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -1 : 0;
+    if (step === 0) return;
+    event.preventDefault();
+    const next = (index + step + options.length) % options.length;
+    onChange(options[next].value);
+    ((event.currentTarget as HTMLElement).parentElement?.children[next] as HTMLElement | undefined)?.focus();
+  }
+
   return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <path d="m3 3 8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-    </svg>
+    <div className="f2s-tabs" role="radiogroup" aria-label={label}>
+      {options.map((option, index) => (
+        <button
+          key={option.value}
+          type="button"
+          role="radio"
+          aria-checked={option.value === value}
+          tabIndex={index === checkedIndex ? 0 : -1}
+          disabled={disabled}
+          title={disabled && disabledTitle ? disabledTitle : option.hint}
+          className={`f2s-tab${option.value === value ? ' is-active' : ''}`}
+          onClick={() => onChange(option.value)}
+          onKeyDown={(event) => onKeyDown(event, index)}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
   );
 }
+
+/** Contrôles atteignables à la tabulation dans le panneau (les radios non cochés en sont exclus, tabIndex -1). */
+const TABBABLE = 'button:not(:disabled):not([tabindex="-1"]), a[href], select:not(:disabled), input:not(:disabled)';
 
 export function SettingsModal({
   open,
@@ -110,6 +165,32 @@ export function SettingsModal({
     if (open && entered) dialogRef.current?.focus();
   }, [open, entered]);
 
+  // À la fermeture, le focus revient sur ce qui l'avait à l'ouverture (le
+  // bouton Settings) : il retombait sur <body>, et un utilisateur au clavier
+  // repartait du haut du panneau.
+  useEffect(() => {
+    if (!open) return;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    return () => opener?.focus();
+  }, [open]);
+
+  /** Tab et Maj+Tab bouclent dans le panneau au lieu de filer vers le plugin resté derrière l'overlay. */
+  function trapFocus(event: KeyboardEvent) {
+    if (event.key !== 'Tab' || !dialogRef.current) return;
+    const tabbables = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(TABBABLE));
+    if (tabbables.length === 0) return;
+    const first = tabbables[0];
+    const last = tabbables[tabbables.length - 1];
+    const active = document.activeElement;
+    if (event.shiftKey && (active === first || active === dialogRef.current)) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && active === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
+
   if (!mounted) return null;
 
   return (
@@ -129,6 +210,7 @@ export function SettingsModal({
         aria-label="Settings"
         tabIndex={-1}
         ref={dialogRef}
+        onKeyDown={trapFocus}
       >
         <header className="f2s-modal-header">
           <h2 className="f2s-modal-title">Settings</h2>
@@ -170,21 +252,12 @@ export function SettingsModal({
               <h3 className="f2s-setting-title">Interface</h3>
               <p className="f2s-setting-desc">Pick how the plugin panel is painted.</p>
             </div>
-            <div className="f2s-tabs" role="tablist" aria-label="Interface style">
-              {SKIN_TABS.map((tab) => (
-                <button
-                  key={tab.value}
-                  type="button"
-                  role="tab"
-                  aria-selected={skin === tab.value}
-                  title={tab.hint}
-                  className={`f2s-tab${skin === tab.value ? ' is-active' : ''}`}
-                  onClick={() => onSkinChange(tab.value)}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
+            <RadioSegment
+              label="Interface style"
+              options={SKIN_TABS}
+              value={skin}
+              onChange={onSkinChange}
+            />
           </section>
 
           <section className="f2s-setting">
@@ -194,22 +267,14 @@ export function SettingsModal({
                 {skin === 'win95' ? 'The Windows 95 interface has a single palette.' : 'Pick the palette used by the plugin panel.'}
               </p>
             </div>
-            <div className="f2s-tabs" role="tablist" aria-label="Theme">
-              {THEME_TABS.map((tab) => (
-                <button
-                  key={tab.value}
-                  type="button"
-                  role="tab"
-                  aria-selected={theme === tab.value}
-                  disabled={skin === 'win95'}
-                  title={skin === 'win95' ? 'Switch to the Modern interface to change the palette.' : tab.hint}
-                  className={`f2s-tab${theme === tab.value ? ' is-active' : ''}`}
-                  onClick={() => onThemeChange(tab.value)}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
+            <RadioSegment
+              label="Theme"
+              options={THEME_TABS}
+              value={theme}
+              disabled={skin === 'win95'}
+              disabledTitle="Switch to the Modern interface to change the palette."
+              onChange={onThemeChange}
+            />
           </section>
 
           {showDebugExport && (

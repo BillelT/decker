@@ -101,6 +101,7 @@ export function TemplateStylePanel({ colors, fonts, fontOverrides, colorRoles, s
                     </span>
                     <select
                       className="f2s-font-dropdown f2s-style-role-select"
+                      aria-label={`Theme role for ${label}`}
                       value={colorRoles[key] ?? ''}
                       onChange={(e) => handleRoleChange(key, (e.target as HTMLSelectElement).value)}
                     >
