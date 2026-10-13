@@ -1,5 +1,7 @@
 # TODO
 
+> Roadmap à jour (13 octobre 2026), découpée par thème : [docs/roadmap/](./docs/roadmap/README.md). Ce fichier garde l'historique des décisions.
+
 ## Feedback utilisateur — audit 2026-08
 
 Plusieurs points ci-dessous ont depuis été implémentés (le rapport de
