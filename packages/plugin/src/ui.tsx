@@ -1397,7 +1397,7 @@ function App() {
           <div className="f2s-topbar-actions">
             <button
               type="button"
-              className="f2s-btn f2s-btn--tertiary"
+              className="f2s-btn f2s-btn--secondary"
               disabled={exporting}
               title={exporting ? 'An export is running. Wait for it to finish before changing the deck.' : undefined}
               onClick={handleAddFramesClick}
@@ -1428,7 +1428,7 @@ function App() {
           <div className="f2s-topbar-actions">
             <button
               type="button"
-              className="f2s-btn f2s-btn--tertiary"
+              className="f2s-btn f2s-btn--secondary"
               disabled={exporting}
               title={exporting ? 'A template creation is running. Wait for it to finish before changing the layouts.' : undefined}
               onClick={handleAddTemplateLayoutClick}
@@ -1495,8 +1495,6 @@ function App() {
           frames={frames}
           activeId={activeId}
           setActiveId={setActiveId}
-          selecting={selecting}
-          hasCanvasSelection={hasCanvasSelection}
           onRemove={removeFrame}
           fontOverrides={fontOverrides}
           exportCursor={exportSource === 'deck' ? exportCursor : undefined}
@@ -1515,8 +1513,6 @@ function App() {
           layouts={templateLayouts}
           activeId={activeTemplateId}
           setActiveId={setActiveTemplateId}
-          selecting={templateSelecting}
-          hasCanvasSelection={hasCanvasSelection}
           notice={templateSelectionNotice}
           onDismissNotice={clearTemplateSelectionNotice}
           locked={exporting}
@@ -1571,7 +1567,7 @@ function App() {
             </p>
           )}
           <Logo />
-          <a href="https://buymeacoffee.com/billelt" target="_blank" rel="noreferrer" className="f2s-btn f2s-btn--tertiary">
+          <a href="https://buymeacoffee.com/billelt" target="_blank" rel="noreferrer" className="f2s-btn f2s-btn--secondary">
             Buy me a coffee
           </a>
           {/* Reprise ciblée (backend jobs/runner.ts `retryExportJob`) : ne

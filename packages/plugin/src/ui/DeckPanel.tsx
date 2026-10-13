@@ -13,8 +13,6 @@ export interface DeckPanelProps {
   frames: Record<string, FrameState>;
   activeId: string | undefined;
   setActiveId: (id: string) => void;
-  selecting: boolean;
-  hasCanvasSelection: boolean;
   onRemove: (id: string) => void;
   /** Choix manuel de police (bandeau "Fonts") — reflété dans le tag des entrées FONT_SUBSTITUTED, voir logEntryFlag.ts. */
   fontOverrides: Record<string, string>;
@@ -59,8 +57,6 @@ export function DeckPanel({
   frames,
   activeId,
   setActiveId,
-  selecting,
-  hasCanvasSelection,
   onRemove,
   fontOverrides,
   exportCursor,
@@ -155,9 +151,6 @@ export function DeckPanel({
         {pacedCursor ? `Generating slide ${pacedCursor.index + 1} of ${pacedCursor.total}` : announcement}
       </p>
       <aside className="f2s-sidebar">
-        {selecting && !hasCanvasSelection && (
-          <p className="f2s-toolbar-muted">Select one or more frames on the Figma canvas, then click "Add selection".</p>
-        )}
         {order.map((id, index) => {
           const failure = failedSlides?.[id];
           const f = frames[id];

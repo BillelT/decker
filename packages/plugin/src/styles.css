@@ -644,35 +644,22 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   transform: scale(0.96);
 }
 
-/* Contour seul au repos (le noir plein pesait visuellement plus lourd que le
-   bouton primaire orange — hiérarchie inversée, cf. audit) ; le fond
-   n'apparaît qu'au hover. */
-.f2s-btn--tertiary {
-  background: transparent;
-  color: var(--color-text);
-  border-color: var(--color-text);
-}
-
-.f2s-btn--tertiary:hover:not(:disabled) {
-  background: var(--color-text);
-  color: var(--color-bg);
-}
-
+/* Secondaire : contour à l'encre au repos, fond encre au survol. C'est
+   l'ancien tertiaire, devenu le seul bouton secondaire (DA du 2026-10-13) :
+   l'ancien secondaire orange doublait l'orange de marque du bouton principal
+   dans la même vue, et son texte orange ne faisait que 3.01:1. Le contour seul
+   au repos garde le principal orange au-dessus dans la hiérarchie. */
 .f2s-btn--secondary {
   background: transparent;
-  border-color: var(--color-text);
   color: var(--color-text);
+  border-color: var(--color-text);
   display: inline-flex;
   align-items: center;
 }
 
-/* Texte et bordure à l'encre : l'orange sur le fond ne faisait que 3.01:1,
-   sous les 4.5:1 d'un texte. L'orange arrive au survol, en fond plein, ce qui
-   le distingue du tertiaire (fond encre au survol). */
 .f2s-btn--secondary:hover:not(:disabled) {
-  background: var(--color-orange);
-  border-color: var(--color-orange);
-  color: var(--color-on-accent);
+  background: var(--color-text);
+  color: var(--color-bg);
 }
 
 .f2s-btn--primary {
@@ -1294,6 +1281,14 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   align-self: stretch;
   width: 100%;
   max-width: 100%;
+}
+
+/* Le cadre garde toute la largeur, aligné sur les boîtes du rapport au-dessus
+   et en dessous ; quand la hauteur plafonne l'image, c'est elle qui se centre
+   dans le cadre au lieu de se caler à gauche et de laisser une bande vide à
+   droite. */
+.f2s-tmpl-preview img {
+  margin-inline: auto;
 }
 
 .f2s-tmpl-panel {
@@ -2230,5 +2225,21 @@ html:not(.f2s-skin--win95) .f2s-footer-actions .f2s-logo-link {
 @keyframes f2s-exporting-pulse {
   50% {
     border-color: var(--color-orange-40);
+  }
+}
+
+/* Mouvement réduit (réglage système des personnes sensibles au mouvement) :
+   plus de balayage, de clignotement ni de pulsation pendant l'export.
+   L'image apparaît d'un coup en fondu (RetroExportPreview), la vignette en
+   cours garde sa bordure orange, et la barre de progression continue
+   d'avancer : c'est elle qui dit où en est l'export. */
+@media (prefers-reduced-motion: reduce) {
+  .f2s-retro-beam {
+    display: none;
+  }
+
+  .f2s-retro-ellipsis,
+  .f2s-frame-preview.is-exporting {
+    animation: none;
   }
 }

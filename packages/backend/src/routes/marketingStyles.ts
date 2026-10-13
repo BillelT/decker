@@ -38,6 +38,9 @@ export const MARKETING_CSS = `
   --b-border-subtle: var(--b-gray-100);
   --b-accent: #f06800;
   --b-accent-red: #f04000;
+  /* Survol du CTA : orange éclairci (DA, --b-accent-hover). --b-accent-red
+     reste un accent graphique, jamais un état d'interaction. */
+  --b-accent-hover: hsl(20, 100%, 62%); /* #ff7e3d */
   --b-accent-soft: #ffc599;
   --b-selection: rgba(240, 104, 0, 0.2);
   --b-scrollbar-thumb: rgba(0, 0, 0, .18);
@@ -157,19 +160,21 @@ a { color: inherit; }
   box-shadow: var(--hyb-out);
 }
 .cta:active { box-shadow: var(--hyb-pressed); }
-.tertiary {
-  gap: var(--b-space-16); padding: var(--b-space-6) var(--b-space-12); border: 1px solid transparent;
+/* Secondaire de la DA : contour à l'encre, fond encre au survol. L'orange
+   reste au seul CTA (un bouton orange par vue). */
+.secondary {
+  gap: var(--b-space-16); padding: var(--b-space-6) var(--b-space-12); border: 1px solid var(--b-ink);
   border-radius: 0; color: var(--b-ink); font-size: var(--b-text-base);
   font-weight: var(--b-font-bold); background-color: transparent;
   box-shadow: var(--hyb-out);
 }
-.tertiary:active { box-shadow: var(--hyb-pressed); }
+.secondary:active { box-shadow: var(--hyb-pressed); }
 
 /* Survol : seulement avec une vraie souris, sinon il colle après un tap sur
    écran tactile (le retour tactile passe par :active). */
 @media (hover: hover) and (pointer: fine) {
-  .cta:hover { background-color: var(--b-accent-red); }
-  .tertiary:hover { background-color: var(--b-surface-muted); }
+  .cta:hover { background-color: var(--b-accent-hover); }
+  .secondary:hover { background-color: var(--b-ink); color: var(--b-white); }
   .nav-link:hover { color: var(--b-ink); }
   .header__nav .nav-link:hover { color: var(--b-text-muted); }
   .carousel__btn:hover:not(:disabled) { background-color: var(--b-gray-300); }

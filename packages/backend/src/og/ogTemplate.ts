@@ -197,12 +197,11 @@ body {
 .demo-input { font-size: 12px; color: var(--b-muted); background: var(--b-surface); box-shadow: var(--hyb-in); padding: 3px 8px; width: 150px; }
 
 .demo-topbar-actions { display: flex; align-items: center; gap: 16px; }
-/* Bordure transparente en base (comme .f2s-btn) : chaque variante redéfinit
-   sa couleur, sauf primary qui la garde transparente (le fond orange suffit) :
-   même déclaration sur les trois évite un écart de taille entre boutons. */
+/* Bordure transparente en base (comme .f2s-btn) : le secondaire la passe à
+   l'encre, le primary la garde transparente (le fond orange suffit) : même
+   déclaration sur les deux évite un écart de taille entre boutons. */
 .demo-btn { font-size: 13px; font-weight: 700; padding: 8px 16px; white-space: nowrap; border: 1px solid transparent; box-shadow: var(--hyb-out); }
-.demo-btn--tertiary { background: transparent; color: var(--b-ink); border-color: var(--b-ink); }
-.demo-btn--secondary { background: transparent; color: var(--b-accent); border-color: var(--b-accent); }
+.demo-btn--secondary { background: transparent; color: var(--b-ink); border-color: var(--b-ink); }
 .demo-btn--primary { background: var(--b-accent); color: var(--b-ink); }
 
 .demo-toolbar { display: flex; align-items: center; gap: 8px; padding: 12px 16px; flex: none; }
@@ -260,7 +259,7 @@ function renderDemoHtml(): string {
       </div>
     </div>
     <div class="demo-topbar-actions">
-      <span class="demo-btn demo-btn--tertiary">Select frames</span>
+      <span class="demo-btn demo-btn--secondary">Select frames</span>
       <span class="demo-btn demo-btn--secondary">Prepare for Slides</span>
       <span class="demo-btn demo-btn--primary">Export</span>
     </div>

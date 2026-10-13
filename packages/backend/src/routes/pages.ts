@@ -233,7 +233,7 @@ function header(): string {
       <a class="nav-link" href="/#google-access">Google access</a>
     </nav>
     <div class="header__actions">
-      <a class="btn tertiary" href="${COFFEE_URL}" target="_blank" rel="${REL_THIRD_PARTY}">Buy me a coffee</a>
+      <a class="btn secondary" href="${COFFEE_URL}" target="_blank" rel="${REL_THIRD_PARTY}">Buy me a coffee</a>
       <a class="btn cta" href="${PLUGIN_URL}" target="_blank" rel="${REL_THIRD_PARTY}">Try it on Figma</a>
     </div>
   </div>

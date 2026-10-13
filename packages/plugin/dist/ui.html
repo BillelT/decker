@@ -649,35 +649,22 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   transform: scale(0.96);
 }
 
-/* Contour seul au repos (le noir plein pesait visuellement plus lourd que le
-   bouton primaire orange — hiérarchie inversée, cf. audit) ; le fond
-   n'apparaît qu'au hover. */
-.f2s-btn--tertiary {
-  background: transparent;
-  color: var(--color-text);
-  border-color: var(--color-text);
-}
-
-.f2s-btn--tertiary:hover:not(:disabled) {
-  background: var(--color-text);
-  color: var(--color-bg);
-}
-
+/* Secondaire : contour à l'encre au repos, fond encre au survol. C'est
+   l'ancien tertiaire, devenu le seul bouton secondaire (DA du 2026-10-13) :
+   l'ancien secondaire orange doublait l'orange de marque du bouton principal
+   dans la même vue, et son texte orange ne faisait que 3.01:1. Le contour seul
+   au repos garde le principal orange au-dessus dans la hiérarchie. */
 .f2s-btn--secondary {
   background: transparent;
-  border-color: var(--color-text);
   color: var(--color-text);
+  border-color: var(--color-text);
   display: inline-flex;
   align-items: center;
 }
 
-/* Texte et bordure à l'encre : l'orange sur le fond ne faisait que 3.01:1,
-   sous les 4.5:1 d'un texte. L'orange arrive au survol, en fond plein, ce qui
-   le distingue du tertiaire (fond encre au survol). */
 .f2s-btn--secondary:hover:not(:disabled) {
-  background: var(--color-orange);
-  border-color: var(--color-orange);
-  color: var(--color-on-accent);
+  background: var(--color-text);
+  color: var(--color-bg);
 }
 
 .f2s-btn--primary {
@@ -1299,6 +1286,14 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   align-self: stretch;
   width: 100%;
   max-width: 100%;
+}
+
+/* Le cadre garde toute la largeur, aligné sur les boîtes du rapport au-dessus
+   et en dessous ; quand la hauteur plafonne l'image, c'est elle qui se centre
+   dans le cadre au lieu de se caler à gauche et de laisser une bande vide à
+   droite. */
+.f2s-tmpl-preview img {
+  margin-inline: auto;
 }
 
 .f2s-tmpl-panel {
@@ -2238,6 +2233,22 @@ html:not(.f2s-skin--win95) .f2s-footer-actions .f2s-logo-link {
   }
 }
 
+/* Mouvement réduit (réglage système des personnes sensibles au mouvement) :
+   plus de balayage, de clignotement ni de pulsation pendant l'export.
+   L'image apparaît d'un coup en fondu (RetroExportPreview), la vignette en
+   cours garde sa bordure orange, et la barre de progression continue
+   d'avancer : c'est elle qui dit où en est l'export. */
+@media (prefers-reduced-motion: reduce) {
+  .f2s-retro-beam {
+    display: none;
+  }
+
+  .f2s-retro-ellipsis,
+  .f2s-frame-preview.is-exporting {
+    animation: none;
+  }
+}
+
 /* ============================================================================
    Skin Windows 95 (skin PAR DÉFAUT — voir ui/types.ts).
 
@@ -2489,10 +2500,9 @@ html.f2s-skin--win95 .f2s-btn {
 }
 
 /* Un bouton 95 ne réagit pas au survol — seul l'enfoncement le fait. Les
-   trois variantes du design system convergent donc vers le même rendu. */
+   deux variantes du design system convergent donc vers le même rendu. */
 html.f2s-skin--win95 .f2s-btn--primary:hover:not(:disabled),
-html.f2s-skin--win95 .f2s-btn--secondary:hover:not(:disabled),
-html.f2s-skin--win95 .f2s-btn--tertiary:hover:not(:disabled) {
+html.f2s-skin--win95 .f2s-btn--secondary:hover:not(:disabled) {
   background-color: var(--w95-face);
   color: #000;
   box-shadow: var(--w95-out);
@@ -3905,6 +3915,13 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
         };
         let drawnBlocks = 0;
         let drawnBands = 0;
+        if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+          ctx.drawImage(image, 0, 0, width, height);
+          drawnBlocks = blockCount;
+          drawnBands = bandCount;
+          const easeOut = getComputedStyle(canvas).getPropertyValue("--b-ease-out").trim() || "ease-out";
+          canvas.animate?.([{ opacity: 0 }, { opacity: 1 }], { duration: 300, easing: easeOut });
+        }
         const start = performance.now();
         const step = (now) => {
           const progress = Math.min(1, (now - start) / REVEAL_MS);
@@ -4166,8 +4183,6 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     frames,
     activeId,
     setActiveId,
-    selecting,
-    hasCanvasSelection,
     onRemove,
     fontOverrides,
     exportCursor,
@@ -4214,45 +4229,42 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     return /* @__PURE__ */ u3("div", { className: "f2s-body", children: [
       notice && /* @__PURE__ */ u3(Toast, { notice, onDismiss: onDismissNotice }, notice.id),
       /* @__PURE__ */ u3("p", { className: "f2s-sr-only", role: "status", children: pacedCursor ? `Generating slide ${pacedCursor.index + 1} of ${pacedCursor.total}` : announcement }),
-      /* @__PURE__ */ u3("aside", { className: "f2s-sidebar", children: [
-        selecting && !hasCanvasSelection && /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: 'Select one or more frames on the Figma canvas, then click "Add selection".' }),
-        order.map((id, index) => {
-          const failure = failedSlides?.[id];
-          const f4 = frames[id];
-          if (!f4) return null;
-          const item = itemState(id, index);
-          return /* @__PURE__ */ u3("div", { ref: registerItem(id), className: item.className, style: item.style, children: [
-            /* @__PURE__ */ u3(
+      /* @__PURE__ */ u3("aside", { className: "f2s-sidebar", children: order.map((id, index) => {
+        const failure = failedSlides?.[id];
+        const f4 = frames[id];
+        if (!f4) return null;
+        const item = itemState(id, index);
+        return /* @__PURE__ */ u3("div", { ref: registerItem(id), className: item.className, style: item.style, children: [
+          /* @__PURE__ */ u3(
+            "button",
+            {
+              type: "button",
+              className: `f2s-frame-preview${highlightedId === id ? " is-active" : ""}${failure ? " f2s-frame-preview--failed" : ""}${pacedCursor?.frameId === id ? " is-exporting" : ""}`,
+              onClick: () => selectFrame(id),
+              onPointerDown: (e3) => onThumbPointerDown(e3, id),
+              onKeyDown: (e3) => onThumbKeyDown(e3, id),
+              "aria-keyshortcuts": "Alt+ArrowUp Alt+ArrowDown",
+              title: failure ? `Export failed: ${failure}` : void 0,
+              children: f4.previewDataUrl && /* @__PURE__ */ u3("img", { src: f4.previewDataUrl, alt: f4.name, draggable: false })
+            }
+          ),
+          /* @__PURE__ */ u3("div", { className: "f2s-frame-info", children: [
+            /* @__PURE__ */ u3("span", { className: "f2s-frame-text", children: index + 1 }),
+            /* @__PURE__ */ u3("div", { className: "f2s-frame-controls", children: /* @__PURE__ */ u3(
               "button",
               {
                 type: "button",
-                className: `f2s-frame-preview${highlightedId === id ? " is-active" : ""}${failure ? " f2s-frame-preview--failed" : ""}${pacedCursor?.frameId === id ? " is-exporting" : ""}`,
-                onClick: () => selectFrame(id),
-                onPointerDown: (e3) => onThumbPointerDown(e3, id),
-                onKeyDown: (e3) => onThumbKeyDown(e3, id),
-                "aria-keyshortcuts": "Alt+ArrowUp Alt+ArrowDown",
-                title: failure ? `Export failed: ${failure}` : void 0,
-                children: f4.previewDataUrl && /* @__PURE__ */ u3("img", { src: f4.previewDataUrl, alt: f4.name, draggable: false })
+                className: "f2s-icon-btn",
+                disabled: locked,
+                title: locked ? "An export is running. Wait for it to finish before changing the list." : `Remove slide ${index + 1}`,
+                "aria-label": `Remove slide ${index + 1}`,
+                onClick: () => onRemove(id),
+                children: "\u2715"
               }
-            ),
-            /* @__PURE__ */ u3("div", { className: "f2s-frame-info", children: [
-              /* @__PURE__ */ u3("span", { className: "f2s-frame-text", children: index + 1 }),
-              /* @__PURE__ */ u3("div", { className: "f2s-frame-controls", children: /* @__PURE__ */ u3(
-                "button",
-                {
-                  type: "button",
-                  className: "f2s-icon-btn",
-                  disabled: locked,
-                  title: locked ? "An export is running. Wait for it to finish before changing the list." : `Remove slide ${index + 1}`,
-                  "aria-label": `Remove slide ${index + 1}`,
-                  onClick: () => onRemove(id),
-                  children: "\u2715"
-                }
-              ) })
-            ] })
-          ] }, id);
-        })
-      ] }),
+            ) })
+          ] })
+        ] }, id);
+      }) }),
       /* @__PURE__ */ u3("main", { className: "f2s-canvas", children: previewedFrame ? /* @__PURE__ */ u3(S, { children: [
         previewedFailure && !exportingFrame && /* @__PURE__ */ u3("div", { className: "f2s-logs f2s-tmpl-section--blocking f2s-export-failure", role: "alert", children: [
           /* @__PURE__ */ u3("div", { className: "f2s-logs-header", children: /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "This slide failed to export" }) }),
@@ -4536,8 +4548,6 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     layouts,
     activeId,
     setActiveId,
-    selecting,
-    hasCanvasSelection,
     notice,
     onDismissNotice,
     locked,
@@ -4615,62 +4625,59 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     return /* @__PURE__ */ u3("div", { className: "f2s-body", children: [
       notice && /* @__PURE__ */ u3(Toast, { notice, onDismiss: onDismissNotice }, notice.id),
       /* @__PURE__ */ u3("p", { className: "f2s-sr-only", role: "status", children: pacedCursor ? `Generating slide ${pacedCursor.index + 1} of ${pacedCursor.total}` : announcement }),
-      /* @__PURE__ */ u3("aside", { className: "f2s-sidebar", children: [
-        selecting && !hasCanvasSelection && /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: 'Select one or more frames on the Figma canvas, then click "Add selection".' }),
-        order.map((id, index) => {
-          const failure = failedSlides?.[id];
-          const layout = layouts[id];
-          if (!layout) return null;
-          const item = itemState(id, index);
-          return /* @__PURE__ */ u3("div", { ref: registerItem(id), className: item.className, style: item.style, children: [
+      /* @__PURE__ */ u3("aside", { className: "f2s-sidebar", children: order.map((id, index) => {
+        const failure = failedSlides?.[id];
+        const layout = layouts[id];
+        if (!layout) return null;
+        const item = itemState(id, index);
+        return /* @__PURE__ */ u3("div", { ref: registerItem(id), className: item.className, style: item.style, children: [
+          /* @__PURE__ */ u3(
+            "button",
+            {
+              type: "button",
+              className: `f2s-frame-preview${highlightedId === id ? " is-active" : ""}${layout.blocking ? " f2s-frame-preview--blocking" : ""}${failure ? " f2s-frame-preview--failed" : ""}${pacedCursor?.frameId === id ? " is-exporting" : ""}`,
+              onClick: () => selectLayout(id),
+              onPointerDown: (e3) => onThumbPointerDown(e3, id),
+              onKeyDown: (e3) => onThumbKeyDown(e3, id),
+              "aria-keyshortcuts": "Alt+ArrowUp Alt+ArrowDown",
+              title: failure ? `Export failed: ${failure}` : layout.blocking ? "Contains an element that would be rasterized. Open it to see the details." : void 0,
+              children: layout.previewDataUrl && /* @__PURE__ */ u3("img", { src: layout.previewDataUrl, alt: layout.name, draggable: false })
+            }
+          ),
+          /* @__PURE__ */ u3("div", { className: "f2s-frame-info", children: [
+            /* @__PURE__ */ u3("span", { className: "f2s-frame-index", children: [
+              index + 1,
+              "."
+            ] }),
             /* @__PURE__ */ u3(
+              "input",
+              {
+                type: "text",
+                className: "f2s-frame-name-input",
+                value: layout.name,
+                title: layout.name,
+                "aria-label": "Layout name",
+                readOnly: locked,
+                onInput: (e3) => onRename(id, e3.target.value),
+                onChange: (e3) => onRenameCommit(id, e3.target.value),
+                onBlur: (e3) => onRenameCommit(id, e3.target.value)
+              }
+            ),
+            /* @__PURE__ */ u3("div", { className: "f2s-frame-controls", children: /* @__PURE__ */ u3(
               "button",
               {
                 type: "button",
-                className: `f2s-frame-preview${highlightedId === id ? " is-active" : ""}${layout.blocking ? " f2s-frame-preview--blocking" : ""}${failure ? " f2s-frame-preview--failed" : ""}${pacedCursor?.frameId === id ? " is-exporting" : ""}`,
-                onClick: () => selectLayout(id),
-                onPointerDown: (e3) => onThumbPointerDown(e3, id),
-                onKeyDown: (e3) => onThumbKeyDown(e3, id),
-                "aria-keyshortcuts": "Alt+ArrowUp Alt+ArrowDown",
-                title: failure ? `Export failed: ${failure}` : layout.blocking ? "Contains an element that would be rasterized. Open it to see the details." : void 0,
-                children: layout.previewDataUrl && /* @__PURE__ */ u3("img", { src: layout.previewDataUrl, alt: layout.name, draggable: false })
+                className: "f2s-icon-btn",
+                disabled: locked,
+                title: locked ? "An export is running. Wait for it to finish before changing the list." : `Remove layout ${index + 1}`,
+                "aria-label": `Remove layout ${index + 1}`,
+                onClick: () => onRemove(id),
+                children: "\u2715"
               }
-            ),
-            /* @__PURE__ */ u3("div", { className: "f2s-frame-info", children: [
-              /* @__PURE__ */ u3("span", { className: "f2s-frame-index", children: [
-                index + 1,
-                "."
-              ] }),
-              /* @__PURE__ */ u3(
-                "input",
-                {
-                  type: "text",
-                  className: "f2s-frame-name-input",
-                  value: layout.name,
-                  title: layout.name,
-                  "aria-label": "Layout name",
-                  readOnly: locked,
-                  onInput: (e3) => onRename(id, e3.target.value),
-                  onChange: (e3) => onRenameCommit(id, e3.target.value),
-                  onBlur: (e3) => onRenameCommit(id, e3.target.value)
-                }
-              ),
-              /* @__PURE__ */ u3("div", { className: "f2s-frame-controls", children: /* @__PURE__ */ u3(
-                "button",
-                {
-                  type: "button",
-                  className: "f2s-icon-btn",
-                  disabled: locked,
-                  title: locked ? "An export is running. Wait for it to finish before changing the list." : `Remove layout ${index + 1}`,
-                  "aria-label": `Remove layout ${index + 1}`,
-                  onClick: () => onRemove(id),
-                  children: "\u2715"
-                }
-              ) })
-            ] })
-          ] }, id);
-        })
-      ] }),
+            ) })
+          ] })
+        ] }, id);
+      }) }),
       /* @__PURE__ */ u3("main", { className: "f2s-canvas f2s-canvas--template", children: previewedLayout ? /* @__PURE__ */ u3("div", { className: "f2s-tmpl-report", children: [
         previewedFailure && !exportingLayout && /* @__PURE__ */ u3("div", { className: "f2s-logs f2s-tmpl-section--blocking f2s-export-failure", role: "alert", children: [
           /* @__PURE__ */ u3("div", { className: "f2s-logs-header", children: /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "This layout failed to export" }) }),
@@ -4875,7 +4882,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
                     "button",
                     {
                       type: "button",
-                      className: "f2s-btn f2s-btn--tertiary",
+                      className: "f2s-btn f2s-btn--secondary",
                       title: "Sign out. You'll be asked to pick a Google account next time you sign in.",
                       onClick: onSignOut,
                       children: "Sign out"
@@ -6118,7 +6125,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
             "button",
             {
               type: "button",
-              className: "f2s-btn f2s-btn--tertiary",
+              className: "f2s-btn f2s-btn--secondary",
               disabled: exporting,
               title: exporting ? "An export is running. Wait for it to finish before changing the deck." : void 0,
               onClick: handleAddFramesClick,
@@ -6147,7 +6154,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
             "button",
             {
               type: "button",
-              className: "f2s-btn f2s-btn--tertiary",
+              className: "f2s-btn f2s-btn--secondary",
               disabled: exporting,
               title: exporting ? "A template creation is running. Wait for it to finish before changing the layouts." : void 0,
               onClick: handleAddTemplateLayoutClick,
@@ -6197,8 +6204,6 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
           frames,
           activeId,
           setActiveId,
-          selecting,
-          hasCanvasSelection,
           onRemove: removeFrame,
           fontOverrides,
           exportCursor: exportSource === "deck" ? exportCursor : void 0,
@@ -6218,8 +6223,6 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
           layouts: templateLayouts,
           activeId: activeTemplateId,
           setActiveId: setActiveTemplateId,
-          selecting: templateSelecting,
-          hasCanvasSelection,
           notice: templateSelectionNotice,
           onDismissNotice: clearTemplateSelectionNotice,
           locked: exporting,
@@ -6263,7 +6266,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
             /* @__PURE__ */ u3("span", { className: "f2s-footer-status-text", children: successMessage(mode, exportedCount) })
           ] }),
           /* @__PURE__ */ u3(Logo, {}),
-          /* @__PURE__ */ u3("a", { href: "https://buymeacoffee.com/billelt", target: "_blank", rel: "noreferrer", className: "f2s-btn f2s-btn--tertiary", children: "Buy me a coffee" }),
+          /* @__PURE__ */ u3("a", { href: "https://buymeacoffee.com/billelt", target: "_blank", rel: "noreferrer", className: "f2s-btn f2s-btn--secondary", children: "Buy me a coffee" }),
           exportState === "error" && exportSource === mode && retryable && /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--secondary", disabled: retrying, onClick: handleRetryFailedSlides, children: retrying ? "Retrying\u2026" : `Retry ${failedCount} failed ${mode === "template" ? "layout" : "slide"}${failedCount === 1 ? "" : "s"}` }),
           (exportState === "done" || exportState === "error") && exportSource === mode && resultUrl && /* @__PURE__ */ u3("a", { href: resultUrl, target: "_blank", rel: "noreferrer", className: "f2s-btn f2s-btn--primary", children: "Open presentation" })
         ] })

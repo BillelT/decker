@@ -126,8 +126,6 @@ export interface TemplatePanelProps extends TemplateStylePanelProps {
   layouts: Record<string, TemplateLayoutState>;
   activeId: string | undefined;
   setActiveId: (id: string) => void;
-  selecting: boolean;
-  hasCanvasSelection: boolean;
   notice: Notice | undefined;
   /** Ferme le toast (croix, ou fin de sa durée d'affichage). */
   onDismissNotice: () => void;
@@ -166,8 +164,6 @@ export function TemplatePanel({
   layouts,
   activeId,
   setActiveId,
-  selecting,
-  hasCanvasSelection,
   notice,
   onDismissNotice,
   locked,
@@ -293,9 +289,6 @@ export function TemplatePanel({
         {pacedCursor ? `Generating slide ${pacedCursor.index + 1} of ${pacedCursor.total}` : announcement}
       </p>
       <aside className="f2s-sidebar">
-        {selecting && !hasCanvasSelection && (
-          <p className="f2s-toolbar-muted">Select one or more frames on the Figma canvas, then click "Add selection".</p>
-        )}
         {order.map((id, index) => {
           const failure = failedSlides?.[id];
           const layout = layouts[id];

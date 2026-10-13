@@ -138,6 +138,16 @@ export function RetroExportPreview({ src, frameName, index, total }: RetroExport
 
       let drawnBlocks = 0;
       let drawnBands = 0;
+      // Mouvement réduit : pas de génération bande par bande. L'image complète
+      // apparaît en fondu, et seule la progression (barre du bas) continue
+      // d'avancer au même rythme.
+      if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+        ctx.drawImage(image, 0, 0, width, height);
+        drawnBlocks = blockCount;
+        drawnBands = bandCount;
+        const easeOut = getComputedStyle(canvas).getPropertyValue('--b-ease-out').trim() || 'ease-out';
+        canvas.animate?.([{ opacity: 0 }, { opacity: 1 }], { duration: 300, easing: easeOut });
+      }
       const start = performance.now();
 
       const step = (now: number) => {

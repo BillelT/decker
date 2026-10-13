@@ -249,10 +249,9 @@ html.f2s-skin--win95 .f2s-btn {
 }
 
 /* Un bouton 95 ne réagit pas au survol — seul l'enfoncement le fait. Les
-   trois variantes du design system convergent donc vers le même rendu. */
+   deux variantes du design system convergent donc vers le même rendu. */
 html.f2s-skin--win95 .f2s-btn--primary:hover:not(:disabled),
-html.f2s-skin--win95 .f2s-btn--secondary:hover:not(:disabled),
-html.f2s-skin--win95 .f2s-btn--tertiary:hover:not(:disabled) {
+html.f2s-skin--win95 .f2s-btn--secondary:hover:not(:disabled) {
   background-color: var(--w95-face);
   color: #000;
   box-shadow: var(--w95-out);

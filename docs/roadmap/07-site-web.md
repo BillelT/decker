@@ -18,7 +18,8 @@ Le site (decker.billeltighidet.fr, rendu par `packages/backend/src/routes/pages.
 
 ## DA et code
 
-- [ ] **Biseaux sur les boutons et survol en accent rouge** (arbitrage A). La DA impose zéro ombre sur un bouton et interdit `--b-accent-red` sur un état d'interaction. → Trancher dans la DA ; le site suit.
+- [ ] **Biseaux sur les boutons** (arbitrage A). La DA impose zéro ombre sur un bouton. → Trancher dans la DA ; le site suit.
+  - Le survol en accent rouge est réglé (13 octobre 2026) : le CTA survole en `--b-accent-hover` (`hsl(20, 100%, 62%)`), et « Buy me a coffee » passe en secondaire de la DA (contour encre, fond encre au survol).
 - [ ] **Tokens inventés.** `--b-accent-soft` (illustrations), `--b-selection` (doublon de `--b-accent-20`), `--b-text-4xl` (44 px). → Les intégrer à la DA ou les renommer hors du préfixe `--b-`.
 - [ ] **Valeurs en dur.** `13px` (nav sous 560 px) et `48px` (titre du hero sous 720 px). → Tokens existants, ou nouveaux paliers validés dans la DA.
 - [ ] **Page de connexion Google** (`auth.ts`). Cabinet Grotesk est déclarée mais pas chargée (la page s'affiche en police système), les variables `--f2s-*` sont propres à la page, et `min-height: 100vh` saute sur mobile. → Charger la police, utiliser les tokens `--b-*`, `100dvh` avec repli.

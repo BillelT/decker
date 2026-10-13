@@ -238,7 +238,7 @@ export function SettingsModal({
             {signedIn && (
               <button
                 type="button"
-                className="f2s-btn f2s-btn--tertiary"
+                className="f2s-btn f2s-btn--secondary"
                 title="Sign out. You'll be asked to pick a Google account next time you sign in."
                 onClick={onSignOut}
               >

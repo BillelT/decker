@@ -213,6 +213,8 @@ function renderModernPage(content: PageContent): string {
   :root {
     color-scheme: light;
     --f2s-orange: #f06800;
+    /* Survol du bouton orange : orange éclairci, comme le CTA de la DA (--b-accent-hover). */
+    --f2s-orange-hover: hsl(20, 100%, 62%);
     /* Rampe de la DA (token.css) : --b-white, --b-ink, --b-text-muted. */
     --f2s-bg: hsl(30, 20%, 98%);
     --f2s-surface: hsl(30, 20%, 98%);
@@ -260,6 +262,9 @@ function renderModernPage(content: PageContent): string {
     box-shadow: var(--hyb-out);
   }
   .btn:active { box-shadow: var(--hyb-pressed); }
+  @media (hover: hover) and (pointer: fine) {
+    .btn:hover { background: var(--f2s-orange-hover); }
+  }
   .fallback { margin: 1rem 0 0; font-size: 0.8rem; color: var(--f2s-text-muted); }
   .credit { display: flex; justify-content: center; }
   .credit a { display: inline-flex; opacity: 0.6; }
