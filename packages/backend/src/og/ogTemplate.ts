@@ -79,13 +79,13 @@ const CSS = `
    pages HTML rendues côté serveur (auth.ts). --b-border/--b-surface-muted
    recopiés de --color-border/--color-surface-muted (styles.css du plugin). */
 :root {
-  --b-ink: #120f0d;
-  --b-white: #fff9f5;
-  --b-surface: #ffffff;
-  --b-surface-muted: #f2ece8;
-  --b-border: #f1edeb;
-  --b-scrollbar: #dcd5d0;
-  --b-muted: rgba(18, 15, 13, 0.7);
+  --b-ink: hsl(30, 12%, 6%);
+  --b-white: hsl(30, 20%, 98%);
+  --b-surface: hsl(30, 20%, 98%);
+  --b-surface-muted: hsl(30, 23%, 93%);
+  --b-border: hsl(30, 23%, 93%);
+  --b-scrollbar: hsl(18, 8%, 84%);
+  --b-muted: hsl(22, 8%, 22%);
   --b-accent: #f06800;
   --b-accent-red: #f04000;
   --b-accent-soft: #ffc599;

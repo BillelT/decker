@@ -36,7 +36,7 @@ const COFFEE_URL = 'https://buymeacoffee.com/billelt';
  * n'est pas purgeable à la main. C'est aussi ce qui autorise le
  * `Cache-Control: immutable` d'un an posé plus bas.
  */
-const OG_IMAGE_VERSION = '14';
+const OG_IMAGE_VERSION = '15';
 
 /** Dimensions du PNG généré (cf. src/og/render.ts), annoncées dans les
  *  balises `og:image:width/height` pour que les plateformes réservent la
@@ -94,7 +94,7 @@ function shell(opts: {
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="color-scheme" content="light" />
-<meta name="theme-color" content="#fff9f5" />
+<meta name="theme-color" content="#fbfaf9" />
 <meta name="google-site-verification" content="bsri34RXa34pqM8rsNoUtVcV_jX0TmUwegbbFWpVLwQ" />
 <meta name="description" content="${escapeHtml(opts.description)}" />
 <link rel="canonical" href="${canonical}" />

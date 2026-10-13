@@ -213,10 +213,11 @@ function renderModernPage(content: PageContent): string {
   :root {
     color-scheme: light;
     --f2s-orange: #f06800;
-    --f2s-bg: #fff9f5;
-    --f2s-surface: #ffffff;
-    --f2s-text: #120f0d;
-    --f2s-text-muted: rgba(18, 15, 13, 0.7);
+    /* Rampe de la DA (token.css) : --b-white, --b-ink, --b-text-muted. */
+    --f2s-bg: hsl(30, 20%, 98%);
+    --f2s-surface: hsl(30, 20%, 98%);
+    --f2s-text: hsl(30, 12%, 6%);
+    --f2s-text-muted: hsl(22, 8%, 22%);
     --hyb-hi: rgba(255, 255, 255, 0.9);
     --hyb-lo: rgba(18, 15, 13, 0.22);
     --hyb-lo-strong: rgba(18, 15, 13, 0.4);
@@ -254,7 +255,7 @@ function renderModernPage(content: PageContent): string {
   p.body { margin: 0 0 2rem; color: var(--f2s-text-muted); font-size: 0.95rem; line-height: 1.5; text-wrap: balance; }
   .btn {
     display: inline-flex; align-items: center; justify-content: center; width: 100%;
-    padding: 0.75rem 1.25rem; border-radius: 0; background: var(--f2s-orange); color: #fff9f5;
+    padding: 0.75rem 1.25rem; border-radius: 0; background: var(--f2s-orange); color: var(--f2s-bg);
     font-size: 0.95rem; font-weight: 600; text-decoration: none; border: none; cursor: pointer;
     box-shadow: var(--hyb-out);
   }

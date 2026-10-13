@@ -19,13 +19,14 @@ export const MARKETING_CSS = `
 }
 
 :root {
-  --b-black: #120f0d;
-  --b-white: #fff9f5;
-  --b-ink: #120f0d;
-  --b-gray-700: #3b3735;
-  --b-gray-500: #7f756c;
-  --b-gray-300: #dcd5d0;
-  --b-gray-100: #f1edeb;
+  /* Rampe de la DA (token.css, recalibrée le 2026-10-13 sur la logique de
+     Tailwind stone) : blanc quasi neutre, léger orange porté par gray-100. */
+  --b-black: hsl(30, 12%, 6%); /* #110f0d */
+  --b-white: hsl(30, 20%, 98%); /* #fbfaf9 */
+  --b-ink: hsl(30, 12%, 6%); /* #110f0d */
+  --b-gray-700: hsl(22, 8%, 22%); /* #3d3734 */
+  --b-gray-300: hsl(18, 8%, 84%); /* #d9d5d3 */
+  --b-gray-100: hsl(30, 23%, 93%); /* #f1ede9 */
   --b-text: var(--b-ink);
   --b-text-muted: var(--b-gray-700);
   --b-text-faint: var(--b-gray-700);
@@ -170,7 +171,7 @@ a { color: inherit; }
   .cta:hover { background-color: var(--b-accent-red); }
   .tertiary:hover { background-color: var(--b-surface-muted); }
   .nav-link:hover { color: var(--b-ink); }
-  .header__nav .nav-link:hover { color: var(--b-gray-500); }
+  .header__nav .nav-link:hover { color: var(--b-text-muted); }
   .carousel__btn:hover:not(:disabled) { background-color: var(--b-gray-300); }
 }
 
@@ -211,7 +212,7 @@ a { color: inherit; }
 /* Ancres du header seules : encre par defaut (plus de contraste qu'un
    .nav-link générique), et on éclaircit au survol plutôt que l'inverse. */
 .header__nav .nav-link { color: var(--b-ink); }
-.header__nav .nav-link[aria-current="page"] { color: var(--b-gray-500); }
+.header__nav .nav-link[aria-current="page"] { color: var(--b-text-muted); }
 .header__brand {
   display: inline-flex; align-items: center; gap: var(--b-space-8); color: var(--b-ink);
   font-size: var(--b-text-base); font-weight: var(--b-font-bold); letter-spacing: var(--b-tracking-tight);
