@@ -255,7 +255,7 @@ function renderModernPage(content: PageContent): string {
   p.body { margin: 0 0 2rem; color: var(--f2s-text-muted); font-size: 0.95rem; line-height: 1.5; text-wrap: balance; }
   .btn {
     display: inline-flex; align-items: center; justify-content: center; width: 100%;
-    padding: 0.75rem 1.25rem; border-radius: 0; background: var(--f2s-orange); color: var(--f2s-bg);
+    padding: 0.75rem 1.25rem; border-radius: 0; background: var(--f2s-orange); color: var(--f2s-text);
     font-size: 0.95rem; font-weight: 600; text-decoration: none; border: none; cursor: pointer;
     box-shadow: var(--hyb-out);
   }

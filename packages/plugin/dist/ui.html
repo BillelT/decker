@@ -41,8 +41,9 @@
        focus des champs). 3.43:1 sur --color-bg, seule valeur de la rampe à
        passer le seuil de 3:1 du critère 1.4.11 ; le 300 y est à 1.40:1,
        soit invisible en pratique.
-     - 300 : aplats de survol neutres et filets décoratifs.
-     - 100 : bordures fines et surfaces creusées.
+     - 300 : bordures (--b-border dans la DA), aplats de survol neutres et
+       filets décoratifs.
+     - 100 : surfaces creusées.
      Le 600 n'est JAMAIS un texte : 3.43:1, sous les 4.5:1 exigés. */
   --color-gray-700: hsl(22, 8%, 22%); /* #3d3734 */
   --color-gray-600: hsl(25, 6%, 53%); /* #8e8680 */
@@ -59,7 +60,8 @@
      supprimer une vignette n'est pas l'action que le produit met en avant). */
   --color-scrollbar: var(--color-gray-600);
   --color-gray-light: var(--color-gray-100);
-  --color-border: var(--color-gray-light);
+  /* Bordures en gray-300, comme --b-border dans la DA et sur le site. */
+  --color-border: var(--color-gray-300);
   /* Surfaces : la DA n'a qu'un blanc (--b-surface) et un fond discret
      (--b-surface-muted = gray-100). L'ancien blanc pur #ffffff et le
      #f2ece8 hérité du monogramme sortaient de la palette. */
@@ -71,11 +73,17 @@
      (--color-orange-40) prenait la couleur du fond sous lui, si bien qu'une
      seule couleur de texte ne pouvait pas convenir aux deux thèmes : blanc
      donnait 1.76:1 en clair et encre 2.49:1 en sombre. Un aplat fixe + une
-     encre fixe (--color-badge-ink) tiennent 12.45:1 partout. */
+     encre fixe (--color-badge-ink) tiennent 12.45:1 partout. Exception
+     assumée, propre au plugin : la DA n'a pas d'orange clair opaque. */
   --color-orange-soft: #ffc599;
   /* Encre des tags, fixe elle aussi : --color-text s'inverse en thème sombre
      et retournerait le problème. */
   --color-badge-ink: hsl(30, 12%, 6%);
+  /* Texte posé sur l'orange (bouton principal, survol du secondaire, coche
+     de succès) : encre fixe, comme le CTA de la DA (b-button) et du site.
+     6.09:1, quand le blanc ne faisait que 3.01:1. Ne s'inverse pas en thème
+     sombre, l'orange restant le même. */
+  --color-on-accent: hsl(30, 12%, 6%);
 
   /* Mouvement : courbes et durées du DS (token.css), à la place des mots-clés
      CSS natifs et des valeurs en dur. */
@@ -631,13 +639,13 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
 
 .f2s-btn--secondary:hover:not(:disabled) {
   background: var(--color-orange);
-  color: var(--color-bg);
+  color: var(--color-on-accent);
   outline-color: var(--color-orange);
 }
 
 .f2s-btn--primary {
   background: var(--color-orange);
-  color: var(--color-bg);
+  color: var(--color-on-accent);
 }
 
 .f2s-btn--primary:hover:not(:disabled) {
@@ -1501,14 +1509,12 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
 }
 
 /* Sur le bouton primaire (fond orange, cf. "Waiting for Google sign-in…"),
-   le spinner orange sur orange devient invisible. On reprend --color-bg,
-   déjà utilisé comme couleur du libellé de ce bouton (clair en thème clair,
-   sombre en thème sombre — cf. :root et les overrides figma-dark/prefers-
-   color-scheme) : le spinner reste ainsi assorti au texte dans les deux
-   thèmes plutôt que blanc fixe, illisible en thème sombre. */
+   le spinner orange sur orange devient invisible. On reprend
+   --color-on-accent, la couleur du libellé de ce bouton : le spinner reste
+   assorti au texte, dans les deux thèmes. */
 .f2s-btn--primary .f2s-spinner {
-  border-color: color-mix(in srgb, var(--color-bg) 40%, transparent);
-  border-top-color: var(--color-bg);
+  border-color: color-mix(in srgb, var(--color-on-accent) 40%, transparent);
+  border-top-color: var(--color-on-accent);
 }
 
 /* Spinner + libellé à l'intérieur d'un `.f2s-btn` (ex. "Sign in with
@@ -1671,14 +1677,15 @@ html:not(.f2s-skin--win95) .f2s-footer-actions .f2s-logo-link {
 }
 
 /* Pastille d'état (footer, toasts) : tracés de la page de retour OAuth du
-   site, disque aux couleurs du ton, coche/croix à l'encre du fond. */
+   site, disque aux couleurs du ton. Coche à l'encre sur l'orange, croix
+   blanche sur le rouge. */
 .f2s-status-icon {
   flex: none;
   display: block;
 }
 
 .f2s-status-icon--success {
-  color: var(--color-bg);
+  color: var(--color-on-accent);
 }
 
 .f2s-status-icon--success .f2s-status-icon-disc {

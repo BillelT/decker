@@ -22,7 +22,7 @@
  * l'accroche, tous trois dans la même marge latérale de page (48px). Seul
  * le bas de l'aperçu déborde volontairement de cette marge, jusqu'au bord
  * de la carte, comme une photo qui dépasse du cadre plutôt qu'un élément de
- * plus contenu dans la page. Sur le fond crème --b-white : la carte EST un
+ * plus contenu dans la page. Sur le fond --b-white : la carte EST un
  * extrait de la page, pas une simulation de logiciel. Pas de nom de produit
  * écrit en toutes lettres : le logo (icône seule) fait déjà cette
  * identification, un "Decker" en gros n'aurait fait que répéter
@@ -83,7 +83,7 @@ const CSS = `
   --b-white: hsl(30, 20%, 98%);
   --b-surface: hsl(30, 20%, 98%);
   --b-surface-muted: hsl(30, 23%, 93%);
-  --b-border: hsl(30, 23%, 93%);
+  --b-border: hsl(18, 8%, 84%);
   --b-scrollbar: hsl(18, 8%, 84%);
   --b-muted: hsl(22, 8%, 22%);
   --b-accent: #f06800;
@@ -203,7 +203,7 @@ body {
 .demo-btn { font-size: 13px; font-weight: 700; padding: 8px 16px; white-space: nowrap; border: 1px solid transparent; box-shadow: var(--hyb-out); }
 .demo-btn--tertiary { background: transparent; color: var(--b-ink); border-color: var(--b-ink); }
 .demo-btn--secondary { background: transparent; color: var(--b-accent); border-color: var(--b-accent); }
-.demo-btn--primary { background: var(--b-accent); color: var(--b-white); }
+.demo-btn--primary { background: var(--b-accent); color: var(--b-ink); }
 
 .demo-toolbar { display: flex; align-items: center; gap: 8px; padding: 12px 16px; flex: none; }
 .demo-muted { font-size: 12px; font-weight: 500; color: var(--b-muted); }
