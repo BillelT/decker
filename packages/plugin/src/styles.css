@@ -30,9 +30,7 @@
   /* Rampe de gris de la DA, renumérotée le 2026-10-14 (100, 200, 400, 500,
      600, 800 : l'ancien 300 est devenu le 200, l'ancien 600 le 500, l'ancien
      700 le 800, et le 600 est un nouveau palier). Seuls les paliers dont le
-     plugin se sert sont repris. En thème sombre, c'est la rampe SEULE qui
-     s'inverse (voir le bloc plus bas) : les tokens sémantiques ci-dessous
-     n'ont alors plus rien à redéfinir.
+     plugin se sert sont repris.
 
      Répartition des rôles (contrastes WCAG 2.1 mesurés sur --color-bg) :
      - 800 : texte secondaire. 11.23:1.
@@ -69,28 +67,25 @@
   --color-surface-muted: var(--color-gray-100);
   /* Fond des champs (nom, polices, rôles) : blanc pur, demandé le
      2026-10-14 pour détacher les champs du fond #fbfaf9. Hors rampe de la
-     DA, comme le tag "approximated". En thème sombre, la surface. */
+     DA, comme le tag "approximated". */
   --color-field: #ffffff;
+  /* Fond des sections (Content, Composition, Notes, boîtes d'erreur, Colors,
+     Typography) : blanc pur aussi, demandé le 2026-10-14 pour que chaque
+     section se détache du fond du panneau. */
+  --color-section: #ffffff;
 
-  /* Tapis du tag "approximé" (.f2s-log-entry-flag--visual-diff) : opaque, et
-     volontairement PAS redéfini en thème sombre. Un tapis translucide
-     (--color-orange-40) prenait la couleur du fond sous lui, si bien qu'une
-     seule couleur de texte ne pouvait pas convenir aux deux thèmes : blanc
-     donnait 1.76:1 en clair et encre 2.49:1 en sombre. Un aplat fixe + une
-     encre fixe (--color-badge-ink) tiennent 12.45:1 partout. Exception
-     assumée, propre au plugin : la DA n'a pas d'orange clair opaque. */
+  /* Tapis du tag "approximé" (.f2s-log-entry-flag--visual-diff) : opaque. Un
+     tapis translucide (--color-orange-40) prenait la couleur du fond sous
+     lui ; l'aplat avec --color-badge-ink tient 12.45:1. Exception assumée,
+     propre au plugin : la DA n'a pas d'orange clair opaque. */
   --color-orange-soft: #ffc599;
-  /* Encre des tags, fixe elle aussi : --color-text s'inverse en thème sombre
-     et retournerait le problème. */
+  /* Encre des tags. */
   --color-badge-ink: hsl(30, 12%, 6%);
-  /* Tag neutre ("3 rasterized" en mode Deck) : gray-800 sur gray-200, 8.05:1.
-     En sombre, le gray-800 sur le gray-200 sombre ne ferait que 3.95:1 :
-     l'encre y passe au texte clair (9:1). */
+  /* Tag neutre ("3 rasterized" en mode Deck) : gray-800 sur gray-200, 8.05:1. */
   --color-tag-neutral-ink: var(--color-gray-800);
   /* Texte posé sur l'orange (bouton principal, survol du secondaire, coche
      de succès) : encre fixe, comme le CTA de la DA (b-button) et du site.
-     6.09:1, quand le blanc ne faisait que 3.01:1. Ne s'inverse pas en thème
-     sombre, l'orange restant le même. */
+     6.09:1, quand le blanc ne faisait que 3.01:1. */
   --color-on-accent: hsl(30, 12%, 6%);
 
   /* Mouvement : courbes et durées du DS (token.css), à la place des mots-clés
@@ -103,58 +98,6 @@
   --b-duration-fast: 0.12s;
   --b-duration: 0.15s;
   --b-duration-slow: 0.2s;
-}
-
-/* Thème sombre : Figma pose `figma-dark`/`figma-light` sur <html> quand le
-   plugin est ouvert avec `themeColors: true` (code.ts) — palette claire
-   inversée, l'orange de marque reste identique. Le fallback
-   prefers-color-scheme couvre le rendu hors Figma (dev navigateur), sans
-   jamais contredire une classe posée par Figma.
-
-   `f2s-theme-light`/`f2s-theme-dark` sont le choix EXPLICITE fait dans la
-   modale de réglages (ui/theme.ts) : il l'emporte sur le thème de Figma comme
-   sur la préférence système, d'où les `:not(.f2s-theme-light)` ci-dessous. */
-html.figma-dark:not(.f2s-theme-light),
-html.f2s-theme-dark {
-  /* Fond et texte : --b-dark-surface (= encre) et --b-dark-text (= blanc
-     de marque) de la DA. */
-  --color-bg: hsl(30, 12%, 6%);
-  --color-text: hsl(30, 20%, 98%);
-  /* La rampe s'inverse d'un bloc, et elle seule : le 800 reste le gris du
-     texte secondaire, donc il devient CLAIR sur fond sombre ; le 200 et le
-     100 restent les gris de surface, donc ils s'assombrissent.
-     --color-text-muted, --color-scrollbar, --color-gray-light et
-     --color-border s'y raccrochent depuis :root et suivent tout seuls, au
-     lieu d'être réénumérés ici un par un comme avant. #a9a8a6 est l'aplat
-     exact de --b-dark-text-muted (blanc de marque à 65 %) posé sur
-     --color-bg : opaque, il ne change pas de teinte selon la surface qui
-     passe dessous. Les autres gris sombres n'ont pas encore d'équivalent
-     dans la DA (le 600 est le miroir du clair : 60 % au lieu de 41 %). */
-  --color-gray-800: #a9a8a6;
-  --color-gray-600: hsl(24, 6%, 60%); /* #9f9893, 5.44:1 sur le fond des onglets */
-  --color-gray-500: #8b8279;
-  --color-gray-200: #4d453e;
-  --color-gray-100: #332c26;
-  --color-surface: #211c17;
-  --color-surface-muted: #2a231d;
-  --color-field: var(--color-surface);
-  --color-tag-neutral-ink: var(--color-text);
-}
-
-@media (prefers-color-scheme: dark) {
-  html:not(.figma-light):not(.f2s-theme-light) {
-    --color-gray-800: #a9a8a6;
-    --color-gray-600: hsl(24, 6%, 60%);
-    --color-gray-500: #8b8279;
-    --color-gray-200: #4d453e;
-    --color-gray-100: #332c26;
-    --color-bg: hsl(30, 12%, 6%);
-    --color-text: hsl(30, 20%, 98%);
-    --color-surface: #211c17;
-    --color-surface-muted: #2a231d;
-    --color-field: var(--color-surface);
-    --color-tag-neutral-ink: var(--color-text);
-  }
 }
 
 * {
@@ -295,9 +238,9 @@ a {
 
    Ici il est repeint en monochrome : le rond de fond passe en `fill: none`,
    la marque et une bordure 1px prennent `--color-text`. Le fond du panneau
-   se voit donc au travers et joue le rôle de l'aplat — crème en thème clair,
-   sombre en thème sombre, gris système en win95 — et la signature suit le
-   thème au lieu d'être le seul aplat saturé de la fenêtre. Tout se fait en
+   se voit donc au travers et joue le rôle de l'aplat (crème en modern, gris
+   système en win95), et la signature suit le skin au lieu d'être le seul
+   aplat saturé de la fenêtre. Tout se fait en
    CSS (`fill` s'applique aux éléments SVG, `rx` est une propriété
    géométrique côté Chromium, donc côté iframe Figma) plutôt qu'en
    maintenant un second fichier SVG en parallèle du rond orange, qui reste
@@ -599,10 +542,10 @@ a {
    2px), sur tout ce qui se clique. Avant, rien ne le posait : "Prepare for
    Slides" écrasait l'anneau du navigateur (contour transparent) et les autres
    boutons gardaient celui de Chromium, arrondi sur des boutons carrés et collé
-   au biseau. À l'encre de --color-text, qui s'inverse en thème sombre : 18.35:1
-   sur les deux fonds. `:where` le laisse à la spécificité la plus basse, pour
-   que les champs qui dessinent leur propre anneau (`outline: none` + ombre
-   grise) et le skin Windows 95 (pointillé) gardent la main. */
+   au biseau. À l'encre de --color-text : 18.35:1 sur le fond. `:where` le
+   laisse à la spécificité la plus basse, pour que les champs qui dessinent
+   leur propre anneau (`outline: none` + ombre grise) et le skin Windows 95
+   (pointillé) gardent la main. */
 :where(button, a[href], select, summary, [tabindex]:not([tabindex='-1'])):focus-visible {
   outline: 2px solid var(--color-text);
   outline-offset: 2px;
@@ -2204,7 +2147,7 @@ html:not(.f2s-skin--win95)
    Pendant un export, le grand aperçu du deck montre la frame dont le lot est
    en cours d'application côté backend, en la "générant" bande par bande
    (voir ui/RetroExportPreview.tsx). Les couleurs de cette fenêtre sont
-   volontairement figées (ni thème clair ni thème sombre) : c'est une
+   volontairement figées (indépendantes du skin) : c'est une
    citation littérale du chrome 95, gris #c0c0c0 et biseaux 1 px compris.
 
    La taille, elle, n'est PAS figée : `.f2s-retro` n'a plus de largeur à lui

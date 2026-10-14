@@ -93,16 +93,11 @@ const COPY_GAP_PX = 200;
 // présentation NEUVE côté backend (mode 'new-presentation') : réutiliser la
 // session Google ne peut donc jamais écraser un deck déjà envoyé.
 const SESSION_TOKEN_STORAGE_KEY = 'f2s:sessionToken';
-// Les deux réglages de la modale, persistés pour la même raison que le jeton
-// de session : l'iframe UI est recréée à chaque ouverture et n'a aucun
-// stockage durable, donc un choix ne survit que s'il est gardé côté sandbox.
-//
 // Habillage visuel de l'UI ('modern' par défaut, 'win95' pour le chrome
-// rétro Windows 95 — voir ui/types.ts::UiSkin).
+// rétro Windows 95, voir ui/types.ts::UiSkin), seul réglage d'apparence de la
+// modale. Persisté pour la même raison que le jeton de session : l'iframe UI
+// est recréée à chaque ouverture et n'a aucun stockage durable.
 const UI_SKIN_STORAGE_KEY = 'f2s:uiSkin';
-// Thème forcé depuis la modale de réglages ('light' | 'dark'). Absent =
-// l'UI suit le thème de Figma (`themeColors: true`).
-const THEME_STORAGE_KEY = 'f2s:theme';
 
 // Taille de la fenêtre du plugin, choisie via la poignée du coin bas droit
 // (ui/ResizeGrip.tsx) et persistée via clientStorage : 1200x760 laisse toute
@@ -863,36 +858,28 @@ function watchFramesForLiveRefresh(
 }
 
 async function main(): Promise<void> {
-  // Skin et thème forcé lus AVANT de créer l'iframe (plutôt qu'après, via le
-  // round-trip `ui-ready` → `skin-restored`/`theme-preference-restored`) :
-  // sinon l'UI monte d'abord avec le skin/thème par défaut, le temps que ce
-  // round-trip aboutisse, puis bascule sous les yeux de l'utilisateur — flash
-  // très visible quand le choix persisté n'est pas modern/le thème système.
-  // En les injectant directement dans les classes de `<html>` avant le tout
-  // premier rendu, il n'y a plus rien à corriger après coup.
+  // Skin lu AVANT de créer l'iframe (plutôt qu'après, via le round-trip
+  // `ui-ready` → `skin-restored`) : sinon l'UI monte d'abord avec le skin par
+  // défaut, le temps que ce round-trip aboutisse, puis bascule sous les yeux
+  // de l'utilisateur. En l'injectant directement dans les classes de `<html>`
+  // avant le tout premier rendu, il n'y a plus rien à corriger après coup.
   let storedSkin: unknown;
-  let storedTheme: unknown;
   let storedSize: unknown;
   try {
-    [storedSkin, storedTheme, storedSize] = await Promise.all([
+    [storedSkin, storedSize] = await Promise.all([
       figma.clientStorage.getAsync(UI_SKIN_STORAGE_KEY),
-      figma.clientStorage.getAsync(THEME_STORAGE_KEY),
       figma.clientStorage.getAsync(UI_SIZE_STORAGE_KEY),
     ]);
   } catch (err) {
     console.error(err);
   }
   const initialSkin = storedSkin === 'win95' || storedSkin === 'modern' ? storedSkin : 'modern';
-  const initialThemeClass = storedTheme === 'light' ? 'f2s-theme-light' : storedTheme === 'dark' ? 'f2s-theme-dark' : '';
-  const html = __html__
-    .replace('__F2S_INITIAL_SKIN__', `f2s-skin--${initialSkin}`)
-    .replace('__F2S_INITIAL_THEME__', initialThemeClass);
+  const html = __html__.replace('__F2S_INITIAL_SKIN__', `f2s-skin--${initialSkin}`);
 
   // Layout à deux colonnes (rail de miniatures + canvas) : plus large que
   // l'ancien panneau vertical, pour laisser une vraie zone de
-  // prévisualisation. `themeColors: true` fait poser par Figma la classe
-  // `figma-dark`/`figma-light` sur <html> — le CSS de l'UI s'en sert pour
-  // basculer sa palette (styles.css).
+  // prévisualisation. Pas de `themeColors` : l'UI garde sa palette claire
+  // quel que soit le thème de Figma (thème sombre retiré le 2026-10-14).
   // 960px suffisait au rail seul (190px) + canvas, mais en mode template
   // le canvas est encadré des DEUX côtés (rail 190px à gauche, aside
   // Styles 280px à droite : TemplatePanel) : la preview/les logs (plafonnés
@@ -901,7 +888,7 @@ async function main(): Promise<void> {
   // (DEFAULT_UI_SIZE) laisse 640px pleins au canvas central même avec les
   // deux asides ; une taille choisie à la poignée l'emporte.
   const initialSize = storedSize === undefined ? DEFAULT_UI_SIZE : clampUiSize(storedSize);
-  figma.showUI(html, { ...initialSize, themeColors: true });
+  figma.showUI(html, initialSize);
 
   const pending: PendingSlide[] = [];
   // Store distinct du deck : basculer entre "Export" et "Create a template"
@@ -981,26 +968,12 @@ async function main(): Promise<void> {
         console.error(err);
         figma.ui.postMessage({ type: 'session-token-restored', token: '' });
       }
-      // Thème forcé lors d'une session précédente : même chose que le skin
-      // ci-dessus, déjà lu avant `showUI` — on resynchronise juste l'état React.
-      if (storedTheme === 'light' || storedTheme === 'dark') {
-        figma.ui.postMessage({ type: 'theme-preference-restored', theme: storedTheme });
-      }
       try {
         await loadTaggedFrames(pending, templatePending, idGen);
       } catch (err) {
         console.error(err);
       }
       postSelectionState();
-      return;
-    }
-
-    if (msg.type === 'save-theme-preference') {
-      try {
-        await figma.clientStorage.setAsync(THEME_STORAGE_KEY, msg.theme as string);
-      } catch (err) {
-        console.error(err);
-      }
       return;
     }
 

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" class="__F2S_INITIAL_SKIN__ __F2S_INITIAL_THEME__">
+<html lang="en" class="__F2S_INITIAL_SKIN__">
 <head>
 <meta charset="utf-8" />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'><rect width='80' height='80' rx='40' fill='%23F06800'/><path d='M48.6887 47.1716C50.2508 48.7337 50.2508 51.2664 48.6887 52.8285L44.2034 57.3138C41.6836 59.8336 37.375 58.049 37.375 54.4854L37.375 45.5148C37.375 41.9512 41.6836 40.1665 44.2034 42.6864L48.6887 47.1716Z' fill='%23F2ECE8'/><path d='M48.6887 27.1715C50.2508 28.7335 50.2508 31.2662 48.6887 32.8283L44.2034 37.3136C41.6836 39.8334 37.375 38.0488 37.375 34.4852L37.375 25.5146C37.375 21.951 41.6836 20.1663 44.2034 22.6862L48.6887 27.1715Z' fill='%23F2ECE8'/><rect x='30.6235' y='21.0001' width='3' height='37' rx='1.5' fill='%23F2ECE8'/></svg>" />
@@ -35,9 +35,7 @@
   /* Rampe de gris de la DA, renumérotée le 2026-10-14 (100, 200, 400, 500,
      600, 800 : l'ancien 300 est devenu le 200, l'ancien 600 le 500, l'ancien
      700 le 800, et le 600 est un nouveau palier). Seuls les paliers dont le
-     plugin se sert sont repris. En thème sombre, c'est la rampe SEULE qui
-     s'inverse (voir le bloc plus bas) : les tokens sémantiques ci-dessous
-     n'ont alors plus rien à redéfinir.
+     plugin se sert sont repris.
 
      Répartition des rôles (contrastes WCAG 2.1 mesurés sur --color-bg) :
      - 800 : texte secondaire. 11.23:1.
@@ -74,28 +72,25 @@
   --color-surface-muted: var(--color-gray-100);
   /* Fond des champs (nom, polices, rôles) : blanc pur, demandé le
      2026-10-14 pour détacher les champs du fond #fbfaf9. Hors rampe de la
-     DA, comme le tag "approximated". En thème sombre, la surface. */
+     DA, comme le tag "approximated". */
   --color-field: #ffffff;
+  /* Fond des sections (Content, Composition, Notes, boîtes d'erreur, Colors,
+     Typography) : blanc pur aussi, demandé le 2026-10-14 pour que chaque
+     section se détache du fond du panneau. */
+  --color-section: #ffffff;
 
-  /* Tapis du tag "approximé" (.f2s-log-entry-flag--visual-diff) : opaque, et
-     volontairement PAS redéfini en thème sombre. Un tapis translucide
-     (--color-orange-40) prenait la couleur du fond sous lui, si bien qu'une
-     seule couleur de texte ne pouvait pas convenir aux deux thèmes : blanc
-     donnait 1.76:1 en clair et encre 2.49:1 en sombre. Un aplat fixe + une
-     encre fixe (--color-badge-ink) tiennent 12.45:1 partout. Exception
-     assumée, propre au plugin : la DA n'a pas d'orange clair opaque. */
+  /* Tapis du tag "approximé" (.f2s-log-entry-flag--visual-diff) : opaque. Un
+     tapis translucide (--color-orange-40) prenait la couleur du fond sous
+     lui ; l'aplat avec --color-badge-ink tient 12.45:1. Exception assumée,
+     propre au plugin : la DA n'a pas d'orange clair opaque. */
   --color-orange-soft: #ffc599;
-  /* Encre des tags, fixe elle aussi : --color-text s'inverse en thème sombre
-     et retournerait le problème. */
+  /* Encre des tags. */
   --color-badge-ink: hsl(30, 12%, 6%);
-  /* Tag neutre ("3 rasterized" en mode Deck) : gray-800 sur gray-200, 8.05:1.
-     En sombre, le gray-800 sur le gray-200 sombre ne ferait que 3.95:1 :
-     l'encre y passe au texte clair (9:1). */
+  /* Tag neutre ("3 rasterized" en mode Deck) : gray-800 sur gray-200, 8.05:1. */
   --color-tag-neutral-ink: var(--color-gray-800);
   /* Texte posé sur l'orange (bouton principal, survol du secondaire, coche
      de succès) : encre fixe, comme le CTA de la DA (b-button) et du site.
-     6.09:1, quand le blanc ne faisait que 3.01:1. Ne s'inverse pas en thème
-     sombre, l'orange restant le même. */
+     6.09:1, quand le blanc ne faisait que 3.01:1. */
   --color-on-accent: hsl(30, 12%, 6%);
 
   /* Mouvement : courbes et durées du DS (token.css), à la place des mots-clés
@@ -108,58 +103,6 @@
   --b-duration-fast: 0.12s;
   --b-duration: 0.15s;
   --b-duration-slow: 0.2s;
-}
-
-/* Thème sombre : Figma pose `figma-dark`/`figma-light` sur <html> quand le
-   plugin est ouvert avec `themeColors: true` (code.ts) — palette claire
-   inversée, l'orange de marque reste identique. Le fallback
-   prefers-color-scheme couvre le rendu hors Figma (dev navigateur), sans
-   jamais contredire une classe posée par Figma.
-
-   `f2s-theme-light`/`f2s-theme-dark` sont le choix EXPLICITE fait dans la
-   modale de réglages (ui/theme.ts) : il l'emporte sur le thème de Figma comme
-   sur la préférence système, d'où les `:not(.f2s-theme-light)` ci-dessous. */
-html.figma-dark:not(.f2s-theme-light),
-html.f2s-theme-dark {
-  /* Fond et texte : --b-dark-surface (= encre) et --b-dark-text (= blanc
-     de marque) de la DA. */
-  --color-bg: hsl(30, 12%, 6%);
-  --color-text: hsl(30, 20%, 98%);
-  /* La rampe s'inverse d'un bloc, et elle seule : le 800 reste le gris du
-     texte secondaire, donc il devient CLAIR sur fond sombre ; le 200 et le
-     100 restent les gris de surface, donc ils s'assombrissent.
-     --color-text-muted, --color-scrollbar, --color-gray-light et
-     --color-border s'y raccrochent depuis :root et suivent tout seuls, au
-     lieu d'être réénumérés ici un par un comme avant. #a9a8a6 est l'aplat
-     exact de --b-dark-text-muted (blanc de marque à 65 %) posé sur
-     --color-bg : opaque, il ne change pas de teinte selon la surface qui
-     passe dessous. Les autres gris sombres n'ont pas encore d'équivalent
-     dans la DA (le 600 est le miroir du clair : 60 % au lieu de 41 %). */
-  --color-gray-800: #a9a8a6;
-  --color-gray-600: hsl(24, 6%, 60%); /* #9f9893, 5.44:1 sur le fond des onglets */
-  --color-gray-500: #8b8279;
-  --color-gray-200: #4d453e;
-  --color-gray-100: #332c26;
-  --color-surface: #211c17;
-  --color-surface-muted: #2a231d;
-  --color-field: var(--color-surface);
-  --color-tag-neutral-ink: var(--color-text);
-}
-
-@media (prefers-color-scheme: dark) {
-  html:not(.figma-light):not(.f2s-theme-light) {
-    --color-gray-800: #a9a8a6;
-    --color-gray-600: hsl(24, 6%, 60%);
-    --color-gray-500: #8b8279;
-    --color-gray-200: #4d453e;
-    --color-gray-100: #332c26;
-    --color-bg: hsl(30, 12%, 6%);
-    --color-text: hsl(30, 20%, 98%);
-    --color-surface: #211c17;
-    --color-surface-muted: #2a231d;
-    --color-field: var(--color-surface);
-    --color-tag-neutral-ink: var(--color-text);
-  }
 }
 
 * {
@@ -300,9 +243,9 @@ a {
 
    Ici il est repeint en monochrome : le rond de fond passe en `fill: none`,
    la marque et une bordure 1px prennent `--color-text`. Le fond du panneau
-   se voit donc au travers et joue le rôle de l'aplat — crème en thème clair,
-   sombre en thème sombre, gris système en win95 — et la signature suit le
-   thème au lieu d'être le seul aplat saturé de la fenêtre. Tout se fait en
+   se voit donc au travers et joue le rôle de l'aplat (crème en modern, gris
+   système en win95), et la signature suit le skin au lieu d'être le seul
+   aplat saturé de la fenêtre. Tout se fait en
    CSS (`fill` s'applique aux éléments SVG, `rx` est une propriété
    géométrique côté Chromium, donc côté iframe Figma) plutôt qu'en
    maintenant un second fichier SVG en parallèle du rond orange, qui reste
@@ -604,10 +547,10 @@ a {
    2px), sur tout ce qui se clique. Avant, rien ne le posait : "Prepare for
    Slides" écrasait l'anneau du navigateur (contour transparent) et les autres
    boutons gardaient celui de Chromium, arrondi sur des boutons carrés et collé
-   au biseau. À l'encre de --color-text, qui s'inverse en thème sombre : 18.35:1
-   sur les deux fonds. `:where` le laisse à la spécificité la plus basse, pour
-   que les champs qui dessinent leur propre anneau (`outline: none` + ombre
-   grise) et le skin Windows 95 (pointillé) gardent la main. */
+   au biseau. À l'encre de --color-text : 18.35:1 sur le fond. `:where` le
+   laisse à la spécificité la plus basse, pour que les champs qui dessinent
+   leur propre anneau (`outline: none` + ombre grise) et le skin Windows 95
+   (pointillé) gardent la main. */
 :where(button, a[href], select, summary, [tabindex]:not([tabindex='-1'])):focus-visible {
   outline: 2px solid var(--color-text);
   outline-offset: 2px;
@@ -2209,7 +2152,7 @@ html:not(.f2s-skin--win95)
    Pendant un export, le grand aperçu du deck montre la frame dont le lot est
    en cours d'application côté backend, en la "générant" bande par bande
    (voir ui/RetroExportPreview.tsx). Les couleurs de cette fenêtre sont
-   volontairement figées (ni thème clair ni thème sombre) : c'est une
+   volontairement figées (indépendantes du skin) : c'est une
    citation littérale du chrome 95, gris #c0c0c0 et biseaux 1 px compris.
 
    La taille, elle, n'est PAS figée : `.f2s-retro` n'a plus de largeur à lui
@@ -2459,30 +2402,15 @@ html:not(.f2s-skin--win95)
 
    Cette feuille ne redéfinit AUCUNE structure : la mise en page (flex,
    tailles, colonnes) reste celle de styles.css, seul l'habillage est
-   repeint. Toutes les règles sont scopées sous `html.f2s-skin--win95` —
-   posé sur <html> par ui.tsx — et ce fichier est concaténé APRÈS
-   styles.css (esbuild.config.mjs), donc il l'emporte y compris sur les
-   blocs de thème sombre `html.figma-dark` / `prefers-color-scheme` — À UNE
-   EXCEPTION PRÈS : le bloc racine ci-dessous, qui redéfinit les tokens
-   `--color-*` (bg/text/surface/border/…), doit avoir la classe doublée
-   (`.f2s-skin--win95.f2s-skin--win95`, spécificité 0-2-1) pour VRAIMENT
-   égaler celle de `html.figma-dark:not(.f2s-theme-light)` côté styles.css
-   (le `:not()` y ajoute une classe à la spécificité, 0-2-1 aussi — une
-   simple classe `html.f2s-skin--win95` ne fait que 0-1-1 et perdait contre
-   ce bloc sombre malgré l'ordre du fichier, d'où le hover du bouton
-   Settings qui restait sombre en win95 quand Figma était en thème noir,
-   bug constaté). Une fois la spécificité égalée, l'ordre de concaténation
-   (ce fichier après styles.css) tranche bien en faveur du gris win95.
+   repeint. Toutes les règles sont scopées sous `html.f2s-skin--win95`,
+   posé sur <html> par ui.tsx. Ce fichier est concaténé APRÈS styles.css
+   (esbuild.config.mjs) et ses sélecteurs sont plus spécifiques que `:root`,
+   donc ses tokens l'emportent.
 
-   Le skin est volontairement mono-thème : Windows 95, c'est ce gris-là. Il
-   ignore donc le thème clair/sombre de Figma, contrairement au skin
-   moderne.
+   Le skin est volontairement mono-palette : Windows 95, c'est ce gris-là.
    ============================================================================ */
 
-html.f2s-skin--win95.f2s-skin--win95 {
-  /* Classe doublée : cf. note de spécificité en tête de fichier — nécessaire
-     ici pour égaler la spécificité de `html.figma-dark:not(.f2s-theme-light)`
-     (styles.css) et que ce bloc l'emporte bien sur les tokens du thème sombre. */
+html.f2s-skin--win95 {
   /* Palette système 16 couleurs. */
   --w95-face: #c0c0c0;
   --w95-shadow: #808080;
@@ -3045,8 +2973,8 @@ html.f2s-skin--win95 .f2s-tab.is-active {
   background-position: 0 0, 1px 1px;
 }
 
-/* Grisé 95 : libellé gravé, relief conservé — le tab menu du thème est
-   désactivé sous ce skin (palette unique, cf. SettingsModal.tsx). */
+/* Grisé 95 : libellé gravé, relief conservé (onglets Deck/Template pendant
+   un export). */
 html.f2s-skin--win95 .f2s-tab:disabled {
   opacity: 1;
   color: var(--w95-shadow);
@@ -3135,8 +3063,7 @@ html.f2s-skin--win95 .f2s-logo-link {
 
    Contrairement à win95.css, elle NE remappe PAS les tokens sémantiques
    (--color-orange, --color-bg, etc.) : ce skin reste la palette de marque
-   du skin moderne, thème clair/sombre compris (voir :root et les blocs
-   `html.figma-dark` de styles.css, non touchés ici).
+   du skin moderne (voir :root dans styles.css).
 
    Ce qu'il reprend du chrome 95 : la mécanique de biseau à quatre ombres
    internes (rehaut clair + creux sombre sur deux niveaux, cf. --w95-out/in/
@@ -3152,8 +3079,8 @@ html.f2s-skin--win95 .f2s-logo-link {
 
 html.f2s-skin--modern {
   /* Même mécanique que --w95-out/in/pressed/etched, mais teintée depuis le
-     texte/fond du thème actif (rgba sur --color-text) plutôt que sur un
-     gris système fixe — le biseau reste lisible en clair comme en sombre. */
+     texte de marque (rgba sur --color-text) plutôt que sur un gris système
+     fixe. */
   --hyb-hi: rgba(255, 255, 255, 0.9);
   --hyb-lo: rgba(18, 15, 13, 0.22);
   --hyb-lo-strong: rgba(18, 15, 13, 0.4);
@@ -3165,21 +3092,11 @@ html.f2s-skin--modern {
   --hyb-pressed: inset -1px -1px var(--hyb-hi), inset 1px 1px var(--hyb-lo-strong), inset -2px -2px var(--hyb-hi),
     inset 2px 2px var(--hyb-lo);
   --hyb-etched: inset -1px -1px var(--hyb-hi), inset 1px 1px var(--hyb-lo);
-}
-
-html.f2s-skin--modern.figma-dark:not(.f2s-theme-light),
-html.f2s-skin--modern.f2s-theme-dark {
-  --hyb-hi: rgba(255, 255, 255, 0.16);
-  --hyb-lo: rgba(0, 0, 0, 0.5);
-  --hyb-lo-strong: rgba(0, 0, 0, 0.7);
-}
-
-@media (prefers-color-scheme: dark) {
-  html.f2s-skin--modern:not(.figma-light):not(.f2s-theme-light) {
-    --hyb-hi: rgba(255, 255, 255, 0.16);
-    --hyb-lo: rgba(0, 0, 0, 0.5);
-    --hyb-lo-strong: rgba(0, 0, 0, 0.7);
-  }
+  /* Creux des sections : bord haut/gauche plus sombre que bas/droite, sans
+     rehaut blanc. Avec --hyb-etched, le bas et la droite étaient un blanc à
+     90 % sur un fond quasi blanc : invisibles, la section ne se détachait
+     plus. */
+  --hyb-well: inset 1px 1px var(--hyb-lo-strong), inset -1px -1px var(--hyb-lo);
 }
 
 /* ---- Boutons ---- */
@@ -3261,14 +3178,15 @@ html.f2s-skin--modern .f2s-logs,
 html.f2s-skin--modern .f2s-tmpl-section {
   border: none;
   border-radius: 0;
-  box-shadow: var(--hyb-etched);
+  background: var(--color-section);
+  box-shadow: var(--hyb-well);
 }
 
 /* Boîte en creux façon win95 : le padding du conteneur parent (aside
    Styles / canvas du mode template) est reporté sur la section elle-même,
-   pour un total inchangé — sinon le contenu touchait le biseau etched
-   ci-dessus, contrairement au skin win95 qui pousse ce padding depuis
-   toujours sur `.f2s-tmpl-section` (cf. styles.win95.css). */
+   pour un total inchangé : sinon le contenu touchait le biseau ci-dessus,
+   contrairement au skin win95 qui pousse ce padding depuis toujours sur
+   `.f2s-tmpl-section` (cf. styles.win95.css). */
 html.f2s-skin--modern .f2s-style-aside {
   padding: 8px;
 }
@@ -5025,10 +4943,6 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
 
   // src/ui/SettingsModal.tsx
   var TRANSITION_MS = 220;
-  var THEME_TABS = [
-    { value: "light", label: "Light", hint: "Force the light palette, whatever theme Figma is using." },
-    { value: "dark", label: "Dark", hint: "Force the dark palette, whatever theme Figma is using." }
-  ];
   var SKIN_TABS = [
     { value: "modern", label: "Modern", hint: "Brand orange palette with Windows 95 bevels and square corners." },
     { value: "win95", label: "Windows 95", hint: "Retro Windows 95 chrome: title bar, bevels, system gray." }
@@ -5037,8 +4951,6 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     label,
     options,
     value,
-    disabled,
-    disabledTitle,
     onChange
   }) {
     const checkedIndex = Math.max(
@@ -5060,8 +4972,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
         role: "radio",
         "aria-checked": option.value === value,
         tabIndex: index === checkedIndex ? 0 : -1,
-        disabled,
-        title: disabled && disabledTitle ? disabledTitle : option.hint,
+        title: option.hint,
         className: `f2s-tab${option.value === value ? " is-active" : ""}`,
         onClick: () => onChange(option.value),
         onKeyDown: (event) => onKeyDown(event, index),
@@ -5073,8 +4984,6 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
   var TABBABLE = 'button:not(:disabled):not([tabindex="-1"]), a[href], select:not(:disabled), input:not(:disabled)';
   function SettingsModal({
     open,
-    theme,
-    onThemeChange,
     skin,
     onSkinChange,
     onClose,
@@ -5185,23 +5094,6 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
                       options: SKIN_TABS,
                       value: skin,
                       onChange: onSkinChange
-                    }
-                  )
-                ] }),
-                /* @__PURE__ */ u3("section", { className: "f2s-setting", children: [
-                  /* @__PURE__ */ u3("div", { className: "f2s-setting-text", children: [
-                    /* @__PURE__ */ u3("h3", { className: "f2s-setting-title", children: "Appearance" }),
-                    /* @__PURE__ */ u3("p", { className: "f2s-setting-desc", children: skin === "win95" ? "The Windows 95 interface has a single palette." : "Pick the palette used by the plugin panel." })
-                  ] }),
-                  /* @__PURE__ */ u3(
-                    RadioSegment,
-                    {
-                      label: "Theme",
-                      options: THEME_TABS,
-                      value: theme,
-                      disabled: skin === "win95",
-                      disabledTitle: "Switch to the Modern interface to change the palette.",
-                      onChange: onThemeChange
                     }
                   )
                 ] }),
@@ -5443,43 +5335,6 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     );
   }
 
-  // src/ui/theme.ts
-  var OVERRIDE_CLASS = {
-    light: "f2s-theme-light",
-    dark: "f2s-theme-dark"
-  };
-  function isThemePreference(value) {
-    return value === "light" || value === "dark";
-  }
-  function readFigmaTheme() {
-    const root = document.documentElement;
-    if (root.classList.contains("figma-dark")) return "dark";
-    if (root.classList.contains("figma-light")) return "light";
-    return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-  }
-  function readInitialThemeOverride() {
-    const root = document.documentElement;
-    if (root.classList.contains(OVERRIDE_CLASS.light)) return "light";
-    if (root.classList.contains(OVERRIDE_CLASS.dark)) return "dark";
-    return void 0;
-  }
-  function applyThemeOverride(theme) {
-    const root = document.documentElement;
-    root.classList.toggle(OVERRIDE_CLASS.light, theme === "light");
-    root.classList.toggle(OVERRIDE_CLASS.dark, theme === "dark");
-  }
-  function watchFigmaTheme(onChange) {
-    const observer = new MutationObserver(() => onChange(readFigmaTheme()));
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
-    const media = window.matchMedia?.("(prefers-color-scheme: dark)");
-    const onMediaChange = () => onChange(readFigmaTheme());
-    media?.addEventListener("change", onMediaChange);
-    return () => {
-      observer.disconnect();
-      media?.removeEventListener("change", onMediaChange);
-    };
-  }
-
   // src/ui.tsx
   function sameExportInput(exported, current) {
     return exported !== void 0 && exported.length === current.length && exported.every((value, i3) => value === current[i3]);
@@ -5630,15 +5485,6 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     const [deckTitle, setDeckTitle] = d2("");
     const [templateTitle, setTemplateTitle] = d2("");
     const [settingsOpen, setSettingsOpen] = d2(false);
-    const [figmaTheme, setFigmaTheme] = d2(() => readFigmaTheme());
-    const [themeOverride, setThemeOverride] = d2(() => readInitialThemeOverride());
-    const theme = themeOverride ?? figmaTheme;
-    h2(() => watchFigmaTheme(setFigmaTheme), []);
-    h2(() => applyThemeOverride(themeOverride), [themeOverride]);
-    function handleThemeChange(next) {
-      setThemeOverride(next);
-      postToPlugin({ type: "save-theme-preference", theme: next });
-    }
     h2(() => {
       if (!activeId && order.length > 0) setActiveId(order[0]);
     }, [order, activeId]);
@@ -5917,11 +5763,6 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
             }
             break;
           }
-          // Thème forcé depuis la modale de réglages lors d'une session
-          // précédente (clientStorage, cf. code.ts).
-          case "theme-preference-restored":
-            if (isThemePreference(msg.theme)) setThemeOverride(msg.theme);
-            break;
           case "export-payload":
             void handleExportPayload(
               msg.document,
@@ -6703,8 +6544,6 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
         SettingsModal,
         {
           open: settingsOpen,
-          theme,
-          onThemeChange: handleThemeChange,
           skin,
           onSkinChange: changeSkin,
           onClose: () => setSettingsOpen(false),

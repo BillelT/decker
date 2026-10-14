@@ -57,20 +57,20 @@ Ils conditionnent plusieurs tâches. Les trancher avant d'attaquer les fichiers 
 | E | Fenêtre d'export Win95 dans le skin Modern | Easter egg assumé, ou version Modern | 05 |
 | F | Texte en 14 px | La partie « header sur une ligne à 960 px » est tranchée (voir plus bas) ; reste la taille du texte | 05 |
 | G | Couleur d'erreur absente de la DA | Rouge plus sombre que `--b-accent-red`, toujours avec icône et libellé | 05, DA |
-| H | Thème sombre : la DA n'a que 4 valeurs, le plugin en a inventé 8 | Définir une rampe sombre complète dans la DA, puis aligner | 05, DA |
 
 Tranchés le 14 octobre 2026 :
 
 - **D** : « Prepare for Slides » reste dans le header, tel quel. Retravailler les slides dans Figma est une force du plugin.
 - **F** (header) : les libellés du lot 02 tiennent sur une ligne à 960 px, dans les deux modes et les deux skins.
 - **C** : on garde l'aperçu en haut et le rapport dessous, dans les deux modes. Pas de rapport à droite : à côté des couleurs et de la typo du mode Template, il ferait un panneau fourre-tout.
+- **H** : thème sombre retiré du plugin, avec le réglage *Appearance*. Seul l'habillage (Modern ou Windows 95) se choisit.
 
 ## Ordre conseillé
 
 1. **01** : aucun arbitrage, petits correctifs, gros gain.
 2. **02** : fait le 14 octobre 2026.
 3. **03** : fait le 14 octobre 2026. **04** ensuite, plus aucun arbitrage en attente.
-4. **05** : la DA, après A, E, F, G, H.
+4. **05** : la DA, après A, E, F, G.
 5. **06** : les textes en dernier, parce que les états vides citent les nouveaux libellés.
 6. **07** et **08** : le site, en parallèle du plugin.
 

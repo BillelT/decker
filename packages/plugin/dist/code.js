@@ -1481,7 +1481,6 @@
   var COPY_GAP_PX = 200;
   var SESSION_TOKEN_STORAGE_KEY = "f2s:sessionToken";
   var UI_SKIN_STORAGE_KEY = "f2s:uiSkin";
-  var THEME_STORAGE_KEY = "f2s:theme";
   var UI_SIZE_STORAGE_KEY = "f2s:uiSize";
   var DEFAULT_UI_SIZE = { width: 1200, height: 760 };
   var MIN_UI_SIZE = { width: 960, height: 560 };
@@ -1923,22 +1922,19 @@
   }
   async function main() {
     let storedSkin;
-    let storedTheme;
     let storedSize;
     try {
-      [storedSkin, storedTheme, storedSize] = await Promise.all([
+      [storedSkin, storedSize] = await Promise.all([
         figma.clientStorage.getAsync(UI_SKIN_STORAGE_KEY),
-        figma.clientStorage.getAsync(THEME_STORAGE_KEY),
         figma.clientStorage.getAsync(UI_SIZE_STORAGE_KEY)
       ]);
     } catch (err) {
       console.error(err);
     }
     const initialSkin = storedSkin === "win95" || storedSkin === "modern" ? storedSkin : "modern";
-    const initialThemeClass = storedTheme === "light" ? "f2s-theme-light" : storedTheme === "dark" ? "f2s-theme-dark" : "";
-    const html = __html__.replace("__F2S_INITIAL_SKIN__", `f2s-skin--${initialSkin}`).replace("__F2S_INITIAL_THEME__", initialThemeClass);
+    const html = __html__.replace("__F2S_INITIAL_SKIN__", `f2s-skin--${initialSkin}`);
     const initialSize = storedSize === void 0 ? DEFAULT_UI_SIZE : clampUiSize(storedSize);
-    figma.showUI(html, { ...initialSize, themeColors: true });
+    figma.showUI(html, initialSize);
     const pending = [];
     const templatePending = [];
     const idGen = createIdGenerator(figma.root.id.slice(0, 8));
@@ -1977,23 +1973,12 @@
           console.error(err);
           figma.ui.postMessage({ type: "session-token-restored", token: "" });
         }
-        if (storedTheme === "light" || storedTheme === "dark") {
-          figma.ui.postMessage({ type: "theme-preference-restored", theme: storedTheme });
-        }
         try {
           await loadTaggedFrames(pending, templatePending, idGen);
         } catch (err) {
           console.error(err);
         }
         postSelectionState();
-        return;
-      }
-      if (msg.type === "save-theme-preference") {
-        try {
-          await figma.clientStorage.setAsync(THEME_STORAGE_KEY, msg.theme);
-        } catch (err) {
-          console.error(err);
-        }
         return;
       }
       if (msg.type === "save-session-token") {

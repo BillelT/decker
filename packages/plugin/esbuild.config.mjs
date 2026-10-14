@@ -52,9 +52,8 @@ const fontDataUri = `data:font/woff2;base64,${fontBase64}`;
 // styles.css pose la structure et le skin modern (par défaut), win95.css
 // repeint par-dessus sous `html.f2s-skin--win95`, styles.modern.css affine
 // le skin modern (biseaux/angles droits) sous `html.f2s-skin--modern`.
-// L'ordre compte — plusieurs règles de thème (`html.figma-dark`,
-// `prefers-color-scheme`) ont la même spécificité que le scope de ces
-// skins, qui doivent l'emporter.
+// L'ordre compte : à spécificité égale, la feuille d'un skin doit passer
+// après styles.css pour l'emporter.
 const stylesTemplate = await readFile('src/styles.css', 'utf8');
 const win95Styles = await readFile('src/styles.win95.css', 'utf8');
 const modernStyles = await readFile('src/styles.modern.css', 'utf8');

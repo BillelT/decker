@@ -29,14 +29,6 @@ import { SettingsModal } from './ui/SettingsModal';
 import { FontCombobox } from './ui/FontCombobox';
 import { StatusIcon } from './ui/StatusIcon';
 import { ResizeGrip } from './ui/ResizeGrip';
-import {
-  applyThemeOverride,
-  isThemePreference,
-  readFigmaTheme,
-  readInitialThemeOverride,
-  watchFigmaTheme,
-  type ThemePreference,
-} from './ui/theme.js';
 
 type AuthPollResult = { status: 'pending' } | { status: 'ready'; sessionToken: string } | { status: 'error'; message: string };
 
@@ -345,26 +337,6 @@ function App() {
   const [templateTitle, setTemplateTitle] = useState('');
 
   const [settingsOpen, setSettingsOpen] = useState(false);
-  // Deux niveaux : le thème de Figma (suivi tant que l'utilisateur n'a rien
-  // choisi) et l'override explicite posé depuis la modale de réglages. Le tab
-  // menu affiche l'override s'il existe, sinon le thème réellement rendu.
-  // `themeOverride` part de la classe déjà posée par code.ts sur <html>
-  // avant le montage (voir `readInitialThemeOverride`), pas de `undefined` —
-  // sinon un thème forcé s'afficherait d'abord dans le thème de Figma avant
-  // de basculer une fois `theme-preference-restored` reçu.
-  const [figmaTheme, setFigmaTheme] = useState<ThemePreference>(() => readFigmaTheme());
-  const [themeOverride, setThemeOverride] = useState<ThemePreference | undefined>(() => readInitialThemeOverride());
-  const theme = themeOverride ?? figmaTheme;
-
-  useEffect(() => watchFigmaTheme(setFigmaTheme), []);
-  useEffect(() => applyThemeOverride(themeOverride), [themeOverride]);
-
-  function handleThemeChange(next: ThemePreference) {
-    setThemeOverride(next);
-    // Persisté côté sandbox (clientStorage) : l'iframe UI n'a aucun stockage
-    // durable, le choix serait perdu à chaque réouverture du plugin.
-    postToPlugin({ type: 'save-theme-preference', theme: next });
-  }
 
   useEffect(() => {
     if (!activeId && order.length > 0) setActiveId(order[0]);
@@ -753,11 +725,6 @@ function App() {
           }
           break;
         }
-        // Thème forcé depuis la modale de réglages lors d'une session
-        // précédente (clientStorage, cf. code.ts).
-        case 'theme-preference-restored':
-          if (isThemePreference(msg.theme)) setThemeOverride(msg.theme);
-          break;
         case 'export-payload':
           void handleExportPayload(
             msg.document as IRDocument,
@@ -1864,8 +1831,6 @@ function App() {
 
       <SettingsModal
         open={settingsOpen}
-        theme={theme}
-        onThemeChange={handleThemeChange}
         skin={skin}
         onSkinChange={changeSkin}
         onClose={() => setSettingsOpen(false)}

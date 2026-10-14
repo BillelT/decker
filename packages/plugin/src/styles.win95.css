@@ -3,30 +3,15 @@
 
    Cette feuille ne redéfinit AUCUNE structure : la mise en page (flex,
    tailles, colonnes) reste celle de styles.css, seul l'habillage est
-   repeint. Toutes les règles sont scopées sous `html.f2s-skin--win95` —
-   posé sur <html> par ui.tsx — et ce fichier est concaténé APRÈS
-   styles.css (esbuild.config.mjs), donc il l'emporte y compris sur les
-   blocs de thème sombre `html.figma-dark` / `prefers-color-scheme` — À UNE
-   EXCEPTION PRÈS : le bloc racine ci-dessous, qui redéfinit les tokens
-   `--color-*` (bg/text/surface/border/…), doit avoir la classe doublée
-   (`.f2s-skin--win95.f2s-skin--win95`, spécificité 0-2-1) pour VRAIMENT
-   égaler celle de `html.figma-dark:not(.f2s-theme-light)` côté styles.css
-   (le `:not()` y ajoute une classe à la spécificité, 0-2-1 aussi — une
-   simple classe `html.f2s-skin--win95` ne fait que 0-1-1 et perdait contre
-   ce bloc sombre malgré l'ordre du fichier, d'où le hover du bouton
-   Settings qui restait sombre en win95 quand Figma était en thème noir,
-   bug constaté). Une fois la spécificité égalée, l'ordre de concaténation
-   (ce fichier après styles.css) tranche bien en faveur du gris win95.
+   repeint. Toutes les règles sont scopées sous `html.f2s-skin--win95`,
+   posé sur <html> par ui.tsx. Ce fichier est concaténé APRÈS styles.css
+   (esbuild.config.mjs) et ses sélecteurs sont plus spécifiques que `:root`,
+   donc ses tokens l'emportent.
 
-   Le skin est volontairement mono-thème : Windows 95, c'est ce gris-là. Il
-   ignore donc le thème clair/sombre de Figma, contrairement au skin
-   moderne.
+   Le skin est volontairement mono-palette : Windows 95, c'est ce gris-là.
    ============================================================================ */
 
-html.f2s-skin--win95.f2s-skin--win95 {
-  /* Classe doublée : cf. note de spécificité en tête de fichier — nécessaire
-     ici pour égaler la spécificité de `html.figma-dark:not(.f2s-theme-light)`
-     (styles.css) et que ce bloc l'emporte bien sur les tokens du thème sombre. */
+html.f2s-skin--win95 {
   /* Palette système 16 couleurs. */
   --w95-face: #c0c0c0;
   --w95-shadow: #808080;
@@ -589,8 +574,8 @@ html.f2s-skin--win95 .f2s-tab.is-active {
   background-position: 0 0, 1px 1px;
 }
 
-/* Grisé 95 : libellé gravé, relief conservé — le tab menu du thème est
-   désactivé sous ce skin (palette unique, cf. SettingsModal.tsx). */
+/* Grisé 95 : libellé gravé, relief conservé (onglets Deck/Template pendant
+   un export). */
 html.f2s-skin--win95 .f2s-tab:disabled {
   opacity: 1;
   color: var(--w95-shadow);

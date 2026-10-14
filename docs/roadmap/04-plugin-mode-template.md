@@ -23,6 +23,12 @@ Ce qui rend la création d'un template moins bloquante et plus guidée. La struc
 - [ ] **Polices en double.** Le bandeau Fonts et la section Typography montrent les mêmes polices. → En mode Template, faire le choix de remplacement dans Typography et masquer le bandeau.
 - [ ] **Double état vide.** Le canvas et le panneau de droite affichent chacun un état vide en même temps. → Masquer le panneau de droite tant qu'il n'y a aucun layout.
 
+## Éléments récurrents du Master
+
+- [ ] **Logo, footer, numéro de page posés une seule fois** (l'ancien « chrome de master », détaillé dans TODO.md, § Mode template, point 3). Ajouté au lot le 14 octobre : il n'était jusque-là que dans TODO.md. → Désigner un élément Figma comme récurrent ; à l'export, il est écrit une fois sur la page Master au lieu d'être recopié sur chaque slide.
+  - Décision du 14 octobre : ces éléments globaux iront dans le panneau de droite, avec Colors et Typography, puisqu'ils valent pour toutes les slides du template. Composition, propre à chaque layout, reste sous l'aperçu.
+  - Prérequis (audit 2026-09, TODO.md) : le rectangle de fond que le mapper pose sur chaque slide masquerait l'élément hérité du Master. À valider par un spike avant d'écrire l'UI.
+
 ## Idées à valider (fonctions qui manquent)
 
 - [ ] **Suggestion automatique des rôles de placeholder** : le plus grand texte en `[[title]]`, le suivant en `[[subtitle]]`, le bloc de texte long en `[[body]]`, à confirmer d'un clic.

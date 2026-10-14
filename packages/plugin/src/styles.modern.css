@@ -9,8 +9,7 @@
 
    Contrairement à win95.css, elle NE remappe PAS les tokens sémantiques
    (--color-orange, --color-bg, etc.) : ce skin reste la palette de marque
-   du skin moderne, thème clair/sombre compris (voir :root et les blocs
-   `html.figma-dark` de styles.css, non touchés ici).
+   du skin moderne (voir :root dans styles.css).
 
    Ce qu'il reprend du chrome 95 : la mécanique de biseau à quatre ombres
    internes (rehaut clair + creux sombre sur deux niveaux, cf. --w95-out/in/
@@ -26,8 +25,8 @@
 
 html.f2s-skin--modern {
   /* Même mécanique que --w95-out/in/pressed/etched, mais teintée depuis le
-     texte/fond du thème actif (rgba sur --color-text) plutôt que sur un
-     gris système fixe — le biseau reste lisible en clair comme en sombre. */
+     texte de marque (rgba sur --color-text) plutôt que sur un gris système
+     fixe. */
   --hyb-hi: rgba(255, 255, 255, 0.9);
   --hyb-lo: rgba(18, 15, 13, 0.22);
   --hyb-lo-strong: rgba(18, 15, 13, 0.4);
@@ -39,21 +38,11 @@ html.f2s-skin--modern {
   --hyb-pressed: inset -1px -1px var(--hyb-hi), inset 1px 1px var(--hyb-lo-strong), inset -2px -2px var(--hyb-hi),
     inset 2px 2px var(--hyb-lo);
   --hyb-etched: inset -1px -1px var(--hyb-hi), inset 1px 1px var(--hyb-lo);
-}
-
-html.f2s-skin--modern.figma-dark:not(.f2s-theme-light),
-html.f2s-skin--modern.f2s-theme-dark {
-  --hyb-hi: rgba(255, 255, 255, 0.16);
-  --hyb-lo: rgba(0, 0, 0, 0.5);
-  --hyb-lo-strong: rgba(0, 0, 0, 0.7);
-}
-
-@media (prefers-color-scheme: dark) {
-  html.f2s-skin--modern:not(.figma-light):not(.f2s-theme-light) {
-    --hyb-hi: rgba(255, 255, 255, 0.16);
-    --hyb-lo: rgba(0, 0, 0, 0.5);
-    --hyb-lo-strong: rgba(0, 0, 0, 0.7);
-  }
+  /* Creux des sections : bord haut/gauche plus sombre que bas/droite, sans
+     rehaut blanc. Avec --hyb-etched, le bas et la droite étaient un blanc à
+     90 % sur un fond quasi blanc : invisibles, la section ne se détachait
+     plus. */
+  --hyb-well: inset 1px 1px var(--hyb-lo-strong), inset -1px -1px var(--hyb-lo);
 }
 
 /* ---- Boutons ---- */
@@ -135,14 +124,15 @@ html.f2s-skin--modern .f2s-logs,
 html.f2s-skin--modern .f2s-tmpl-section {
   border: none;
   border-radius: 0;
-  box-shadow: var(--hyb-etched);
+  background: var(--color-section);
+  box-shadow: var(--hyb-well);
 }
 
 /* Boîte en creux façon win95 : le padding du conteneur parent (aside
    Styles / canvas du mode template) est reporté sur la section elle-même,
-   pour un total inchangé — sinon le contenu touchait le biseau etched
-   ci-dessus, contrairement au skin win95 qui pousse ce padding depuis
-   toujours sur `.f2s-tmpl-section` (cf. styles.win95.css). */
+   pour un total inchangé : sinon le contenu touchait le biseau ci-dessus,
+   contrairement au skin win95 qui pousse ce padding depuis toujours sur
+   `.f2s-tmpl-section` (cf. styles.win95.css). */
 html.f2s-skin--modern .f2s-style-aside {
   padding: 8px;
 }

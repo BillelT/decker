@@ -121,25 +121,26 @@ bloquées silencieusement).
 L'UI existe en deux habillages, permutables à chaud depuis la modale de
 réglages (bouton **Settings** du footer, réglage *Interface*) :
 
-- **Modern** (par défaut) — la palette et la typo de marque (orange,
-  Cabinet Grotesk), avec son thème clair/sombre suivant celui de Figma,
-  mais les biseaux et les angles droits du skin Windows 95. Il laisse
+- **Modern** (par défaut) : la palette et la typo de marque (orange,
+  Cabinet Grotesk), mais les biseaux et les angles droits du skin
+  Windows 95. Il laisse
   volontairement de côté les éléments les plus identifiants de ce dernier
   (barre de titre, bleu marine, trame, police système, ascenseur épais),
   qui restent exclusifs au skin Windows 95.
-- **Windows 95** — chrome rétro : barre de titre, biseaux système, gris
-  `#C0C0C0`, ascenseurs tramés. Mono-thème : il ignore volontairement le
-  thème clair/sombre de Figma, donc le réglage *Appearance* y est
-  désactivé et le dit.
+- **Windows 95** : chrome rétro, barre de titre, biseaux système, gris
+  `#C0C0C0`, ascenseurs tramés.
+
+Il n'y a pas de thème sombre (retiré le 14 octobre 2026) : l'UI garde sa
+palette claire quel que soit le thème de Figma, et l'habillage est le seul
+réglage d'apparence.
 
 Les deux partagent exactement la même arborescence de composants : seule
 la peinture change. `src/styles.css` porte la structure **et** le skin
 modern ; `src/styles.win95.css` et `src/styles.modern.css`, concaténés
 après lui au build (dans cet ordre), repeignent par-dessus sous
-`html.f2s-skin--win95` et `html.f2s-skin--modern` respectivement (l'ordre
-compte : plusieurs règles de thème ont la même spécificité que ces
-scopes). Le choix est persisté dans `figma.clientStorage` côté sandbox —
-l'iframe de l'UI n'a aucun stockage durable.
+`html.f2s-skin--win95` et `html.f2s-skin--modern` respectivement. Le
+choix est persisté dans `figma.clientStorage` côté sandbox : l'iframe de
+l'UI n'a aucun stockage durable.
 
 ## 6. Tests
 

@@ -1,22 +1,13 @@
 /**
  * Panneau de réglages du plugin, ouvert depuis le bouton "Settings" du footer
- * (ui.tsx). Deux réglages exposés, tous deux en tab menu et tous deux
- * persistés côté sandbox (clientStorage — l'iframe UI n'a aucun stockage
- * durable) :
- *
- * - l'habillage de l'UI (Windows 95 / Modern), cf. ui/types.ts ;
- * - le thème de l'UI (clair / sombre) : par défaut le plugin suit celui de
- *   Figma (`themeColors: true`, cf. code.ts), ce choix-ci le force.
- *
- * Le second dépend du premier : le skin Windows 95 est mono-thème (c'est ce
- * gris-là), donc le tab menu du thème n'y a rien à piloter — il est désactivé
- * et le dit, plutôt que d'être retiré (la modale garderait alors deux hauteurs
- * différentes selon l'habillage) ou de rester actif sans effet visible.
+ * (ui.tsx). Le seul réglage d'apparence est l'habillage de l'UI (Modern /
+ * Windows 95, cf. ui/types.ts), en tab menu, persisté côté sandbox
+ * (clientStorage : l'iframe UI n'a aucun stockage durable). Il n'y a plus de
+ * thème sombre (retiré le 2026-10-14).
  */
 
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { CloseIcon } from './StatusIcon.js';
-import type { ThemePreference } from './theme.js';
 import type { UiSkin } from './types.js';
 
 /** Durée des transitions d'ouverture/fermeture — doit rester alignée sur `--f2s-modal-duration` (styles.css). */
@@ -24,8 +15,6 @@ const TRANSITION_MS = 220;
 
 interface SettingsModalProps {
   open: boolean;
-  theme: ThemePreference;
-  onThemeChange: (theme: ThemePreference) => void;
   skin: UiSkin;
   onSkinChange: (skin: UiSkin) => void;
   onClose: () => void;
@@ -40,11 +29,6 @@ interface SettingsModalProps {
   /** Domaine public du site (voir ui.tsx §SITE_URL) — sert à pointer les liens légaux vers /privacy et /terms. Distinct du backend d'API. */
   siteUrl: string;
 }
-
-const THEME_TABS: { value: ThemePreference; label: string; hint: string }[] = [
-  { value: 'light', label: 'Light', hint: 'Force the light palette, whatever theme Figma is using.' },
-  { value: 'dark', label: 'Dark', hint: 'Force the dark palette, whatever theme Figma is using.' },
-];
 
 const SKIN_TABS: { value: UiSkin; label: string; hint: string }[] = [
   { value: 'modern', label: 'Modern', hint: 'Brand orange palette with Windows 95 bevels and square corners.' },
@@ -62,16 +46,11 @@ function RadioSegment<T extends string>({
   label,
   options,
   value,
-  disabled,
-  disabledTitle,
   onChange,
 }: {
   label: string;
   options: { value: T; label: string; hint: string }[];
   value: T;
-  disabled?: boolean;
-  /** Infobulle de chaque option quand le groupe est désactivé : dit pourquoi. */
-  disabledTitle?: string;
   onChange: (value: T) => void;
 }) {
   const checkedIndex = Math.max(
@@ -97,8 +76,7 @@ function RadioSegment<T extends string>({
           role="radio"
           aria-checked={option.value === value}
           tabIndex={index === checkedIndex ? 0 : -1}
-          disabled={disabled}
-          title={disabled && disabledTitle ? disabledTitle : option.hint}
+          title={option.hint}
           className={`f2s-tab${option.value === value ? ' is-active' : ''}`}
           onClick={() => onChange(option.value)}
           onKeyDown={(event) => onKeyDown(event, index)}
@@ -115,8 +93,6 @@ const TABBABLE = 'button:not(:disabled):not([tabindex="-1"]), a[href], select:no
 
 export function SettingsModal({
   open,
-  theme,
-  onThemeChange,
   skin,
   onSkinChange,
   onClose,
@@ -257,23 +233,6 @@ export function SettingsModal({
               options={SKIN_TABS}
               value={skin}
               onChange={onSkinChange}
-            />
-          </section>
-
-          <section className="f2s-setting">
-            <div className="f2s-setting-text">
-              <h3 className="f2s-setting-title">Appearance</h3>
-              <p className="f2s-setting-desc">
-                {skin === 'win95' ? 'The Windows 95 interface has a single palette.' : 'Pick the palette used by the plugin panel.'}
-              </p>
-            </div>
-            <RadioSegment
-              label="Theme"
-              options={THEME_TABS}
-              value={theme}
-              disabled={skin === 'win95'}
-              disabledTitle="Switch to the Modern interface to change the palette."
-              onChange={onThemeChange}
             />
           </section>
 
