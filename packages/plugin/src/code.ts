@@ -9,6 +9,8 @@ import { collectCompositionWarnings } from './serialize/templateComposition.js';
 import { applyThemeRolesToElements, buildTemplateTheme } from './serialize/templateTheme.js';
 import { applyPlaceholderText } from './serialize/templatePlaceholderText.js';
 import { clearPlaceholderTag, KNOWN_ROLE_TAGS, setPlaceholderTag } from './serialize/placeholder.js';
+import { nextSelectionOrder } from './serialize/selectionOrder.js';
+import { collectFontSubstitutions, withFontOverrides } from './serialize/fontChoices.js';
 
 // Injecté au build (voir esbuild.config.mjs) — false dans le build distribué
 // aux utilisateurs. Le bouton "Download IR JSON" de la modale Settings est
@@ -21,6 +23,13 @@ import { clearPlaceholderTag, KNOWN_ROLE_TAGS, setPlaceholderTag } from './seria
 declare const __DEBUG_TOOLS__: boolean;
 
 const MAX_FRAMES_WARNING = 20;
+
+// Échecs inattendus côté sandbox (exception dans la sérialisation, un
+// `exportAsync`, le clonage…) : le message dit quoi faire, la cause
+// technique part dans la console.
+const ADD_FAILED_MESSAGE = "Couldn't add the selection. Close and reopen the plugin, then try again.";
+const PREPARE_FAILED_MESSAGE = "Couldn't prepare the frames for Slides. Close and reopen the plugin, then try again.";
+const EXPORT_PREPARE_FAILED_MESSAGE = "Couldn't read the frames to export. Close and reopen the plugin, then try again.";
 /**
  * Un template reste un petit jeu de layouts réutilisables (cf. "Simple
  * Light" et les ~8 layouts prédéfinis d'une présentation Slides neuve) —
@@ -155,40 +164,6 @@ function yieldToUi(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
-/**
- * Linter visuel (brief export ponctuel) : au lieu de faire chercher à
- * l'utilisateur les substitutions de police dans le texte des warnings,
- * on les extrait ici sous forme structurée pour l'en-tête "Polices" de
- * l'UI (une paire par famille remplacée, dédupliquée).
- */
-function collectFontSubstitutions(slide: PendingSlide['slide']): { original: string; resolved: string }[] {
-  const seen = new Set<string>();
-  const subs: { original: string; resolved: string }[] = [];
-  for (const el of slide.elements) {
-    if (el.kind !== 'text') continue;
-    for (const run of el.runs) {
-      if (!run.originalFontFamily) continue;
-      const key = `${run.originalFontFamily}→${run.fontFamily}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      subs.push({ original: run.originalFontFamily, resolved: run.fontFamily });
-    }
-  }
-  return subs;
-}
-
-/** Applique le choix manuel de police fait dans le select "Fonts" de l'UI, par famille d'origine. */
-function applyFontOverrides(slide: PendingSlide['slide'], overrides: Record<string, string>): void {
-  if (Object.keys(overrides).length === 0) return;
-  for (const el of slide.elements) {
-    if (el.kind !== 'text') continue;
-    for (const run of el.runs) {
-      const override = run.originalFontFamily && overrides[run.originalFontFamily];
-      if (override) run.fontFamily = override;
-    }
-  }
-}
-
 async function generatePreview(node: ExportableNode): Promise<string> {
   const bytes = await node.exportAsync({ format: 'PNG', constraint: { type: 'WIDTH', value: PREVIEW_WIDTH } });
   return `data:image/png;base64,${figma.base64Encode(bytes)}`;
@@ -225,6 +200,41 @@ function postCandidateMessage(type: 'candidate-added' | 'candidate-updated', fra
  */
 const RATIO_TOLERANCE = 0.01;
 
+type PanelMode = 'deck' | 'template';
+
+/**
+ * Notification affichée dans le toast du panneau `mode` du plugin. Tout ce
+ * qui découle d'une action faite dans le plugin s'y affiche, et seulement
+ * là : plus de `figma.notify`, dont la barre noire en bas de Figma se lisait
+ * hors du plugin (et doublait parfois le toast).
+ */
+function postNotice(mode: PanelMode, tone: 'error' | 'success' | 'info', message: string): void {
+  figma.ui.postMessage({ type: 'notice', mode, tone, message });
+}
+
+/** "1 frame wasn't" / "3 frames weren't" : sujet et verbe accordés au nombre. */
+function framesWerent(count: number): string {
+  return count === 1 ? "1 frame wasn't" : `${count} frames weren't`;
+}
+
+/** Ordre de sélection des frames sur le canvas : voir serialize/selectionOrder.ts. */
+let selectionOrder: string[] = [];
+
+function updateSelectionOrder(selection: readonly SceneNode[]): void {
+  selectionOrder = nextSelectionOrder(
+    selectionOrder,
+    selection.filter(isExportable).map((n) => ({ id: n.id, box: n.absoluteBoundingBox })),
+  );
+}
+
+/** Frames sélectionnées sur le canvas, dans l'ordre où l'utilisateur les a sélectionnées. */
+function orderedSelectedFrames(): ExportableNode[] {
+  const selection = figma.currentPage.selection;
+  updateSelectionOrder(selection);
+  const byId = new Map(selection.filter(isExportable).map((n) => [n.id, n]));
+  return selectionOrder.map((id) => byId.get(id)).filter((n): n is ExportableNode => n !== undefined);
+}
+
 function sameAspectRatio(a: { width: number; height: number }, b: { width: number; height: number }): boolean {
   if (a.height <= 0 || b.height <= 0) return false;
   const ra = a.width / a.height;
@@ -232,15 +242,17 @@ function sameAspectRatio(a: { width: number; height: number }, b: { width: numbe
   return Math.abs(ra - rb) / rb <= RATIO_TOLERANCE;
 }
 
-function filterMatchingRatio(nodes: ExportableNode[], reference: ExportableNode | undefined): ExportableNode[] {
+function filterMatchingRatio(nodes: ExportableNode[], reference: ExportableNode | undefined, mode: PanelMode): ExportableNode[] {
   const ref = reference ?? nodes[0];
   if (!ref) return nodes;
   const kept = nodes.filter((n) => sameAspectRatio(n, ref));
   const rejected = nodes.length - kept.length;
   if (rejected > 0) {
-    figma.notify(
-      `${rejected} frame(s) skipped: a Slides presentation has a single page size, so every frame must match the aspect ratio of "${stripReadyPrefix(ref.name)}".`,
-      { error: true, timeout: 6000 },
+    const them = rejected === 1 ? 'it' : 'them';
+    postNotice(
+      mode,
+      'error',
+      `${framesWerent(rejected)} added: a ${mode === 'template' ? 'template' : 'presentation'} has a single page size, so every frame needs the aspect ratio of "${stripReadyPrefix(ref.name)}". Resize ${them} to match, then add ${them} again.`,
     );
   }
   return kept;
@@ -253,13 +265,15 @@ function filterMatchingRatio(nodes: ExportableNode[], reference: ExportableNode 
  * `slidesExportReady` au lancement du plugin (brief §"Nouveau flux proposé"
  * point 5 : aucune re-sélection manuelle requise).
  */
-async function addFrames(nodes: ExportableNode[], pending: PendingSlide[], idGen: ReturnType<typeof createIdGenerator>): Promise<void> {
+async function addFrames(nodes: ExportableNode[], pending: PendingSlide[], idGen: ReturnType<typeof createIdGenerator>, userAction = true): Promise<void> {
   const known = new Set(pending.map((p) => p.frame.id));
   const candidates = nodes.filter((n) => !known.has(n.id));
-  const toAdd = filterMatchingRatio(candidates, pending[0]?.frame);
+  const toAdd = filterMatchingRatio(candidates, pending[0]?.frame, 'deck');
   if (toAdd.length === 0) return;
-  if (toAdd.length > MAX_FRAMES_WARNING) {
-    figma.ui.postMessage({ type: 'too-many-frames', count: toAdd.length, max: MAX_FRAMES_WARNING });
+  // Un avertissement, pas une erreur : l'ajout se fait quand même. Pas à la
+  // réouverture du plugin (`userAction` faux), où personne n'a rien ajouté.
+  if (userAction && toAdd.length > MAX_FRAMES_WARNING) {
+    postNotice('deck', 'info', `Adding ${toAdd.length} frames. Above ${MAX_FRAMES_WARNING}, the export takes longer.`);
   }
 
   // Spec §7.0 RÈGLE performance : séquentiel avec yield entre chaque frame,
@@ -304,13 +318,14 @@ async function refreshPendingEntry(frame: ExportableNode, pending: PendingSlide[
 
 /**
  * Ajoute au deck les frames actuellement sélectionnées sur le canvas Figma
- * (déclenché par le bouton « Select frames » de l'UI) : l'utilisateur
- * choisit explicitement quoi exporter et dans quel ordre construire sa liste.
+ * (déclenché par le bouton « Add » de l'UI), dans l'ordre où il les a
+ * sélectionnées : l'utilisateur choisit explicitement quoi exporter et dans
+ * quel ordre construire sa liste.
  */
 async function addSelectedFrames(pending: PendingSlide[], idGen: ReturnType<typeof createIdGenerator>): Promise<void> {
-  const selected = figma.currentPage.selection.filter(isExportable);
+  const selected = orderedSelectedFrames();
   if (selected.length === 0) {
-    figma.ui.postMessage({ type: 'no-frames-selected' });
+    postNotice('deck', 'error', 'Select at least one frame on the Figma canvas, then click Add.');
     return;
   }
   await addFrames(selected, pending, idGen);
@@ -328,7 +343,7 @@ async function loadTaggedFrames(pending: PendingSlide[], templatePending: Pendin
   // panneau à la réouverture, pas seulement la première — voir le
   // commentaire de `TRACKED_KEY`.
   const deckTagged = figma.currentPage.findAll((n) => isExportable(n) && (isSlidesReady(n) || isTracked(n))) as ExportableNode[];
-  if (deckTagged.length > 0) await addFrames(deckTagged, pending, idGen);
+  if (deckTagged.length > 0) await addFrames(deckTagged, pending, idGen, false);
 
   // Même reprise de session pour le mode template : les copies `[Template
   // Ready]` ET les layouts bruts pas encore préparés d'une session
@@ -468,6 +483,25 @@ async function prepareFrameForSlides(
 }
 
 /**
+ * Bilan de « Prepare for Slides » : dit ce qui a été fait (des copies, posées
+ * à côté des originaux, que seule une infobulle mentionnait jusque-là) et ce
+ * qui reste à regarder sur le canvas.
+ */
+function postPreparedNotice(mode: PanelMode, count: number, issues: number): void {
+  const noun = mode === 'template' ? (count === 1 ? 'layout' : 'layouts') : count === 1 ? 'frame' : 'frames';
+  const copies = count === 1 ? 'The copy sits next to the original' : 'The copies sit next to the originals';
+  if (issues === 0) {
+    postNotice(mode, 'success', `Prepared ${count} ${noun} for Slides. ${copies}, with no issues found.`);
+    return;
+  }
+  postNotice(
+    mode,
+    'info',
+    `Prepared ${count} ${noun} for Slides. ${copies}, with ${issues} ${issues === 1 ? 'issue' : 'issues'} outlined on the canvas: red for an element turned into an image, orange for an approximation.`,
+  );
+}
+
+/**
  * Handler du bouton "Prepare for Slides" — prépare une copie de vérification
  * pour CHAQUE frame du deck actuel (le panneau du plugin, `deckFrameIds`),
  * union avec la sélection canvas courante s'il y en a une en plus : cliquer
@@ -495,7 +529,7 @@ async function handlePrepareForSlides(
   for (const n of [...deckNodes, ...canvasSelected]) targets.set(n.id, n);
 
   if (targets.size === 0) {
-    figma.notify('Select at least one frame on the canvas, or add frames to the deck first.', { error: true });
+    postNotice('deck', 'error', 'Select at least one frame on the Figma canvas, or add frames to the deck first.');
     return;
   }
 
@@ -533,14 +567,11 @@ async function handlePrepareForSlides(
   figma.currentPage.selection = copies;
   figma.viewport.scrollAndZoomIntoView(copies);
 
-  const label = copies.length === 1 ? 'frame' : 'frames';
-  figma.notify(
-    totalWarnings === 0
-      ? `Prepared ${copies.length} ${label} for Slides, no issues found.`
-      : `Prepared ${copies.length} ${label} for Slides: ${totalWarnings} issue(s) flagged on canvas (red = rasterized, orange = approximated).`,
-  );
+  postPreparedNotice('deck', copies.length, totalWarnings);
 
-  await addFrames(newlyCreated, pending, idGen);
+  // Pas d'avertissement de volume ici : les copies remplacent des frames
+  // déjà là, et il effacerait le bilan de la préparation.
+  await addFrames(newlyCreated, pending, idGen, false);
 }
 
 /**
@@ -591,16 +622,17 @@ function postTemplateCandidateMessage(type: 'template-candidate-added' | 'templa
  */
 async function addTemplateLayoutNodes(nodes: ExportableNode[], pending: PendingSlide[], idGen: ReturnType<typeof createIdGenerator>): Promise<void> {
   const known = new Set(pending.map((p) => p.frame.id));
-  const candidates = filterMatchingRatio(nodes.filter((n) => !known.has(n.id)), pending[0]?.frame);
+  const candidates = filterMatchingRatio(nodes.filter((n) => !known.has(n.id)), pending[0]?.frame, 'template');
   if (candidates.length === 0) return;
 
   const remaining = TEMPLATE_MAX_LAYOUTS - pending.length;
   const toAdd = candidates.slice(0, Math.max(0, remaining));
   if (toAdd.length < candidates.length) {
-    figma.ui.postMessage({ type: 'too-many-frames', count: pending.length + candidates.length, max: TEMPLATE_MAX_LAYOUTS });
-    figma.notify(
-      `A template is capped at ${TEMPLATE_MAX_LAYOUTS} layouts (plugin limit to keep templates focused): ${candidates.length - toAdd.length} frame(s) not added.`,
-      { error: true, timeout: 6000 },
+    const left = candidates.length - toAdd.length;
+    postNotice(
+      'template',
+      'error',
+      `A template holds up to ${TEMPLATE_MAX_LAYOUTS} layouts, so ${framesWerent(left)} added. Remove a layout to make room, then add ${left === 1 ? 'it' : 'them'} again.`,
     );
   }
 
@@ -616,11 +648,11 @@ async function addTemplateLayoutNodes(nodes: ExportableNode[], pending: PendingS
   }
 }
 
-/** Ajoute au template les frames actuellement sélectionnées sur le canvas (bouton « Select frames » du mode template). */
+/** Ajoute au template les frames actuellement sélectionnées sur le canvas (bouton « Add » du mode template), dans l'ordre de sélection. */
 async function addSelectedTemplateLayouts(pending: PendingSlide[], idGen: ReturnType<typeof createIdGenerator>): Promise<void> {
-  const selected = figma.currentPage.selection.filter(isExportable);
+  const selected = orderedSelectedFrames();
   if (selected.length === 0) {
-    figma.ui.postMessage({ type: 'no-frames-selected' });
+    postNotice('template', 'error', 'Select at least one frame on the Figma canvas, then click Add.');
     return;
   }
   await addTemplateLayoutNodes(selected, pending, idGen);
@@ -674,7 +706,7 @@ async function handlePrepareTemplateForSlides(
   for (const n of [...listNodes, ...canvasSelected]) targets.set(n.id, n);
 
   if (targets.size === 0) {
-    figma.notify('Select at least one frame on the canvas, or add layouts to the template first.', { error: true });
+    postNotice('template', 'error', 'Select at least one frame on the Figma canvas, or add layouts to the template first.');
     return;
   }
 
@@ -706,12 +738,7 @@ async function handlePrepareTemplateForSlides(
   figma.currentPage.selection = copies;
   figma.viewport.scrollAndZoomIntoView(copies);
 
-  const label = copies.length === 1 ? 'layout' : 'layouts';
-  figma.notify(
-    totalWarnings === 0
-      ? `Prepared ${copies.length} ${label} for Slides, no issues found.`
-      : `Prepared ${copies.length} ${label} for Slides: ${totalWarnings} issue(s) flagged on canvas (red = rasterized, orange = approximated).`,
-  );
+  postPreparedNotice('template', copies.length, totalWarnings);
 
   await addTemplateLayoutNodes(newlyCreated, pending, idGen);
 }
@@ -892,12 +919,26 @@ async function main(): Promise<void> {
   // secours au live refresh : re-sélectionner une frame suivie la
   // re-synchronise même si `nodechange` s'est arrêté de se déclencher (bug
   // Figma connu après un `undo`, cf. `watchFramesForLiveRefresh`).
-  figma.on('selectionchange', () => {
-    const selection = figma.currentPage.selection;
+  // Le bouton « Add » de chaque mode affiche le nombre de frames qu'il
+  // ajouterait : celles de la sélection qui ne sont pas déjà dans ce
+  // panneau. Renvoyé à chaque changement de sélection ET après chaque ajout,
+  // retrait ou préparation, qui changent ce nombre sans toucher la sélection.
+  function postSelectionState(): void {
+    const selected = figma.currentPage.selection.filter(isExportable);
+    const inDeck = new Set(pending.map((p) => p.frame.id));
+    const inTemplate = new Set(templatePending.map((p) => p.frame.id));
     figma.ui.postMessage({
       type: 'canvas-selection-changed',
-      hasSelection: selection.some(isExportable),
+      hasSelection: selected.length > 0,
+      deckAddable: selected.filter((n) => !inDeck.has(n.id)).length,
+      templateAddable: selected.filter((n) => !inTemplate.has(n.id)).length,
     });
+  }
+
+  figma.on('selectionchange', () => {
+    const selection = figma.currentPage.selection;
+    updateSelectionOrder(selection);
+    postSelectionState();
     deckLiveRefresh.refreshFromSelection(selection);
     templateLiveRefresh.refreshFromSelection(selection);
   });
@@ -914,10 +955,8 @@ async function main(): Promise<void> {
       // for Slides" en dépend dès le premier rendu, et l'événement
       // `selectionchange` ne se redéclenche pas si la sélection existait
       // déjà avant l'ouverture du plugin.
-      figma.ui.postMessage({
-        type: 'canvas-selection-changed',
-        hasSelection: figma.currentPage.selection.some(isExportable),
-      });
+      updateSelectionOrder(figma.currentPage.selection);
+      postSelectionState();
       // Skin persisté : déjà lu plus haut (avant `showUI`, pour poser la
       // bonne classe dès le premier rendu de `<html>`) — on ne relit pas
       // `clientStorage`, on synchronise juste l'état React avec la même
@@ -952,6 +991,7 @@ async function main(): Promise<void> {
       } catch (err) {
         console.error(err);
       }
+      postSelectionState();
       return;
     }
 
@@ -1026,11 +1066,11 @@ async function main(): Promise<void> {
         await addSelectedFrames(pending, idGen);
       } catch (err) {
         console.error(err);
-        // `action-error` et non `export-error` : aucun export n'est en cours,
-        // l'UI l'affiche dans le toast du panneau plutôt que dans le statut
-        // d'export du footer (où il restait muet, voir ui.tsx).
-        figma.ui.postMessage({ type: 'action-error', message: `Couldn't add the selection: ${(err as Error).message}` });
+        // Toast du panneau, pas le statut d'export du footer : aucun export
+        // n'est en cours. Le détail technique reste dans la console.
+        postNotice('deck', 'error', ADD_FAILED_MESSAGE);
       }
+      postSelectionState();
       return;
     }
 
@@ -1041,6 +1081,7 @@ async function main(): Promise<void> {
       } catch (err) {
         console.error(err);
       }
+      postSelectionState();
       return;
     }
 
@@ -1049,8 +1090,9 @@ async function main(): Promise<void> {
         await handlePrepareForSlides(pending, idGen, (msg.fontOverrides as Record<string, string> | undefined) ?? {}, (msg.deckFrameIds as string[] | undefined) ?? []);
       } catch (err) {
         console.error(err);
-        figma.notify(`Prepare for Slides failed: ${(err as Error).message}`, { error: true });
+        postNotice('deck', 'error', PREPARE_FAILED_MESSAGE);
       }
+      postSelectionState();
       return;
     }
 
@@ -1059,11 +1101,9 @@ async function main(): Promise<void> {
         await addSelectedTemplateLayouts(templatePending, idGen);
       } catch (err) {
         console.error(err);
-        // `action-error` et non `export-error` : aucun export n'est en cours,
-        // l'UI l'affiche dans le toast du panneau plutôt que dans le statut
-        // d'export du footer (où il restait muet, voir ui.tsx).
-        figma.ui.postMessage({ type: 'action-error', message: `Couldn't add the selection: ${(err as Error).message}` });
+        postNotice('template', 'error', ADD_FAILED_MESSAGE);
       }
+      postSelectionState();
       return;
     }
 
@@ -1074,6 +1114,7 @@ async function main(): Promise<void> {
       } catch (err) {
         console.error(err);
       }
+      postSelectionState();
       return;
     }
 
@@ -1087,8 +1128,9 @@ async function main(): Promise<void> {
         );
       } catch (err) {
         console.error(err);
-        figma.notify(`Prepare for Slides failed: ${(err as Error).message}`, { error: true });
+        postNotice('template', 'error', PREPARE_FAILED_MESSAGE);
       }
+      postSelectionState();
       return;
     }
 
@@ -1099,12 +1141,6 @@ async function main(): Promise<void> {
       const nodes = resolved.filter((n): n is SceneNode => n !== null && 'x' in n);
       figma.currentPage.selection = nodes;
       figma.viewport.scrollAndZoomIntoView(nodes);
-      return;
-    }
-
-    if (msg.type === 'notify') {
-      // Onglet Style : signale un changement fait au clavier/souris que l'UI seule ne peut pas rendre assez visible (ex. un rôle de thème volé à une autre couleur).
-      figma.notify(String(msg.message));
       return;
     }
 
@@ -1165,7 +1201,7 @@ async function main(): Promise<void> {
         );
       } catch (err) {
         console.error(err);
-        figma.ui.postMessage({ type: 'export-error', message: (err as Error).message });
+        figma.ui.postMessage({ type: 'export-error', message: EXPORT_PREPARE_FAILED_MESSAGE });
       }
       return;
     }
@@ -1227,7 +1263,7 @@ async function main(): Promise<void> {
         );
       } catch (err) {
         console.error(err);
-        figma.ui.postMessage({ type: 'export-error', message: (err as Error).message });
+        figma.ui.postMessage({ type: 'export-error', message: EXPORT_PREPARE_FAILED_MESSAGE });
       }
     }
   };
@@ -1274,7 +1310,7 @@ async function collectSlidesAndAssets(
     const p = byId.get(orderedIds[i]);
     if (!p) continue;
 
-    applyFontOverrides(p.slide, fontOverrides);
+    const slide = withFontOverrides(p.slide, fontOverrides);
 
     for (const [assetKey, nodes] of p.nodesToRaster) {
       const node = nodes[0];
@@ -1293,7 +1329,7 @@ async function collectSlidesAndAssets(
       await yieldToUi();
     }
 
-    slides.push({ ...p.slide, order: i, previewDataUrl: '' });
+    slides.push({ ...slide, order: i, previewDataUrl: '' });
   }
 
   return { slides, assets };
@@ -1401,7 +1437,9 @@ async function handleTemplateCreateRequest(
   postExportPayload(doc, assets);
 }
 
+// Seul `figma.notify` restant : si le démarrage échoue, il n'y a peut-être
+// pas encore d'interface où afficher quoi que ce soit.
 main().catch((err) => {
   console.error(err);
-  figma.notify(`Plugin error: ${(err as Error).message}`, { error: true });
+  figma.notify("Decker couldn't start. Close and reopen the plugin.", { error: true });
 });

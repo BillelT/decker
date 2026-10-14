@@ -8,7 +8,7 @@ import { getValidAccessToken, UnauthenticatedError } from '../auth/getAccessToke
 import { extractSessionToken } from './auth.js';
 import { getAssetStore } from '../storage/index.js';
 import type { AssetStore } from '../storage/assetStore.js';
-import { createJob, getJob, pendingBatchIds } from '../jobs/jobStore.js';
+import { createJob, getJob, pendingBatchIds, requestJobCancel } from '../jobs/jobStore.js';
 import { runExportJob, retryExportJob } from '../jobs/runner.js';
 import { THEME_BATCH_SOURCE_ID } from '../mapper/index.js';
 import { loadCalibration } from '../calibration/loadCalibration.js';
@@ -240,4 +240,26 @@ exportRouter.post('/export/:jobId/retry', async (req, res) => {
   );
 
   res.status(202).json({ pendingSlideIds });
+});
+
+/**
+ * Annulation d'un export en cours, depuis le bouton « Cancel » du plugin :
+ * le runner s'arrête avant le lot suivant (la slide en cours d'écriture se
+ * termine), passe le job à `canceled`, et la présentation garde les slides
+ * déjà écrites. Le polling `GET /export/:jobId` voit ensuite ce statut. Comme
+ * ce GET, la route ne demande pas de session : l'id du job, aléatoire, n'est
+ * connu que du plugin qui l'a lancé, et l'annulation ne touche pas à Google.
+ */
+exportRouter.post('/export/:jobId/cancel', async (req, res) => {
+  const job = await getJob(req.params.jobId);
+  if (!job) {
+    res.status(404).json({ error: 'not_found' });
+    return;
+  }
+  if (job.status !== 'pending' && job.status !== 'running') {
+    res.status(409).json({ error: 'not_running', status: job.status });
+    return;
+  }
+  await requestJobCancel(job.id);
+  res.status(202).json({ status: 'canceling' });
 });

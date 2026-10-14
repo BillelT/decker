@@ -205,7 +205,7 @@ html.f2s-skin--win95 .f2s-dim-unit,
 html.f2s-skin--win95 .f2s-dim-sep,
 html.f2s-skin--win95 .f2s-font-original,
 html.f2s-skin--win95 .f2s-font-arrow,
-html.f2s-skin--win95 .f2s-empty,
+html.f2s-skin--win95 .f2s-empty-steps,
 html.f2s-skin--win95 .f2s-canvas-empty,
 html.f2s-skin--win95 .f2s-tmpl-note {
   color: #000;
@@ -507,6 +507,12 @@ html.f2s-skin--win95 .f2s-resize-grip .f2s-grip-lo {
 /* Pastille carrée, comme les badges du rail. */
 html.f2s-skin--win95 .f2s-status-icon-disc {
   rx: 0;
+}
+
+/* Le fond de la pastille de succès passe au bleu de barre de titre : la
+   coche, à l'encre en modern, y deviendrait invisible. */
+html.f2s-skin--win95 .f2s-status-icon--success {
+  color: var(--w95-white);
 }
 
 /* ---- Modale de réglages (habillage + thème) ----

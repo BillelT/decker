@@ -1,6 +1,6 @@
 # Plugin : mode Deck
 
-Ce qui rend l'export d'un deck plus lisible et plus rapide à corriger. La structure du canvas dépend de l'arbitrage C, les boutons « Fix » de l'arbitrage D.
+Ce qui rend l'export d'un deck plus lisible et plus rapide à corriger. La structure du canvas dépend de l'arbitrage C, les boutons « Fix » de l'arbitrage D (tranché le 14 octobre : « Prepare for Slides » reste dans le header, tel quel).
 
 ## Structure
 

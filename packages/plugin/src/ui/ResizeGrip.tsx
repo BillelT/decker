@@ -68,8 +68,8 @@ export function ResizeGrip() {
       onDblClick={() => postToPlugin({ type: 'reset-ui-size' })}
     >
       <svg width="12" height="12" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-        <path className="f2s-grip-hi" d="M3 13 13 3M7 13l6-6M11 13l2-2" strokeWidth="1" />
-        <path className="f2s-grip-lo" d="M4 13 13 4M8 13l5-5M12 13l1-1" strokeWidth="1" />
+        <path className="f2s-grip-hi" d="M3 13 13 3M7 13l6-6M11 13l2-2" stroke-width="1" />
+        <path className="f2s-grip-lo" d="M4 13 13 4M8 13l5-5M12 13l1-1" stroke-width="1" />
       </svg>
     </button>
   );

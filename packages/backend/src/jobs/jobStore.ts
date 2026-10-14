@@ -2,7 +2,8 @@ import type { IRDocument } from '@figma-to-slides/shared';
 import { getRedis } from '../kv.js';
 
 export type BatchStatus = 'pending' | 'applied' | 'failed';
-export type JobStatus = 'pending' | 'running' | 'done' | 'failed';
+/** `canceled` : arrêté à la demande du plugin, entre deux lots ; la présentation garde les slides déjà écrites. */
+export type JobStatus = 'pending' | 'running' | 'done' | 'failed' | 'canceled';
 
 export interface BatchState {
   sourceSlideId: string;
@@ -46,6 +47,7 @@ export interface JobRecord {
  */
 const JOB_TTL_SEC = 24 * 3600;
 const jobKey = (id: string) => `f2s:job:${id}`;
+const cancelKey = (id: string) => `f2s:job:${id}:cancel`;
 
 export async function createJob(id: string, sourceSlideIds: string[], doc?: IRDocument): Promise<JobRecord> {
   const job: JobRecord = {
@@ -89,4 +91,23 @@ export async function pendingBatchIds(id: string): Promise<string[]> {
   const job = await getJob(id);
   if (!job) return [];
   return job.batches.filter((b) => b.status !== 'applied').map((b) => b.sourceSlideId);
+}
+
+/**
+ * Annulation demandée depuis le plugin (POST /export/:jobId/cancel). Une clé
+ * à part plutôt qu'un champ du job : le runner réécrit le job entier après
+ * chaque lot (lecture puis écriture), et aurait effacé un champ posé entre
+ * les deux par la requête d'annulation, servie par une autre instance.
+ */
+export async function requestJobCancel(id: string): Promise<void> {
+  await getRedis().set(cancelKey(id), 1, { ex: JOB_TTL_SEC });
+}
+
+export async function isJobCancelRequested(id: string): Promise<boolean> {
+  return Boolean(await getRedis().get(cancelKey(id)));
+}
+
+/** Une reprise ciblée repart sans l'annulation d'un passage précédent. */
+export async function clearJobCancel(id: string): Promise<void> {
+  await getRedis().del(cancelKey(id));
 }

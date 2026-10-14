@@ -31,8 +31,22 @@ export interface ExportCursor {
  * (tout appliqué, ou échec — dans les deux cas plus rien n'est "en cours").
  */
 export function exportCursorFromBatches(batches: ExportBatch[] | undefined): ExportCursor | undefined {
-  if (!batches || batches.length === 0) return undefined;
-  const index = batches.findIndex((b) => b.status === 'pending');
+  const slides = slideBatches(batches);
+  if (slides.length === 0) return undefined;
+  const index = slides.findIndex((b) => b.status === 'pending');
   if (index === -1) return undefined;
-  return { frameId: batches[index].sourceSlideId, index, total: batches.length };
+  return { frameId: slides[index].sourceSlideId, index, total: slides.length };
+}
+
+/**
+ * Lot d'écriture du thème d'un template (backend mapper/theme.ts,
+ * `THEME_BATCH_SOURCE_ID`) : il passe avant les layouts mais n'en est pas
+ * un. Compté, il décalait d'un cran l'aperçu d'export (index 1 pour le
+ * premier layout) et le total affiché.
+ */
+const THEME_BATCH_ID = '__theme__';
+
+/** Lots qui correspondent à une slide ou un layout du panneau, dans l'ordre d'export. */
+export function slideBatches(batches: ExportBatch[] | undefined): ExportBatch[] {
+  return (batches ?? []).filter((b) => b.sourceSlideId !== THEME_BATCH_ID);
 }

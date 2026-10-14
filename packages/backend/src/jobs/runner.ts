@@ -1,7 +1,7 @@
 import type { CalibrationData, IRDocument } from '@figma-to-slides/shared';
 import { chunkBatchesForApi, mapDocumentToBatches, THEME_BATCH_SOURCE_ID, type AssetUrlResolver, type RequestBatch } from '../mapper/index.js';
 import { applyBatch, clearMasterAndLayoutElements, createPresentation } from '../slides/client.js';
-import { pendingBatchIds, updateBatchStatus, updateJob, type JobRecord } from './jobStore.js';
+import { clearJobCancel, getJob, isJobCancelRequested, pendingBatchIds, updateBatchStatus, updateJob, type JobRecord } from './jobStore.js';
 
 /**
  * Applique une liste de lots un par un (jamais de fusion, spec §5.4), sans
@@ -14,10 +14,20 @@ import { pendingBatchIds, updateBatchStatus, updateJob, type JobRecord } from '.
  * (tout ou rien) : un lot `failed` n'a donc RIEN créé côté présentation,
  * rejouer le même lot (mêmes `objectId`) à la reprise est donc sûr — pas de
  * risque de doublon ni de collision d'id.
+ *
+ * L'annulation se vérifie avant chaque lot : la slide en cours d'écriture
+ * se termine, les suivantes ne partent pas et restent `pending`.
  */
-async function applyBatches(jobId: string, presentationId: string, batches: RequestBatch[], accessToken: string, frameNameBySlideId: Map<string, string>): Promise<string[]> {
+async function applyBatches(
+  jobId: string,
+  presentationId: string,
+  batches: RequestBatch[],
+  accessToken: string,
+  frameNameBySlideId: Map<string, string>,
+): Promise<{ failedSlideNames: string[]; canceled: boolean }> {
   const failedSlideNames: string[] = [];
   for (const batch of batches) {
+    if (await isJobCancelRequested(jobId)) return { failedSlideNames, canceled: true };
     try {
       await applyBatch(accessToken, presentationId, batch);
       await updateBatchStatus(jobId, batch.sourceSlideId, 'applied');
@@ -27,8 +37,9 @@ async function applyBatches(jobId: string, presentationId: string, batches: Requ
       await updateBatchStatus(jobId, batch.sourceSlideId, 'failed', `Slide "${frameName}": ${(err as Error).message}`);
     }
   }
-  return failedSlideNames;
+  return { failedSlideNames, canceled: false };
 }
+
 
 function failureSummary(failedSlideNames: string[], verb: string): string {
   return `${failedSlideNames.length} slide(s) ${verb} (${failedSlideNames.join(', ')}). See the per-slide errors for details.`;
@@ -51,6 +62,13 @@ export async function runExportJob(
   await updateJob(job.id, { status: 'running' });
 
   try {
+    // Annulé avant même le premier appel à Google (upload encore en cours
+    // côté plugin, ou clic très rapide) : rien n'est créé dans le Drive.
+    if (await isJobCancelRequested(job.id)) {
+      await updateJob(job.id, { status: 'canceled' });
+      return;
+    }
+
     let presentationId = doc.targetPresentationId;
     let defaultSlideObjectId: string | undefined;
     let masterObjectId: string | undefined;
@@ -88,18 +106,25 @@ export async function runExportJob(
     // pas une slide : nom lisible dédié plutôt que l'id technique brut.
     const frameNameBySlideId = new Map(doc.slides.map((s) => [s.sourceNodeId, s.frameName]));
     frameNameBySlideId.set(THEME_BATCH_SOURCE_ID, 'Theme (Master colors)');
-    const failedSlideNames = await applyBatches(job.id, presentationId, batches, accessToken, frameNameBySlideId);
+    const { failedSlideNames, canceled } = await applyBatches(job.id, presentationId, batches, accessToken, frameNameBySlideId);
     const anyFailed = failedSlideNames.length > 0;
 
     // Spec §11.14 : la présentation nouvellement créée a une slide vide par
     // défaut — la supprimer une fois qu'au moins une slide réelle existe.
-    if (defaultSlideObjectId && !anyFailed) {
+    // Après une annulation aussi, dès qu'une slide a été écrite : la
+    // présentation partielle reste propre.
+    const someApplied = canceled && (await getJob(job.id))?.batches.some((b) => b.status === 'applied');
+    if (defaultSlideObjectId && (canceled ? someApplied : !anyFailed)) {
       await applyBatch(accessToken, presentationId, {
         sourceSlideId: '__default__',
         requests: [{ deleteObject: { objectId: defaultSlideObjectId } }],
       }).catch(() => undefined);
     }
 
+    if (canceled) {
+      await updateJob(job.id, { status: 'canceled', error: undefined });
+      return;
+    }
     await updateJob(job.id, {
       status: anyFailed ? 'failed' : 'done',
       error: anyFailed ? failureSummary(failedSlideNames, 'failed') : undefined,
@@ -128,6 +153,7 @@ export async function retryExportJob(
   const presentationId = job.presentationId;
   if (!presentationId) throw new Error('retryExportJob: job has no presentationId, nothing to retry against.');
 
+  await clearJobCancel(job.id);
   await updateJob(job.id, { status: 'running' });
 
   try {
@@ -150,9 +176,13 @@ export async function retryExportJob(
     const batches = mapDocumentToBatches(doc, resolveAssetUrl, calibration, job.masterObjectId).filter((b) => pendingIdSet.has(b.sourceSlideId));
     const frameNameBySlideId = new Map(doc.slides.map((s) => [s.sourceNodeId, s.frameName]));
     frameNameBySlideId.set(THEME_BATCH_SOURCE_ID, 'Theme (Master colors)');
-    const failedSlideNames = await applyBatches(job.id, presentationId, batches, accessToken, frameNameBySlideId);
+    const { failedSlideNames, canceled } = await applyBatches(job.id, presentationId, batches, accessToken, frameNameBySlideId);
     const stillFailed = failedSlideNames.length > 0;
 
+    if (canceled) {
+      await updateJob(job.id, { status: 'canceled', error: undefined });
+      return;
+    }
     await updateJob(job.id, {
       status: stillFailed ? 'failed' : 'done',
       error: stillFailed ? failureSummary(failedSlideNames, 'still failing') : undefined,

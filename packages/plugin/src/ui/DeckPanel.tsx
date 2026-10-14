@@ -42,6 +42,8 @@ export interface DeckPanelProps {
   failedSlides: Record<string, string> | undefined;
   /** L'export est conclu ET l'aperçu a fini de défiler : le succès peut s'annoncer (voir ui.tsx). */
   onPreviewSettled: () => void;
+  /** Slide affichée par l'aperçu d'export, à chaque pas : le bouton principal en tire « Exporting 2/4 » (voir ui.tsx). */
+  onPacedCursorChange: (cursor: ExportCursor | undefined) => void;
 }
 
 /**
@@ -67,6 +69,7 @@ export function DeckPanel({
   locked,
   failedSlides,
   onPreviewSettled,
+  onPacedCursorChange,
 }: DeckPanelProps) {
   const { itemRefs, itemState, registerItem, onThumbPointerDown, onThumbKeyDown, announcement } = useRailReorder(order, setOrder, locked);
 
@@ -76,6 +79,12 @@ export function DeckPanel({
   // disparaître avant la fin de la révélation de la dernière — voir
   // pacedExportCursor.ts).
   const pacedCursor = usePacedExportCursor(exportAttempt, order, exportCursor, exportConcluded);
+  const pacedIndex = pacedCursor?.index;
+  const pacedTotal = pacedCursor?.total;
+  useEffect(() => {
+    onPacedCursorChange(pacedCursor);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pacedIndex, pacedTotal]);
   // Pendant un export, l'aperçu suit la frame en cours de traitement plutôt
   // que la sélection du rail : c'est elle que l'utilisateur regarde
   // "s'imprimer". Dimensions et logs suivent le même repère pour ne pas
@@ -131,11 +140,21 @@ export function DeckPanel({
       <div className="f2s-body">
         {notice && <Toast key={notice.id} notice={notice} onDismiss={onDismissNotice} />}
         <main className="f2s-canvas">
-          <p className="f2s-empty">
-            Click "Select frames", then select the frames
-            <br />
-            you want to export on the Figma canvas, and click the button again to add your selection.
-          </p>
+          {/* État vide qui oriente : les trois étapes du parcours, avec le nom
+              exact des boutons qui les déclenchent. */}
+          <ol className="f2s-empty-steps">
+            <li>Select frames on the Figma canvas.</li>
+            <li>
+              <span>
+                Click <strong>Add</strong>: they join the deck in the order you selected them.
+              </span>
+            </li>
+            <li>
+              <span>
+                Click <strong>Export</strong> to create the presentation in Google Slides.
+              </span>
+            </li>
+          </ol>
         </main>
       </div>
     );

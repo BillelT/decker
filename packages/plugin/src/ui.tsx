@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { ExportOptions, IRDocument, ThemeColorRole } from '@figma-to-slides/shared';
 import { sanitizeSessionToken } from './ui/sanitizeSessionToken.js';
 import { describeHttpFailure, describeJobFailure, describeNetworkFailure, describeSlideFailure, POLL_INTERRUPTED_MESSAGE, type RequestStep } from './ui/requestErrors.js';
-import { exportCursorFromBatches, type ExportBatch, type ExportCursor } from './ui/exportCursor.js';
+import { exportCursorFromBatches, slideBatches, type ExportBatch, type ExportCursor } from './ui/exportCursor.js';
 import { AVAILABLE_SLIDES_FONTS } from './serialize/fonts.js';
 import { aggregateColorSwatches, aggregateFontUsages, colorKey } from './serialize/templateSummary.js';
 import {
@@ -41,7 +41,8 @@ import {
 type AuthPollResult = { status: 'pending' } | { status: 'ready'; sessionToken: string } | { status: 'error'; message: string };
 
 type BackendConfig = { baseUrl: string };
-type ExportState = 'idle' | 'exporting' | 'done' | 'error';
+/** `canceled` : arrêté par le bouton « Cancel » ; la présentation, si elle existe, garde les slides déjà écrites. */
+type ExportState = 'idle' | 'exporting' | 'done' | 'error' | 'canceled';
 type JobConclusion =
   | {
       status: 'done';
@@ -63,17 +64,61 @@ type JobConclusion =
       failedSlides: Record<string, string>;
       /** Un job avec une présentation créée et au moins un lot encore non appliqué peut être repris via POST /export/:jobId/retry. */
       retryable: boolean;
+    }
+  | {
+      status: 'canceled';
+      /** Présente si la présentation avait déjà été créée avant l'annulation. */
+      resultUrl: string | undefined;
+      /** Slides déjà écrites au moment de l'arrêt, sur `total`. */
+      slideCount: number;
+      total: number;
     };
+
+/**
+ * Ce que l'export enverrait, réduit à des valeurs comparables une à une :
+ * nom, choix de polices (et rôles de couleur d'un template), puis pour
+ * chaque frame son id, son nom et son aperçu. L'aperçu est re-rendu à
+ * chaque modification de la frame dans Figma ; à contenu identique, Figma
+ * produit le même PNG, donc la même chaîne.
+ */
+type ExportInput = readonly string[];
+
+/** Le panneau est-il resté tel qu'il a été exporté ? Sinon le résultat ne le reflète plus. */
+function sameExportInput(exported: ExportInput | undefined, current: ExportInput): boolean {
+  return exported !== undefined && exported.length === current.length && exported.every((value, i) => value === current[i]);
+}
+
+/**
+ * Message d'un export arrêté par « Cancel ». Arrêté entre la création de la
+ * présentation et sa première slide, il laisse une présentation vide dans
+ * le Drive : le message le dit plutôt que d'annoncer qu'il n'y a rien.
+ */
+function canceledMessage(mode: AppMode, created: number, total: number, presentationCreated: boolean): string {
+  const what = mode === 'template' ? 'Template creation' : 'Export';
+  const noun = mode === 'template' ? 'layout' : 'slide';
+  if (created > 0) return `${what} canceled. ${created} of ${total} ${noun}${total === 1 ? '' : 's'} ${created === 1 ? 'was' : 'were'} created.`;
+  if (presentationCreated) return `${what} canceled before the first ${noun}. An empty presentation stays in your Google Drive.`;
+  return `${what} canceled. Nothing was created in Google Drive.`;
+}
 
 /** Cadence de polling `/export/:jobId` pendant un export — pilote directement la progression affichée, plus de simulation temporelle. */
 const POLL_INTERVAL_MS = 1000;
 /** Abandon du polling au-delà de cette durée totale (la présentation peut malgré tout avoir été créée — voir `pollJob`). */
 const POLL_TIMEOUT_MS = 3 * 60 * 1000;
 
-/** Durée d'affichage d'une notice de sélection (toast deck) avant auto-dismiss. */
-const SELECTION_NOTICE_MS = 4000;
-/** Une erreur d'ajout de frames se lit plus lentement qu'une notice de sélection : elle cite la cause technique. */
-const ACTION_ERROR_NOTICE_MS = 7000;
+/**
+ * Durée d'affichage d'un toast avant sa fermeture automatique : le temps de
+ * le lire, environ 60 ms par caractère, entre 4 et 10 secondes. Survoler le
+ * toast met ce minuteur en pause (voir Toast).
+ */
+function noticeDuration(message: string): number {
+  return Math.min(10_000, Math.max(4_000, message.length * 60));
+}
+
+/** Libellé du bouton d'ajout : le nombre de frames qu'il ajouterait, suivi en direct sur la sélection du canvas. */
+function addLabel(count: number): string {
+  return count === 0 ? 'Add frames' : `Add ${count} frame${count === 1 ? '' : 's'}`;
+}
 
 /** Message par défaut d'un lot échoué sans `error` côté backend. */
 const FAILED_SLIDE_FALLBACK = 'This slide could not be written to Google Slides.';
@@ -142,8 +187,8 @@ function GearIcon() {
   return (
     <svg
       className="f2s-icon-gear"
-      width="16"
-      height="16"
+      width="14"
+      height="14"
       viewBox="0 0 32 32"
       fill="currentColor"
       xmlns="http://www.w3.org/2000/svg"
@@ -151,6 +196,15 @@ function GearIcon() {
     >
       <path d="M27,16.76c0-.25,0-.5,0-.76s0-.51,0-.77l1.92-1.68A2,2,0,0,0,29.3,11L26.94,7a2,2,0,0,0-1.73-1,2,2,0,0,0-.64.1l-2.43.82a11.35,11.35,0,0,0-1.31-.75l-.51-2.52a2,2,0,0,0-2-1.61H13.64a2,2,0,0,0-2,1.61l-.51,2.52a11.48,11.48,0,0,0-1.32.75L7.43,6.06A2,2,0,0,0,6.79,6,2,2,0,0,0,5.06,7L2.7,11a2,2,0,0,0,.41,2.51L5,15.24c0,.25,0,.5,0,.76s0,.51,0,.77L3.11,18.45A2,2,0,0,0,2.7,21L5.06,25a2,2,0,0,0,1.73,1,2,2,0,0,0,.64-.1l2.43-.82a11.35,11.35,0,0,0,1.31.75l.51,2.52a2,2,0,0,0,2,1.61h4.72a2,2,0,0,0,2-1.61l.51-2.52a11.48,11.48,0,0,0,1.32-.75l2.42.82a2,2,0,0,0,.64.1,2,2,0,0,0,1.73-1L29.3,21a2,2,0,0,0-.41-2.51ZM25.21,24l-3.43-1.16a8.86,8.86,0,0,1-2.71,1.57L18.36,28H13.64l-.71-3.55a9.36,9.36,0,0,1-2.7-1.57L6.79,24,4.43,20l2.72-2.4a8.9,8.9,0,0,1,0-3.13L4.43,12,6.79,8l3.43,1.16a8.86,8.86,0,0,1,2.71-1.57L13.64,4h4.72l.71,3.55a9.36,9.36,0,0,1,2.7,1.57L25.21,8,27.57,12l-2.72,2.4a8.9,8.9,0,0,1,0,3.13L27.57,20Z" />
       <path d="M16,22a6,6,0,1,1,6-6A5.94,5.94,0,0,1,16,22Zm0-10a3.91,3.91,0,0,0-4,4,3.91,3.91,0,0,0,4,4,3.91,3.91,0,0,0,4-4A3.91,3.91,0,0,0,16,12Z" />
+    </svg>
+  );
+}
+
+/** Flèche en diagonale d'un lien qui ouvre un site externe (icône "arrow--up-right" d'IBM Carbon, même bibliothèque que l'engrenage). */
+function ArrowUpRightIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 32 32" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M10,6V8H22.59L6,24.59,7.41,26,24,9.41V22h2V6Z" />
     </svg>
   );
 }
@@ -222,32 +276,29 @@ function App() {
   const [templateLayouts, setTemplateLayouts] = useState<Record<string, TemplateLayoutState>>({});
   const [templateOrder, setTemplateOrder] = useState<string[]>([]);
   const [activeTemplateId, setActiveTemplateId] = useState<string | undefined>();
-  const [templateSelecting, setTemplateSelecting] = useState(false);
-  // Notice de sélection du mode template ("no-frames-selected" / "too-many-frames") :
-  // même toast absolu que le mode deck (voir `selectionNotice` ci-dessous) —
-  // avant, c'était un texte rouge inline en tête du rail, incohérent avec le
-  // mode deck et sans auto-dismiss.
+  // Notice du mode template : même toast absolu que le mode deck (voir
+  // `selectionNotice` ci-dessous). Avant, c'était un texte rouge inline en
+  // tête du rail, incohérent avec le mode deck et sans auto-dismiss.
   const [templateSelectionNotice, setTemplateSelectionNotice] = useState<Notice | undefined>();
   // Identifiant de la dernière notice : une notice au texte identique (même
   // erreur deux fois de suite) reste un nouveau toast, qui repart de zéro.
   const noticeIdRef = useRef(0);
 
-  function showTemplateSelectionNotice(message: string, durationMs = SELECTION_NOTICE_MS, tone: Notice['tone'] = 'error') {
-    setTemplateSelectionNotice({ id: ++noticeIdRef.current, message, tone, durationMs });
+  function showTemplateSelectionNotice(message: string, tone: Notice['tone'] = 'error') {
+    setTemplateSelectionNotice({ id: ++noticeIdRef.current, message, tone, durationMs: noticeDuration(message) });
   }
 
   function clearTemplateSelectionNotice() {
     setTemplateSelectionNotice(undefined);
   }
 
-  const [selecting, setSelecting] = useState(false);
-  // Notice de sélection du mode deck ("no-frames-selected" / "too-many-frames") :
+  // Notice du mode deck (ajout refusé, préparation terminée, export réussi…) :
   // affichée en toast absolu par DeckPanel (pas de zone dédiée dans le layout
   // du rail). Le toast se ferme seul au bout de `durationMs` (voir Toast).
   const [selectionNotice, setSelectionNotice] = useState<Notice | undefined>();
 
-  function showSelectionNotice(message: string, durationMs = SELECTION_NOTICE_MS, tone: Notice['tone'] = 'error') {
-    setSelectionNotice({ id: ++noticeIdRef.current, message, tone, durationMs });
+  function showSelectionNotice(message: string, tone: Notice['tone'] = 'error') {
+    setSelectionNotice({ id: ++noticeIdRef.current, message, tone, durationMs: noticeDuration(message) });
   }
 
   function clearSelectionNotice() {
@@ -262,6 +313,10 @@ function App() {
   }, [mode]);
 
   const [hasCanvasSelection, setHasCanvasSelection] = useState(false);
+  // Frames de la sélection du canvas qui ne sont pas encore dans chaque
+  // panneau : c'est ce qu'ajouterait le bouton « Add » (code.ts,
+  // `postSelectionState`).
+  const [addable, setAddable] = useState({ deck: 0, template: 0 });
 
   const [sessionToken, setSessionToken] = useState<string | undefined>();
   // Email du compte Google connecté (GET /auth/me) — affiché dans la modale
@@ -311,15 +366,14 @@ function App() {
     if (!activeTemplateId && templateOrder.length > 0) setActiveTemplateId(templateOrder[0]);
   }, [templateOrder, activeTemplateId]);
 
-  /** Déduplique les substitutions de police sur tout le deck, dans l'ordre d'apparition des frames. */
+  /** Polices de tout le deck (bandeau « Fonts »), une par famille d'origine, dans l'ordre d'apparition des frames. */
   const deckFontSubstitutions = useMemo(() => {
     const seen = new Set<string>();
     const subs: FontSubstitution[] = [];
     for (const id of order) {
       for (const s of frames[id]?.fontSubstitutions ?? []) {
-        const key = `${s.original}→${s.resolved}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
+        if (seen.has(s.original)) continue;
+        seen.add(s.original);
         subs.push(s);
       }
     }
@@ -332,9 +386,8 @@ function App() {
     const subs: FontSubstitution[] = [];
     for (const id of templateOrder) {
       for (const s of templateLayouts[id]?.fontSubstitutions ?? []) {
-        const key = `${s.original}→${s.resolved}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
+        if (seen.has(s.original)) continue;
+        seen.add(s.original);
         subs.push(s);
       }
     }
@@ -392,6 +445,27 @@ function App() {
   /** Choix manuel de l'utilisateur (police originale → police Slides), envoyé à l'export pour remplacer la résolution par défaut. */
   const [fontOverrides, setFontOverrides] = useState<Record<string, string>>({});
 
+  // Entrée de l'export de chaque mode (voir `ExportInput`), comparée à celle
+  // du dernier export lancé pour savoir si son résultat est encore à jour.
+  const deckInput = useMemo<ExportInput>(
+    () => [deckTitle.trim(), JSON.stringify(fontOverrides), ...order.flatMap((id) => [id, frames[id]?.name ?? '', frames[id]?.previewDataUrl ?? ''])],
+    [deckTitle, fontOverrides, order, frames],
+  );
+  const templateInput = useMemo<ExportInput>(
+    () => [
+      templateTitle.trim(),
+      JSON.stringify(fontOverrides),
+      JSON.stringify(colorRoles),
+      ...templateOrder.flatMap((id) => {
+        const layout = templateLayouts[id];
+        // Les rôles `[[title]]`… vivent dans les noms de calques, que
+        // l'aperçu ne montre pas : les éléments taguables les portent.
+        return [id, layout?.name ?? '', layout?.previewDataUrl ?? '', JSON.stringify(layout?.elements ?? [])];
+      }),
+    ],
+    [templateTitle, fontOverrides, colorRoles, templateOrder, templateLayouts],
+  );
+
   const [exportState, setExportState] = useState<ExportState>('idle');
   // Incrémenté à chaque lancement d'export/retry — remet à zéro le rythme de
   // l'aperçu d'export paced (usePacedExportCursor) sans dépendre de
@@ -423,6 +497,8 @@ function App() {
   // ("3 slides exported") : tiré du job conclu plutôt que relu dans
   // `order`, que l'utilisateur peut modifier sitôt l'export terminé.
   const [exportedCount, setExportedCount] = useState(0);
+  // Taille du deck exporté, pour « 2 of 4 slides were created » après une annulation.
+  const [canceledTotal, setCanceledTotal] = useState(0);
   // L'aperçu d'export (usePacedExportCursor) défile à son propre rythme et
   // finit souvent APRÈS le job : annoncer "3 slides exported" pendant qu'il
   // affiche encore "Generating slide 1 of 3" se contredisait. Le panneau
@@ -434,11 +510,33 @@ function App() {
   // de forcer à ressoumettre tout le deck.
   const [retryable, setRetryable] = useState(false);
   const [retrying, setRetrying] = useState(false);
+  // Annulation d'un export en cours (bouton « Cancel ») : la ref est lue par
+  // `handleExportPayload` entre ses étapes, l'état n'affiche que « Canceling ».
+  const [canceling, setCanceling] = useState(false);
+  const cancelRequestedRef = useRef(false);
+  const exportJobIdRef = useRef<string | undefined>();
+  // Entrée du dernier export lancé (voir `ExportInput`) : dès que le panneau
+  // s'en écarte, le résultat affiché (lien, erreurs, reprise) est périmé.
+  const [exportedInput, setExportedInput] = useState<ExportInput | undefined>();
+  // Slide que l'aperçu d'export affiche en ce moment (rythmé, voir
+  // usePacedExportCursor) : le bouton principal en tire « Exporting 2/4 ».
+  const [previewCursor, setPreviewCursor] = useState<ExportCursor | undefined>();
   const pendingAssets = useMemo(() => new Map<string, ArrayBuffer>(), []);
 
-  /** Applique une conclusion de job (réelle) à l'état visible : fin d'export, réussie ou non. */
+  /** Applique une conclusion de job (réelle) à l'état visible : fin d'export, réussie, échouée ou annulée. */
   function applyConclusion(concluded: JobConclusion) {
     setExportCursor(undefined);
+    setCanceling(false);
+    if (concluded.status === 'canceled') {
+      setExportState('canceled');
+      setExportError(undefined);
+      setResultUrl(concluded.resultUrl);
+      setFailedSlides({});
+      setRetryable(false);
+      setExportedCount(concluded.slideCount);
+      setCanceledTotal(concluded.total);
+      return;
+    }
     if (concluded.status === 'done') {
       setExportState('done');
       setExportProgress(100);
@@ -457,9 +555,10 @@ function App() {
 
   /** Progression (0–100) déduite du nombre de lots réellement conclus (`applied`/`failed`) sur le total — jamais simulée. */
   function progressFromBatches(batches: ExportBatch[] | undefined): number {
-    if (!batches || batches.length === 0) return 0;
-    const settled = batches.filter((b) => b.status !== 'pending').length;
-    return Math.round((settled / batches.length) * 100);
+    const slides = slideBatches(batches);
+    if (slides.length === 0) return 0;
+    const settled = slides.filter((b) => b.status !== 'pending').length;
+    return Math.round((settled / slides.length) * 100);
   }
 
   /**
@@ -610,7 +709,17 @@ function App() {
         }
         case 'canvas-selection-changed':
           setHasCanvasSelection(Boolean(msg.hasSelection));
+          setAddable({ deck: Number(msg.deckAddable) || 0, template: Number(msg.templateAddable) || 0 });
           break;
+        // Notification d'une action faite dans le plugin (code.ts,
+        // `postNotice`) : toujours dans le toast du panneau concerné, jamais
+        // dans la barre de Figma.
+        case 'notice': {
+          const tone: Notice['tone'] = msg.tone === 'success' || msg.tone === 'info' ? msg.tone : 'error';
+          if (msg.mode === 'template') showTemplateSelectionNotice(String(msg.message), tone);
+          else showSelectionNotice(String(msg.message), tone);
+          break;
+        }
         // Habillage persisté via clientStorage (code.ts) : sans stockage
         // durable dans l'iframe UI, c'est le seul moyen que le choix
         // survive à la fermeture du plugin.
@@ -641,20 +750,6 @@ function App() {
         case 'theme-preference-restored':
           if (isThemePreference(msg.theme)) setThemeOverride(msg.theme);
           break;
-        case 'no-frames-selected':
-          if (modeRef.current === 'template') {
-            showTemplateSelectionNotice('Select at least one frame on the Figma canvas before clicking.');
-          } else {
-            showSelectionNotice('Select at least one frame on the Figma canvas before clicking.');
-          }
-          break;
-        case 'too-many-frames':
-          if (modeRef.current === 'template') {
-            showTemplateSelectionNotice(`${msg.count} layouts selected. A template is capped at ${msg.max} to stay focused.`);
-          } else {
-            showSelectionNotice(`${msg.count} frames selected. Beyond ${msg.max}, export may become slow.`);
-          }
-          break;
         case 'export-payload':
           void handleExportPayload(
             msg.document as IRDocument,
@@ -668,16 +763,12 @@ function App() {
           setExportState('error');
           setExportError(msg.message as string);
           break;
-        // Échec côté sandbox d'une action qui n'est PAS un export (ajout de
-        // la sélection au deck/template, dump debug). Passait avant par
-        // `export-error` : muet tant qu'aucun export n'avait été lancé (le
-        // footer n'affiche l'erreur que pour le mode qui a lancé l'export),
-        // et maquillé en échec d'export dans le cas contraire. Affiché ici
-        // dans le toast du mode courant, là où l'utilisateur vient de cliquer.
+        // Échec du dump debug (modale Settings, section Developer) : dans le
+        // toast du mode courant, là où l'utilisateur vient de cliquer.
         case 'action-error': {
           const text = String(msg.message);
-          if (modeRef.current === 'template') showTemplateSelectionNotice(text, ACTION_ERROR_NOTICE_MS);
-          else showSelectionNotice(text, ACTION_ERROR_NOTICE_MS);
+          if (modeRef.current === 'template') showTemplateSelectionNotice(text);
+          else showSelectionNotice(text);
           break;
         }
         // Modale Settings, section Developer : dump de l'IRDocument courant
@@ -786,7 +877,12 @@ function App() {
     setExportAttempt((n) => n + 1);
     setExportProgress(0);
     setExportError(undefined);
+    // Annulé avant que le job existe (sandbox encore en train de préparer le
+    // document, ou upload des images) : on s'arrête à l'étape suivante, sans
+    // rien créer dans le Drive.
+    const canceledBeforeJob: JobConclusion = { status: 'canceled', resultUrl: undefined, slideCount: 0, total: doc.slides.length };
     try {
+      if (cancelRequestedRef.current) return applyConclusion(canceledBeforeJob);
       // Purge des assets d'un export précédent (ou de frames retirées depuis)
       // encore bufferisés : sans ça, chaque nouvel export ré-uploadait tout
       // l'historique de la session.
@@ -795,8 +891,10 @@ function App() {
         if (!expected.has(key)) pendingAssets.delete(key);
       }
       await waitForExpectedAssets(expectedAssetKeys);
+      if (cancelRequestedRef.current) return applyConclusion(canceledBeforeJob);
       await uploadAssetBatches(expectedAssetKeys.map((k) => [k, pendingAssets.get(k)!]));
       pendingAssets.clear();
+      if (cancelRequestedRef.current) return applyConclusion(canceledBeforeJob);
 
       const form = new FormData();
       form.append('document', JSON.stringify(doc));
@@ -811,11 +909,17 @@ function App() {
       if (!res.ok) throw await requestFailure('export', res);
       const { jobId } = await res.json();
       setExportJobId(jobId);
+      exportJobIdRef.current = jobId;
+      // « Cancel » cliqué pendant l'envoi de /export : le job vient d'être
+      // créé, on le fait arrêter tout de suite (avant la présentation si
+      // possible) et le polling ci-dessous verra `canceled`.
+      if (cancelRequestedRef.current) void sendCancel(jobId);
       const concluded = await pollJob(jobId, applyLiveBatches);
       applyConclusion(concluded);
     } catch (err) {
       setExportState('error');
       setExportCursor(undefined);
+      setCanceling(false);
       setExportError(err instanceof Error ? err.message : String(err));
       if (err instanceof AuthExpiredError) {
         // Session Google périmée : on purge le jeton persisté et on repart
@@ -868,7 +972,16 @@ function App() {
         lastPresentationId = job.presentationId ?? lastPresentationId;
         onUpdate(batches);
         if (job.status === 'done') {
-          return { status: 'done', resultUrl: job.presentationUrl, slideCount: batches?.length ?? 0 };
+          return { status: 'done', resultUrl: job.presentationUrl, slideCount: slideBatches(batches).length };
+        }
+        if (job.status === 'canceled') {
+          const slides = slideBatches(batches);
+          return {
+            status: 'canceled',
+            resultUrl: job.presentationUrl,
+            slideCount: slides.filter((b) => b.status === 'applied').length,
+            total: slides.length,
+          };
         }
         if (job.status === 'failed') {
           // Priorité aux erreurs par slide (`batch.error`) : bien plus
@@ -934,6 +1047,9 @@ function App() {
     setExportState('exporting');
     setExportAttempt((n) => n + 1);
     setExportError(undefined);
+    cancelRequestedRef.current = false;
+    setCanceling(false);
+    setPreviewCursor(undefined);
     try {
       const res = await request('retry', `${backend.baseUrl}/export/${exportJobId}/retry`, {
         method: 'POST',
@@ -947,6 +1063,7 @@ function App() {
     } catch (err) {
       setExportState('error');
       setExportCursor(undefined);
+      setCanceling(false);
       setExportError(err instanceof Error ? err.message : String(err));
       if (err instanceof AuthExpiredError) {
         setSessionToken(undefined);
@@ -958,6 +1075,37 @@ function App() {
     } finally {
       setRetrying(false);
     }
+  }
+
+  /** Demande au backend d'arrêter le job (POST /export/:jobId/cancel). En cas d'échec, l'export continue et se termine normalement. */
+  async function sendCancel(jobId: string): Promise<void> {
+    try {
+      const res = await fetch(`${backend.baseUrl}/export/${jobId}/cancel`, { method: 'POST', credentials: 'include' });
+      // 409 : le job s'est terminé entre-temps, le polling en rendra compte.
+      if (res.ok || res.status === 409) return;
+      // eslint-disable-next-line no-console
+      console.error(`[decker] cancel: HTTP ${res.status}`, await res.text().catch(() => ''));
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[decker] cancel: no response', err);
+    }
+    cancelRequestedRef.current = false;
+    setCanceling(false);
+    const message = "Couldn't cancel. The export keeps going and will finish on its own.";
+    if (modeRef.current === 'template') showTemplateSelectionNotice(message);
+    else showSelectionNotice(message);
+  }
+
+  /**
+   * Bouton « Cancel » pendant un export : arrête le job côté serveur avant
+   * la slide suivante (la présentation garde ce qui est déjà écrit), ou,
+   * si le job n'existe pas encore, empêche sa création.
+   */
+  function handleCancelExport() {
+    if (cancelRequestedRef.current) return;
+    cancelRequestedRef.current = true;
+    setCanceling(true);
+    if (exportJobIdRef.current) void sendCancel(exportJobIdRef.current);
   }
 
   /**
@@ -1127,14 +1275,10 @@ function App() {
     postToPlugin({ type: 'prepare-template-for-slides', layoutFrameIds: templateOrder, fontOverrides });
   }
 
+  /** Ajoute au deck les frames sélectionnées sur le canvas, dans l'ordre de sélection (code.ts, `orderedSelectedFrames`). */
   function handleAddFramesClick() {
     clearSelectionNotice();
-    if (!selecting) {
-      setSelecting(true);
-      return;
-    }
     postToPlugin({ type: 'add-selected-frames' });
-    setSelecting(false);
   }
 
   function removeFrame(id: string) {
@@ -1154,12 +1298,7 @@ function App() {
 
   function handleAddTemplateLayoutClick() {
     clearTemplateSelectionNotice();
-    if (!templateSelecting) {
-      setTemplateSelecting(true);
-      return;
-    }
     postToPlugin({ type: 'add-template-layout' });
-    setTemplateSelecting(false);
   }
 
   function removeTemplateLayout(id: string) {
@@ -1200,15 +1339,25 @@ function App() {
     postToPlugin({ type: 'rename-template-layout', id, name: name.trim() });
   }
 
-  function startExport() {
+  /** Remise à zéro commune au lancement d'un export (deck) ou d'une création de template. */
+  function beginExport(source: AppMode, input: ExportInput) {
     setExportState('exporting');
     setExportProgress(0);
-    setExportSource('deck');
+    setExportSource(source);
     setPreviewSettled(false);
     setExportCursor(undefined);
     setExportJobId(undefined);
+    exportJobIdRef.current = undefined;
+    cancelRequestedRef.current = false;
+    setCanceling(false);
     setFailedSlides({});
     setRetryable(false);
+    setExportedInput(input);
+    setPreviewCursor(undefined);
+  }
+
+  function startExport() {
+    beginExport('deck', deckInput);
     const options: ExportOptions = {
       mode: 'new-presentation',
       rasterScale: 2,
@@ -1232,14 +1381,7 @@ function App() {
    * layout réutilisable — mêmes endpoints `/assets` + `/export`.
    */
   function startTemplateCreate() {
-    setExportState('exporting');
-    setExportProgress(0);
-    setExportSource('template');
-    setPreviewSettled(false);
-    setExportCursor(undefined);
-    setExportJobId(undefined);
-    setFailedSlides({});
-    setRetryable(false);
+    beginExport('template', templateInput);
     postToPlugin({
       type: 'request-template',
       includedFrameIds: templateOrder,
@@ -1261,8 +1403,8 @@ function App() {
   useEffect(() => {
     if (!successVisible || exportSource === undefined) return;
     const text = successMessage(exportSource, exportedCount);
-    if (exportSource === 'template') showTemplateSelectionNotice(text, SELECTION_NOTICE_MS, 'success');
-    else showSelectionNotice(text, SELECTION_NOTICE_MS, 'success');
+    if (exportSource === 'template') showTemplateSelectionNotice(text, 'success');
+    else showSelectionNotice(text, 'success');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [successVisible]);
 
@@ -1271,25 +1413,129 @@ function App() {
   // explique pourquoi son bouton attend au lieu d'être grisé sans raison.
   const busyFromOtherMode = exporting && exportSource !== undefined && exportSource !== mode;
   const busyTitle = exportSource === 'deck' ? 'A deck export is still running. Wait for it to finish.' : 'A template creation is still running. Wait for it to finish.';
+  // Export conclu (réussi, échoué ou annulé). Un export annulé n'a plus
+  // d'aperçu à dérouler : sa tentative n'est pas transmise aux panneaux, qui
+  // s'arrêtent net au lieu de « générer » les slides qui ne partiront pas.
+  const concludedExport = exportState === 'done' || exportState === 'error' || exportState === 'canceled';
+  const concludedHere = exportSource === mode && concludedExport;
+  // Le panneau n'a pas bougé depuis cet export : son résultat (lien, erreurs
+  // par slide, reprise) le reflète encore. Dès qu'on ajoute, retire,
+  // réordonne, renomme ou retouche une frame, le résultat est périmé et le
+  // bouton principal redevient « Export again ».
+  const resultCurrent = concludedHere && sameExportInput(exportedInput, mode === 'deck' ? deckInput : templateInput);
+  // Job conclu mais aperçu encore en train de « générer » ses dernières
+  // slides : le bouton garde la progression jusqu'au bout de l'aperçu.
+  const settlingHere = concludedHere && !previewSettled;
   // Fin d'export du mode courant : réussie ou non, la présentation existe
   // (au moins en partie) dans Drive. Relancer en crée une NOUVELLE, jamais
   // une mise à jour : le bouton principal le dit ("again") au lieu de
   // redevenir un "Export" anodin qui produisait un doublon sans prévenir.
-  const exportedHere = exportSource === mode && (exportState === 'done' || exportState === 'error') && Boolean(resultUrl);
+  const exportedHere = concludedHere && Boolean(resultUrl);
   const againTitle = 'Creates a new presentation in your Google Drive. The one you just exported stays as it is.';
   // Échecs par slide du dernier export de CE mode, pour le repère sur les
-  // vignettes : rien à montrer dans l'autre mode, ni une fois l'erreur levée.
-  const failedSlidesHere = exportState === 'error' && exportSource === mode ? failedSlides : undefined;
+  // vignettes : rien à montrer dans l'autre mode, ni une fois l'erreur levée
+  // ou le deck modifié depuis.
+  const failedSlidesHere = exportState === 'error' && resultCurrent ? failedSlides : undefined;
 
-  /** Bouton d'action principal (Export / Create template) ou, si la session Google n'existe pas encore, le flow de connexion — même wording dans les deux modes : le lien dit ce qu'il fait ("Sign in with Google"), plus de bouton "Export" qui ouvre en réalité l'OAuth. */
-  function renderPrimaryAction(label: string, disabled: boolean, title: string | undefined, onClick: () => void) {
-    if (sessionToken) {
+  /**
+   * Bouton d'ajout, un seul clic : il suit en direct le nombre de frames
+   * sélectionnées sur le canvas qui ne sont pas encore dans le panneau, et
+   * reste grisé tant qu'il n'y en a aucune. Remplace l'ancien aller-retour
+   * « Select frames », sélection, puis « Add selection » sur le même bouton.
+   */
+  function renderAddAction(count: number, panel: AppMode, onClick: () => void) {
+    const where = panel === 'deck' ? 'the deck' : 'the template';
+    const title = exporting
+      ? `${panel === 'deck' ? 'An export' : 'A template creation'} is running. Wait for it to finish before changing ${where}.`
+      : count > 0
+        ? `Add the selected frames to ${where}, in the order you selected them.`
+        : hasCanvasSelection
+          ? `The selected frames are already in ${where}.`
+          : `Select frames on the Figma canvas to add them to ${where}.`;
+    return (
+      <button type="button" className="f2s-btn f2s-btn--secondary f2s-tabular" disabled={exporting || count === 0} title={title} onClick={onClick}>
+        {addLabel(count)}
+      </button>
+    );
+  }
+
+  /**
+   * Bouton principal du header, qui suit l'étape du mode courant :
+   * - sans session Google : la connexion ;
+   * - pendant l'export : la progression (« Exporting 2/4 »), et « Cancel » à côté ;
+   * - export terminé, panneau inchangé depuis : « Open in Slides » ;
+   * - sinon : « Export » (« Export again » si une présentation existe déjà).
+   * L'ajout de frames reste un bouton à part (`renderAddAction`), toujours
+   * disponible : le principal ne lui vole jamais sa place.
+   */
+  function renderPrimaryActions() {
+    const isDeck = mode === 'deck';
+    const startLabel = isDeck ? (exportedHere ? 'Export again' : 'Export') : exportedHere ? 'Create again' : 'Create template';
+    if (!sessionToken) return renderSignIn(startLabel);
+
+    if (exportSource === mode && (exporting || settlingHere)) {
+      // Sans points de suspension : le spinner dit déjà que ça tourne, et à
+      // 960 px de large le header n'a pas un caractère de trop.
+      const verb = canceling ? 'Canceling' : isDeck ? 'Exporting' : 'Creating';
+      const label = previewCursor && !canceling ? `${verb} ${previewCursor.index + 1}/${previewCursor.total}` : verb;
       return (
-        <button type="button" className="f2s-btn f2s-btn--primary" disabled={disabled} title={title} onClick={onClick}>
-          {label}
-        </button>
+        <>
+          {exporting && (
+            <button
+              type="button"
+              className="f2s-btn f2s-btn--secondary"
+              disabled={canceling}
+              title={`Stop after the ${isDeck ? 'slide' : 'layout'} being written. What's already created stays in Google Slides.`}
+              onClick={handleCancelExport}
+            >
+              Cancel
+            </button>
+          )}
+          {/* Un état, pas une action : pas de bouton grisé (qui se lirait
+              « indisponible »), et l'avancée est déjà annoncée par la région
+              `status` du panneau. */}
+          <span className="f2s-btn f2s-btn--primary f2s-btn--busy f2s-tabular">
+            <span className="f2s-btn-loading">
+              <span className="f2s-spinner" aria-hidden="true" />
+              {label}
+            </span>
+          </span>
+        </>
       );
     }
+
+    if (resultCurrent && resultUrl && exportState !== 'canceled') {
+      return (
+        <a
+          href={resultUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="f2s-btn f2s-btn--primary f2s-btn--icon-end"
+          title={isDeck ? 'Open the presentation in Google Slides.' : 'Open the template in Google Slides.'}
+        >
+          Open in Slides
+          <ArrowUpRightIcon />
+        </a>
+      );
+    }
+
+    const disabled = busyFromOtherMode || (isDeck ? order.length === 0 : templateOrder.length === 0 || templateHasBlockingLayout);
+    const title = busyFromOtherMode
+      ? busyTitle
+      : !isDeck && templateHasBlockingLayout
+        ? 'Fix the blocking issues listed below before creating the template.'
+        : exportedHere
+          ? againTitle
+          : undefined;
+    return (
+      <button type="button" className="f2s-btn f2s-btn--primary" disabled={disabled} title={title} onClick={isDeck ? startExport : startTemplateCreate}>
+        {startLabel}
+      </button>
+    );
+  }
+
+  /** Flow de connexion Google, à la place du bouton principal tant qu'aucune session n'existe : le lien dit ce qu'il fait ("Sign in with Google"), plus de bouton "Export" qui ouvre en réalité l'OAuth. */
+  function renderSignIn(label: string) {
     if (authUrl) {
       // Un vrai <a target="_blank"> cliqué par l'utilisateur : voir le
       // commentaire de startLogin sur la CSP du plugin Figma. Reste
@@ -1333,6 +1579,73 @@ function App() {
         </span>
       </button>
     );
+  }
+
+  /**
+   * Statut du dernier export de ce mode, dans le footer, avec l'action qui
+   * en découle juste à côté : « Retry » après un échec, « Export again »
+   * après un succès (le lien vers la présentation est alors le bouton
+   * principal), le lien vers ce qui a été créé après une annulation. Masqué
+   * dès que le panneau a changé depuis l'export : il ne décrirait plus ce
+   * qu'on a sous les yeux.
+   */
+  function renderExportStatus() {
+    if (!resultCurrent) return null;
+    const noun = mode === 'template' ? 'layout' : 'slide';
+    if (exportState === 'error' && exportError) {
+      return (
+        <>
+          <p className="f2s-footer-status f2s-footer-status--error" role="alert" title={exportError}>
+            <StatusIcon tone="error" />
+            <span className="f2s-footer-status-text">{exportError}</span>
+          </p>
+          {/* Reprise ciblée (backend jobs/runner.ts `retryExportJob`) : ne
+              rejoue QUE les slides encore en échec, jamais tout le deck : la
+              présentation déjà créée (et les slides déjà réussies) reste
+              intacte pendant l'attente. */}
+          {retryable && (
+            <button type="button" className="f2s-btn f2s-btn--secondary f2s-btn--footer" disabled={retrying} onClick={handleRetryFailedSlides}>
+              {retrying ? 'Retrying…' : `Retry ${failedCount} failed ${noun}${failedCount === 1 ? '' : 's'}`}
+            </button>
+          )}
+        </>
+      );
+    }
+    if (successVisible && exportState === 'done') {
+      return (
+        <>
+          <p className="f2s-footer-status f2s-footer-status--success" role="status">
+            <StatusIcon tone="success" />
+            <span className="f2s-footer-status-text">{successMessage(mode, exportedCount)}</span>
+          </p>
+          <button
+            type="button"
+            className="f2s-btn f2s-btn--secondary f2s-btn--footer"
+            title={againTitle}
+            onClick={mode === 'deck' ? startExport : startTemplateCreate}
+          >
+            {mode === 'deck' ? 'Export again' : 'Create again'}
+          </button>
+        </>
+      );
+    }
+    if (exportState === 'canceled' && previewSettled) {
+      return (
+        <>
+          <p className="f2s-footer-status f2s-footer-status--info" role="status">
+            <StatusIcon tone="info" />
+            <span className="f2s-footer-status-text">{canceledMessage(mode, exportedCount, canceledTotal, Boolean(resultUrl))}</span>
+          </p>
+          {resultUrl && exportedCount > 0 && (
+            <a href={resultUrl} target="_blank" rel="noopener noreferrer" className="f2s-btn f2s-btn--secondary f2s-btn--footer f2s-btn--icon-end">
+              Open in Slides
+              <ArrowUpRightIcon />
+            </a>
+          )}
+        </>
+      );
+    }
+    return null;
   }
 
   return (
@@ -1395,15 +1708,7 @@ function App() {
 
         {mode === 'deck' ? (
           <div className="f2s-topbar-actions">
-            <button
-              type="button"
-              className="f2s-btn f2s-btn--secondary"
-              disabled={exporting}
-              title={exporting ? 'An export is running. Wait for it to finish before changing the deck.' : undefined}
-              onClick={handleAddFramesClick}
-            >
-              {selecting ? 'Add selection' : 'Select frames'}
-            </button>
+            {renderAddAction(addable.deck, 'deck', handleAddFramesClick)}
             <button
               type="button"
               className="f2s-btn f2s-btn--secondary"
@@ -1417,24 +1722,11 @@ function App() {
             >
               Prepare for Slides
             </button>
-            {renderPrimaryAction(
-              exportedHere ? 'Export again' : 'Export',
-              exporting || order.length === 0,
-              busyFromOtherMode ? busyTitle : exportedHere ? againTitle : undefined,
-              startExport,
-            )}
+            {renderPrimaryActions()}
           </div>
         ) : (
           <div className="f2s-topbar-actions">
-            <button
-              type="button"
-              className="f2s-btn f2s-btn--secondary"
-              disabled={exporting}
-              title={exporting ? 'A template creation is running. Wait for it to finish before changing the layouts.' : undefined}
-              onClick={handleAddTemplateLayoutClick}
-            >
-              {templateSelecting ? 'Add selection' : 'Select frames'}
-            </button>
+            {renderAddAction(addable.template, 'template', handleAddTemplateLayoutClick)}
             <button
               type="button"
               className="f2s-btn f2s-btn--secondary"
@@ -1448,18 +1740,7 @@ function App() {
             >
               Prepare for Slides
             </button>
-            {renderPrimaryAction(
-              exportedHere ? 'Create again' : 'Create template',
-              exporting || templateOrder.length === 0 || templateHasBlockingLayout,
-              busyFromOtherMode
-                ? busyTitle
-                : templateHasBlockingLayout
-                  ? 'Fix the blocking issues listed below before creating the template.'
-                  : exportedHere
-                    ? againTitle
-                    : undefined,
-              startTemplateCreate,
-            )}
+            {renderPrimaryActions()}
           </div>
         )}
       </header>
@@ -1469,10 +1750,18 @@ function App() {
           <div className="f2s-toolbar-group">
             <span className="f2s-toolbar-label">Fonts:</span>
             {(mode === 'deck' ? deckFontSubstitutions : templateFontSubstitutions).length === 0 ? (
-              <span className="f2s-toolbar-muted">All fonts will appear here and can be replaced automatically.</span>
+              <span className="f2s-toolbar-muted">The fonts of your frames will appear here, ready to replace.</span>
             ) : (
               (mode === 'deck' ? deckFontSubstitutions : templateFontSubstitutions).map((s) => (
-                <label className="f2s-font-select" key={s.original} title={`"${s.original}" isn't available in Slides. Pick the replacement to use.`}>
+                <label
+                  className="f2s-font-select"
+                  key={s.original}
+                  title={
+                    s.available
+                      ? `Pick another font to use instead of "${s.original}" everywhere in Slides.`
+                      : `"${s.original}" isn't available in Slides. Pick the replacement to use.`
+                  }
+                >
                   <span className="f2s-font-original">{s.original}</span>
                   <span className="f2s-font-arrow">→</span>
                   <FontCombobox
@@ -1498,8 +1787,9 @@ function App() {
           onRemove={removeFrame}
           fontOverrides={fontOverrides}
           exportCursor={exportSource === 'deck' ? exportCursor : undefined}
-          exportAttempt={exportSource === 'deck' ? exportAttempt : undefined}
-          exportConcluded={exportSource === 'deck' && (exportState === 'done' || exportState === 'error')}
+          exportAttempt={exportSource === 'deck' && exportState !== 'canceled' ? exportAttempt : undefined}
+          exportConcluded={exportSource === 'deck' && concludedExport}
+          onPacedCursorChange={setPreviewCursor}
           notice={selectionNotice}
           onDismissNotice={clearSelectionNotice}
           locked={exporting}
@@ -1523,12 +1813,14 @@ function App() {
           onRenameCommit={commitTemplateLayoutRename}
           fontOverrides={fontOverrides}
           exportCursor={exportSource === 'template' ? exportCursor : undefined}
-          exportAttempt={exportSource === 'template' ? exportAttempt : undefined}
-          exportConcluded={exportSource === 'template' && (exportState === 'done' || exportState === 'error')}
+          exportAttempt={exportSource === 'template' && exportState !== 'canceled' ? exportAttempt : undefined}
+          exportConcluded={exportSource === 'template' && concludedExport}
+          onPacedCursorChange={setPreviewCursor}
           colors={templateColors}
           fonts={templateFonts}
           colorRoles={colorRoles}
           setColorRoles={setColorRoles}
+          onNotice={(message) => showTemplateSelectionNotice(message, 'info')}
         />
       )}
 
@@ -1546,48 +1838,12 @@ function App() {
           </button>
         </div>
         <div className="f2s-footer-actions">
-          {/* Sans ce message, un export échoué (session expirée, 400 Slides
-              API, backend injoignable…) redevenait totalement silencieux :
-              l'aperçu rétro s'arrêtait, exportError était bien renseigné,
-              mais rien ne le lisait — l'utilisateur ne voyait ni lien ni
-              erreur. Voir TODO.md « Affichage des erreurs ». */}
-          {exportState === 'error' && exportSource === mode && exportError && (
-            <p className="f2s-footer-status f2s-footer-status--error" role="alert" title={exportError}>
-              <StatusIcon tone="error" />
-              <span className="f2s-footer-status-text">{exportError}</span>
-            </p>
-          )}
-          {/* Succès : avant, seul "Open presentation" apparaissait, sans un mot.
-              Reste affiché tant qu'aucun nouvel export n'est lancé, à côté du
-              lien qui y mène. */}
-          {successVisible && exportSource === mode && (
-            <p className="f2s-footer-status f2s-footer-status--success" role="status">
-              <StatusIcon tone="success" />
-              <span className="f2s-footer-status-text">{successMessage(mode, exportedCount)}</span>
-            </p>
-          )}
+          {renderExportStatus()}
           <Logo />
-          <a href="https://buymeacoffee.com/billelt" target="_blank" rel="noreferrer" className="f2s-btn f2s-btn--secondary">
-            Buy me a coffee
+          <a href="https://buymeacoffee.com/billelt" target="_blank" rel="noopener noreferrer" className="f2s-coffee-link">
+            <span>Buy me a coffee</span>
+            <ArrowUpRightIcon />
           </a>
-          {/* Reprise ciblée (backend jobs/runner.ts `retryExportJob`) : ne
-              rejoue QUE les slides encore en échec, jamais tout le deck — la
-              présentation déjà créée (et les slides déjà réussies) reste
-              intacte pendant l'attente. */}
-          {exportState === 'error' && exportSource === mode && retryable && (
-            <button type="button" className="f2s-btn f2s-btn--secondary" disabled={retrying} onClick={handleRetryFailedSlides}>
-              {retrying ? 'Retrying…' : `Retry ${failedCount} failed ${mode === 'template' ? 'layout' : 'slide'}${failedCount === 1 ? '' : 's'}`}
-            </button>
-          )}
-          {/* La présentation existe dès qu'elle a été créée, même en cas
-              d'échec partiel (certains lots appliqués, d'autres non) — un
-              lien vers un travail déjà là vaut mieux qu'un simple message
-              d'erreur qui le cache. */}
-          {(exportState === 'done' || exportState === 'error') && exportSource === mode && resultUrl && (
-            <a href={resultUrl} target="_blank" rel="noreferrer" className="f2s-btn f2s-btn--primary">
-              Open presentation
-            </a>
-          )}
         </div>
       </footer>
 

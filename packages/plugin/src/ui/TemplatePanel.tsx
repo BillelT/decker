@@ -135,6 +135,8 @@ export interface TemplatePanelProps extends TemplateStylePanelProps {
   failedSlides: Record<string, string> | undefined;
   /** L'export est conclu ET l'aperçu a fini de défiler : le succès peut s'annoncer (voir ui.tsx). */
   onPreviewSettled: () => void;
+  /** Slide affichée par l'aperçu d'export, à chaque pas : le bouton principal en tire « Exporting 2/4 » (voir ui.tsx). */
+  onPacedCursorChange: (cursor: ExportCursor | undefined) => void;
   onRemove: (id: string) => void;
   onRename: (id: string, name: string) => void;
   /**
@@ -180,12 +182,20 @@ export function TemplatePanel({
   fonts,
   colorRoles,
   setColorRoles,
+  onNotice,
+  onPacedCursorChange,
 }: TemplatePanelProps) {
   const { itemRefs, itemState, registerItem, onThumbPointerDown, onThumbKeyDown, announcement } = useRailReorder(order, setOrder, locked);
 
   const activeLayout = activeId ? layouts[activeId] : undefined;
   // Aperçu d'export "paced" — voir DeckPanel et pacedExportCursor.ts.
   const pacedCursor = usePacedExportCursor(exportAttempt, order, exportCursor, exportConcluded);
+  const pacedIndex = pacedCursor?.index;
+  const pacedTotal = pacedCursor?.total;
+  useEffect(() => {
+    onPacedCursorChange(pacedCursor);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pacedIndex, pacedTotal]);
   // Pendant une création de template, l'aperçu suit le layout dont le lot
   // est en cours d'application plutôt que la sélection du rail — même
   // logique que DeckPanel.
@@ -260,11 +270,20 @@ export function TemplatePanel({
       <div className="f2s-body">
         {notice && <Toast key={notice.id} notice={notice} onDismiss={onDismissNotice} />}
         <main className="f2s-canvas">
-          <p className="f2s-empty">
-            Click "Select frames", then select the frames
-            <br />
-            you want to use as a layout on the Figma canvas, and click the button again to add your selection.
-          </p>
+          {/* Même état vide que le deck (DeckPanel), pour le parcours template. */}
+          <ol className="f2s-empty-steps">
+            <li>Select the frames to use as layouts on the Figma canvas.</li>
+            <li>
+              <span>
+                Click <strong>Add</strong>: they join the template in the order you selected them.
+              </span>
+            </li>
+            <li>
+              <span>
+                Click <strong>Create template</strong> to build it in Google Slides.
+              </span>
+            </li>
+          </ol>
         </main>
         <aside className="f2s-style-aside">
           <TemplateStylePanel
@@ -273,6 +292,7 @@ export function TemplatePanel({
             fontOverrides={fontOverrides}
             colorRoles={colorRoles}
             setColorRoles={setColorRoles}
+            onNotice={onNotice}
           />
         </aside>
       </div>
@@ -430,6 +450,7 @@ export function TemplatePanel({
           fontOverrides={fontOverrides}
           colorRoles={colorRoles}
           setColorRoles={setColorRoles}
+          onNotice={onNotice}
         />
       </aside>
     </div>

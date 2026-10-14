@@ -12,9 +12,12 @@ export interface FrameCandidate {
   height: number;
 }
 
+/** Une police du deck (bandeau « Fonts ») : sa famille dans Figma et celle utilisée par défaut dans Slides. */
 export interface FontSubstitution {
   original: string;
   resolved: string;
+  /** La police existe telle quelle dans Slides : la remplacer est un choix, pas une nécessité. */
+  available?: boolean;
 }
 
 /**
@@ -99,11 +102,14 @@ export type AppMode = 'deck' | 'template';
  * pour la fin d'un export réussi, affichée là où l'œil se trouve (l'aperçu)
  * plutôt que seulement dans le footer.
  */
+export type NoticeTone = 'error' | 'success' | 'info';
+
 export interface Notice {
   /** Change à chaque notice, même au texte identique : le toast repart de zéro (barre de durée pleine). */
   id: number;
   message: string;
-  tone: 'error' | 'success';
+  /** `info` : un avertissement ou une information, ni réussite ni échec (pastille à l'encre). */
+  tone: NoticeTone;
   /** Durée d'affichage avant fermeture automatique, survol exclu. */
   durationMs: number;
 }

@@ -1,6 +1,6 @@
 # Plugin : mode Template
 
-Ce qui rend la création d'un template moins bloquante et plus guidée. La structure dépend de l'arbitrage C, la correction automatique de l'arbitrage D.
+Ce qui rend la création d'un template moins bloquante et plus guidée. La structure dépend de l'arbitrage C, la correction automatique de l'arbitrage D (tranché le 14 octobre : « Prepare for Slides » reste dans le header, tel quel).
 
 ## Blocage et correction
 

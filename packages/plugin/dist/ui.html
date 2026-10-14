@@ -237,14 +237,15 @@ a {
 /* Le champ nom (.f2s-title-input) a une largeur FIXE : ni lui ni ses
    ancêtres (.f2s-topbar-left, .f2s-topbar-title-group) ne sont plus
    compressibles (flex: none partout), pour que sa taille ne varie plus
-   selon la longueur du libellé des boutons d'action ("Select frames to
-   add" vs "Add selection", "Export" vs "Create template", spinner
-   "Waiting…"…) ni selon le mode deck/template. Le header doit rester sur
-   une seule ligne dans tous les cas, sans chevauchement ni scroll : pas
-   de flex-wrap, et chaque libellé de bouton (y compris celui du flow de
-   connexion Google) reste assez court pour que les deux groupes tiennent
-   toujours ensemble dans les 960px du panneau (largeur fixe, non
-   redimensionnable — voir figma.showUI dans code.ts). */
+   selon la longueur du libellé des boutons d'action ("Add 12 frames" vs
+   "Add frames", "Export" vs "Create template", "Cancel" + "Exporting
+   12/12", spinner "Waiting…"…) ni selon le mode deck/template. Le header
+   doit rester sur une seule ligne dans tous les cas, sans chevauchement ni
+   scroll : pas de flex-wrap, et chaque libellé de bouton (y compris celui
+   du flow de connexion Google) reste assez court pour que les deux groupes
+   tiennent toujours ensemble à 960px, la largeur minimale de la fenêtre
+   (MIN_UI_SIZE dans code.ts). L'état le plus large, un export en cours,
+   tient pile (mesuré en rendu). */
 .f2s-topbar {
   display: flex;
   align-items: center;
@@ -301,14 +302,13 @@ a {
   text-decoration: none;
 }
 
-/* 28px : le bouton "Buy me a coffee" voisin fait 34px de haut (mesuré en
-   rendu). À 24px le monogramme flottait visiblement plus bas que lui ; à 34
-   il aurait pesé autant qu'une action, ce qu'une signature n'est pas.
+/* 26px : la hauteur du bouton Settings et de la zone cliquable de "Buy me a
+   coffee", pour que tout le footer s'aligne sur une seule hauteur.
    `box-sizing: border-box` (règle `*` en tête de fichier) fait que la
-   bordure tient DANS ces 28px. */
+   bordure tient DANS ces 26px. */
 .f2s-logo {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   flex: none;
   display: flex;
   align-items: center;
@@ -638,12 +638,6 @@ a {
   padding: 6px 12px;
 }
 
-/* "Buy me a coffee" dans le footer : texte 12px, padding 6px 12px. */
-.f2s-footer-actions a[href*="buymeacoffee"].f2s-btn {
-  font-size: 12px;
-  padding: 6px 12px;
-}
-
 /* Appui : scale(0.96) en mode modern uniquement (Win95 gère le pressed via box-shadow). */
 html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   transform: scale(0.96);
@@ -672,8 +666,47 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   color: var(--color-on-accent);
 }
 
-.f2s-btn--primary:hover:not(:disabled) {
+.f2s-btn--primary:hover:not(:disabled):not(.f2s-btn--busy) {
   background: var(--color-orange-hover);
+}
+
+/* Progression d'un export (« Exporting 2/4 ») à la place du bouton
+   principal : un état, pas une action. Pleine opacité (un bouton grisé se
+   lirait « indisponible »), sans survol ni appui. */
+.f2s-btn--busy {
+  cursor: default;
+  pointer-events: none;
+}
+
+/* Un <span> ou un <a> stylé en bouton hérite de l'interligne du body (1.4),
+   alors qu'un <button> garde `normal` : sans ça, « Exporting 2/4 » ou
+   « Open in Slides » dépassaient de 4px la hauteur des boutons voisins et
+   faisaient grandir le header. */
+span.f2s-btn,
+a.f2s-btn {
+  line-height: normal;
+}
+
+/* Libellé suivi d'une icône (flèche en diagonale d'un lien qui ouvre
+   Google Slides dans le navigateur). */
+.f2s-btn--icon-end {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.f2s-btn--icon-end svg {
+  flex: none;
+  display: block;
+}
+
+/* Action du statut d'export dans le footer (Retry, Export again, Open in
+   Slides après une annulation) : même gabarit que Settings, 26px de haut,
+   5px 10px de padding. */
+.f2s-footer .f2s-btn--footer {
+  font-size: 12px;
+  line-height: 14px;
+  padding: 5px 10px;
 }
 
 /* ---- Body : rail de miniatures + canvas ---- */
@@ -725,6 +758,10 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
 
 .f2s-toast--success {
   --f2s-toast-tone: var(--color-orange);
+}
+
+.f2s-toast--info {
+  --f2s-toast-tone: var(--color-text);
 }
 
 .f2s-toast-text {
@@ -850,13 +887,50 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   border-left: 1px solid var(--color-border);
 }
 
-.f2s-empty {
+/* État vide : les trois étapes du parcours, numérotées dans des cases à
+   angles droits comme les badges du rail. Le nom des boutons cités passe à
+   l'encre, le reste en gris. */
+.f2s-empty-steps {
+  list-style: none;
+  counter-reset: f2s-step;
+  margin: 0;
+  padding: 24px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 400px;
   color: var(--color-text-muted);
   font-size: 14px;
   font-weight: 500;
-  padding: 24px 0;
-  text-align: center;
-  text-wrap: balance;
+  line-height: 1.4;
+}
+
+.f2s-empty-steps li {
+  counter-increment: f2s-step;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  text-wrap: pretty;
+}
+
+.f2s-empty-steps li::before {
+  content: counter(f2s-step);
+  flex: none;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-text);
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.f2s-empty-steps strong {
+  color: var(--color-text);
+  font-weight: 700;
 }
 
 .f2s-frame-info {
@@ -1620,6 +1694,10 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  /* Calé en haut de la ligne plutôt que sur la ligne de base : sinon la
+     place réservée aux jambages sous la boîte grandissait le bouton de 3.5px
+     (« Exporting 2/4 », « Waiting… »). */
+  vertical-align: top;
 }
 
 @keyframes f2s-spin {
@@ -1665,22 +1743,38 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   flex: none;
 }
 
+/* 26px de haut : 14px de contenu (icône 14px, texte 12px sur une ligne de
+   14px) + 5px de padding + 1px de bordure, de chaque côté. Le padding
+   latéral vaut le double du vertical. */
 .f2s-footer-settings {
   display: flex;
   align-items: center;
   gap: 4px;
   color: var(--color-text-muted);
   font-size: 12px;
+  line-height: 14px;
   font-weight: 700;
   font-family: inherit;
   background: transparent;
   border: 1px solid var(--color-border);
   border-radius: 8px;
-  padding: 6px 10px;
+  padding: 5px 10px;
   transition:
     color var(--b-duration) var(--b-ease-default),
     background-color var(--b-duration) var(--b-ease-default),
     transform var(--b-duration) var(--b-ease-out);
+}
+
+/* Centrage optique : sur une ligne de 14px, Cabinet Grotesk pose ses
+   capitales 1px au-dessus du centre (mesuré au pixel : centre des capitales
+   à 11.8px, centre de la boîte à 12.8px), alors que l'icône, elle, est
+   centrée. Le texte descend donc d'1px pour que capitales et icône partagent
+   le même axe, sans toucher au padding ni à la hauteur. Le skin Windows 95
+   a sa propre police, d'où le périmètre au skin modern. */
+html:not(.f2s-skin--win95) .f2s-footer-settings > span,
+html:not(.f2s-skin--win95) .f2s-coffee-link > span {
+  position: relative;
+  top: 1px;
 }
 
 .f2s-footer-settings:hover:not(:disabled),
@@ -1734,10 +1828,29 @@ html:not(.f2s-skin--win95)
   gap: 16px;
 }
 
-/* 10px entre le logo et "Buy me a coffee" (le gap du conteneur reste 16px
-   pour les autres boutons) : 16px - 6px. */
-html:not(.f2s-skin--win95) .f2s-footer-actions .f2s-logo-link {
-  margin-right: -6px;
+/* "Buy me a coffee" : lien texte de la DA (`.text-link` : encre, 12px, 500,
+   souligné au survol) suivi d'une flèche en diagonale, qui dit qu'il ouvre
+   un site externe. La zone cliquable garde les 26px de haut du footer. */
+.f2s-coffee-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 26px;
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.f2s-coffee-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.f2s-coffee-link svg {
+  flex: none;
+  display: block;
 }
 
 /* Statut du dernier export (réussi ou non) : pastille + texte tronqué sur
@@ -1760,7 +1873,8 @@ html:not(.f2s-skin--win95) .f2s-footer-actions .f2s-logo-link {
   color: var(--color-error);
 }
 
-.f2s-footer-status--success {
+.f2s-footer-status--success,
+.f2s-footer-status--info {
   color: var(--color-text);
 }
 
@@ -1793,6 +1907,14 @@ html:not(.f2s-skin--win95) .f2s-footer-actions .f2s-logo-link {
 
 .f2s-status-icon--error .f2s-status-icon-disc {
   fill: var(--color-error);
+}
+
+.f2s-status-icon--info {
+  color: var(--color-bg);
+}
+
+.f2s-status-icon--info .f2s-status-icon-disc {
+  fill: var(--color-text);
 }
 
 /* ---- Poignée de redimensionnement (coin bas droit) ----
@@ -2456,7 +2578,7 @@ html.f2s-skin--win95 .f2s-dim-unit,
 html.f2s-skin--win95 .f2s-dim-sep,
 html.f2s-skin--win95 .f2s-font-original,
 html.f2s-skin--win95 .f2s-font-arrow,
-html.f2s-skin--win95 .f2s-empty,
+html.f2s-skin--win95 .f2s-empty-steps,
 html.f2s-skin--win95 .f2s-canvas-empty,
 html.f2s-skin--win95 .f2s-tmpl-note {
   color: #000;
@@ -2758,6 +2880,12 @@ html.f2s-skin--win95 .f2s-resize-grip .f2s-grip-lo {
 /* Pastille carrée, comme les badges du rail. */
 html.f2s-skin--win95 .f2s-status-icon-disc {
   rx: 0;
+}
+
+/* Le fond de la pastille de succès passe au bleu de barre de titre : la
+   coche, à l'encre en modern, y deviendrait invisible. */
+html.f2s-skin--win95 .f2s-status-icon--success {
+  color: var(--w95-white);
 }
 
 /* ---- Modale de réglages (habillage + thème) ----
@@ -3620,10 +3748,15 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
 
   // src/ui/exportCursor.ts
   function exportCursorFromBatches(batches) {
-    if (!batches || batches.length === 0) return void 0;
-    const index = batches.findIndex((b2) => b2.status === "pending");
+    const slides = slideBatches(batches);
+    if (slides.length === 0) return void 0;
+    const index = slides.findIndex((b2) => b2.status === "pending");
     if (index === -1) return void 0;
-    return { frameId: batches[index].sourceSlideId, index, total: batches.length };
+    return { frameId: slides[index].sourceSlideId, index, total: slides.length };
+  }
+  var THEME_BATCH_ID = "__theme__";
+  function slideBatches(batches) {
+    return (batches ?? []).filter((b2) => b2.sourceSlideId !== THEME_BATCH_ID);
   }
 
   // src/serialize/fonts.ts
@@ -4014,11 +4147,11 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
   function StatusIcon({ tone }) {
     return /* @__PURE__ */ u3("svg", { className: `f2s-status-icon f2s-status-icon--${tone}`, width: "16", height: "16", viewBox: "0 0 66 66", fill: "none", "aria-hidden": "true", children: [
       /* @__PURE__ */ u3("rect", { className: "f2s-status-icon-disc", width: "66", height: "66", rx: "33" }),
-      tone === "success" ? /* @__PURE__ */ u3("path", { d: "M20 34 L29 43 L46 24", stroke: "currentColor", strokeWidth: "9", strokeLinecap: "round", strokeLinejoin: "round", fill: "none" }) : /* @__PURE__ */ u3("path", { d: "M24 24 L42 42 M42 24 L24 42", stroke: "currentColor", strokeWidth: "9", strokeLinecap: "round" })
+      tone === "success" ? /* @__PURE__ */ u3("path", { d: "M20 34 L29 43 L46 24", stroke: "currentColor", "stroke-width": "9", "stroke-linecap": "round", "stroke-linejoin": "round", fill: "none" }) : tone === "info" ? /* @__PURE__ */ u3("path", { d: "M33 31 L33 46 M33 20 L33 20.01", stroke: "currentColor", "stroke-width": "9", "stroke-linecap": "round" }) : /* @__PURE__ */ u3("path", { d: "M24 24 L42 42 M42 24 L24 42", stroke: "currentColor", "stroke-width": "9", "stroke-linecap": "round" })
     ] });
   }
   function CloseIcon() {
-    return /* @__PURE__ */ u3("svg", { width: "14", height: "14", viewBox: "0 0 14 14", fill: "none", xmlns: "http://www.w3.org/2000/svg", "aria-hidden": "true", children: /* @__PURE__ */ u3("path", { d: "m3 3 8 8M11 3l-8 8", stroke: "currentColor", strokeWidth: "1.6", strokeLinecap: "round" }) });
+    return /* @__PURE__ */ u3("svg", { width: "14", height: "14", viewBox: "0 0 14 14", fill: "none", xmlns: "http://www.w3.org/2000/svg", "aria-hidden": "true", children: /* @__PURE__ */ u3("path", { d: "m3 3 8 8M11 3l-8 8", stroke: "currentColor", "stroke-width": "1.6", "stroke-linecap": "round" }) });
   }
   function Toast({ notice, onDismiss }) {
     return /* @__PURE__ */ u3("div", { className: `f2s-toast f2s-toast--${notice.tone}`, role: notice.tone === "error" ? "alert" : "status", children: [
@@ -4192,11 +4325,17 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     onDismissNotice,
     locked,
     failedSlides,
-    onPreviewSettled
+    onPreviewSettled,
+    onPacedCursorChange
   }) {
     const { itemRefs, itemState, registerItem, onThumbPointerDown, onThumbKeyDown, announcement } = useRailReorder(order, setOrder, locked);
     const activeFrame = activeId ? frames[activeId] : void 0;
     const pacedCursor = usePacedExportCursor(exportAttempt, order, exportCursor, exportConcluded);
+    const pacedIndex = pacedCursor?.index;
+    const pacedTotal = pacedCursor?.total;
+    h2(() => {
+      onPacedCursorChange(pacedCursor);
+    }, [pacedIndex, pacedTotal]);
     const exportingFrame = pacedCursor ? frames[pacedCursor.frameId] : void 0;
     const previewedFrame = exportingFrame ?? activeFrame;
     const highlightedId = pacedCursor?.frameId ?? activeId;
@@ -4219,10 +4358,18 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     if (order.length === 0) {
       return /* @__PURE__ */ u3("div", { className: "f2s-body", children: [
         notice && /* @__PURE__ */ u3(Toast, { notice, onDismiss: onDismissNotice }, notice.id),
-        /* @__PURE__ */ u3("main", { className: "f2s-canvas", children: /* @__PURE__ */ u3("p", { className: "f2s-empty", children: [
-          'Click "Select frames", then select the frames',
-          /* @__PURE__ */ u3("br", {}),
-          "you want to export on the Figma canvas, and click the button again to add your selection."
+        /* @__PURE__ */ u3("main", { className: "f2s-canvas", children: /* @__PURE__ */ u3("ol", { className: "f2s-empty-steps", children: [
+          /* @__PURE__ */ u3("li", { children: "Select frames on the Figma canvas." }),
+          /* @__PURE__ */ u3("li", { children: /* @__PURE__ */ u3("span", { children: [
+            "Click ",
+            /* @__PURE__ */ u3("strong", { children: "Add" }),
+            ": they join the deck in the order you selected them."
+          ] }) }),
+          /* @__PURE__ */ u3("li", { children: /* @__PURE__ */ u3("span", { children: [
+            "Click ",
+            /* @__PURE__ */ u3("strong", { children: "Export" }),
+            " to create the presentation in Google Slides."
+          ] }) })
         ] }) })
       ] });
     }
@@ -4392,7 +4539,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
   function colorLabel(c3) {
     return c3.variableName ?? c3.hex;
   }
-  function TemplateStylePanel({ colors, fonts, fontOverrides, colorRoles, setColorRoles }) {
+  function TemplateStylePanel({ colors, fonts, fontOverrides, colorRoles, setColorRoles, onNotice }) {
     const assignedKeyByRole = /* @__PURE__ */ new Map();
     for (const [key, role] of Object.entries(colorRoles)) assignedKeyByRole.set(role, key);
     const sortedColors = [...colors].sort((a3, b2) => b2.usageCount - a3.usageCount);
@@ -4410,10 +4557,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
       const previousKey = assignedKeyByRole.get(role);
       if (previousKey && previousKey !== key) {
         const stolenFrom = byKey.get(previousKey);
-        postToPlugin({
-          type: "notify",
-          message: `"${THEME_ROLE_LABELS[role]}" was already used by ${stolenFrom ? colorLabel(stolenFrom) : previousKey}. Reassigned.`
-        });
+        onNotice(`"${THEME_ROLE_LABELS[role]}" moved from ${stolenFrom ? colorLabel(stolenFrom) : previousKey} to this color.`);
       }
       setColorRoles((prev) => {
         const next = {};
@@ -4465,7 +4609,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
       /* @__PURE__ */ u3("section", { className: "f2s-tmpl-section", children: [
         /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading f2s-style-heading", children: "Typography" }),
         fonts.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: "No text detected yet." }) : /* @__PURE__ */ u3("ul", { className: "f2s-style-list", children: fonts.map((f4) => {
-          const family = f4.original ? fontOverrides[f4.original] ?? f4.family : f4.family;
+          const family = fontOverrides[f4.original ?? f4.family] ?? f4.family;
           return /* @__PURE__ */ u3("li", { className: "f2s-style-row", children: /* @__PURE__ */ u3("div", { className: "f2s-style-row-main", children: [
             /* @__PURE__ */ u3("span", { className: "f2s-style-font-swatch", style: { fontFamily: family }, children: "Aa" }),
             /* @__PURE__ */ u3("span", { className: "f2s-style-font-info", children: [
@@ -4563,11 +4707,18 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     colors,
     fonts,
     colorRoles,
-    setColorRoles
+    setColorRoles,
+    onNotice,
+    onPacedCursorChange
   }) {
     const { itemRefs, itemState, registerItem, onThumbPointerDown, onThumbKeyDown, announcement } = useRailReorder(order, setOrder, locked);
     const activeLayout = activeId ? layouts[activeId] : void 0;
     const pacedCursor = usePacedExportCursor(exportAttempt, order, exportCursor, exportConcluded);
+    const pacedIndex = pacedCursor?.index;
+    const pacedTotal = pacedCursor?.total;
+    h2(() => {
+      onPacedCursorChange(pacedCursor);
+    }, [pacedIndex, pacedTotal]);
     const exportingLayout = pacedCursor ? layouts[pacedCursor.frameId] : void 0;
     const previewedLayout = exportingLayout ?? activeLayout;
     const highlightedId = pacedCursor?.frameId ?? activeId;
@@ -4605,10 +4756,18 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     if (order.length === 0) {
       return /* @__PURE__ */ u3("div", { className: "f2s-body", children: [
         notice && /* @__PURE__ */ u3(Toast, { notice, onDismiss: onDismissNotice }, notice.id),
-        /* @__PURE__ */ u3("main", { className: "f2s-canvas", children: /* @__PURE__ */ u3("p", { className: "f2s-empty", children: [
-          'Click "Select frames", then select the frames',
-          /* @__PURE__ */ u3("br", {}),
-          "you want to use as a layout on the Figma canvas, and click the button again to add your selection."
+        /* @__PURE__ */ u3("main", { className: "f2s-canvas", children: /* @__PURE__ */ u3("ol", { className: "f2s-empty-steps", children: [
+          /* @__PURE__ */ u3("li", { children: "Select the frames to use as layouts on the Figma canvas." }),
+          /* @__PURE__ */ u3("li", { children: /* @__PURE__ */ u3("span", { children: [
+            "Click ",
+            /* @__PURE__ */ u3("strong", { children: "Add" }),
+            ": they join the template in the order you selected them."
+          ] }) }),
+          /* @__PURE__ */ u3("li", { children: /* @__PURE__ */ u3("span", { children: [
+            "Click ",
+            /* @__PURE__ */ u3("strong", { children: "Create template" }),
+            " to build it in Google Slides."
+          ] }) })
         ] }) }),
         /* @__PURE__ */ u3("aside", { className: "f2s-style-aside", children: /* @__PURE__ */ u3(
           TemplateStylePanel,
@@ -4617,7 +4776,8 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
             fonts,
             fontOverrides,
             colorRoles,
-            setColorRoles
+            setColorRoles,
+            onNotice
           }
         ) })
       ] });
@@ -4733,7 +4893,8 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
           fonts,
           fontOverrides,
           colorRoles,
-          setColorRoles
+          setColorRoles,
+          onNotice
         }
       ) })
     ] });
@@ -5152,8 +5313,8 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
         },
         onDblClick: () => postToPlugin({ type: "reset-ui-size" }),
         children: /* @__PURE__ */ u3("svg", { width: "12", height: "12", viewBox: "0 0 14 14", fill: "none", "aria-hidden": "true", children: [
-          /* @__PURE__ */ u3("path", { className: "f2s-grip-hi", d: "M3 13 13 3M7 13l6-6M11 13l2-2", strokeWidth: "1" }),
-          /* @__PURE__ */ u3("path", { className: "f2s-grip-lo", d: "M4 13 13 4M8 13l5-5M12 13l1-1", strokeWidth: "1" })
+          /* @__PURE__ */ u3("path", { className: "f2s-grip-hi", d: "M3 13 13 3M7 13l6-6M11 13l2-2", "stroke-width": "1" }),
+          /* @__PURE__ */ u3("path", { className: "f2s-grip-lo", d: "M4 13 13 4M8 13l5-5M12 13l1-1", "stroke-width": "1" })
         ] })
       }
     );
@@ -5197,10 +5358,24 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
   }
 
   // src/ui.tsx
+  function sameExportInput(exported, current) {
+    return exported !== void 0 && exported.length === current.length && exported.every((value, i3) => value === current[i3]);
+  }
+  function canceledMessage(mode, created, total, presentationCreated) {
+    const what = mode === "template" ? "Template creation" : "Export";
+    const noun = mode === "template" ? "layout" : "slide";
+    if (created > 0) return `${what} canceled. ${created} of ${total} ${noun}${total === 1 ? "" : "s"} ${created === 1 ? "was" : "were"} created.`;
+    if (presentationCreated) return `${what} canceled before the first ${noun}. An empty presentation stays in your Google Drive.`;
+    return `${what} canceled. Nothing was created in Google Drive.`;
+  }
   var POLL_INTERVAL_MS = 1e3;
   var POLL_TIMEOUT_MS = 3 * 60 * 1e3;
-  var SELECTION_NOTICE_MS = 4e3;
-  var ACTION_ERROR_NOTICE_MS = 7e3;
+  function noticeDuration(message) {
+    return Math.min(1e4, Math.max(4e3, message.length * 60));
+  }
+  function addLabel(count) {
+    return count === 0 ? "Add frames" : `Add ${count} frame${count === 1 ? "" : "s"}`;
+  }
   var FAILED_SLIDE_FALLBACK = "This slide could not be written to Google Slides.";
   var SITE_URL = "https://decker.billeltighidet.fr";
   var AuthExpiredError = class extends Error {
@@ -5240,8 +5415,8 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
       "svg",
       {
         className: "f2s-icon-gear",
-        width: "16",
-        height: "16",
+        width: "14",
+        height: "14",
         viewBox: "0 0 32 32",
         fill: "currentColor",
         xmlns: "http://www.w3.org/2000/svg",
@@ -5252,6 +5427,9 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
         ]
       }
     );
+  }
+  function ArrowUpRightIcon() {
+    return /* @__PURE__ */ u3("svg", { width: "12", height: "12", viewBox: "0 0 32 32", fill: "currentColor", xmlns: "http://www.w3.org/2000/svg", "aria-hidden": "true", children: /* @__PURE__ */ u3("path", { d: "M10,6V8H22.59L6,24.59,7.41,26,24,9.41V22h2V6Z" }) });
   }
   function successMessage(mode, slideCount) {
     if (mode === "template") return `Template created in Google Slides (${slideCount} layout${slideCount === 1 ? "" : "s"}).`;
@@ -5298,19 +5476,17 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     const [templateLayouts, setTemplateLayouts] = d2({});
     const [templateOrder, setTemplateOrder] = d2([]);
     const [activeTemplateId, setActiveTemplateId] = d2();
-    const [templateSelecting, setTemplateSelecting] = d2(false);
     const [templateSelectionNotice, setTemplateSelectionNotice] = d2();
     const noticeIdRef = A2(0);
-    function showTemplateSelectionNotice(message, durationMs = SELECTION_NOTICE_MS, tone = "error") {
-      setTemplateSelectionNotice({ id: ++noticeIdRef.current, message, tone, durationMs });
+    function showTemplateSelectionNotice(message, tone = "error") {
+      setTemplateSelectionNotice({ id: ++noticeIdRef.current, message, tone, durationMs: noticeDuration(message) });
     }
     function clearTemplateSelectionNotice() {
       setTemplateSelectionNotice(void 0);
     }
-    const [selecting, setSelecting] = d2(false);
     const [selectionNotice, setSelectionNotice] = d2();
-    function showSelectionNotice(message, durationMs = SELECTION_NOTICE_MS, tone = "error") {
-      setSelectionNotice({ id: ++noticeIdRef.current, message, tone, durationMs });
+    function showSelectionNotice(message, tone = "error") {
+      setSelectionNotice({ id: ++noticeIdRef.current, message, tone, durationMs: noticeDuration(message) });
     }
     function clearSelectionNotice() {
       setSelectionNotice(void 0);
@@ -5320,6 +5496,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
       clearTemplateSelectionNotice();
     }, [mode]);
     const [hasCanvasSelection, setHasCanvasSelection] = d2(false);
+    const [addable, setAddable] = d2({ deck: 0, template: 0 });
     const [sessionToken, setSessionToken] = d2();
     const [accountEmail, setAccountEmail] = d2();
     const [loginError, setLoginError] = d2();
@@ -5349,9 +5526,8 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
       const subs = [];
       for (const id of order) {
         for (const s3 of frames[id]?.fontSubstitutions ?? []) {
-          const key = `${s3.original}\u2192${s3.resolved}`;
-          if (seen.has(key)) continue;
-          seen.add(key);
+          if (seen.has(s3.original)) continue;
+          seen.add(s3.original);
           subs.push(s3);
         }
       }
@@ -5362,9 +5538,8 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
       const subs = [];
       for (const id of templateOrder) {
         for (const s3 of templateLayouts[id]?.fontSubstitutions ?? []) {
-          const key = `${s3.original}\u2192${s3.resolved}`;
-          if (seen.has(key)) continue;
-          seen.add(key);
+          if (seen.has(s3.original)) continue;
+          seen.add(s3.original);
           subs.push(s3);
         }
       }
@@ -5392,6 +5567,22 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
       });
     }, [templateColors]);
     const [fontOverrides, setFontOverrides] = d2({});
+    const deckInput = T2(
+      () => [deckTitle.trim(), JSON.stringify(fontOverrides), ...order.flatMap((id) => [id, frames[id]?.name ?? "", frames[id]?.previewDataUrl ?? ""])],
+      [deckTitle, fontOverrides, order, frames]
+    );
+    const templateInput = T2(
+      () => [
+        templateTitle.trim(),
+        JSON.stringify(fontOverrides),
+        JSON.stringify(colorRoles),
+        ...templateOrder.flatMap((id) => {
+          const layout = templateLayouts[id];
+          return [id, layout?.name ?? "", layout?.previewDataUrl ?? "", JSON.stringify(layout?.elements ?? [])];
+        })
+      ],
+      [templateTitle, fontOverrides, colorRoles, templateOrder, templateLayouts]
+    );
     const [exportState, setExportState] = d2("idle");
     const [exportAttempt, setExportAttempt] = d2(0);
     const [exportProgress, setExportProgress] = d2(0);
@@ -5403,12 +5594,29 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     const [failedSlides, setFailedSlides] = d2({});
     const failedCount = Object.keys(failedSlides).length;
     const [exportedCount, setExportedCount] = d2(0);
+    const [canceledTotal, setCanceledTotal] = d2(0);
     const [previewSettled, setPreviewSettled] = d2(true);
     const [retryable, setRetryable] = d2(false);
     const [retrying, setRetrying] = d2(false);
+    const [canceling, setCanceling] = d2(false);
+    const cancelRequestedRef = A2(false);
+    const exportJobIdRef = A2();
+    const [exportedInput, setExportedInput] = d2();
+    const [previewCursor, setPreviewCursor] = d2();
     const pendingAssets = T2(() => /* @__PURE__ */ new Map(), []);
     function applyConclusion(concluded) {
       setExportCursor(void 0);
+      setCanceling(false);
+      if (concluded.status === "canceled") {
+        setExportState("canceled");
+        setExportError(void 0);
+        setResultUrl(concluded.resultUrl);
+        setFailedSlides({});
+        setRetryable(false);
+        setExportedCount(concluded.slideCount);
+        setCanceledTotal(concluded.total);
+        return;
+      }
       if (concluded.status === "done") {
         setExportState("done");
         setExportProgress(100);
@@ -5425,9 +5633,10 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
       }
     }
     function progressFromBatches(batches) {
-      if (!batches || batches.length === 0) return 0;
-      const settled = batches.filter((b2) => b2.status !== "pending").length;
-      return Math.round(settled / batches.length * 100);
+      const slides = slideBatches(batches);
+      if (slides.length === 0) return 0;
+      const settled = slides.filter((b2) => b2.status !== "pending").length;
+      return Math.round(settled / slides.length * 100);
     }
     function applyLiveBatches(batches) {
       setExportCursor(exportCursorFromBatches(batches));
@@ -5551,7 +5760,17 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
           }
           case "canvas-selection-changed":
             setHasCanvasSelection(Boolean(msg.hasSelection));
+            setAddable({ deck: Number(msg.deckAddable) || 0, template: Number(msg.templateAddable) || 0 });
             break;
+          // Notification d'une action faite dans le plugin (code.ts,
+          // `postNotice`) : toujours dans le toast du panneau concerné, jamais
+          // dans la barre de Figma.
+          case "notice": {
+            const tone = msg.tone === "success" || msg.tone === "info" ? msg.tone : "error";
+            if (msg.mode === "template") showTemplateSelectionNotice(String(msg.message), tone);
+            else showSelectionNotice(String(msg.message), tone);
+            break;
+          }
           // Habillage persisté via clientStorage (code.ts) : sans stockage
           // durable dans l'iframe UI, c'est le seul moyen que le choix
           // survive à la fermeture du plugin.
@@ -5579,20 +5798,6 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
           case "theme-preference-restored":
             if (isThemePreference(msg.theme)) setThemeOverride(msg.theme);
             break;
-          case "no-frames-selected":
-            if (modeRef.current === "template") {
-              showTemplateSelectionNotice("Select at least one frame on the Figma canvas before clicking.");
-            } else {
-              showSelectionNotice("Select at least one frame on the Figma canvas before clicking.");
-            }
-            break;
-          case "too-many-frames":
-            if (modeRef.current === "template") {
-              showTemplateSelectionNotice(`${msg.count} layouts selected. A template is capped at ${msg.max} to stay focused.`);
-            } else {
-              showSelectionNotice(`${msg.count} frames selected. Beyond ${msg.max}, export may become slow.`);
-            }
-            break;
           case "export-payload":
             void handleExportPayload(
               msg.document,
@@ -5606,16 +5811,12 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
             setExportState("error");
             setExportError(msg.message);
             break;
-          // Échec côté sandbox d'une action qui n'est PAS un export (ajout de
-          // la sélection au deck/template, dump debug). Passait avant par
-          // `export-error` : muet tant qu'aucun export n'avait été lancé (le
-          // footer n'affiche l'erreur que pour le mode qui a lancé l'export),
-          // et maquillé en échec d'export dans le cas contraire. Affiché ici
-          // dans le toast du mode courant, là où l'utilisateur vient de cliquer.
+          // Échec du dump debug (modale Settings, section Developer) : dans le
+          // toast du mode courant, là où l'utilisateur vient de cliquer.
           case "action-error": {
             const text = String(msg.message);
-            if (modeRef.current === "template") showTemplateSelectionNotice(text, ACTION_ERROR_NOTICE_MS);
-            else showSelectionNotice(text, ACTION_ERROR_NOTICE_MS);
+            if (modeRef.current === "template") showTemplateSelectionNotice(text);
+            else showSelectionNotice(text);
             break;
           }
           // Modale Settings, section Developer : dump de l'IRDocument courant
@@ -5703,14 +5904,18 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
       setExportAttempt((n2) => n2 + 1);
       setExportProgress(0);
       setExportError(void 0);
+      const canceledBeforeJob = { status: "canceled", resultUrl: void 0, slideCount: 0, total: doc.slides.length };
       try {
+        if (cancelRequestedRef.current) return applyConclusion(canceledBeforeJob);
         const expected = new Set(expectedAssetKeys);
         for (const key of [...pendingAssets.keys()]) {
           if (!expected.has(key)) pendingAssets.delete(key);
         }
         await waitForExpectedAssets(expectedAssetKeys);
+        if (cancelRequestedRef.current) return applyConclusion(canceledBeforeJob);
         await uploadAssetBatches(expectedAssetKeys.map((k3) => [k3, pendingAssets.get(k3)]));
         pendingAssets.clear();
+        if (cancelRequestedRef.current) return applyConclusion(canceledBeforeJob);
         const form = new FormData();
         form.append("document", JSON.stringify(doc));
         const res = await request("export", `${backend.baseUrl}/export`, {
@@ -5723,11 +5928,14 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
         if (!res.ok) throw await requestFailure("export", res);
         const { jobId } = await res.json();
         setExportJobId(jobId);
+        exportJobIdRef.current = jobId;
+        if (cancelRequestedRef.current) void sendCancel(jobId);
         const concluded = await pollJob(jobId, applyLiveBatches);
         applyConclusion(concluded);
       } catch (err) {
         setExportState("error");
         setExportCursor(void 0);
+        setCanceling(false);
         setExportError(err instanceof Error ? err.message : String(err));
         if (err instanceof AuthExpiredError) {
           setSessionToken(void 0);
@@ -5761,7 +5969,16 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
           lastPresentationId = job.presentationId ?? lastPresentationId;
           onUpdate(batches);
           if (job.status === "done") {
-            return { status: "done", resultUrl: job.presentationUrl, slideCount: batches?.length ?? 0 };
+            return { status: "done", resultUrl: job.presentationUrl, slideCount: slideBatches(batches).length };
+          }
+          if (job.status === "canceled") {
+            const slides = slideBatches(batches);
+            return {
+              status: "canceled",
+              resultUrl: job.presentationUrl,
+              slideCount: slides.filter((b2) => b2.status === "applied").length,
+              total: slides.length
+            };
           }
           if (job.status === "failed") {
             const failedSlides2 = failedSlidesFrom(batches);
@@ -5806,6 +6023,9 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
       setExportState("exporting");
       setExportAttempt((n2) => n2 + 1);
       setExportError(void 0);
+      cancelRequestedRef.current = false;
+      setCanceling(false);
+      setPreviewCursor(void 0);
       try {
         const res = await request("retry", `${backend.baseUrl}/export/${exportJobId}/retry`, {
           method: "POST",
@@ -5819,6 +6039,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
       } catch (err) {
         setExportState("error");
         setExportCursor(void 0);
+        setCanceling(false);
         setExportError(err instanceof Error ? err.message : String(err));
         if (err instanceof AuthExpiredError) {
           setSessionToken(void 0);
@@ -5829,6 +6050,26 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
       } finally {
         setRetrying(false);
       }
+    }
+    async function sendCancel(jobId) {
+      try {
+        const res = await fetch(`${backend.baseUrl}/export/${jobId}/cancel`, { method: "POST", credentials: "include" });
+        if (res.ok || res.status === 409) return;
+        console.error(`[decker] cancel: HTTP ${res.status}`, await res.text().catch(() => ""));
+      } catch (err) {
+        console.error("[decker] cancel: no response", err);
+      }
+      cancelRequestedRef.current = false;
+      setCanceling(false);
+      const message = "Couldn't cancel. The export keeps going and will finish on its own.";
+      if (modeRef.current === "template") showTemplateSelectionNotice(message);
+      else showSelectionNotice(message);
+    }
+    function handleCancelExport() {
+      if (cancelRequestedRef.current) return;
+      cancelRequestedRef.current = true;
+      setCanceling(true);
+      if (exportJobIdRef.current) void sendCancel(exportJobIdRef.current);
     }
     async function pollAuthSession(pollId) {
       for (let i3 = 0; i3 < 400; i3++) {
@@ -5931,12 +6172,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     }
     function handleAddFramesClick() {
       clearSelectionNotice();
-      if (!selecting) {
-        setSelecting(true);
-        return;
-      }
       postToPlugin({ type: "add-selected-frames" });
-      setSelecting(false);
     }
     function removeFrame(id) {
       postToPlugin({ type: "remove-frame", id });
@@ -5950,12 +6186,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     }
     function handleAddTemplateLayoutClick() {
       clearTemplateSelectionNotice();
-      if (!templateSelecting) {
-        setTemplateSelecting(true);
-        return;
-      }
       postToPlugin({ type: "add-template-layout" });
-      setTemplateSelecting(false);
     }
     function removeTemplateLayout(id) {
       postToPlugin({ type: "remove-template-layout", id });
@@ -5978,15 +6209,23 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
       if (name.trim().length === 0) return;
       postToPlugin({ type: "rename-template-layout", id, name: name.trim() });
     }
-    function startExport() {
+    function beginExport(source, input) {
       setExportState("exporting");
       setExportProgress(0);
-      setExportSource("deck");
+      setExportSource(source);
       setPreviewSettled(false);
       setExportCursor(void 0);
       setExportJobId(void 0);
+      exportJobIdRef.current = void 0;
+      cancelRequestedRef.current = false;
+      setCanceling(false);
       setFailedSlides({});
       setRetryable(false);
+      setExportedInput(input);
+      setPreviewCursor(void 0);
+    }
+    function startExport() {
+      beginExport("deck", deckInput);
       const options = {
         mode: "new-presentation",
         rasterScale: 2,
@@ -6004,14 +6243,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
       });
     }
     function startTemplateCreate() {
-      setExportState("exporting");
-      setExportProgress(0);
-      setExportSource("template");
-      setPreviewSettled(false);
-      setExportCursor(void 0);
-      setExportJobId(void 0);
-      setFailedSlides({});
-      setRetryable(false);
+      beginExport("template", templateInput);
       postToPlugin({
         type: "request-template",
         includedFrameIds: templateOrder,
@@ -6026,18 +6258,69 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     h2(() => {
       if (!successVisible || exportSource === void 0) return;
       const text = successMessage(exportSource, exportedCount);
-      if (exportSource === "template") showTemplateSelectionNotice(text, SELECTION_NOTICE_MS, "success");
-      else showSelectionNotice(text, SELECTION_NOTICE_MS, "success");
+      if (exportSource === "template") showTemplateSelectionNotice(text, "success");
+      else showSelectionNotice(text, "success");
     }, [successVisible]);
     const busyFromOtherMode = exporting && exportSource !== void 0 && exportSource !== mode;
     const busyTitle = exportSource === "deck" ? "A deck export is still running. Wait for it to finish." : "A template creation is still running. Wait for it to finish.";
-    const exportedHere = exportSource === mode && (exportState === "done" || exportState === "error") && Boolean(resultUrl);
+    const concludedExport = exportState === "done" || exportState === "error" || exportState === "canceled";
+    const concludedHere = exportSource === mode && concludedExport;
+    const resultCurrent = concludedHere && sameExportInput(exportedInput, mode === "deck" ? deckInput : templateInput);
+    const settlingHere = concludedHere && !previewSettled;
+    const exportedHere = concludedHere && Boolean(resultUrl);
     const againTitle = "Creates a new presentation in your Google Drive. The one you just exported stays as it is.";
-    const failedSlidesHere = exportState === "error" && exportSource === mode ? failedSlides : void 0;
-    function renderPrimaryAction(label, disabled, title, onClick) {
-      if (sessionToken) {
-        return /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--primary", disabled, title, onClick, children: label });
+    const failedSlidesHere = exportState === "error" && resultCurrent ? failedSlides : void 0;
+    function renderAddAction(count, panel, onClick) {
+      const where = panel === "deck" ? "the deck" : "the template";
+      const title = exporting ? `${panel === "deck" ? "An export" : "A template creation"} is running. Wait for it to finish before changing ${where}.` : count > 0 ? `Add the selected frames to ${where}, in the order you selected them.` : hasCanvasSelection ? `The selected frames are already in ${where}.` : `Select frames on the Figma canvas to add them to ${where}.`;
+      return /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--secondary f2s-tabular", disabled: exporting || count === 0, title, onClick, children: addLabel(count) });
+    }
+    function renderPrimaryActions() {
+      const isDeck = mode === "deck";
+      const startLabel = isDeck ? exportedHere ? "Export again" : "Export" : exportedHere ? "Create again" : "Create template";
+      if (!sessionToken) return renderSignIn(startLabel);
+      if (exportSource === mode && (exporting || settlingHere)) {
+        const verb = canceling ? "Canceling" : isDeck ? "Exporting" : "Creating";
+        const label = previewCursor && !canceling ? `${verb} ${previewCursor.index + 1}/${previewCursor.total}` : verb;
+        return /* @__PURE__ */ u3(S, { children: [
+          exporting && /* @__PURE__ */ u3(
+            "button",
+            {
+              type: "button",
+              className: "f2s-btn f2s-btn--secondary",
+              disabled: canceling,
+              title: `Stop after the ${isDeck ? "slide" : "layout"} being written. What's already created stays in Google Slides.`,
+              onClick: handleCancelExport,
+              children: "Cancel"
+            }
+          ),
+          /* @__PURE__ */ u3("span", { className: "f2s-btn f2s-btn--primary f2s-btn--busy f2s-tabular", children: /* @__PURE__ */ u3("span", { className: "f2s-btn-loading", children: [
+            /* @__PURE__ */ u3("span", { className: "f2s-spinner", "aria-hidden": "true" }),
+            label
+          ] }) })
+        ] });
       }
+      if (resultCurrent && resultUrl && exportState !== "canceled") {
+        return /* @__PURE__ */ u3(
+          "a",
+          {
+            href: resultUrl,
+            target: "_blank",
+            rel: "noopener noreferrer",
+            className: "f2s-btn f2s-btn--primary f2s-btn--icon-end",
+            title: isDeck ? "Open the presentation in Google Slides." : "Open the template in Google Slides.",
+            children: [
+              "Open in Slides",
+              /* @__PURE__ */ u3(ArrowUpRightIcon, {})
+            ]
+          }
+        );
+      }
+      const disabled = busyFromOtherMode || (isDeck ? order.length === 0 : templateOrder.length === 0 || templateHasBlockingLayout);
+      const title = busyFromOtherMode ? busyTitle : !isDeck && templateHasBlockingLayout ? "Fix the blocking issues listed below before creating the template." : exportedHere ? againTitle : void 0;
+      return /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--primary", disabled, title, onClick: isDeck ? startExport : startTemplateCreate, children: startLabel });
+    }
+    function renderSignIn(label) {
       if (authUrl) {
         return /* @__PURE__ */ u3(
           "a",
@@ -6062,6 +6345,50 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
         /* @__PURE__ */ u3("span", { className: "f2s-spinner", "aria-hidden": "true" }),
         "Preparing sign-in\u2026"
       ] }) });
+    }
+    function renderExportStatus() {
+      if (!resultCurrent) return null;
+      const noun = mode === "template" ? "layout" : "slide";
+      if (exportState === "error" && exportError) {
+        return /* @__PURE__ */ u3(S, { children: [
+          /* @__PURE__ */ u3("p", { className: "f2s-footer-status f2s-footer-status--error", role: "alert", title: exportError, children: [
+            /* @__PURE__ */ u3(StatusIcon, { tone: "error" }),
+            /* @__PURE__ */ u3("span", { className: "f2s-footer-status-text", children: exportError })
+          ] }),
+          retryable && /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--secondary f2s-btn--footer", disabled: retrying, onClick: handleRetryFailedSlides, children: retrying ? "Retrying\u2026" : `Retry ${failedCount} failed ${noun}${failedCount === 1 ? "" : "s"}` })
+        ] });
+      }
+      if (successVisible && exportState === "done") {
+        return /* @__PURE__ */ u3(S, { children: [
+          /* @__PURE__ */ u3("p", { className: "f2s-footer-status f2s-footer-status--success", role: "status", children: [
+            /* @__PURE__ */ u3(StatusIcon, { tone: "success" }),
+            /* @__PURE__ */ u3("span", { className: "f2s-footer-status-text", children: successMessage(mode, exportedCount) })
+          ] }),
+          /* @__PURE__ */ u3(
+            "button",
+            {
+              type: "button",
+              className: "f2s-btn f2s-btn--secondary f2s-btn--footer",
+              title: againTitle,
+              onClick: mode === "deck" ? startExport : startTemplateCreate,
+              children: mode === "deck" ? "Export again" : "Create again"
+            }
+          )
+        ] });
+      }
+      if (exportState === "canceled" && previewSettled) {
+        return /* @__PURE__ */ u3(S, { children: [
+          /* @__PURE__ */ u3("p", { className: "f2s-footer-status f2s-footer-status--info", role: "status", children: [
+            /* @__PURE__ */ u3(StatusIcon, { tone: "info" }),
+            /* @__PURE__ */ u3("span", { className: "f2s-footer-status-text", children: canceledMessage(mode, exportedCount, canceledTotal, Boolean(resultUrl)) })
+          ] }),
+          resultUrl && exportedCount > 0 && /* @__PURE__ */ u3("a", { href: resultUrl, target: "_blank", rel: "noopener noreferrer", className: "f2s-btn f2s-btn--secondary f2s-btn--footer f2s-btn--icon-end", children: [
+            "Open in Slides",
+            /* @__PURE__ */ u3(ArrowUpRightIcon, {})
+          ] })
+        ] });
+      }
+      return null;
     }
     return /* @__PURE__ */ u3(S, { children: [
       skin === "win95" && /* @__PURE__ */ u3(TitleBar, { mode }),
@@ -6121,17 +6448,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
           ] })
         ] }),
         mode === "deck" ? /* @__PURE__ */ u3("div", { className: "f2s-topbar-actions", children: [
-          /* @__PURE__ */ u3(
-            "button",
-            {
-              type: "button",
-              className: "f2s-btn f2s-btn--secondary",
-              disabled: exporting,
-              title: exporting ? "An export is running. Wait for it to finish before changing the deck." : void 0,
-              onClick: handleAddFramesClick,
-              children: selecting ? "Add selection" : "Select frames"
-            }
-          ),
+          renderAddAction(addable.deck, "deck", handleAddFramesClick),
           /* @__PURE__ */ u3(
             "button",
             {
@@ -6143,24 +6460,9 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
               children: "Prepare for Slides"
             }
           ),
-          renderPrimaryAction(
-            exportedHere ? "Export again" : "Export",
-            exporting || order.length === 0,
-            busyFromOtherMode ? busyTitle : exportedHere ? againTitle : void 0,
-            startExport
-          )
+          renderPrimaryActions()
         ] }) : /* @__PURE__ */ u3("div", { className: "f2s-topbar-actions", children: [
-          /* @__PURE__ */ u3(
-            "button",
-            {
-              type: "button",
-              className: "f2s-btn f2s-btn--secondary",
-              disabled: exporting,
-              title: exporting ? "A template creation is running. Wait for it to finish before changing the layouts." : void 0,
-              onClick: handleAddTemplateLayoutClick,
-              children: templateSelecting ? "Add selection" : "Select frames"
-            }
-          ),
+          renderAddAction(addable.template, "template", handleAddTemplateLayoutClick),
           /* @__PURE__ */ u3(
             "button",
             {
@@ -6172,29 +6474,32 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
               children: "Prepare for Slides"
             }
           ),
-          renderPrimaryAction(
-            exportedHere ? "Create again" : "Create template",
-            exporting || templateOrder.length === 0 || templateHasBlockingLayout,
-            busyFromOtherMode ? busyTitle : templateHasBlockingLayout ? "Fix the blocking issues listed below before creating the template." : exportedHere ? againTitle : void 0,
-            startTemplateCreate
-          )
+          renderPrimaryActions()
         ] })
       ] }),
       /* @__PURE__ */ u3("div", { className: "f2s-toolbar", children: /* @__PURE__ */ u3("div", { className: "f2s-toolbar-row", children: /* @__PURE__ */ u3("div", { className: "f2s-toolbar-group", children: [
         /* @__PURE__ */ u3("span", { className: "f2s-toolbar-label", children: "Fonts:" }),
-        (mode === "deck" ? deckFontSubstitutions : templateFontSubstitutions).length === 0 ? /* @__PURE__ */ u3("span", { className: "f2s-toolbar-muted", children: "All fonts will appear here and can be replaced automatically." }) : (mode === "deck" ? deckFontSubstitutions : templateFontSubstitutions).map((s3) => /* @__PURE__ */ u3("label", { className: "f2s-font-select", title: `"${s3.original}" isn't available in Slides. Pick the replacement to use.`, children: [
-          /* @__PURE__ */ u3("span", { className: "f2s-font-original", children: s3.original }),
-          /* @__PURE__ */ u3("span", { className: "f2s-font-arrow", children: "\u2192" }),
-          /* @__PURE__ */ u3(
-            FontCombobox,
-            {
-              value: fontOverrides[s3.original] ?? s3.resolved,
-              options: AVAILABLE_SLIDES_FONTS,
-              ariaLabel: `Replacement font for "${s3.original}"`,
-              onChange: (value) => setFontOverrides((prev) => ({ ...prev, [s3.original]: value }))
-            }
-          )
-        ] }, s3.original))
+        (mode === "deck" ? deckFontSubstitutions : templateFontSubstitutions).length === 0 ? /* @__PURE__ */ u3("span", { className: "f2s-toolbar-muted", children: "The fonts of your frames will appear here, ready to replace." }) : (mode === "deck" ? deckFontSubstitutions : templateFontSubstitutions).map((s3) => /* @__PURE__ */ u3(
+          "label",
+          {
+            className: "f2s-font-select",
+            title: s3.available ? `Pick another font to use instead of "${s3.original}" everywhere in Slides.` : `"${s3.original}" isn't available in Slides. Pick the replacement to use.`,
+            children: [
+              /* @__PURE__ */ u3("span", { className: "f2s-font-original", children: s3.original }),
+              /* @__PURE__ */ u3("span", { className: "f2s-font-arrow", children: "\u2192" }),
+              /* @__PURE__ */ u3(
+                FontCombobox,
+                {
+                  value: fontOverrides[s3.original] ?? s3.resolved,
+                  options: AVAILABLE_SLIDES_FONTS,
+                  ariaLabel: `Replacement font for "${s3.original}"`,
+                  onChange: (value) => setFontOverrides((prev) => ({ ...prev, [s3.original]: value }))
+                }
+              )
+            ]
+          },
+          s3.original
+        ))
       ] }) }) }),
       mode === "deck" ? /* @__PURE__ */ u3(
         DeckPanel,
@@ -6207,8 +6512,9 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
           onRemove: removeFrame,
           fontOverrides,
           exportCursor: exportSource === "deck" ? exportCursor : void 0,
-          exportAttempt: exportSource === "deck" ? exportAttempt : void 0,
-          exportConcluded: exportSource === "deck" && (exportState === "done" || exportState === "error"),
+          exportAttempt: exportSource === "deck" && exportState !== "canceled" ? exportAttempt : void 0,
+          exportConcluded: exportSource === "deck" && concludedExport,
+          onPacedCursorChange: setPreviewCursor,
           notice: selectionNotice,
           onDismissNotice: clearSelectionNotice,
           locked: exporting,
@@ -6233,12 +6539,14 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
           onRenameCommit: commitTemplateLayoutRename,
           fontOverrides,
           exportCursor: exportSource === "template" ? exportCursor : void 0,
-          exportAttempt: exportSource === "template" ? exportAttempt : void 0,
-          exportConcluded: exportSource === "template" && (exportState === "done" || exportState === "error"),
+          exportAttempt: exportSource === "template" && exportState !== "canceled" ? exportAttempt : void 0,
+          exportConcluded: exportSource === "template" && concludedExport,
+          onPacedCursorChange: setPreviewCursor,
           colors: templateColors,
           fonts: templateFonts,
           colorRoles,
-          setColorRoles
+          setColorRoles,
+          onNotice: (message) => showTemplateSelectionNotice(message, "info")
         }
       ),
       /* @__PURE__ */ u3("footer", { className: "f2s-footer", children: [
@@ -6257,18 +6565,12 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
           }
         ) }),
         /* @__PURE__ */ u3("div", { className: "f2s-footer-actions", children: [
-          exportState === "error" && exportSource === mode && exportError && /* @__PURE__ */ u3("p", { className: "f2s-footer-status f2s-footer-status--error", role: "alert", title: exportError, children: [
-            /* @__PURE__ */ u3(StatusIcon, { tone: "error" }),
-            /* @__PURE__ */ u3("span", { className: "f2s-footer-status-text", children: exportError })
-          ] }),
-          successVisible && exportSource === mode && /* @__PURE__ */ u3("p", { className: "f2s-footer-status f2s-footer-status--success", role: "status", children: [
-            /* @__PURE__ */ u3(StatusIcon, { tone: "success" }),
-            /* @__PURE__ */ u3("span", { className: "f2s-footer-status-text", children: successMessage(mode, exportedCount) })
-          ] }),
+          renderExportStatus(),
           /* @__PURE__ */ u3(Logo, {}),
-          /* @__PURE__ */ u3("a", { href: "https://buymeacoffee.com/billelt", target: "_blank", rel: "noreferrer", className: "f2s-btn f2s-btn--secondary", children: "Buy me a coffee" }),
-          exportState === "error" && exportSource === mode && retryable && /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--secondary", disabled: retrying, onClick: handleRetryFailedSlides, children: retrying ? "Retrying\u2026" : `Retry ${failedCount} failed ${mode === "template" ? "layout" : "slide"}${failedCount === 1 ? "" : "s"}` }),
-          (exportState === "done" || exportState === "error") && exportSource === mode && resultUrl && /* @__PURE__ */ u3("a", { href: resultUrl, target: "_blank", rel: "noreferrer", className: "f2s-btn f2s-btn--primary", children: "Open presentation" })
+          /* @__PURE__ */ u3("a", { href: "https://buymeacoffee.com/billelt", target: "_blank", rel: "noopener noreferrer", className: "f2s-coffee-link", children: [
+            /* @__PURE__ */ u3("span", { children: "Buy me a coffee" }),
+            /* @__PURE__ */ u3(ArrowUpRightIcon, {})
+          ] })
         ] })
       ] }),
       /* @__PURE__ */ u3(

@@ -1407,8 +1407,59 @@
     });
   }
 
+  // src/serialize/selectionOrder.ts
+  function readingOrder(a, b) {
+    if (!a.box || !b.box) return 0;
+    const sameRow = Math.abs(a.box.y - b.box.y) < Math.min(a.box.height, b.box.height) / 2;
+    return sameRow ? a.box.x - b.box.x : a.box.y - b.box.y;
+  }
+  function nextSelectionOrder(previous, selected) {
+    const selectedIds = new Set(selected.map((f) => f.id));
+    const kept = previous.filter((id) => selectedIds.has(id));
+    const keptIds = new Set(kept);
+    const added = selected.filter((f) => !keptIds.has(f.id)).sort(readingOrder);
+    return [...kept, ...added.map((f) => f.id)];
+  }
+
+  // src/serialize/fontChoices.ts
+  function collectFontSubstitutions(slide) {
+    const seen = /* @__PURE__ */ new Set();
+    const fonts = [];
+    for (const el of slide.elements) {
+      if (el.kind !== "text") continue;
+      for (const run of el.runs) {
+        const original = run.originalFontFamily ?? run.fontFamily;
+        if (seen.has(original)) continue;
+        seen.add(original);
+        fonts.push({ original, resolved: run.fontFamily, available: run.originalFontFamily === void 0 });
+      }
+    }
+    return fonts;
+  }
+  function withFontOverrides(slide, overrides) {
+    if (Object.keys(overrides).length === 0) return slide;
+    return {
+      ...slide,
+      elements: slide.elements.map((el) => {
+        if (el.kind !== "text") return el;
+        return {
+          ...el,
+          runs: el.runs.map((run) => {
+            const original = run.originalFontFamily ?? run.fontFamily;
+            const override = overrides[original];
+            if (!override || override === run.fontFamily) return run;
+            return { ...run, fontFamily: override, originalFontFamily: original };
+          })
+        };
+      })
+    };
+  }
+
   // src/code.ts
   var MAX_FRAMES_WARNING = 20;
+  var ADD_FAILED_MESSAGE = "Couldn't add the selection. Close and reopen the plugin, then try again.";
+  var PREPARE_FAILED_MESSAGE = "Couldn't prepare the frames for Slides. Close and reopen the plugin, then try again.";
+  var EXPORT_PREPARE_FAILED_MESSAGE = "Couldn't read the frames to export. Close and reopen the plugin, then try again.";
   var TEMPLATE_MAX_LAYOUTS = 10;
   var PREVIEW_WIDTH = 960;
   var SLIDES_READY_KEY = "slidesExportReady";
@@ -1471,31 +1522,6 @@
   function yieldToUi() {
     return new Promise((resolve) => setTimeout(resolve, 0));
   }
-  function collectFontSubstitutions(slide) {
-    const seen = /* @__PURE__ */ new Set();
-    const subs = [];
-    for (const el of slide.elements) {
-      if (el.kind !== "text") continue;
-      for (const run of el.runs) {
-        if (!run.originalFontFamily) continue;
-        const key = `${run.originalFontFamily}\u2192${run.fontFamily}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        subs.push({ original: run.originalFontFamily, resolved: run.fontFamily });
-      }
-    }
-    return subs;
-  }
-  function applyFontOverrides(slide, overrides) {
-    if (Object.keys(overrides).length === 0) return;
-    for (const el of slide.elements) {
-      if (el.kind !== "text") continue;
-      for (const run of el.runs) {
-        const override = run.originalFontFamily && overrides[run.originalFontFamily];
-        if (override) run.fontFamily = override;
-      }
-    }
-  }
   async function generatePreview(node) {
     const bytes = await node.exportAsync({ format: "PNG", constraint: { type: "WIDTH", value: PREVIEW_WIDTH } });
     return `data:image/png;base64,${figma.base64Encode(bytes)}`;
@@ -1514,32 +1540,53 @@
     });
   }
   var RATIO_TOLERANCE = 0.01;
+  function postNotice(mode, tone, message) {
+    figma.ui.postMessage({ type: "notice", mode, tone, message });
+  }
+  function framesWerent(count) {
+    return count === 1 ? "1 frame wasn't" : `${count} frames weren't`;
+  }
+  var selectionOrder = [];
+  function updateSelectionOrder(selection) {
+    selectionOrder = nextSelectionOrder(
+      selectionOrder,
+      selection.filter(isExportable).map((n) => ({ id: n.id, box: n.absoluteBoundingBox }))
+    );
+  }
+  function orderedSelectedFrames() {
+    const selection = figma.currentPage.selection;
+    updateSelectionOrder(selection);
+    const byId = new Map(selection.filter(isExportable).map((n) => [n.id, n]));
+    return selectionOrder.map((id) => byId.get(id)).filter((n) => n !== void 0);
+  }
   function sameAspectRatio(a, b) {
     if (a.height <= 0 || b.height <= 0) return false;
     const ra = a.width / a.height;
     const rb = b.width / b.height;
     return Math.abs(ra - rb) / rb <= RATIO_TOLERANCE;
   }
-  function filterMatchingRatio(nodes, reference) {
+  function filterMatchingRatio(nodes, reference, mode) {
     const ref = reference ?? nodes[0];
     if (!ref) return nodes;
     const kept = nodes.filter((n) => sameAspectRatio(n, ref));
     const rejected = nodes.length - kept.length;
     if (rejected > 0) {
-      figma.notify(
-        `${rejected} frame(s) skipped: a Slides presentation has a single page size, so every frame must match the aspect ratio of "${stripReadyPrefix(ref.name)}".`,
-        { error: true, timeout: 6e3 }
+      const them = rejected === 1 ? "it" : "them";
+      postNotice(
+        mode,
+        "error",
+        `${framesWerent(rejected)} added: a ${mode === "template" ? "template" : "presentation"} has a single page size, so every frame needs the aspect ratio of "${stripReadyPrefix(ref.name)}". Resize ${them} to match, then add ${them} again.`
       );
     }
     return kept;
   }
-  async function addFrames(nodes, pending, idGen) {
+  async function addFrames(nodes, pending, idGen, userAction = true) {
     const known = new Set(pending.map((p) => p.frame.id));
     const candidates = nodes.filter((n) => !known.has(n.id));
-    const toAdd = filterMatchingRatio(candidates, pending[0]?.frame);
+    const toAdd = filterMatchingRatio(candidates, pending[0]?.frame, "deck");
     if (toAdd.length === 0) return;
-    if (toAdd.length > MAX_FRAMES_WARNING) {
-      figma.ui.postMessage({ type: "too-many-frames", count: toAdd.length, max: MAX_FRAMES_WARNING });
+    if (userAction && toAdd.length > MAX_FRAMES_WARNING) {
+      postNotice("deck", "info", `Adding ${toAdd.length} frames. Above ${MAX_FRAMES_WARNING}, the export takes longer.`);
     }
     for (const frame of toAdd) {
       const previewDataUrl = await generatePreview(frame);
@@ -1562,16 +1609,16 @@
     return true;
   }
   async function addSelectedFrames(pending, idGen) {
-    const selected = figma.currentPage.selection.filter(isExportable);
+    const selected = orderedSelectedFrames();
     if (selected.length === 0) {
-      figma.ui.postMessage({ type: "no-frames-selected" });
+      postNotice("deck", "error", "Select at least one frame on the Figma canvas, then click Add.");
       return;
     }
     await addFrames(selected, pending, idGen);
   }
   async function loadTaggedFrames(pending, templatePending, idGen) {
     const deckTagged = figma.currentPage.findAll((n) => isExportable(n) && (isSlidesReady(n) || isTracked(n)));
-    if (deckTagged.length > 0) await addFrames(deckTagged, pending, idGen);
+    if (deckTagged.length > 0) await addFrames(deckTagged, pending, idGen, false);
     const templateTagged = figma.currentPage.findAll((n) => isExportable(n) && (isTemplateReady(n) || isTemplateTracked(n)));
     if (templateTagged.length > 0) await addTemplateLayoutNodes(templateTagged, templatePending, idGen);
   }
@@ -1650,13 +1697,26 @@
     await addLintAnnotations(copy, warnings);
     return { copy, warnings };
   }
+  function postPreparedNotice(mode, count, issues) {
+    const noun = mode === "template" ? count === 1 ? "layout" : "layouts" : count === 1 ? "frame" : "frames";
+    const copies = count === 1 ? "The copy sits next to the original" : "The copies sit next to the originals";
+    if (issues === 0) {
+      postNotice(mode, "success", `Prepared ${count} ${noun} for Slides. ${copies}, with no issues found.`);
+      return;
+    }
+    postNotice(
+      mode,
+      "info",
+      `Prepared ${count} ${noun} for Slides. ${copies}, with ${issues} ${issues === 1 ? "issue" : "issues"} outlined on the canvas: red for an element turned into an image, orange for an approximation.`
+    );
+  }
   async function handlePrepareForSlides(pending, idGen, fontOverrides, deckFrameIds) {
     const deckNodes = (await Promise.all(deckFrameIds.map((id) => figma.getNodeByIdAsync(id)))).filter((n) => n !== null && isExportable(n));
     const canvasSelected = figma.currentPage.selection.filter(isExportable);
     const targets = /* @__PURE__ */ new Map();
     for (const n of [...deckNodes, ...canvasSelected]) targets.set(n.id, n);
     if (targets.size === 0) {
-      figma.notify("Select at least one frame on the canvas, or add frames to the deck first.", { error: true });
+      postNotice("deck", "error", "Select at least one frame on the Figma canvas, or add frames to the deck first.");
       return;
     }
     const copies = [];
@@ -1682,11 +1742,8 @@
     }
     figma.currentPage.selection = copies;
     figma.viewport.scrollAndZoomIntoView(copies);
-    const label = copies.length === 1 ? "frame" : "frames";
-    figma.notify(
-      totalWarnings === 0 ? `Prepared ${copies.length} ${label} for Slides, no issues found.` : `Prepared ${copies.length} ${label} for Slides: ${totalWarnings} issue(s) flagged on canvas (red = rasterized, orange = approximated).`
-    );
-    await addFrames(newlyCreated, pending, idGen);
+    postPreparedNotice("deck", copies.length, totalWarnings);
+    await addFrames(newlyCreated, pending, idGen, false);
   }
   function withCompositionWarnings(frame, slide) {
     return [
@@ -1713,15 +1770,16 @@
   }
   async function addTemplateLayoutNodes(nodes, pending, idGen) {
     const known = new Set(pending.map((p) => p.frame.id));
-    const candidates = filterMatchingRatio(nodes.filter((n) => !known.has(n.id)), pending[0]?.frame);
+    const candidates = filterMatchingRatio(nodes.filter((n) => !known.has(n.id)), pending[0]?.frame, "template");
     if (candidates.length === 0) return;
     const remaining = TEMPLATE_MAX_LAYOUTS - pending.length;
     const toAdd = candidates.slice(0, Math.max(0, remaining));
     if (toAdd.length < candidates.length) {
-      figma.ui.postMessage({ type: "too-many-frames", count: pending.length + candidates.length, max: TEMPLATE_MAX_LAYOUTS });
-      figma.notify(
-        `A template is capped at ${TEMPLATE_MAX_LAYOUTS} layouts (plugin limit to keep templates focused): ${candidates.length - toAdd.length} frame(s) not added.`,
-        { error: true, timeout: 6e3 }
+      const left = candidates.length - toAdd.length;
+      postNotice(
+        "template",
+        "error",
+        `A template holds up to ${TEMPLATE_MAX_LAYOUTS} layouts, so ${framesWerent(left)} added. Remove a layout to make room, then add ${left === 1 ? "it" : "them"} again.`
       );
     }
     for (const frame of toAdd) {
@@ -1735,9 +1793,9 @@
     }
   }
   async function addSelectedTemplateLayouts(pending, idGen) {
-    const selected = figma.currentPage.selection.filter(isExportable);
+    const selected = orderedSelectedFrames();
     if (selected.length === 0) {
-      figma.ui.postMessage({ type: "no-frames-selected" });
+      postNotice("template", "error", "Select at least one frame on the Figma canvas, then click Add.");
       return;
     }
     await addTemplateLayoutNodes(selected, pending, idGen);
@@ -1762,7 +1820,7 @@
     const targets = /* @__PURE__ */ new Map();
     for (const n of [...listNodes, ...canvasSelected]) targets.set(n.id, n);
     if (targets.size === 0) {
-      figma.notify("Select at least one frame on the canvas, or add layouts to the template first.", { error: true });
+      postNotice("template", "error", "Select at least one frame on the Figma canvas, or add layouts to the template first.");
       return;
     }
     const copies = [];
@@ -1788,10 +1846,7 @@
     }
     figma.currentPage.selection = copies;
     figma.viewport.scrollAndZoomIntoView(copies);
-    const label = copies.length === 1 ? "layout" : "layouts";
-    figma.notify(
-      totalWarnings === 0 ? `Prepared ${copies.length} ${label} for Slides, no issues found.` : `Prepared ${copies.length} ${label} for Slides: ${totalWarnings} issue(s) flagged on canvas (red = rasterized, orange = approximated).`
-    );
+    postPreparedNotice("template", copies.length, totalWarnings);
     await addTemplateLayoutNodes(newlyCreated, pending, idGen);
   }
   var LIVE_REFRESH_IGNORABLE_PROPERTIES = /* @__PURE__ */ new Set(["pluginData"]);
@@ -1889,21 +1944,28 @@
     const idGen = createIdGenerator(figma.root.id.slice(0, 8));
     const deckLiveRefresh = watchFramesForLiveRefresh(pending, isSlidesReady, (frame) => refreshPendingEntry(frame, pending, idGen));
     const templateLiveRefresh = watchFramesForLiveRefresh(templatePending, () => true, (frame) => refreshTemplateEntry(frame, templatePending, idGen));
-    figma.on("selectionchange", () => {
-      const selection = figma.currentPage.selection;
+    function postSelectionState() {
+      const selected = figma.currentPage.selection.filter(isExportable);
+      const inDeck = new Set(pending.map((p) => p.frame.id));
+      const inTemplate = new Set(templatePending.map((p) => p.frame.id));
       figma.ui.postMessage({
         type: "canvas-selection-changed",
-        hasSelection: selection.some(isExportable)
+        hasSelection: selected.length > 0,
+        deckAddable: selected.filter((n) => !inDeck.has(n.id)).length,
+        templateAddable: selected.filter((n) => !inTemplate.has(n.id)).length
       });
+    }
+    figma.on("selectionchange", () => {
+      const selection = figma.currentPage.selection;
+      updateSelectionOrder(selection);
+      postSelectionState();
       deckLiveRefresh.refreshFromSelection(selection);
       templateLiveRefresh.refreshFromSelection(selection);
     });
     figma.ui.onmessage = async (msg) => {
       if (msg.type === "ui-ready") {
-        figma.ui.postMessage({
-          type: "canvas-selection-changed",
-          hasSelection: figma.currentPage.selection.some(isExportable)
-        });
+        updateSelectionOrder(figma.currentPage.selection);
+        postSelectionState();
         figma.ui.postMessage({ type: "skin-restored", skin: initialSkin });
         try {
           const storedToken = await figma.clientStorage.getAsync(SESSION_TOKEN_STORAGE_KEY);
@@ -1923,6 +1985,7 @@
         } catch (err) {
           console.error(err);
         }
+        postSelectionState();
         return;
       }
       if (msg.type === "save-theme-preference") {
@@ -1981,8 +2044,9 @@
           await addSelectedFrames(pending, idGen);
         } catch (err) {
           console.error(err);
-          figma.ui.postMessage({ type: "action-error", message: `Couldn't add the selection: ${err.message}` });
+          postNotice("deck", "error", ADD_FAILED_MESSAGE);
         }
+        postSelectionState();
         return;
       }
       if (msg.type === "remove-frame") {
@@ -1991,6 +2055,7 @@
         } catch (err) {
           console.error(err);
         }
+        postSelectionState();
         return;
       }
       if (msg.type === "prepare-for-slides") {
@@ -1998,8 +2063,9 @@
           await handlePrepareForSlides(pending, idGen, msg.fontOverrides ?? {}, msg.deckFrameIds ?? []);
         } catch (err) {
           console.error(err);
-          figma.notify(`Prepare for Slides failed: ${err.message}`, { error: true });
+          postNotice("deck", "error", PREPARE_FAILED_MESSAGE);
         }
+        postSelectionState();
         return;
       }
       if (msg.type === "add-template-layout") {
@@ -2007,8 +2073,9 @@
           await addSelectedTemplateLayouts(templatePending, idGen);
         } catch (err) {
           console.error(err);
-          figma.ui.postMessage({ type: "action-error", message: `Couldn't add the selection: ${err.message}` });
+          postNotice("template", "error", ADD_FAILED_MESSAGE);
         }
+        postSelectionState();
         return;
       }
       if (msg.type === "remove-template-layout") {
@@ -2017,6 +2084,7 @@
         } catch (err) {
           console.error(err);
         }
+        postSelectionState();
         return;
       }
       if (msg.type === "prepare-template-for-slides") {
@@ -2029,8 +2097,9 @@
           );
         } catch (err) {
           console.error(err);
-          figma.notify(`Prepare for Slides failed: ${err.message}`, { error: true });
+          postNotice("template", "error", PREPARE_FAILED_MESSAGE);
         }
+        postSelectionState();
         return;
       }
       if (msg.type === "select-nodes") {
@@ -2039,10 +2108,6 @@
         const nodes = resolved.filter((n) => n !== null && "x" in n);
         figma.currentPage.selection = nodes;
         figma.viewport.scrollAndZoomIntoView(nodes);
-        return;
-      }
-      if (msg.type === "notify") {
-        figma.notify(String(msg.message));
         return;
       }
       if (msg.type === "set-placeholder-role") {
@@ -2075,7 +2140,7 @@
           );
         } catch (err) {
           console.error(err);
-          figma.ui.postMessage({ type: "export-error", message: err.message });
+          figma.ui.postMessage({ type: "export-error", message: EXPORT_PREPARE_FAILED_MESSAGE });
         }
         return;
       }
@@ -2110,7 +2175,7 @@
           );
         } catch (err) {
           console.error(err);
-          figma.ui.postMessage({ type: "export-error", message: err.message });
+          figma.ui.postMessage({ type: "export-error", message: EXPORT_PREPARE_FAILED_MESSAGE });
         }
       }
     };
@@ -2130,7 +2195,7 @@
     for (let i = 0; i < orderedIds.length; i++) {
       const p = byId.get(orderedIds[i]);
       if (!p) continue;
-      applyFontOverrides(p.slide, fontOverrides);
+      const slide = withFontOverrides(p.slide, fontOverrides);
       for (const [assetKey, nodes] of p.nodesToRaster) {
         const node = nodes[0];
         const scaleConstraint = { type: "SCALE", value: rasterScale };
@@ -2142,7 +2207,7 @@
         }
         await yieldToUi();
       }
-      slides.push({ ...p.slide, order: i, previewDataUrl: "" });
+      slides.push({ ...slide, order: i, previewDataUrl: "" });
     }
     return { slides, assets };
   }
@@ -2199,6 +2264,6 @@
   }
   main().catch((err) => {
     console.error(err);
-    figma.notify(`Plugin error: ${err.message}`, { error: true });
+    figma.notify("Decker couldn't start. Close and reopen the plugin.", { error: true });
   });
 })();

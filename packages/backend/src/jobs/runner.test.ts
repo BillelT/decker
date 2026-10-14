@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import type { IRDocument, ThemeColorRole } from '@figma-to-slides/shared';
 import { UNCALIBRATED_DEFAULTS } from '@figma-to-slides/shared';
 import { THEME_BATCH_SOURCE_ID } from '../mapper/index.js';
-import { createJob, getJob } from './jobStore.js';
+import { createJob, getJob, requestJobCancel } from './jobStore.js';
 import { runExportJob, retryExportJob } from './runner.js';
 
 // `runner.ts` n'appelle jamais l'API Slides réelle en test : on mocke
@@ -181,6 +181,69 @@ describe('runExportJob / retryExportJob', () => {
     // Seul le lot thème est rejoué — slideA était déjà `applied`.
     expect(mockedApplyBatch).toHaveBeenCalledTimes(1);
     expect(mockedApplyBatch).toHaveBeenCalledWith('token', 'pres-theme', expect.objectContaining({ sourceSlideId: THEME_BATCH_SOURCE_ID }));
+  });
+
+  it('stops before the next slide when the plugin cancels, keeps the written slides and drops the blank default slide', async () => {
+    mockedCreatePresentation.mockResolvedValue({ presentationId: 'pres-cancel', firstSlideObjectId: 'default-slide', masterObjectId: 'master-0', masterAndLayoutElementIds: [] });
+    mockedApplyBatch.mockImplementation(async (_token, _presId, batch) => {
+      // L'utilisateur clique « Cancel » pendant l'écriture de la première slide.
+      if (batch.sourceSlideId === 'slideA') await requestJobCancel('run-canceled');
+      return {};
+    });
+
+    const doc = buildDoc(['slideA', 'slideB', 'slideC']);
+    const job = await createJob('run-canceled', doc.slides.map((s) => s.sourceNodeId), doc);
+
+    await runExportJob(job, doc, 'token', () => '', UNCALIBRATED_DEFAULTS);
+
+    const result = await getJob('run-canceled');
+    expect(result?.status).toBe('canceled');
+    expect(result?.error).toBeUndefined();
+    expect(result?.presentationUrl).toContain('pres-cancel');
+    expect(result?.batches).toEqual([
+      { sourceSlideId: 'slideA', status: 'applied', error: undefined },
+      { sourceSlideId: 'slideB', status: 'pending' },
+      { sourceSlideId: 'slideC', status: 'pending' },
+    ]);
+    // slideA, puis la suppression de la slide vide : slideB et slideC ne partent jamais.
+    expect(mockedApplyBatch).toHaveBeenCalledTimes(2);
+    expect(mockedApplyBatch).toHaveBeenLastCalledWith(
+      'token',
+      'pres-cancel',
+      expect.objectContaining({ requests: [{ deleteObject: { objectId: 'default-slide' } }] }),
+    );
+  });
+
+  it('creates nothing in Google Drive when the export is canceled before it starts', async () => {
+    const doc = buildDoc(['slideA']);
+    const job = await createJob('canceled-early', ['slideA'], doc);
+    await requestJobCancel('canceled-early');
+
+    await runExportJob(job, doc, 'token', () => '', UNCALIBRATED_DEFAULTS);
+
+    expect((await getJob('canceled-early'))?.status).toBe('canceled');
+    expect(mockedCreatePresentation).not.toHaveBeenCalled();
+    expect(mockedApplyBatch).not.toHaveBeenCalled();
+  });
+
+  it('retryExportJob starts over without the cancel request of a previous run', async () => {
+    mockedCreatePresentation.mockResolvedValue({ presentationId: 'pres-cancel-retry', firstSlideObjectId: 'default-slide', masterObjectId: 'master-0', masterAndLayoutElementIds: [] });
+    mockedApplyBatch.mockImplementation(async (_token, _presId, batch) => {
+      if (batch.sourceSlideId === 'slideA') await requestJobCancel('cancel-then-retry');
+      return {};
+    });
+    const doc = buildDoc(['slideA', 'slideB']);
+    const job = await createJob('cancel-then-retry', doc.slides.map((s) => s.sourceNodeId), doc);
+    await runExportJob(job, doc, 'token', () => '', UNCALIBRATED_DEFAULTS);
+    expect((await getJob('cancel-then-retry'))?.status).toBe('canceled');
+
+    mockedApplyBatch.mockReset();
+    mockedApplyBatch.mockResolvedValue({});
+    await retryExportJob((await getJob('cancel-then-retry'))!, doc, 'token', () => '', UNCALIBRATED_DEFAULTS);
+
+    const result = await getJob('cancel-then-retry');
+    expect(result?.status).toBe('done');
+    expect(mockedApplyBatch).toHaveBeenCalledWith('token', 'pres-cancel-retry', expect.objectContaining({ sourceSlideId: 'slideB' }));
   });
 
   it('retryExportJob throws without touching the job when there is no presentationId to retry against', async () => {

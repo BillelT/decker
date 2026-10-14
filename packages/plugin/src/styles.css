@@ -232,14 +232,15 @@ a {
 /* Le champ nom (.f2s-title-input) a une largeur FIXE : ni lui ni ses
    ancêtres (.f2s-topbar-left, .f2s-topbar-title-group) ne sont plus
    compressibles (flex: none partout), pour que sa taille ne varie plus
-   selon la longueur du libellé des boutons d'action ("Select frames to
-   add" vs "Add selection", "Export" vs "Create template", spinner
-   "Waiting…"…) ni selon le mode deck/template. Le header doit rester sur
-   une seule ligne dans tous les cas, sans chevauchement ni scroll : pas
-   de flex-wrap, et chaque libellé de bouton (y compris celui du flow de
-   connexion Google) reste assez court pour que les deux groupes tiennent
-   toujours ensemble dans les 960px du panneau (largeur fixe, non
-   redimensionnable — voir figma.showUI dans code.ts). */
+   selon la longueur du libellé des boutons d'action ("Add 12 frames" vs
+   "Add frames", "Export" vs "Create template", "Cancel" + "Exporting
+   12/12", spinner "Waiting…"…) ni selon le mode deck/template. Le header
+   doit rester sur une seule ligne dans tous les cas, sans chevauchement ni
+   scroll : pas de flex-wrap, et chaque libellé de bouton (y compris celui
+   du flow de connexion Google) reste assez court pour que les deux groupes
+   tiennent toujours ensemble à 960px, la largeur minimale de la fenêtre
+   (MIN_UI_SIZE dans code.ts). L'état le plus large, un export en cours,
+   tient pile (mesuré en rendu). */
 .f2s-topbar {
   display: flex;
   align-items: center;
@@ -296,14 +297,13 @@ a {
   text-decoration: none;
 }
 
-/* 28px : le bouton "Buy me a coffee" voisin fait 34px de haut (mesuré en
-   rendu). À 24px le monogramme flottait visiblement plus bas que lui ; à 34
-   il aurait pesé autant qu'une action, ce qu'une signature n'est pas.
+/* 26px : la hauteur du bouton Settings et de la zone cliquable de "Buy me a
+   coffee", pour que tout le footer s'aligne sur une seule hauteur.
    `box-sizing: border-box` (règle `*` en tête de fichier) fait que la
-   bordure tient DANS ces 28px. */
+   bordure tient DANS ces 26px. */
 .f2s-logo {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   flex: none;
   display: flex;
   align-items: center;
@@ -633,12 +633,6 @@ a {
   padding: 6px 12px;
 }
 
-/* "Buy me a coffee" dans le footer : texte 12px, padding 6px 12px. */
-.f2s-footer-actions a[href*="buymeacoffee"].f2s-btn {
-  font-size: 12px;
-  padding: 6px 12px;
-}
-
 /* Appui : scale(0.96) en mode modern uniquement (Win95 gère le pressed via box-shadow). */
 html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   transform: scale(0.96);
@@ -667,8 +661,47 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   color: var(--color-on-accent);
 }
 
-.f2s-btn--primary:hover:not(:disabled) {
+.f2s-btn--primary:hover:not(:disabled):not(.f2s-btn--busy) {
   background: var(--color-orange-hover);
+}
+
+/* Progression d'un export (« Exporting 2/4 ») à la place du bouton
+   principal : un état, pas une action. Pleine opacité (un bouton grisé se
+   lirait « indisponible »), sans survol ni appui. */
+.f2s-btn--busy {
+  cursor: default;
+  pointer-events: none;
+}
+
+/* Un <span> ou un <a> stylé en bouton hérite de l'interligne du body (1.4),
+   alors qu'un <button> garde `normal` : sans ça, « Exporting 2/4 » ou
+   « Open in Slides » dépassaient de 4px la hauteur des boutons voisins et
+   faisaient grandir le header. */
+span.f2s-btn,
+a.f2s-btn {
+  line-height: normal;
+}
+
+/* Libellé suivi d'une icône (flèche en diagonale d'un lien qui ouvre
+   Google Slides dans le navigateur). */
+.f2s-btn--icon-end {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.f2s-btn--icon-end svg {
+  flex: none;
+  display: block;
+}
+
+/* Action du statut d'export dans le footer (Retry, Export again, Open in
+   Slides après une annulation) : même gabarit que Settings, 26px de haut,
+   5px 10px de padding. */
+.f2s-footer .f2s-btn--footer {
+  font-size: 12px;
+  line-height: 14px;
+  padding: 5px 10px;
 }
 
 /* ---- Body : rail de miniatures + canvas ---- */
@@ -720,6 +753,10 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
 
 .f2s-toast--success {
   --f2s-toast-tone: var(--color-orange);
+}
+
+.f2s-toast--info {
+  --f2s-toast-tone: var(--color-text);
 }
 
 .f2s-toast-text {
@@ -845,13 +882,50 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   border-left: 1px solid var(--color-border);
 }
 
-.f2s-empty {
+/* État vide : les trois étapes du parcours, numérotées dans des cases à
+   angles droits comme les badges du rail. Le nom des boutons cités passe à
+   l'encre, le reste en gris. */
+.f2s-empty-steps {
+  list-style: none;
+  counter-reset: f2s-step;
+  margin: 0;
+  padding: 24px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 400px;
   color: var(--color-text-muted);
   font-size: 14px;
   font-weight: 500;
-  padding: 24px 0;
-  text-align: center;
-  text-wrap: balance;
+  line-height: 1.4;
+}
+
+.f2s-empty-steps li {
+  counter-increment: f2s-step;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  text-wrap: pretty;
+}
+
+.f2s-empty-steps li::before {
+  content: counter(f2s-step);
+  flex: none;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-text);
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.f2s-empty-steps strong {
+  color: var(--color-text);
+  font-weight: 700;
 }
 
 .f2s-frame-info {
@@ -1615,6 +1689,10 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  /* Calé en haut de la ligne plutôt que sur la ligne de base : sinon la
+     place réservée aux jambages sous la boîte grandissait le bouton de 3.5px
+     (« Exporting 2/4 », « Waiting… »). */
+  vertical-align: top;
 }
 
 @keyframes f2s-spin {
@@ -1660,22 +1738,38 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   flex: none;
 }
 
+/* 26px de haut : 14px de contenu (icône 14px, texte 12px sur une ligne de
+   14px) + 5px de padding + 1px de bordure, de chaque côté. Le padding
+   latéral vaut le double du vertical. */
 .f2s-footer-settings {
   display: flex;
   align-items: center;
   gap: 4px;
   color: var(--color-text-muted);
   font-size: 12px;
+  line-height: 14px;
   font-weight: 700;
   font-family: inherit;
   background: transparent;
   border: 1px solid var(--color-border);
   border-radius: 8px;
-  padding: 6px 10px;
+  padding: 5px 10px;
   transition:
     color var(--b-duration) var(--b-ease-default),
     background-color var(--b-duration) var(--b-ease-default),
     transform var(--b-duration) var(--b-ease-out);
+}
+
+/* Centrage optique : sur une ligne de 14px, Cabinet Grotesk pose ses
+   capitales 1px au-dessus du centre (mesuré au pixel : centre des capitales
+   à 11.8px, centre de la boîte à 12.8px), alors que l'icône, elle, est
+   centrée. Le texte descend donc d'1px pour que capitales et icône partagent
+   le même axe, sans toucher au padding ni à la hauteur. Le skin Windows 95
+   a sa propre police, d'où le périmètre au skin modern. */
+html:not(.f2s-skin--win95) .f2s-footer-settings > span,
+html:not(.f2s-skin--win95) .f2s-coffee-link > span {
+  position: relative;
+  top: 1px;
 }
 
 .f2s-footer-settings:hover:not(:disabled),
@@ -1729,10 +1823,29 @@ html:not(.f2s-skin--win95)
   gap: 16px;
 }
 
-/* 10px entre le logo et "Buy me a coffee" (le gap du conteneur reste 16px
-   pour les autres boutons) : 16px - 6px. */
-html:not(.f2s-skin--win95) .f2s-footer-actions .f2s-logo-link {
-  margin-right: -6px;
+/* "Buy me a coffee" : lien texte de la DA (`.text-link` : encre, 12px, 500,
+   souligné au survol) suivi d'une flèche en diagonale, qui dit qu'il ouvre
+   un site externe. La zone cliquable garde les 26px de haut du footer. */
+.f2s-coffee-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 26px;
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.f2s-coffee-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.f2s-coffee-link svg {
+  flex: none;
+  display: block;
 }
 
 /* Statut du dernier export (réussi ou non) : pastille + texte tronqué sur
@@ -1755,7 +1868,8 @@ html:not(.f2s-skin--win95) .f2s-footer-actions .f2s-logo-link {
   color: var(--color-error);
 }
 
-.f2s-footer-status--success {
+.f2s-footer-status--success,
+.f2s-footer-status--info {
   color: var(--color-text);
 }
 
@@ -1788,6 +1902,14 @@ html:not(.f2s-skin--win95) .f2s-footer-actions .f2s-logo-link {
 
 .f2s-status-icon--error .f2s-status-icon-disc {
   fill: var(--color-error);
+}
+
+.f2s-status-icon--info {
+  color: var(--color-bg);
+}
+
+.f2s-status-icon--info .f2s-status-icon-disc {
+  fill: var(--color-text);
 }
 
 /* ---- Poignée de redimensionnement (coin bas droit) ----

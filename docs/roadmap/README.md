@@ -1,6 +1,6 @@
 # Roadmap Decker
 
-Mise à jour : 13 octobre 2026.
+Mise à jour : 14 octobre 2026.
 
 ## Où on en est : la palette est corrigée
 
@@ -51,17 +51,21 @@ Ils conditionnent plusieurs tâches. Les trancher avant d'attaquer les fichiers 
 |---|---|---|---|
 | A | Biseaux en `box-shadow` sur les boutons (plugin et site), alors que la DA impose zéro ombre sur un bouton | La DA admet une variante en relief, ou les deux projets reviennent à plat | 05, 07 |
 | C | Structure du canvas, commune aux deux modes | Aperçu en haut puis rapport dessous, ou aperçu à gauche et rapport à droite | 03, 04 |
-| D | « Prepare for Slides » | Reste global dans le header, ou devient un bouton « Fix » dans le rapport | 02, 03, 04 |
 | E | Fenêtre d'export Win95 dans le skin Modern | Easter egg assumé, ou version Modern | 05 |
-| F | Texte en 14 px ou header sur une ligne à 960 px | Libellés raccourcis ou largeur minimale relevée, ou on reste en 12 à 13 px | 02, 05 |
+| F | Texte en 14 px | La partie « header sur une ligne à 960 px » est tranchée (voir plus bas) ; reste la taille du texte | 05 |
 | G | Couleur d'erreur absente de la DA | Rouge plus sombre que `--b-accent-red`, toujours avec icône et libellé | 05, DA |
 | H | Thème sombre : la DA n'a que 4 valeurs, le plugin en a inventé 8 | Définir une rampe sombre complète dans la DA, puis aligner | 05, DA |
+
+Tranchés le 14 octobre 2026 :
+
+- **D** : « Prepare for Slides » reste dans le header, tel quel. Retravailler les slides dans Figma est une force du plugin.
+- **F** (header) : les libellés du lot 02 tiennent sur une ligne à 960 px, dans les deux modes et les deux skins.
 
 ## Ordre conseillé
 
 1. **01** : aucun arbitrage, petits correctifs, gros gain.
-2. **02** : le flow commun, après F et D.
-3. **04** puis **03** : les deux modes, après C et D.
+2. **02** : fait le 14 octobre 2026.
+3. **04** puis **03** : les deux modes, après C.
 4. **05** : la DA, après A, E, F, G, H.
 5. **06** : les textes en dernier, parce que les états vides citent les nouveaux libellés.
 6. **07** et **08** : le site, en parallèle du plugin.

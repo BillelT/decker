@@ -37,4 +37,13 @@ describe('exportCursorFromBatches', () => {
     expect(exportCursorFromBatches([])).toBeUndefined();
     expect(exportCursorFromBatches(undefined)).toBeUndefined();
   });
+
+  it('ignore le lot du thème d’un template, qui n’est pas un layout', () => {
+    const withTheme = [
+      { sourceSlideId: '__theme__', status: 'applied' as const },
+      { sourceSlideId: 'layoutA', status: 'pending' as const },
+      { sourceSlideId: 'layoutB', status: 'pending' as const },
+    ];
+    expect(exportCursorFromBatches(withTheme)).toEqual({ frameId: 'layoutA', index: 0, total: 2 });
+  });
 });
