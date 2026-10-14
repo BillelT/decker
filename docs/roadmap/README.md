@@ -10,10 +10,14 @@ Le plugin, le site et la DA (`billel-skill`, `skills/design-tokens/token.css`) p
 |---|---|---|
 | white | `hsl(30, 20%, 98%)` | `#fbfaf9` |
 | gray-100 | `hsl(30, 23%, 93%)` | `#f1ede9` |
-| gray-300 | `hsl(18, 8%, 84%)` | `#d9d5d3` |
-| gray-600 | `hsl(25, 6%, 53%)` | `#8e8680` |
-| gray-700 | `hsl(22, 8%, 22%)` | `#3d3734` |
+| gray-200 | `hsl(18, 8%, 84%)` | `#d9d5d3` |
+| gray-400 | `hsl(24, 6%, 65%)` | `#aba5a0` |
+| gray-500 | `hsl(25, 6%, 53%)` | `#8e8680` |
+| gray-600 | `hsl(24, 6%, 41%)` | `#6f6762` |
+| gray-800 | `hsl(22, 8%, 22%)` | `#3d3734` |
 | ink | `hsl(30, 12%, 6%)` | `#110f0d` |
+
+Rampe renumérotée le 14 octobre 2026 (l'ancien 300 est le 200, l'ancien 600 le 500, l'ancien 700 le 800 ; 400 et 600 sont nouveaux). Le plugin suit cette numérotation ; le site garde encore les anciens noms, mêmes valeurs.
 
 Fait (commits `c60238f` et `584b710` sur `decker`, `48413de` sur `billel-skill`) :
 

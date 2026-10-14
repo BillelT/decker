@@ -32,40 +32,41 @@
   --color-bg: hsl(30, 20%, 98%); /* #fbfaf9 */
   --color-text: hsl(30, 12%, 6%); /* #110f0d */
 
-  /* Rampe de gris de la DA (token.css : --b-gray-700 / -600 / -300 / -100),
-     reprise ici sous les mêmes numéros pour que le plugin, le site et la DA
-     ne divergent plus. En thème sombre, c'est la rampe SEULE qui s'inverse
-     (voir le bloc plus bas) : les tokens sémantiques ci-dessous n'ont alors
-     plus rien à redéfinir.
+  /* Rampe de gris de la DA, renumérotée le 2026-10-14 (100, 200, 400, 500,
+     600, 800 : l'ancien 300 est devenu le 200, l'ancien 600 le 500, l'ancien
+     700 le 800, et le 600 est un nouveau palier). Seuls les paliers dont le
+     plugin se sert sont repris. En thème sombre, c'est la rampe SEULE qui
+     s'inverse (voir le bloc plus bas) : les tokens sémantiques ci-dessous
+     n'ont alors plus rien à redéfinir.
 
-     Répartition des rôles, mesurée (WCAG 2.1) plutôt que choisie à l'oeil :
-     - 700 : tout ce qui est TEXTE secondaire. 11.23:1 sur --color-bg.
-     - 600 : tout ce qui est affordance NON textuelle et doit se voir
-       (curseur de défilement, bordure de survol d'une vignette, anneau de
-       focus des champs). 3.43:1 sur --color-bg, seule valeur de la rampe à
-       passer le seuil de 3:1 du critère 1.4.11 ; le 300 y est à 1.40:1,
-       soit invisible en pratique.
-     - 300 : bordures (--b-border dans la DA), aplats de survol neutres et
-       filets décoratifs.
-     - 100 : surfaces creusées.
-     Le 600 n'est JAMAIS un texte : 3.43:1, sous les 4.5:1 exigés. */
-  --color-gray-700: hsl(22, 8%, 22%); /* #3d3734 */
-  --color-gray-600: hsl(25, 6%, 53%); /* #8e8680 */
-  --color-gray-300: hsl(18, 8%, 84%); /* #d9d5d3 */
+     Répartition des rôles (contrastes WCAG 2.1 mesurés sur --color-bg) :
+     - 800 : texte secondaire. 11.23:1.
+     - 600 : texte discret, onglet inactif. 4.75:1 sur le gray-100 des
+       onglets, de quoi bien distinguer le survol (encre).
+     - 500 : affordance NON textuelle qui doit se voir (curseur de
+       défilement, bordure de survol d'une vignette, anneau de focus des
+       champs). 3.43:1, seul palier à passer les 3:1 du critère 1.4.11 ;
+       jamais un texte.
+     - 200 : bordures (--b-border dans la DA), aplats de survol, tags neutres.
+     - 100 : surfaces creusées. */
+  --color-gray-800: hsl(22, 8%, 22%); /* #3d3734 */
+  --color-gray-600: hsl(24, 6%, 41%); /* #6f6762 */
+  --color-gray-500: hsl(25, 6%, 53%); /* #8e8680 */
+  --color-gray-200: hsl(18, 8%, 84%); /* #d9d5d3 */
   --color-gray-100: hsl(30, 23%, 93%); /* #f1ede9 */
 
   /* Texte secondaire : libellés de section, légendes, rôles de placeholder,
      onglets inactifs. Même rôle que --b-text-muted dans la DA. */
-  --color-text-muted: var(--color-gray-700);
-  /* Le curseur de défilement était au gris 300, soit 1.40:1 sur le fond :
-     mesurable, mais pas visible. Au gris 600 il passe 3:1 et redevient une
-     vraie prise. Le gris 300, lui, reste sur les aplats de survol (la croix
+  --color-text-muted: var(--color-gray-800);
+  /* Le curseur de défilement était au gris 200, soit 1.40:1 sur le fond :
+     mesurable, mais pas visible. Au gris 500 il passe 3:1 et redevient une
+     vraie prise. Le gris 200, lui, reste sur les aplats de survol (la croix
      de suppression du rail, qui virait à l'orange de marque alors que
      supprimer une vignette n'est pas l'action que le produit met en avant). */
-  --color-scrollbar: var(--color-gray-600);
+  --color-scrollbar: var(--color-gray-500);
   --color-gray-light: var(--color-gray-100);
-  /* Bordures en gray-300, comme --b-border dans la DA et sur le site. */
-  --color-border: var(--color-gray-300);
+  /* Bordures en gray-200, comme --b-border dans la DA et sur le site. */
+  --color-border: var(--color-gray-200);
   /* Surfaces : la DA n'a qu'un blanc (--b-surface) et un fond discret
      (--b-surface-muted = gray-100). L'ancien blanc pur #ffffff et le
      #f2ece8 hérité du monogramme sortaient de la palette. */
@@ -87,6 +88,10 @@
   /* Encre des tags, fixe elle aussi : --color-text s'inverse en thème sombre
      et retournerait le problème. */
   --color-badge-ink: hsl(30, 12%, 6%);
+  /* Tag neutre ("3 rasterized" en mode Deck) : gray-800 sur gray-200, 8.05:1.
+     En sombre, le gray-800 sur le gray-200 sombre ne ferait que 3.95:1 :
+     l'encre y passe au texte clair (9:1). */
+  --color-tag-neutral-ink: var(--color-gray-800);
   /* Texte posé sur l'orange (bouton principal, survol du secondaire, coche
      de succès) : encre fixe, comme le CTA de la DA (b-button) et du site.
      6.09:1, quand le blanc ne faisait que 3.01:1. Ne s'inverse pas en thème
@@ -120,8 +125,8 @@ html.f2s-theme-dark {
      de marque) de la DA. */
   --color-bg: hsl(30, 12%, 6%);
   --color-text: hsl(30, 20%, 98%);
-  /* La rampe s'inverse d'un bloc, et elle seule : le 700 reste le gris du
-     texte secondaire, donc il devient CLAIR sur fond sombre ; le 300 et le
+  /* La rampe s'inverse d'un bloc, et elle seule : le 800 reste le gris du
+     texte secondaire, donc il devient CLAIR sur fond sombre ; le 200 et le
      100 restent les gris de surface, donc ils s'assombrissent.
      --color-text-muted, --color-scrollbar, --color-gray-light et
      --color-border s'y raccrochent depuis :root et suivent tout seuls, au
@@ -129,27 +134,31 @@ html.f2s-theme-dark {
      exact de --b-dark-text-muted (blanc de marque à 65 %) posé sur
      --color-bg : opaque, il ne change pas de teinte selon la surface qui
      passe dessous. Les autres gris sombres n'ont pas encore d'équivalent
-     dans la DA. */
-  --color-gray-700: #a9a8a6;
-  --color-gray-600: #8b8279;
-  --color-gray-300: #4d453e;
+     dans la DA (le 600 est le miroir du clair : 60 % au lieu de 41 %). */
+  --color-gray-800: #a9a8a6;
+  --color-gray-600: hsl(24, 6%, 60%); /* #9f9893, 5.44:1 sur le fond des onglets */
+  --color-gray-500: #8b8279;
+  --color-gray-200: #4d453e;
   --color-gray-100: #332c26;
   --color-surface: #211c17;
   --color-surface-muted: #2a231d;
   --color-field: var(--color-surface);
+  --color-tag-neutral-ink: var(--color-text);
 }
 
 @media (prefers-color-scheme: dark) {
   html:not(.figma-light):not(.f2s-theme-light) {
-    --color-gray-700: #a9a8a6;
-    --color-gray-600: #8b8279;
-    --color-gray-300: #4d453e;
+    --color-gray-800: #a9a8a6;
+    --color-gray-600: hsl(24, 6%, 60%);
+    --color-gray-500: #8b8279;
+    --color-gray-200: #4d453e;
     --color-gray-100: #332c26;
     --color-bg: hsl(30, 12%, 6%);
     --color-text: hsl(30, 20%, 98%);
     --color-surface: #211c17;
     --color-surface-muted: #2a231d;
     --color-field: var(--color-surface);
+    --color-tag-neutral-ink: var(--color-text);
   }
 }
 
@@ -307,11 +316,10 @@ a {
   justify-content: center;
   flex: none;
   /* Zone cliquable à la hauteur du footer (26 px), le B lui-même reste à la
-     taille du texte voisin. Étroite (11 px) mais conforme à WCAG 2.5.8 : un
-     cercle de 24 px centré dessus ne touche pas le lien voisin, 8 px plus
+     taille du texte voisin. Étroite (7 px) mais conforme à WCAG 2.5.8 : un
+     cercle de 24 px centré dessus ne touche pas le lien voisin, 16 px plus
      loin. */
   min-height: 26px;
-  padding-inline: 2px;
   color: var(--color-text);
   text-decoration: none;
   transition: opacity var(--b-duration) var(--b-ease-default);
@@ -431,7 +439,7 @@ a {
    comportement ne dépende pas de quel skin survit. */
 .f2s-title-input:focus {
   outline: none;
-  border-color: var(--color-gray-600);
+  border-color: var(--color-gray-500);
 }
 
 .f2s-title-input::placeholder {
@@ -467,7 +475,7 @@ a {
 
 .f2s-font-dropdown:focus {
   outline: none;
-  border-color: var(--color-gray-600);
+  border-color: var(--color-gray-500);
 }
 
 /* ---- Liste de polices de remplacement (bandeau "Fonts") ----
@@ -502,9 +510,9 @@ a {
 .f2s-font-combobox:focus-within {
   /* Aligné sur .f2s-title-input:focus et .f2s-font-dropdown:focus juste
      au-dessus : un repère de focus doit passer 3:1, l'orange-40 est à
-     1.56:1. Le skin par défaut le repeint déjà en gris 600 par son anneau
+     1.56:1. Le skin par défaut le repeint déjà en gris 500 par son anneau
      (styles.modern.css) ; la feuille de base dit la même chose. */
-  border-color: var(--color-gray-600);
+  border-color: var(--color-gray-500);
 }
 
 .f2s-font-combobox-input {
@@ -562,7 +570,7 @@ a {
    arrondi ni marge intérieure propres à l'état, juste l'aplat sur la ligne
    telle quelle. */
 .f2s-font-combobox-option--active {
-  background: var(--color-gray-300);
+  background: var(--color-gray-200);
 }
 
 .f2s-font-combobox-option--selected {
@@ -933,17 +941,6 @@ a.f2s-btn {
   text-overflow: ellipsis;
 }
 
-/* Résumé de fidélité en tête du rail : ce qui deviendra une image dans
-   Slides, avant même de lancer l'export. */
-.f2s-rail-summary {
-  margin: 0;
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1.3;
-  color: var(--color-text);
-  text-wrap: balance;
-}
-
 /* Nom de la vignette (mode template) : visuellement du texte au repos, se
    révèle comme un champ éditable au survol de `.f2s-frame-info` ou au focus
    — le libellé se tronque avec ellipsis plutôt que de pousser l'index ou le
@@ -974,11 +971,11 @@ a.f2s-btn {
    au gris 100, soit 1.11:1 sur le fond du rail, pendant que le changement de
    fond qui l'accompagne joue à 1.04:1. Autrement dit, tabuler jusqu'à ce
    champ ne produisait aucun signal visible (WCAG 2.4.7 en plus de 1.4.11).
-   Le gris 600 le porte à 3.43:1. */
+   Le gris 500 le porte à 3.43:1. */
 .f2s-frame-info:hover .f2s-frame-name-input:not(:read-only),
 .f2s-frame-name-input:focus:not(:read-only) {
   background: var(--color-surface);
-  border-color: var(--color-gray-600);
+  border-color: var(--color-gray-500);
   color: var(--color-text);
   outline: none;
 }
@@ -1005,7 +1002,7 @@ a.f2s-btn {
 /* Gris neutre, pas l'orange de marque : cette croix supprime une vignette
    du rail, ce n'est pas l'action que le produit met en avant. */
 .f2s-icon-btn:hover:not(:disabled) {
-  background: var(--color-gray-300);
+  background: var(--color-gray-200);
 }
 
 .f2s-frame-preview {
@@ -1025,26 +1022,26 @@ a.f2s-btn {
 /* Retour hover = sélection (pas le drag, qui reste discret tant qu'aucun
    mouvement n'est détecté — voir .is-dragging plus bas). */
 .f2s-frame-preview:hover:not(.is-active) {
-  border-color: var(--color-gray-600);
+  border-color: var(--color-gray-500);
 }
 
 .f2s-frame-preview.is-active {
   border-color: var(--color-orange-80);
 }
 
-/* Même tag que les éléments rasterisés du rapport du deck : encre, pas le
-   rouge d'erreur (l'export n'est pas bloqué). Posé en bas à gauche : le coin
-   haut droit appartient au badge d'échec d'export. Le liseré clair le
-   détache d'une slide sombre. */
+/* Pastille de la vignette, avec le nombre d'éléments concernés dans les deux
+   modes : "3 rasterized" en Deck, neutre et discret comme le tag du rapport
+   (l'export n'est pas bloqué) ; "3 to fix" en Template, rouge, parce que la
+   création du template est bloquée. Posée en bas à gauche : le coin haut
+   droit appartient au badge d'échec d'export. */
 .f2s-frame-badge {
   position: absolute;
   left: 4px;
   bottom: 4px;
   padding: 2px 6px;
   border-radius: 4px;
-  background: var(--color-text);
-  color: var(--color-bg);
-  box-shadow: 0 0 0 1px var(--color-bg);
+  background: var(--color-gray-200);
+  color: var(--color-tag-neutral-ink);
   font-size: 12px;
   font-weight: 700;
   line-height: 1.3;
@@ -1052,6 +1049,11 @@ a.f2s-btn {
   pointer-events: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.f2s-frame-badge--error {
+  background: var(--color-error);
+  color: #fff;
 }
 
 .f2s-frame-preview img {
@@ -1124,11 +1126,11 @@ a.f2s-btn {
      toujours visible (audit) — .f2s-canvas reste scrollable pour le reste. */
   max-height: 65%;
   flex: none;
-  /* Filet décoratif autour de l'aperçu : gris 300, la valeur qu'il avait
+  /* Filet décoratif autour de l'aperçu : gris 200, la valeur qu'il avait
      déjà via --color-scrollbar. Nommé explicitement pour qu'il ne suive plus
-     le curseur de défilement, qui vient de passer au gris 600 et
+     le curseur de défilement, qui vient de passer au gris 500 et
      transformerait ce cheveu en cadre appuyé. */
-  border: 1px solid var(--color-gray-300);
+  border: 1px solid var(--color-gray-200);
 }
 
 .f2s-canvas-preview img {
@@ -1168,17 +1170,9 @@ a.f2s-btn {
   gap: 24px;
 }
 
-/* La légende colle à l'aperçu (8 px), le rapport s'en détache (24 px). */
-.f2s-deck-figure {
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
 /* `auto` devant le ratio : il s'applique à la boîte de contenu, bordure et
    biseau Windows 95 (padding) ne le faussent pas. */
-.f2s-deck-figure .f2s-canvas-preview {
+.f2s-deck-column .f2s-canvas-preview {
   max-width: none;
   max-height: 65cqh;
   aspect-ratio: auto var(--f2s-frame-ratio, 1.7778);
@@ -1188,7 +1182,7 @@ a.f2s-btn {
   overflow: hidden;
 }
 
-.f2s-deck-figure .f2s-canvas-preview img {
+.f2s-deck-column .f2s-canvas-preview img {
   min-width: 0;
   min-height: 0;
 }
@@ -1196,23 +1190,16 @@ a.f2s-btn {
 /* La fenêtre d'export garde sa propre hauteur (barres de titre et de statut
    en plus de l'image), mais prend la largeur de la colonne : pas de saut de
    largeur au lancement de l'export. */
-.f2s-deck-figure .f2s-canvas-preview--retro {
+.f2s-deck-column .f2s-canvas-preview--retro {
   display: block;
   aspect-ratio: auto;
   max-height: none;
   overflow: visible;
 }
 
-.f2s-deck-figure .f2s-retro-canvas {
+.f2s-deck-column .f2s-retro-canvas {
   max-height: 65cqh;
   margin-inline: auto;
-}
-
-.f2s-deck-caption {
-  font-size: 12px;
-  line-height: 1.3;
-  color: var(--color-text-muted);
-  text-align: start;
 }
 
 /* ---- Logs (rapport de fidélité) : sous la preview + dimensions du deck ----
@@ -1257,25 +1244,12 @@ a.f2s-btn {
   transition: background-color var(--b-duration) var(--b-ease-default);
 }
 
-/* Survol : le fond passe au gris plus foncé de la DA (gray 300), sans
+/* Survol : le fond passe au gris plus foncé de la DA (gray 200), sans
    bordure orange, réservée à l'action principale. */
 @media (hover: hover) and (pointer: fine) {
   .f2s-log-entry:hover {
-    background: var(--color-gray-300);
+    background: var(--color-gray-200);
   }
-
-  .f2s-log-entry:hover .f2s-log-entry-select {
-    color: var(--color-text);
-  }
-}
-
-/* Repère permanent du geste "cliquer pour sélectionner dans Figma" (rapport
-   du deck) : l'outil de sélection de Figma en bout de ligne, tourné vers
-   l'extérieur du plugin. Grisé au repos, à l'encre au survol. */
-.f2s-log-entry-select {
-  flex: none;
-  color: var(--color-text-muted);
-  transition: color var(--b-duration) var(--b-ease-default);
 }
 
 /* Mode template uniquement (TemplatePanel.tsx) : `.f2s-log-entry` y est un
@@ -1425,12 +1399,12 @@ a.f2s-btn {
 }
 
 /* Mode deck : une image dans Slides n'empêche pas l'export, ce n'est pas une
-   erreur. Le tag passe à l'encre (le ton "info" des notifications), plus
-   appuyé que le tag orange clair d'un élément seulement approximé. Le rouge
-   reste au mode Template, où un élément rasterisé bloque la création. */
+   erreur. Le tag passe au gris neutre et discret de la pastille des
+   vignettes (gray-200, texte gray-800). Le rouge reste au mode Template, où
+   un élément rasterisé bloque la création. */
 .f2s-deck-column .f2s-log-entry-flag--rasterized {
-  background: var(--color-text);
-  color: var(--color-bg);
+  background: var(--color-gray-200);
+  color: var(--color-tag-neutral-ink);
 }
 
 .f2s-deck-column .f2s-log-entry--rasterized {
@@ -1685,36 +1659,16 @@ a.f2s-btn {
   min-width: 0;
 }
 
-/* Rouge plein, distinct de la bordure de sélection active (orange-40).
-   La bordure seule se remarquait mal quand la vignette est déjà bordée par
-   du contenu clair/coloré au raz du cadre, un badge explicite en plus,
-   lisible même en un coup d'œil sur tout le rail (audit template, TODO.md
-   point "retour d'erreur sur une vignette bloquante"). */
+/* Rouge plein, distinct de la bordure de sélection active (orange-40), en
+   plus de la pastille "N to fix" (.f2s-frame-badge--error) : la bordure seule
+   se remarquait mal sur un contenu clair ou coloré au ras du cadre. */
 .f2s-frame-preview--blocking {
   border-color: var(--color-error);
-  position: relative;
 }
 
-.f2s-frame-preview--blocking::after {
-  content: "!";
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--color-error);
-  color: #fff;
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 16px;
-  text-align: center;
-  pointer-events: none;
-}
-
-/* Slide dont le lot a échoué au dernier export : même grammaire que le
-   badge bloquant ci-dessus (bordure + pastille rouges), avec une croix au
-   lieu du "!" : l'un dit "à corriger avant", l'autre "n'est pas passée". */
+/* Slide dont le lot a échoué au dernier export : bordure rouge et croix
+   dans le coin haut droit ("n'est pas passée"), à côté de la pastille du
+   bas qui dit "à corriger avant". */
 .f2s-frame-preview--failed {
   border-color: var(--color-error);
   position: relative;
@@ -1933,12 +1887,11 @@ html:not(.f2s-skin--win95)
   gap: 16px;
 }
 
-/* Logo + "Buy me a coffee" : 10 px entre le B et le texte (2 px de marge
-   interne du lien du logo + 8 px d'écart). */
+/* Logo + "Buy me a coffee" : 16 px entre le B et le texte. */
 .f2s-signature {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 16px;
 }
 
 /* "Buy me a coffee" : lien texte de la DA (`.text-link` : encre, 12px, 500,
@@ -2063,7 +2016,7 @@ html:not(.f2s-skin--win95)
   background: transparent;
   cursor: nwse-resize;
   touch-action: none;
-  color: var(--color-gray-600);
+  color: var(--color-gray-500);
 }
 
 .f2s-resize-grip svg {
@@ -2230,7 +2183,9 @@ html:not(.f2s-skin--win95)
   font-size: 12px;
   font-weight: 700;
   min-width: 82px;
-  color: var(--color-text-muted);
+  /* Inactif en gray-600 (4.75:1), le survol à l'encre se distingue
+     nettement ; le 500 serait trop près du fond. */
+  color: var(--color-gray-600);
   background: transparent;
   border: none;
   border-radius: 6px;
@@ -2560,12 +2515,12 @@ html.f2s-skin--win95.f2s-skin--win95 {
      croix de suppression, par exemple) ferait entrer un gris chaud de marque
      dans une fenêtre Windows 95, sans que personne s'en aperçoive avant de
      changer de skin. */
-  --color-gray-700: #3f3f3f;
-  --color-gray-600: var(--w95-shadow);
-  --color-gray-300: var(--w95-face);
+  --color-gray-800: #3f3f3f;
+  --color-gray-500: var(--w95-shadow);
+  --color-gray-200: var(--w95-face);
   --color-gray-100: var(--w95-light);
-  --color-text-muted: var(--color-gray-700);
-  --color-scrollbar: var(--color-gray-300);
+  --color-text-muted: var(--color-gray-800);
+  --color-scrollbar: var(--color-gray-200);
   --color-gray-light: var(--color-gray-100);
   --color-border: var(--w95-shadow);
   --color-surface: var(--w95-white);
@@ -2688,8 +2643,6 @@ html.f2s-skin--win95 .f2s-toolbar-muted,
 html.f2s-skin--win95 .f2s-frame-index,
 html.f2s-skin--win95 .f2s-frame-name,
 html.f2s-skin--win95 .f2s-frame-name-input,
-html.f2s-skin--win95 .f2s-deck-caption,
-html.f2s-skin--win95 .f2s-log-entry-select,
 html.f2s-skin--win95 .f2s-font-original,
 html.f2s-skin--win95 .f2s-font-arrow,
 html.f2s-skin--win95 .f2s-empty-steps,
@@ -2866,7 +2819,6 @@ html.f2s-skin--win95 .f2s-frame-preview--failed {
 
 /* Badge carré (pas de coin arrondi en Windows 95) — même principe que le
    skin moderne (styles.css), juste la géométrie qui change. */
-html.f2s-skin--win95 .f2s-frame-preview--blocking::after,
 html.f2s-skin--win95 .f2s-frame-preview--failed::after {
   border-radius: 0;
   box-shadow: var(--w95-out);
@@ -3253,13 +3205,13 @@ html.f2s-skin--modern .f2s-font-combobox {
 
 /* L'anneau de focus remplace le contour système : au 2px orange-40 il ne
    valait que 1.56:1 une fois aplati sur le fond, sous le seuil de 3:1, donc
-   un utilisateur au clavier ne voyait pas où il était. Gris 600, 3.43:1. Le
+   un utilisateur au clavier ne voyait pas où il était. Gris 500, 3.43:1. Le
    biseau creusé qui délimite le champ au repos ne bouge pas, lui. */
 html.f2s-skin--modern .f2s-title-input:focus,
 html.f2s-skin--modern .f2s-font-dropdown:focus,
 html.f2s-skin--modern .f2s-font-combobox:focus-within {
   outline: none;
-  box-shadow: var(--hyb-in), 0 0 0 2px var(--color-gray-600);
+  box-shadow: var(--hyb-in), 0 0 0 2px var(--color-gray-500);
 }
 
 html.f2s-skin--modern .f2s-font-combobox-list {
@@ -3279,7 +3231,6 @@ html.f2s-skin--modern .f2s-frame-preview {
 }
 
 /* Badge carré (angles droits), cohérent avec le reste du skin. */
-html.f2s-skin--modern .f2s-frame-preview--blocking::after,
 html.f2s-skin--modern .f2s-frame-preview--failed::after {
   border-radius: 0;
 }
@@ -3972,45 +3923,6 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     }
     return name;
   }
-  var COMMON_RATIOS = [
-    [16, 9],
-    [16, 10],
-    [4, 3],
-    [3, 2],
-    [1, 1],
-    [21, 9],
-    [5, 4],
-    [9, 16],
-    [10, 16],
-    [3, 4],
-    [2, 3],
-    [4, 5]
-  ];
-  var RATIO_TOLERANCE = 0.01;
-  function gcd(a3, b2) {
-    return b2 === 0 ? a3 : gcd(b2, a3 % b2);
-  }
-  function aspectRatioLabel(width, height) {
-    if (!(width > 0) || !(height > 0)) return "";
-    const ratio = width / height;
-    for (const [w3, h3] of COMMON_RATIOS) {
-      if (Math.abs(ratio - w3 / h3) / (w3 / h3) <= RATIO_TOLERANCE) return `${w3}:${h3}`;
-    }
-    const rw = Math.round(width);
-    const rh = Math.round(height);
-    const divisor = gcd(rw, rh);
-    if (rw / divisor <= 32 && rh / divisor <= 32) return `${rw / divisor}:${rh / divisor}`;
-    return `${(Math.round(ratio * 100) / 100).toString()}:1`;
-  }
-  function frameSizeCaption(width, height) {
-    const size = `${Math.round(width)} \xD7 ${Math.round(height)} px`;
-    const ratio = aspectRatioLabel(width, height);
-    return ratio ? `${size} \xB7 ${ratio}` : size;
-  }
-  var englishPlural = new Intl.PluralRules("en");
-  function countLabel(count, one, other = `${one}s`) {
-    return `${count} ${englishPlural.select(count) === "one" ? one : other}`;
-  }
 
   // src/ui/logEntryFlag.ts
   var RASTERIZED_WARNING_CODES = /* @__PURE__ */ new Set([
@@ -4470,9 +4382,6 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
   }
 
   // src/ui/DeckPanel.tsx
-  function SelectInFigmaIcon() {
-    return /* @__PURE__ */ u3("svg", { className: "f2s-log-entry-select", width: "14", height: "14", viewBox: "0 0 32 32", fill: "currentColor", xmlns: "http://www.w3.org/2000/svg", "aria-hidden": "true", children: /* @__PURE__ */ u3("path", { transform: "matrix(-1 0 0 1 32 0)", d: "M23,28a1,1,0,0,1-.71-.29l-6.13-6.14-3.33,5a1,1,0,0,1-1,.44,1,1,0,0,1-.81-.7l-6-20A1,1,0,0,1,6.29,5l20,6a1,1,0,0,1,.7.81,1,1,0,0,1-.44,1l-5,3.33,6.14,6.13a1,1,0,0,1,0,1.42l-4,4A1,1,0,0,1,23,28Zm0-2.41L25.59,23l-7.16-7.15,5.25-3.5L7.49,7.49l4.86,16.19,3.5-5.25Z" }) });
-  }
   function DeckPanel({
     order,
     setOrder,
@@ -4503,8 +4412,6 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     const previewedFrame = exportingFrame ?? activeFrame;
     const highlightedId = pacedCursor?.frameId ?? activeId;
     const previewedFailure = previewedFrame ? failedSlides?.[previewedFrame.id] : void 0;
-    const rasterizedSlideIds = order.filter((id) => (frames[id]?.rasterCount ?? 0) > 0);
-    const rasterizedTotal = rasterizedSlideIds.reduce((sum, id) => sum + (frames[id]?.rasterCount ?? 0), 0);
     const previewedWarnings = previewedFrame?.warnings ?? [];
     const previewSettled = exportConcluded && !pacedCursor;
     h2(() => {
@@ -4542,68 +4449,54 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     return /* @__PURE__ */ u3("div", { className: "f2s-body", children: [
       notice && /* @__PURE__ */ u3(Toast, { notice, onDismiss: onDismissNotice }, notice.id),
       /* @__PURE__ */ u3("p", { className: "f2s-sr-only", role: "status", children: pacedCursor ? `Generating slide ${pacedCursor.index + 1} of ${pacedCursor.total}` : announcement }),
-      /* @__PURE__ */ u3("aside", { className: "f2s-sidebar", children: [
-        rasterizedTotal > 0 && /* @__PURE__ */ u3(
-          "p",
-          {
-            className: "f2s-rail-summary f2s-tabular",
-            title: "Rasterized elements become images in Slides: they look the same but can't be edited there.",
-            children: [
-              rasterizedTotal,
-              " rasterized on ",
-              countLabel(rasterizedSlideIds.length, "slide")
-            ]
-          }
-        ),
-        order.map((id, index) => {
-          const failure = failedSlides?.[id];
-          const f4 = frames[id];
-          if (!f4) return null;
-          const item = itemState(id, index);
-          const name = displayFrameName(f4.name);
-          const rasterCount = f4.rasterCount ?? 0;
-          return /* @__PURE__ */ u3("div", { ref: registerItem(id), className: item.className, style: item.style, children: [
-            /* @__PURE__ */ u3(
+      /* @__PURE__ */ u3("aside", { className: "f2s-sidebar", children: order.map((id, index) => {
+        const failure = failedSlides?.[id];
+        const f4 = frames[id];
+        if (!f4) return null;
+        const item = itemState(id, index);
+        const name = displayFrameName(f4.name);
+        const rasterCount = f4.rasterCount ?? 0;
+        return /* @__PURE__ */ u3("div", { ref: registerItem(id), className: item.className, style: item.style, children: [
+          /* @__PURE__ */ u3(
+            "button",
+            {
+              type: "button",
+              className: `f2s-frame-preview${highlightedId === id ? " is-active" : ""}${failure ? " f2s-frame-preview--failed" : ""}${pacedCursor?.frameId === id ? " is-exporting" : ""}`,
+              onClick: () => selectFrame(id),
+              onPointerDown: (e3) => onThumbPointerDown(e3, id),
+              onKeyDown: (e3) => onThumbKeyDown(e3, id),
+              "aria-keyshortcuts": "Alt+ArrowUp Alt+ArrowDown",
+              title: failure ? `Export failed: ${failure}` : void 0,
+              children: [
+                f4.previewDataUrl && /* @__PURE__ */ u3("img", { src: f4.previewDataUrl, alt: name, draggable: false }),
+                rasterCount > 0 && /* @__PURE__ */ u3("span", { className: "f2s-frame-badge f2s-tabular", children: [
+                  rasterCount,
+                  " rasterized"
+                ] })
+              ]
+            }
+          ),
+          /* @__PURE__ */ u3("div", { className: "f2s-frame-info", children: [
+            /* @__PURE__ */ u3("span", { className: "f2s-frame-index", children: [
+              index + 1,
+              "."
+            ] }),
+            /* @__PURE__ */ u3("span", { className: "f2s-frame-name", title: f4.name, children: name }),
+            /* @__PURE__ */ u3("div", { className: "f2s-frame-controls", children: /* @__PURE__ */ u3(
               "button",
               {
                 type: "button",
-                className: `f2s-frame-preview${highlightedId === id ? " is-active" : ""}${failure ? " f2s-frame-preview--failed" : ""}${pacedCursor?.frameId === id ? " is-exporting" : ""}`,
-                onClick: () => selectFrame(id),
-                onPointerDown: (e3) => onThumbPointerDown(e3, id),
-                onKeyDown: (e3) => onThumbKeyDown(e3, id),
-                "aria-keyshortcuts": "Alt+ArrowUp Alt+ArrowDown",
-                title: failure ? `Export failed: ${failure}` : void 0,
-                children: [
-                  f4.previewDataUrl && /* @__PURE__ */ u3("img", { src: f4.previewDataUrl, alt: name, draggable: false }),
-                  rasterCount > 0 && /* @__PURE__ */ u3("span", { className: "f2s-frame-badge f2s-tabular", children: [
-                    rasterCount,
-                    " rasterized"
-                  ] })
-                ]
+                className: "f2s-icon-btn",
+                disabled: locked,
+                title: locked ? "An export is running. Wait for it to finish before changing the list." : `Remove slide ${index + 1}`,
+                "aria-label": `Remove slide ${index + 1}`,
+                onClick: () => onRemove(id),
+                children: "\u2715"
               }
-            ),
-            /* @__PURE__ */ u3("div", { className: "f2s-frame-info", children: [
-              /* @__PURE__ */ u3("span", { className: "f2s-frame-index", children: [
-                index + 1,
-                "."
-              ] }),
-              /* @__PURE__ */ u3("span", { className: "f2s-frame-name", title: f4.name, children: name }),
-              /* @__PURE__ */ u3("div", { className: "f2s-frame-controls", children: /* @__PURE__ */ u3(
-                "button",
-                {
-                  type: "button",
-                  className: "f2s-icon-btn",
-                  disabled: locked,
-                  title: locked ? "An export is running. Wait for it to finish before changing the list." : `Remove slide ${index + 1}`,
-                  "aria-label": `Remove slide ${index + 1}`,
-                  onClick: () => onRemove(id),
-                  children: "\u2715"
-                }
-              ) })
-            ] })
-          ] }, id);
-        })
-      ] }),
+            ) })
+          ] })
+        ] }, id);
+      }) }),
       /* @__PURE__ */ u3(
         "main",
         {
@@ -4614,18 +4507,15 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
               /* @__PURE__ */ u3("div", { className: "f2s-logs-header", children: /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "This slide failed to export" }) }),
               /* @__PURE__ */ u3("p", { className: "f2s-export-failure-message", children: previewedFailure })
             ] }),
-            /* @__PURE__ */ u3("figure", { className: "f2s-deck-figure", children: [
-              exportingFrame && pacedCursor ? /* @__PURE__ */ u3("div", { className: "f2s-canvas-preview f2s-canvas-preview--retro", children: /* @__PURE__ */ u3(
-                RetroExportPreview,
-                {
-                  src: exportingFrame.previewDataUrl,
-                  frameName: displayFrameName(exportingFrame.name),
-                  index: pacedCursor.index,
-                  total: pacedCursor.total
-                }
-              ) }) : /* @__PURE__ */ u3("div", { className: "f2s-canvas-preview", children: previewedFrame.previewDataUrl && /* @__PURE__ */ u3("img", { src: previewedFrame.previewDataUrl, alt: displayFrameName(previewedFrame.name) }) }),
-              /* @__PURE__ */ u3("figcaption", { className: "f2s-deck-caption f2s-tabular", children: frameSizeCaption(previewedFrame.width, previewedFrame.height) })
-            ] }),
+            exportingFrame && pacedCursor ? /* @__PURE__ */ u3("div", { className: "f2s-canvas-preview f2s-canvas-preview--retro", children: /* @__PURE__ */ u3(
+              RetroExportPreview,
+              {
+                src: exportingFrame.previewDataUrl,
+                frameName: displayFrameName(exportingFrame.name),
+                index: pacedCursor.index,
+                total: pacedCursor.total
+              }
+            ) }) : /* @__PURE__ */ u3("div", { className: "f2s-canvas-preview", children: previewedFrame.previewDataUrl && /* @__PURE__ */ u3("img", { src: previewedFrame.previewDataUrl, alt: displayFrameName(previewedFrame.name) }) }),
             /* @__PURE__ */ u3("div", { className: "f2s-logs", children: [
               /* @__PURE__ */ u3("div", { className: "f2s-logs-header", children: [
                 /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Content" }),
@@ -4644,8 +4534,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
                   {
                     type: "button",
                     className: `f2s-log-entry${w3.severity === "blocking" ? " f2s-log-entry--blocking" : ""}${flag ? ` f2s-log-entry--${flag}` : ""}`,
-                    title: `${w3.nodeName}: ${logEntryTooltip(w3, tagText)}
-Click to select it in Figma.`,
+                    title: `${w3.nodeName}: ${logEntryTooltip(w3, tagText)}`,
                     onClick: () => selectSourceNodes([w3.sourceNodeId]),
                     children: [
                       /* @__PURE__ */ u3("span", { className: "f2s-log-entry-text", children: [
@@ -4655,8 +4544,7 @@ Click to select it in Figma.`,
                           w3.message
                         ] })
                       ] }),
-                      tagText && /* @__PURE__ */ u3("span", { className: `f2s-log-entry-flag f2s-log-entry-flag--${flag}`, children: tagText }),
-                      /* @__PURE__ */ u3(SelectInFigmaIcon, {})
+                      tagText && /* @__PURE__ */ u3("span", { className: `f2s-log-entry-flag f2s-log-entry-flag--${flag}`, children: tagText })
                     ]
                   }
                 ) }, i3);
@@ -5019,6 +4907,7 @@ Click to select it in Figma.`,
         const layout = layouts[id];
         if (!layout) return null;
         const item = itemState(id, index);
+        const toFix = layout.warnings.filter((w3) => w3.severity === "blocking").length;
         return /* @__PURE__ */ u3("div", { ref: registerItem(id), className: item.className, style: item.style, children: [
           /* @__PURE__ */ u3(
             "button",
@@ -5030,7 +4919,13 @@ Click to select it in Figma.`,
               onKeyDown: (e3) => onThumbKeyDown(e3, id),
               "aria-keyshortcuts": "Alt+ArrowUp Alt+ArrowDown",
               title: failure ? `Export failed: ${failure}` : layout.blocking ? "Contains an element that would be rasterized. Open it to see the details." : void 0,
-              children: layout.previewDataUrl && /* @__PURE__ */ u3("img", { src: layout.previewDataUrl, alt: layout.name, draggable: false })
+              children: [
+                layout.previewDataUrl && /* @__PURE__ */ u3("img", { src: layout.previewDataUrl, alt: layout.name, draggable: false }),
+                layout.blocking && toFix > 0 && /* @__PURE__ */ u3("span", { className: "f2s-frame-badge f2s-frame-badge--error f2s-tabular", children: [
+                  toFix,
+                  " to fix"
+                ] })
+              ]
             }
           ),
           /* @__PURE__ */ u3("div", { className: "f2s-frame-info", children: [

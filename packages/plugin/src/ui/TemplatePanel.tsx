@@ -336,6 +336,9 @@ export function TemplatePanel({
           const layout = layouts[id];
           if (!layout) return null;
           const item = itemState(id, index);
+          // Même pastille que le Deck ("3 rasterized"), avec le nombre de
+          // problèmes à corriger : rouge, parce qu'ici ils bloquent la création.
+          const toFix = layout.warnings.filter((w) => w.severity === 'blocking').length;
           return (
             <div key={id} ref={registerItem(id)} className={item.className} style={item.style}>
               <button
@@ -354,6 +357,7 @@ export function TemplatePanel({
                 }
               >
                 {layout.previewDataUrl && <img src={layout.previewDataUrl} alt={layout.name} draggable={false} />}
+                {layout.blocking && toFix > 0 && <span className="f2s-frame-badge f2s-frame-badge--error f2s-tabular">{toFix} to fix</span>}
               </button>
               <div className="f2s-frame-info">
                 <span className="f2s-frame-index">{index + 1}.</span>

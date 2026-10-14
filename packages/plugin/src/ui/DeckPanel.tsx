@@ -1,5 +1,5 @@
 import { useEffect } from 'preact/hooks';
-import { countLabel, displayFrameName, frameSizeCaption } from './frameLabels.js';
+import { displayFrameName } from './frameLabels.js';
 import { logEntryFlag, logEntryTagText, logEntryTooltip } from './logEntryFlag.js';
 import { usePacedExportCursor } from './pacedExportCursor.js';
 import { RetroExportPreview } from './RetroExportPreview.js';
@@ -45,18 +45,6 @@ export interface DeckPanelProps {
   onPreviewSettled: () => void;
   /** Slide affichée par l'aperçu d'export, à chaque pas : le bouton principal en tire « Exporting 2/4 » (voir ui.tsx). */
   onPacedCursorChange: (cursor: ExportCursor | undefined) => void;
-}
-
-/** Tracé exact d'IBM Carbon (icône "cursor--1", 32×32, Apache-2.0), même
- *  bibliothèque que la roue des réglages : l'outil de sélection de Figma,
- *  retourné en miroir pour pointer vers le haut à droite, hors du plugin,
- *  vers le canvas où le calque va être sélectionné. */
-function SelectInFigmaIcon() {
-  return (
-    <svg className="f2s-log-entry-select" width="14" height="14" viewBox="0 0 32 32" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <path transform="matrix(-1 0 0 1 32 0)" d="M23,28a1,1,0,0,1-.71-.29l-6.13-6.14-3.33,5a1,1,0,0,1-1,.44,1,1,0,0,1-.81-.7l-6-20A1,1,0,0,1,6.29,5l20,6a1,1,0,0,1,.7.81,1,1,0,0,1-.44,1l-5,3.33,6.14,6.13a1,1,0,0,1,0,1.42l-4,4A1,1,0,0,1,23,28Zm0-2.41L25.59,23l-7.16-7.15,5.25-3.5L7.49,7.49l4.86,16.19,3.5-5.25Z" />
-    </svg>
-  );
 }
 
 /**
@@ -111,10 +99,6 @@ export function DeckPanel({
   const highlightedId = pacedCursor?.frameId ?? activeId;
   const previewedFailure = previewedFrame ? failedSlides?.[previewedFrame.id] : undefined;
 
-  // Fidélité visible avant l'export : combien d'éléments deviendront des
-  // images dans Slides, et sur combien de slides, sans ouvrir chaque vignette.
-  const rasterizedSlideIds = order.filter((id) => (frames[id]?.rasterCount ?? 0) > 0);
-  const rasterizedTotal = rasterizedSlideIds.reduce((sum, id) => sum + (frames[id]?.rasterCount ?? 0), 0);
   const previewedWarnings = previewedFrame?.warnings ?? [];
 
   // Job conclu ET séquence d'aperçu terminée : ui.tsx peut annoncer le
@@ -189,14 +173,6 @@ export function DeckPanel({
         {pacedCursor ? `Generating slide ${pacedCursor.index + 1} of ${pacedCursor.total}` : announcement}
       </p>
       <aside className="f2s-sidebar">
-        {rasterizedTotal > 0 && (
-          <p
-            className="f2s-rail-summary f2s-tabular"
-            title="Rasterized elements become images in Slides: they look the same but can't be edited there."
-          >
-            {rasterizedTotal} rasterized on {countLabel(rasterizedSlideIds.length, 'slide')}
-          </p>
-        )}
         {order.map((id, index) => {
           const failure = failedSlides?.[id];
           const f = frames[id];
@@ -263,26 +239,20 @@ export function DeckPanel({
               </div>
             )}
 
-            {/* Taille et ratio en simple légende, plus en faux champs : rien
-                ne s'y modifie, et le ratio est celui que prendra la
-                présentation (toutes les frames du deck le partagent). */}
-            <figure className="f2s-deck-figure">
-              {exportingFrame && pacedCursor ? (
-                <div className="f2s-canvas-preview f2s-canvas-preview--retro">
-                  <RetroExportPreview
-                    src={exportingFrame.previewDataUrl}
-                    frameName={displayFrameName(exportingFrame.name)}
-                    index={pacedCursor.index}
-                    total={pacedCursor.total}
-                  />
-                </div>
-              ) : (
-                <div className="f2s-canvas-preview">
-                  {previewedFrame.previewDataUrl && <img src={previewedFrame.previewDataUrl} alt={displayFrameName(previewedFrame.name)} />}
-                </div>
-              )}
-              <figcaption className="f2s-deck-caption f2s-tabular">{frameSizeCaption(previewedFrame.width, previewedFrame.height)}</figcaption>
-            </figure>
+            {exportingFrame && pacedCursor ? (
+              <div className="f2s-canvas-preview f2s-canvas-preview--retro">
+                <RetroExportPreview
+                  src={exportingFrame.previewDataUrl}
+                  frameName={displayFrameName(exportingFrame.name)}
+                  index={pacedCursor.index}
+                  total={pacedCursor.total}
+                />
+              </div>
+            ) : (
+              <div className="f2s-canvas-preview">
+                {previewedFrame.previewDataUrl && <img src={previewedFrame.previewDataUrl} alt={displayFrameName(previewedFrame.name)} />}
+              </div>
+            )}
 
             <div className="f2s-logs">
               <div className="f2s-logs-header">
@@ -309,7 +279,7 @@ export function DeckPanel({
                           <button
                             type="button"
                             className={`f2s-log-entry${w.severity === 'blocking' ? ' f2s-log-entry--blocking' : ''}${flag ? ` f2s-log-entry--${flag}` : ''}`}
-                            title={`${w.nodeName}: ${logEntryTooltip(w, tagText)}\nClick to select it in Figma.`}
+                            title={`${w.nodeName}: ${logEntryTooltip(w, tagText)}`}
                             onClick={() => selectSourceNodes([w.sourceNodeId])}
                           >
                             {/* Le nom du calque (nodeName) vient de Figma, où le nom par défaut d'un
@@ -323,7 +293,6 @@ export function DeckPanel({
                               {!tagText && <span className="f2s-log-entry-message">: {w.message}</span>}
                             </span>
                             {tagText && <span className={`f2s-log-entry-flag f2s-log-entry-flag--${flag}`}>{tagText}</span>}
-                            <SelectInFigmaIcon />
                           </button>
                         </li>
                       );
