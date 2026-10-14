@@ -71,6 +71,10 @@
      #f2ece8 hérité du monogramme sortaient de la palette. */
   --color-surface: var(--color-bg);
   --color-surface-muted: var(--color-gray-100);
+  /* Fond des champs (nom, polices, rôles) : blanc pur, demandé le
+     2026-10-14 pour détacher les champs du fond #fbfaf9. Hors rampe de la
+     DA, comme le tag "approximated". En thème sombre, la surface. */
+  --color-field: #ffffff;
 
   /* Tapis du tag "approximé" (.f2s-log-entry-flag--visual-diff) : opaque, et
      volontairement PAS redéfini en thème sombre. Un tapis translucide
@@ -132,6 +136,7 @@ html.f2s-theme-dark {
   --color-gray-100: #332c26;
   --color-surface: #211c17;
   --color-surface-muted: #2a231d;
+  --color-field: var(--color-surface);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -144,6 +149,7 @@ html.f2s-theme-dark {
     --color-text: hsl(30, 20%, 98%);
     --color-surface: #211c17;
     --color-surface-muted: #2a231d;
+    --color-field: var(--color-surface);
   }
 }
 
@@ -298,61 +304,47 @@ a {
 .f2s-logo-link {
   display: inline-flex;
   align-items: center;
-  flex: none;
-  text-decoration: none;
-}
-
-/* 26px : la hauteur du bouton Settings et de la zone cliquable de "Buy me a
-   coffee", pour que tout le footer s'aligne sur une seule hauteur.
-   `box-sizing: border-box` (règle `*` en tête de fichier) fait que la
-   bordure tient DANS ces 26px. */
-.f2s-logo {
-  width: 26px;
-  height: 26px;
-  flex: none;
-  display: flex;
-  align-items: center;
   justify-content: center;
-  border: 1px solid var(--color-text);
-  border-radius: 0;
-  transition: transform var(--b-duration) var(--b-ease-default);
+  flex: none;
+  /* Zone cliquable à la hauteur du footer (26 px), le B lui-même reste à la
+     taille du texte voisin. Étroite (11 px) mais conforme à WCAG 2.5.8 : un
+     cercle de 24 px centré dessus ne touche pas le lien voisin, 8 px plus
+     loin. */
+  min-height: 26px;
+  padding-inline: 2px;
+  color: var(--color-text);
+  text-decoration: none;
+  transition: opacity var(--b-duration) var(--b-ease-default);
 }
 
-/* 85% plutôt que 100% : le symbole flottait au ras de la bordure, un peu
-   trop grand dans son cadre. Un pourcentage (plutôt qu'une taille fixe en
-   px) garde le même ratio cadre/symbole sur les deux tailles de boîte
-   existantes (28px ici, 24px en win95, cf. styles.win95.css) sans dupliquer
-   la règle par skin. */
-.f2s-logo svg {
-  width: 85%;
-  height: 85%;
+/* Sans contour : le B seul, à la hauteur de ligne de "Buy me a coffee"
+   (14 px, texte de 12 px), centré sur le même axe. */
+.f2s-logo {
   display: block;
+  flex: none;
+}
+
+.f2s-logo svg {
+  display: block;
+  width: auto;
+  height: 14px;
 }
 
 .f2s-logo svg > * {
   fill: var(--color-text);
 }
 
+/* Le disque de fond orange de l'asset : hors cadre depuis le recadrage, et
+   masqué pour qu'aucun bord ne dépasse. */
 .f2s-logo svg > rect:first-child {
-  fill: none;
+  display: none;
 }
 
-/* Sans son rond de fond, le B seul n'occupe qu'environ 25% de la largeur et
-   46% de la hauteur de la viewBox : il flottait perdu au milieu de sa
-   bordure. Agrandi autour du centre de sa propre boîte englobante
-   (x 30.6→50.2, y 21→58, donc centre 40.4 / 39.5) pour remplir le cadre
-   comme le faisait l'aplat. */
-.f2s-logo svg > *:not(:first-child) {
-  transform: scale(1.55);
-  transform-origin: 40.4px 39.5px;
-}
-
-.f2s-logo-link:hover .f2s-logo {
-  transform: translateY(-1px);
-}
-
-.f2s-logo-link:active .f2s-logo {
-  transform: translateY(0.5px);
+/* Survol de la signature : opacité 0.7, comme le lien-signature de la DA. */
+@media (hover: hover) and (pointer: fine) {
+  .f2s-logo-link:hover {
+    opacity: 0.7;
+  }
 }
 
 /* ---- Toolbar (polices) ---- */
@@ -424,7 +416,7 @@ a {
   font-family: inherit;
   font-size: 12px;
   border: 1px solid var(--color-border);
-  background: var(--color-surface);
+  background: var(--color-field);
   color: var(--color-text);
   border-radius: 4px;
   padding: 3px 8px;
@@ -467,7 +459,7 @@ a {
   font-family: inherit;
   font-size: 12px;
   border: 1px solid var(--color-border);
-  background: var(--color-surface);
+  background: var(--color-field);
   color: var(--color-text);
   border-radius: 4px;
   padding: 3px 8px;
@@ -500,7 +492,7 @@ a {
   font-family: inherit;
   font-size: 12px;
   border: 1px solid var(--color-border);
-  background: var(--color-surface);
+  background: var(--color-field);
   color: var(--color-text);
   border-radius: 4px;
   padding: 3px 8px;
@@ -1040,17 +1032,19 @@ a.f2s-btn {
   border-color: var(--color-orange-80);
 }
 
-/* Même tag que "Rasterized" dans le rapport (.f2s-log-entry-flag--rasterized),
-   posé en bas à gauche : le coin haut droit appartient au badge d'échec
-   d'export. */
+/* Même tag que les éléments rasterisés du rapport du deck : encre, pas le
+   rouge d'erreur (l'export n'est pas bloqué). Posé en bas à gauche : le coin
+   haut droit appartient au badge d'échec d'export. Le liseré clair le
+   détache d'une slide sombre. */
 .f2s-frame-badge {
   position: absolute;
   left: 4px;
   bottom: 4px;
   padding: 2px 6px;
   border-radius: 4px;
-  background: var(--color-error);
-  color: #fff;
+  background: var(--color-text);
+  color: var(--color-bg);
+  box-shadow: 0 0 0 1px var(--color-bg);
   font-size: 12px;
   font-weight: 700;
   line-height: 1.3;
@@ -1214,19 +1208,6 @@ a.f2s-btn {
   margin-inline: auto;
 }
 
-.f2s-logs-notes {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin-top: 4px;
-}
-
-.f2s-logs-notes p {
-  margin: 0;
-  line-height: 1.4;
-  text-wrap: pretty;
-}
-
 .f2s-deck-caption {
   font-size: 12px;
   line-height: 1.3;
@@ -1273,34 +1254,28 @@ a.f2s-btn {
   border: 1px solid var(--color-border);
   border-radius: 6px;
   padding: 6px 10px;
+  transition: background-color var(--b-duration) var(--b-ease-default);
 }
 
-.f2s-log-entry:hover {
-  border-color: var(--color-orange);
-}
-
-/* Indice du geste "cliquer pour sélectionner dans Figma" (rapport du deck) :
-   l'outil de sélection de Figma, en bout de ligne, révélé au survol et au
-   focus clavier. Sa place est réservée même invisible, pour que la ligne ne
-   se recompose pas sous le pointeur. Sans survol possible, il reste affiché. */
-.f2s-log-entry-select {
-  flex: none;
-  color: var(--color-text-muted);
-  transition: opacity var(--b-duration) var(--b-ease-default);
-}
-
+/* Survol : le fond passe au gris plus foncé de la DA (gray 300), sans
+   bordure orange, réservée à l'action principale. */
 @media (hover: hover) and (pointer: fine) {
-  .f2s-log-entry-select {
-    opacity: 0;
+  .f2s-log-entry:hover {
+    background: var(--color-gray-300);
   }
 
   .f2s-log-entry:hover .f2s-log-entry-select {
-    opacity: 1;
+    color: var(--color-text);
   }
 }
 
-.f2s-log-entry:focus-visible .f2s-log-entry-select {
-  opacity: 1;
+/* Repère permanent du geste "cliquer pour sélectionner dans Figma" (rapport
+   du deck) : l'outil de sélection de Figma en bout de ligne, tourné vers
+   l'extérieur du plugin. Grisé au repos, à l'encre au survol. */
+.f2s-log-entry-select {
+  flex: none;
+  color: var(--color-text-muted);
+  transition: color var(--b-duration) var(--b-ease-default);
 }
 
 /* Mode template uniquement (TemplatePanel.tsx) : `.f2s-log-entry` y est un
@@ -1323,20 +1298,21 @@ a.f2s-btn {
   cursor: pointer;
 }
 
-/* Sélecteur de rôle de placeholder (audit — associer un contenu à
-   [[title]]/[[body]]/[[image]]… directement depuis le rapport, sans
-   renommer le calque à la main dans Figma). Volontairement discret : ce
-   n'est pas le repère principal de la ligne, juste une action disponible. */
+/* Sélecteur de rôle de placeholder : associer un calque à [[title]],
+   [[body]], [[image]]… depuis le rapport, sans renommer le calque à la main
+   dans Figma. Il porte aussi `.f2s-font-dropdown` : même champ que le
+   sélecteur de polices et ceux du panneau Styles (fond, biseau, anneau gris
+   au clic). Seuls la taille et le texte grisé de "No role" lui sont propres. */
 .f2s-log-entry-role {
   flex: none;
-  font-size: 12px;
-  font-family: inherit;
   color: var(--color-text-muted);
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
   padding: 2px 4px;
   max-width: 110px;
+}
+
+/* Un calque qui a un rôle (liste Composition) : la valeur s'écrit à l'encre. */
+.f2s-log-entry-role:not(:has(option[value=""]:checked)) {
+  color: var(--color-text);
 }
 
 /* Une seule ligne, tronquée : voir le commentaire sur `f2s-log-entry-text`
@@ -1407,14 +1383,14 @@ a.f2s-btn {
   border-color: var(--color-error);
 }
 
-/* Liste "Content" du mode template : distingue d'un coup d'œil les calques
-   DÉJÀ tagués d'un rôle de placeholder du reste du layout. Volontairement
-   limité à la graisse du nom, sans fond ni bordure propres : les deux skins
-   repeignent `.f2s-log-entry` avec une spécificité supérieure
-   (`html.f2s-skin--…`), une couleur posée ici ne tiendrait qu'en modern.
-   Le rôle lui-même reste écrit en toutes lettres à droite du nom. */
-.f2s-log-entry--tagged .f2s-log-entry-name {
-  font-weight: 700;
+/* Calque en conflit de composition (rôle en double, rôle incompatible avec
+   le type de calque) : contour rouge, la raison écrite sous le nom. En
+   `outline` plutôt qu'en `border` : les deux skins repeignent la bordure de
+   `.f2s-log-entry` avec une spécificité supérieure, et un contour ne décale
+   pas la ligne. */
+.f2s-log-entry--conflict {
+  outline: 1px solid var(--color-error);
+  outline-offset: -1px;
 }
 
 /* Contient désormais la raison précise ("Font "Zodiak" → "Inter"",
@@ -1446,6 +1422,19 @@ a.f2s-btn {
 
 .f2s-log-entry-flag--rasterized {
   background: var(--color-error);
+}
+
+/* Mode deck : une image dans Slides n'empêche pas l'export, ce n'est pas une
+   erreur. Le tag passe à l'encre (le ton "info" des notifications), plus
+   appuyé que le tag orange clair d'un élément seulement approximé. Le rouge
+   reste au mode Template, où un élément rasterisé bloque la création. */
+.f2s-deck-column .f2s-log-entry-flag--rasterized {
+  background: var(--color-text);
+  color: var(--color-bg);
+}
+
+.f2s-deck-column .f2s-log-entry--rasterized {
+  border-color: var(--color-border);
 }
 
 /* Repère plus discret que "Rasterized" : l'élément reste natif et éditable,
@@ -1569,17 +1558,6 @@ a.f2s-btn {
   border-color: var(--color-orange);
 }
 
-/* Rôle de placeholder en texte neutre (les anciens badges colorés
-   title/subtitle=orange, image/logo=rouge ne portaient aucune sémantique
-   lisible — décoration retirée, cf. audit). */
-.f2s-tmpl-role {
-  flex: none;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
-}
 
 /* Le nom du calque tagué devient le label du placeholder (p.label) : sur un
    calque texte, ce nom par défaut est son contenu entier — tronqué sur une
@@ -1899,7 +1877,7 @@ a.f2s-btn {
    le même axe, sans toucher au padding ni à la hauteur. Le skin Windows 95
    a sa propre police, d'où le périmètre au skin modern. */
 html:not(.f2s-skin--win95) .f2s-footer-settings > span,
-html:not(.f2s-skin--win95) .f2s-coffee-link > span {
+html:not(.f2s-skin--win95) .f2s-coffee-label > span {
   position: relative;
   top: 1px;
 }
@@ -1955,29 +1933,52 @@ html:not(.f2s-skin--win95)
   gap: 16px;
 }
 
+/* Logo + "Buy me a coffee" : 10 px entre le B et le texte (2 px de marge
+   interne du lien du logo + 8 px d'écart). */
+.f2s-signature {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 /* "Buy me a coffee" : lien texte de la DA (`.text-link` : encre, 12px, 500,
-   souligné au survol) suivi d'une flèche en diagonale, qui dit qu'il ouvre
-   un site externe. La zone cliquable garde les 26px de haut du footer. */
+   souligné au survol) suivi d'une petite flèche en diagonale, qui dit qu'il
+   ouvre un site externe. La zone cliquable garde les 26px de haut du footer. */
 .f2s-coffee-link {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
   min-height: 26px;
   color: var(--color-text);
   font-size: 12px;
+  line-height: 14px;
   font-weight: 500;
   text-decoration: none;
   white-space: nowrap;
 }
 
-.f2s-coffee-link:hover {
-  text-decoration: underline;
-  text-underline-offset: 2px;
+/* Texte et flèche dans un même bloc : le soulignement du survol est tracé
+   sous le bloc entier, flèche comprise, plutôt qu'en `text-decoration` qui
+   s'arrête au dernier caractère. */
+.f2s-coffee-label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
 }
 
-.f2s-coffee-link svg {
+.f2s-coffee-label svg {
   flex: none;
   display: block;
+}
+
+.f2s-coffee-link:hover .f2s-coffee-label::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -2px;
+  height: 1px;
+  background: currentColor;
 }
 
 /* Statut du dernier export (réussi ou non) : pastille + texte tronqué sur
@@ -2669,20 +2670,6 @@ html.f2s-skin--win95 .f2s-footer-left {
   gap: 6px;
 }
 
-/* Le logo prend la même hauteur que le bouton voisin — "Buy me a coffee"
-   depuis qu'il a quitté la zone Settings (mesuré en rendu réel). Un
-   align-items:stretch + aspect-ratio:1/1 aurait évité de recopier cette
-   valeur à la main, mais casse ici : le SVG du logo est dimensionné en
-   width/height 100% (styles.css), donc sans hauteur explicite sur .f2s-logo
-   le stretch n'a rien à partir de quoi se calculer (dépendance circulaire)
-   et le logo explose à la taille de remplacement par défaut (300×300) —
-   vérifié en rendu. Valeur fixe donc, à réajuster si le gabarit du bouton
-   change (24px depuis le passage du texte des boutons en 12px). */
-html.f2s-skin--win95 .f2s-logo {
-  width: 24px;
-  height: 24px;
-}
-
 html.f2s-skin--win95 .f2s-toolbar {
   gap: 8px;
   padding: 6px;
@@ -2963,10 +2950,6 @@ html.f2s-skin--win95 .f2s-frame-badge {
   border-radius: 0;
 }
 
-html.f2s-skin--win95 .f2s-tmpl-role {
-  color: #000;
-}
-
 /* ---- Progression / erreurs ---- */
 
 html.f2s-skin--win95 .f2s-spinner {
@@ -3183,12 +3166,10 @@ html.f2s-skin--win95 .f2s-font-combobox-list::-webkit-scrollbar {
 /* ---- Signature de l'auteur ----
    Rien à repeindre ici : le monogramme est monochrome et prend
    `--color-text`, que ce fichier remappe déjà sur le noir système (bloc
-   racine). Le fond du panneau se voit au travers de la marque et joue le
-   rôle du gris #c0c0c0. Seule exception au tronc commun : pas de transform
-   au survol, comme partout dans ce skin. */
-html.f2s-skin--win95 .f2s-logo-link:hover .f2s-logo,
-html.f2s-skin--win95 .f2s-logo-link:active .f2s-logo {
-  transform: none;
+   racine). Seule exception au tronc commun : pas de fondu au survol, comme
+   partout dans ce skin. */
+html.f2s-skin--win95 .f2s-logo-link {
+  transition: none;
 }
 
 /* ============================================================================
@@ -4489,16 +4470,8 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
   }
 
   // src/ui/DeckPanel.tsx
-  var PREPARE_FIXES_CODES = /* @__PURE__ */ new Set([
-    "GRADIENT_RASTERIZED",
-    "MULTIPLE_FILLS_RASTERIZED",
-    "CONTAINER_BACKGROUND_RASTERIZED",
-    "EFFECT_RASTERIZED",
-    "CORNER_RADIUS_RASTERIZED",
-    "LETTER_SPACING_LOST"
-  ]);
   function SelectInFigmaIcon() {
-    return /* @__PURE__ */ u3("svg", { className: "f2s-log-entry-select", width: "14", height: "14", viewBox: "0 0 32 32", fill: "currentColor", xmlns: "http://www.w3.org/2000/svg", "aria-hidden": "true", children: /* @__PURE__ */ u3("path", { d: "M23,28a1,1,0,0,1-.71-.29l-6.13-6.14-3.33,5a1,1,0,0,1-1,.44,1,1,0,0,1-.81-.7l-6-20A1,1,0,0,1,6.29,5l20,6a1,1,0,0,1,.7.81,1,1,0,0,1-.44,1l-5,3.33,6.14,6.13a1,1,0,0,1,0,1.42l-4,4A1,1,0,0,1,23,28Zm0-2.41L25.59,23l-7.16-7.15,5.25-3.5L7.49,7.49l4.86,16.19,3.5-5.25Z" }) });
+    return /* @__PURE__ */ u3("svg", { className: "f2s-log-entry-select", width: "14", height: "14", viewBox: "0 0 32 32", fill: "currentColor", xmlns: "http://www.w3.org/2000/svg", "aria-hidden": "true", children: /* @__PURE__ */ u3("path", { transform: "matrix(-1 0 0 1 32 0)", d: "M23,28a1,1,0,0,1-.71-.29l-6.13-6.14-3.33,5a1,1,0,0,1-1,.44,1,1,0,0,1-.81-.7l-6-20A1,1,0,0,1,6.29,5l20,6a1,1,0,0,1,.7.81,1,1,0,0,1-.44,1l-5,3.33,6.14,6.13a1,1,0,0,1,0,1.42l-4,4A1,1,0,0,1,23,28Zm0-2.41L25.59,23l-7.16-7.15,5.25-3.5L7.49,7.49l4.86,16.19,3.5-5.25Z" }) });
   }
   function DeckPanel({
     order,
@@ -4533,7 +4506,6 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     const rasterizedSlideIds = order.filter((id) => (frames[id]?.rasterCount ?? 0) > 0);
     const rasterizedTotal = rasterizedSlideIds.reduce((sum, id) => sum + (frames[id]?.rasterCount ?? 0), 0);
     const previewedWarnings = previewedFrame?.warnings ?? [];
-    const preparable = previewedWarnings.some((w3) => PREPARE_FIXES_CODES.has(w3.code));
     const previewSettled = exportConcluded && !pacedCursor;
     h2(() => {
       if (previewSettled) onPreviewSettled();
@@ -4664,36 +4636,31 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
                   " rasterized"
                 ] })
               ] }),
-              previewedWarnings.length > 0 ? /* @__PURE__ */ u3(S, { children: [
-                /* @__PURE__ */ u3("ul", { className: "f2s-tmpl-list", children: [...previewedWarnings].sort((a3, b2) => (logEntryFlag(a3.code) === "rasterized" ? 0 : 1) - (logEntryFlag(b2.code) === "rasterized" ? 0 : 1)).map((w3, i3) => {
-                  const flag = logEntryFlag(w3.code);
-                  const tagText = flag ? logEntryTagText(w3, fontOverrides) : void 0;
-                  return /* @__PURE__ */ u3("li", { children: /* @__PURE__ */ u3(
-                    "button",
-                    {
-                      type: "button",
-                      className: `f2s-log-entry${w3.severity === "blocking" ? " f2s-log-entry--blocking" : ""}${flag ? ` f2s-log-entry--${flag}` : ""}`,
-                      title: `${w3.nodeName}: ${logEntryTooltip(w3, tagText)}`,
-                      onClick: () => selectSourceNodes([w3.sourceNodeId]),
-                      children: [
-                        /* @__PURE__ */ u3("span", { className: "f2s-log-entry-text", children: [
-                          /* @__PURE__ */ u3("strong", { className: "f2s-log-entry-name", children: w3.nodeName }),
-                          !tagText && /* @__PURE__ */ u3("span", { className: "f2s-log-entry-message", children: [
-                            ": ",
-                            w3.message
-                          ] })
-                        ] }),
-                        tagText && /* @__PURE__ */ u3("span", { className: `f2s-log-entry-flag f2s-log-entry-flag--${flag}`, children: tagText }),
-                        /* @__PURE__ */ u3(SelectInFigmaIcon, {})
-                      ]
-                    }
-                  ) }, i3);
-                }) }),
-                /* @__PURE__ */ u3("div", { className: "f2s-logs-notes", children: [
-                  /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: "Click a row to select the layer in Figma." }),
-                  preparable && /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: "\u201CPrepare for Slides\u201D simplifies gradients, effects and letter spacing so they stay editable." })
-                ] })
-              ] }) : /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: "No issues detected on this frame." })
+              previewedWarnings.length > 0 ? /* @__PURE__ */ u3("ul", { className: "f2s-tmpl-list", children: [...previewedWarnings].sort((a3, b2) => (logEntryFlag(a3.code) === "rasterized" ? 0 : 1) - (logEntryFlag(b2.code) === "rasterized" ? 0 : 1)).map((w3, i3) => {
+                const flag = logEntryFlag(w3.code);
+                const tagText = flag ? logEntryTagText(w3, fontOverrides) : void 0;
+                return /* @__PURE__ */ u3("li", { children: /* @__PURE__ */ u3(
+                  "button",
+                  {
+                    type: "button",
+                    className: `f2s-log-entry${w3.severity === "blocking" ? " f2s-log-entry--blocking" : ""}${flag ? ` f2s-log-entry--${flag}` : ""}`,
+                    title: `${w3.nodeName}: ${logEntryTooltip(w3, tagText)}
+Click to select it in Figma.`,
+                    onClick: () => selectSourceNodes([w3.sourceNodeId]),
+                    children: [
+                      /* @__PURE__ */ u3("span", { className: "f2s-log-entry-text", children: [
+                        /* @__PURE__ */ u3("strong", { className: "f2s-log-entry-name", children: w3.nodeName }),
+                        !tagText && /* @__PURE__ */ u3("span", { className: "f2s-log-entry-message", children: [
+                          ": ",
+                          w3.message
+                        ] })
+                      ] }),
+                      tagText && /* @__PURE__ */ u3("span", { className: `f2s-log-entry-flag f2s-log-entry-flag--${flag}`, children: tagText }),
+                      /* @__PURE__ */ u3(SelectInFigmaIcon, {})
+                    ]
+                  }
+                ) }, i3);
+              }) }) : /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: "No issues detected on this frame." })
             ] })
           ] }) : /* @__PURE__ */ u3("p", { className: "f2s-canvas-empty", children: "Select a frame on the left to preview it." })
         }
@@ -4732,6 +4699,25 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     if (kind === "image") return IMAGE_ROLE_TAGS;
     if (kind === "line") return CUSTOM_ONLY_ROLE_TAGS;
     return KNOWN_ROLE_TAGS;
+  }
+
+  // src/ui/compositionRows.ts
+  function splitCompositionRows(elements, compositionWarnings) {
+    const tagged = elements.filter((el) => el.role);
+    const untagged = elements.filter((el) => !el.role);
+    const taggedIds = new Set(tagged.map((el) => el.sourceNodeId));
+    const conflicts = /* @__PURE__ */ new Map();
+    const unattached = [];
+    for (const w3 of compositionWarnings) {
+      if (!taggedIds.has(w3.sourceNodeId)) {
+        unattached.push(w3);
+        continue;
+      }
+      const messages = conflicts.get(w3.sourceNodeId) ?? [];
+      if (!messages.includes(w3.message)) messages.push(w3.message);
+      conflicts.set(w3.sourceNodeId, messages);
+    }
+    return { tagged, untagged, conflicts, unattached };
   }
 
   // src/serialize/templateTheme.ts
@@ -4863,21 +4849,31 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
   function setPlaceholderRole(sourceNodeId, tag) {
     postToPlugin({ type: "set-placeholder-role", sourceNodeId, tag });
   }
-  function TemplateElementList({ elements, noteByNode }) {
+  function TemplateElementList({
+    elements,
+    noteByNode,
+    conflicts
+  }) {
     return /* @__PURE__ */ u3("ul", { className: "f2s-tmpl-list", children: elements.map((el) => {
       const role = el.role;
+      const roleTag = role ? CANONICAL_TAG_FOR_ROLE[role] : void 0;
       const note = noteByNode.get(el.sourceNodeId);
-      return /* @__PURE__ */ u3("li", { className: `f2s-log-entry${role ? " f2s-log-entry--tagged" : ""}`, children: [
+      const problems = conflicts?.get(el.sourceNodeId);
+      const tags = placeholderRoleTagsForKind(el.kind);
+      const options = roleTag && !tags.includes(roleTag) ? [...tags, roleTag] : tags;
+      return /* @__PURE__ */ u3("li", { className: `f2s-log-entry${problems ? " f2s-log-entry--wrap f2s-log-entry--conflict" : ""}`, children: [
         /* @__PURE__ */ u3(
           "button",
           {
             type: "button",
             className: "f2s-log-entry-clickarea",
-            title: note ? note.tooltip : el.label ? `${el.name} (${el.label})` : el.name,
+            title: [note ? note.tooltip : el.label ? `${el.name} (${el.label})` : el.name, ...problems ?? []].join("\n"),
             onClick: () => selectSourceNodes([el.sourceNodeId]),
             children: [
-              /* @__PURE__ */ u3("span", { className: "f2s-log-entry-text", children: /* @__PURE__ */ u3("strong", { className: "f2s-log-entry-name", children: el.name }) }),
-              role && /* @__PURE__ */ u3("span", { className: "f2s-tmpl-role", children: role }),
+              /* @__PURE__ */ u3("span", { className: "f2s-log-entry-text", children: [
+                /* @__PURE__ */ u3("strong", { className: "f2s-log-entry-name", children: el.name }),
+                problems && /* @__PURE__ */ u3("span", { className: "f2s-log-entry-message", children: problems.join(" ") })
+              ] }),
               note && /* @__PURE__ */ u3("span", { className: `f2s-log-entry-flag f2s-log-entry-flag--${note.flag}`, children: note.text })
             ]
           }
@@ -4885,14 +4881,15 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
         /* @__PURE__ */ u3(
           "select",
           {
-            className: "f2s-log-entry-role",
-            value: role ? CANONICAL_TAG_FOR_ROLE[role] : "",
+            className: "f2s-font-dropdown f2s-log-entry-role",
+            value: roleTag ?? "",
             title: "Assign this layer to a Slides template placeholder role",
             "aria-label": `Placeholder role for ${el.name}`,
+            "aria-invalid": problems ? true : void 0,
             onChange: (e3) => setPlaceholderRole(el.sourceNodeId, e3.target.value),
             children: [
               /* @__PURE__ */ u3("option", { value: "", children: "No role" }),
-              placeholderRoleTagsForKind(el.kind).map((tag) => /* @__PURE__ */ u3("option", { value: tag, children: [
+              options.map((tag) => /* @__PURE__ */ u3("option", { value: tag, children: [
                 "[[",
                 tag,
                 "]]"
@@ -4983,6 +4980,8 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
       consumedNotes.add(w3);
     }
     const leftoverNotes = fidelityNotes.filter((w3) => !consumedNotes.has(w3));
+    const rows = splitCompositionRows(previewedLayout?.elements ?? [], compositionWarnings);
+    const unattachedComposition = rows.unattached.filter((w3) => w3.code !== "LAYOUT_WITHOUT_PLACEHOLDER");
     if (order.length === 0) {
       return /* @__PURE__ */ u3("div", { className: "f2s-body", children: [
         notice && /* @__PURE__ */ u3(Toast, { notice, onDismiss: onDismissNotice }, notice.id),
@@ -5073,15 +5072,9 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
           /* @__PURE__ */ u3("div", { className: "f2s-logs-header", children: /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "This layout failed to export" }) }),
           /* @__PURE__ */ u3("p", { className: "f2s-export-failure-message", children: previewedFailure })
         ] }),
-        (blockingWarnings.length > 0 || compositionWarnings.length > 0) && /* @__PURE__ */ u3("div", { className: "f2s-tmpl-panel", children: [
-          blockingWarnings.length > 0 && /* @__PURE__ */ u3("div", { className: "f2s-logs f2s-tmpl-section--blocking", children: [
-            /* @__PURE__ */ u3("div", { className: "f2s-logs-header", children: /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Fix before creating the template" }) }),
-            /* @__PURE__ */ u3(TemplateLogList, { warnings: blockingWarnings, fontOverrides })
-          ] }),
-          compositionWarnings.length > 0 && /* @__PURE__ */ u3("div", { className: "f2s-logs", children: [
-            /* @__PURE__ */ u3("div", { className: "f2s-logs-header", children: /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Composition" }) }),
-            /* @__PURE__ */ u3(TemplateLogList, { warnings: compositionWarnings, fontOverrides, wrap: true })
-          ] })
+        blockingWarnings.length > 0 && /* @__PURE__ */ u3("div", { className: "f2s-logs f2s-tmpl-section--blocking", children: [
+          /* @__PURE__ */ u3("div", { className: "f2s-logs-header", children: /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Fix before creating the template" }) }),
+          /* @__PURE__ */ u3(TemplateLogList, { warnings: blockingWarnings, fontOverrides })
         ] }),
         exportingLayout && pacedCursor ? /* @__PURE__ */ u3("div", { className: "f2s-canvas-preview f2s-canvas-preview--retro f2s-tmpl-preview", children: /* @__PURE__ */ u3(
           RetroExportPreview,
@@ -5093,6 +5086,11 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
           }
         ) }) : /* @__PURE__ */ u3("div", { className: "f2s-canvas-preview f2s-tmpl-preview", children: previewedLayout.previewDataUrl && /* @__PURE__ */ u3("img", { src: previewedLayout.previewDataUrl, alt: previewedLayout.name }) }),
         /* @__PURE__ */ u3("div", { className: "f2s-tmpl-panel", children: [
+          /* @__PURE__ */ u3("section", { className: "f2s-tmpl-section", children: [
+            /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Composition" }),
+            rows.tagged.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: "No placeholder yet. Pick a role for a layer in Content." }) : /* @__PURE__ */ u3(TemplateElementList, { elements: rows.tagged, noteByNode, conflicts: rows.conflicts }),
+            unattachedComposition.length > 0 && /* @__PURE__ */ u3(TemplateLogList, { warnings: unattachedComposition, fontOverrides, wrap: true })
+          ] }),
           /* @__PURE__ */ u3("section", { className: "f2s-tmpl-section", children: [
             /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Content" }),
             previewedLayout.elements.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: [
@@ -5108,7 +5106,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
               " or ",
               /* @__PURE__ */ u3("code", { children: "[[logo]]" }),
               "."
-            ] }) : /* @__PURE__ */ u3(TemplateElementList, { elements: previewedLayout.elements, noteByNode })
+            ] }) : rows.untagged.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: "Every layer has a role." }) : /* @__PURE__ */ u3(TemplateElementList, { elements: rows.untagged, noteByNode })
           ] }),
           leftoverNotes.length > 0 && /* @__PURE__ */ u3("div", { className: "f2s-logs", children: [
             /* @__PURE__ */ u3("div", { className: "f2s-logs-header", children: /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Notes" }) }),
@@ -5626,6 +5624,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     console.error(`[decker] ${step}: HTTP ${res.status}`, body);
     return new Error(describeHttpFailure(step, res.status));
   }
+  var LOGO_MARK_SVG = '<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">\n<rect width="80" height="80" rx="40" fill="#F06800"/>\n<path d="M48.6887 47.1716C50.2508 48.7337 50.2508 51.2664 48.6887 52.8285L44.2034 57.3138C41.6836 59.8336 37.375 58.049 37.375 54.4854L37.375 45.5148C37.375 41.9512 41.6836 40.1665 44.2034 42.6864L48.6887 47.1716Z" fill="#F2ECE8"/>\n<path d="M48.6887 27.1715C50.2508 28.7335 50.2508 31.2662 48.6887 32.8283L44.2034 37.3136C41.6836 39.8334 37.375 38.0488 37.375 34.4852L37.375 25.5146C37.375 21.951 41.6836 20.1663 44.2034 22.6862L48.6887 27.1715Z" fill="#F2ECE8"/>\n<rect x="30.6235" y="21.0001" width="3" height="37" rx="1.5" fill="#F2ECE8"/>\n</svg>\n'.replace(/viewBox="[^"]*"/, 'viewBox="30.62 21 19.24 37.5"');
   function Logo() {
     return /* @__PURE__ */ u3(
       "a",
@@ -5633,10 +5632,10 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
         className: "f2s-logo-link",
         href: "https://billeltighidet.fr",
         target: "_blank",
-        rel: "noreferrer",
+        rel: "noopener",
         title: "billeltighidet.fr",
-        "aria-label": "Made by Billel Tighidet \u2014 billeltighidet.fr",
-        children: /* @__PURE__ */ u3("span", { className: "f2s-logo", dangerouslySetInnerHTML: { __html: '<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">\n<rect width="80" height="80" rx="40" fill="#F06800"/>\n<path d="M48.6887 47.1716C50.2508 48.7337 50.2508 51.2664 48.6887 52.8285L44.2034 57.3138C41.6836 59.8336 37.375 58.049 37.375 54.4854L37.375 45.5148C37.375 41.9512 41.6836 40.1665 44.2034 42.6864L48.6887 47.1716Z" fill="#F2ECE8"/>\n<path d="M48.6887 27.1715C50.2508 28.7335 50.2508 31.2662 48.6887 32.8283L44.2034 37.3136C41.6836 39.8334 37.375 38.0488 37.375 34.4852L37.375 25.5146C37.375 21.951 41.6836 20.1663 44.2034 22.6862L48.6887 27.1715Z" fill="#F2ECE8"/>\n<rect x="30.6235" y="21.0001" width="3" height="37" rx="1.5" fill="#F2ECE8"/>\n</svg>\n' } })
+        "aria-label": "Made by Billel Tighidet, billeltighidet.fr (opens in a new tab)",
+        children: /* @__PURE__ */ u3("span", { className: "f2s-logo", dangerouslySetInnerHTML: { __html: LOGO_MARK_SVG } })
       }
     );
   }
@@ -5658,8 +5657,8 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
       }
     );
   }
-  function ArrowUpRightIcon() {
-    return /* @__PURE__ */ u3("svg", { width: "12", height: "12", viewBox: "0 0 32 32", fill: "currentColor", xmlns: "http://www.w3.org/2000/svg", "aria-hidden": "true", children: /* @__PURE__ */ u3("path", { d: "M10,6V8H22.59L6,24.59,7.41,26,24,9.41V22h2V6Z" }) });
+  function ArrowUpRightIcon({ size = 12 }) {
+    return /* @__PURE__ */ u3("svg", { width: size, height: size, viewBox: "0 0 32 32", fill: "currentColor", xmlns: "http://www.w3.org/2000/svg", "aria-hidden": "true", children: /* @__PURE__ */ u3("path", { d: "M10,6V8H22.59L6,24.59,7.41,26,24,9.41V22h2V6Z" }) });
   }
   function successMessage(mode, slideCount) {
     if (mode === "template") return `Template created in Google Slides (${slideCount} layout${slideCount === 1 ? "" : "s"}).`;
@@ -6796,10 +6795,12 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
         ) }),
         /* @__PURE__ */ u3("div", { className: "f2s-footer-actions", children: [
           renderExportStatus(),
-          /* @__PURE__ */ u3(Logo, {}),
-          /* @__PURE__ */ u3("a", { href: "https://buymeacoffee.com/billelt", target: "_blank", rel: "noopener noreferrer", className: "f2s-coffee-link", children: [
-            /* @__PURE__ */ u3("span", { children: "Buy me a coffee" }),
-            /* @__PURE__ */ u3(ArrowUpRightIcon, {})
+          /* @__PURE__ */ u3("div", { className: "f2s-signature", children: [
+            /* @__PURE__ */ u3(Logo, {}),
+            /* @__PURE__ */ u3("a", { href: "https://buymeacoffee.com/billelt", target: "_blank", rel: "noopener noreferrer", className: "f2s-coffee-link", children: /* @__PURE__ */ u3("span", { className: "f2s-coffee-label", children: [
+              /* @__PURE__ */ u3("span", { children: "Buy me a coffee" }),
+              /* @__PURE__ */ u3(ArrowUpRightIcon, { size: 9 })
+            ] }) })
           ] })
         ] })
       ] }),

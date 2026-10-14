@@ -47,28 +47,14 @@ export interface DeckPanelProps {
   onPacedCursorChange: (cursor: ExportCursor | undefined) => void;
 }
 
-/**
- * Codes de rasterisation que "Prepare for Slides" fait disparaître : sa copie
- * ramène dégradés et remplissages multiples à un aplat, retire ombres et
- * flous, ramène rayons et espacement des lettres à ce que Slides sait faire
- * (voir serialize/reformatForSlides.ts). Masques, vecteurs ou modes de
- * fusion restent des images : pour eux, la mention ne promettrait rien.
- */
-const PREPARE_FIXES_CODES = new Set([
-  'GRADIENT_RASTERIZED',
-  'MULTIPLE_FILLS_RASTERIZED',
-  'CONTAINER_BACKGROUND_RASTERIZED',
-  'EFFECT_RASTERIZED',
-  'CORNER_RADIUS_RASTERIZED',
-  'LETTER_SPACING_LOST',
-]);
-
 /** Tracé exact d'IBM Carbon (icône "cursor--1", 32×32, Apache-2.0), même
- *  bibliothèque que la roue des réglages : l'outil de sélection de Figma. */
+ *  bibliothèque que la roue des réglages : l'outil de sélection de Figma,
+ *  retourné en miroir pour pointer vers le haut à droite, hors du plugin,
+ *  vers le canvas où le calque va être sélectionné. */
 function SelectInFigmaIcon() {
   return (
     <svg className="f2s-log-entry-select" width="14" height="14" viewBox="0 0 32 32" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <path d="M23,28a1,1,0,0,1-.71-.29l-6.13-6.14-3.33,5a1,1,0,0,1-1,.44,1,1,0,0,1-.81-.7l-6-20A1,1,0,0,1,6.29,5l20,6a1,1,0,0,1,.7.81,1,1,0,0,1-.44,1l-5,3.33,6.14,6.13a1,1,0,0,1,0,1.42l-4,4A1,1,0,0,1,23,28Zm0-2.41L25.59,23l-7.16-7.15,5.25-3.5L7.49,7.49l4.86,16.19,3.5-5.25Z" />
+      <path transform="matrix(-1 0 0 1 32 0)" d="M23,28a1,1,0,0,1-.71-.29l-6.13-6.14-3.33,5a1,1,0,0,1-1,.44,1,1,0,0,1-.81-.7l-6-20A1,1,0,0,1,6.29,5l20,6a1,1,0,0,1,.7.81,1,1,0,0,1-.44,1l-5,3.33,6.14,6.13a1,1,0,0,1,0,1.42l-4,4A1,1,0,0,1,23,28Zm0-2.41L25.59,23l-7.16-7.15,5.25-3.5L7.49,7.49l4.86,16.19,3.5-5.25Z" />
     </svg>
   );
 }
@@ -130,7 +116,6 @@ export function DeckPanel({
   const rasterizedSlideIds = order.filter((id) => (frames[id]?.rasterCount ?? 0) > 0);
   const rasterizedTotal = rasterizedSlideIds.reduce((sum, id) => sum + (frames[id]?.rasterCount ?? 0), 0);
   const previewedWarnings = previewedFrame?.warnings ?? [];
-  const preparable = previewedWarnings.some((w) => PREPARE_FIXES_CODES.has(w.code));
 
   // Job conclu ET séquence d'aperçu terminée : ui.tsx peut annoncer le
   // succès sans contredire un aperçu encore en train de "générer".
@@ -309,54 +294,41 @@ export function DeckPanel({
                 )}
               </div>
               {previewedWarnings.length > 0 ? (
-                <>
-                  <ul className="f2s-tmpl-list">
-                    {/* Les éléments rasterisés (perte d'édition native) passent en
-                        tête de liste : le repère le plus important, celui qu'on
-                        veut voir sans avoir à parcourir toute la liste. Tri stable :
-                        l'ordre relatif au sein de chaque groupe ne bouge pas. */}
-                    {[...previewedWarnings]
-                      .sort((a, b) => (logEntryFlag(a.code) === 'rasterized' ? 0 : 1) - (logEntryFlag(b.code) === 'rasterized' ? 0 : 1))
-                      .map((w, i) => {
-                        const flag = logEntryFlag(w.code);
-                        const tagText = flag ? logEntryTagText(w, fontOverrides) : undefined;
-                        return (
-                          <li key={i}>
-                            <button
-                              type="button"
-                              className={`f2s-log-entry${w.severity === 'blocking' ? ' f2s-log-entry--blocking' : ''}${flag ? ` f2s-log-entry--${flag}` : ''}`}
-                              title={`${w.nodeName}: ${logEntryTooltip(w, tagText)}`}
-                              onClick={() => selectSourceNodes([w.sourceNodeId])}
-                            >
-                              {/* Le nom du calque (nodeName) vient de Figma, où le nom par défaut d'un
-                                  calque texte est son contenu entier : sur un long paragraphe, ça
-                                  déborde. Tronqué en priorité sur une ligne, à gauche : le tag (la
-                                  raison) reste entier à droite, le libellé complet reste dans `title`.
-                                  Le message n'est affiché que si l'entrée n'a pas de tag (ex.
-                                  placeholder inconnu) : sinon la raison est déjà dans le tag. */}
-                              <span className="f2s-log-entry-text">
-                                <strong className="f2s-log-entry-name">{w.nodeName}</strong>
-                                {!tagText && <span className="f2s-log-entry-message">: {w.message}</span>}
-                              </span>
-                              {tagText && <span className={`f2s-log-entry-flag f2s-log-entry-flag--${flag}`}>{tagText}</span>}
-                              <SelectInFigmaIcon />
-                            </button>
-                          </li>
-                        );
-                      })}
-                  </ul>
-                  {/* Sous la liste plutôt qu'au-dessus : l'icône au survol de
-                      chaque ligne fait déjà signe, la phrase ne doit pas
-                      repousser les lignes sous le pli. La correction, elle,
-                      reste dans le header (arbitrage D) : la seconde ligne dit
-                      seulement où la trouver. */}
-                  <div className="f2s-logs-notes">
-                    <p className="f2s-toolbar-muted">Click a row to select the layer in Figma.</p>
-                    {preparable && (
-                      <p className="f2s-toolbar-muted">“Prepare for Slides” simplifies gradients, effects and letter spacing so they stay editable.</p>
-                    )}
-                  </div>
-                </>
+                <ul className="f2s-tmpl-list">
+                  {/* Les éléments rasterisés (perte d'édition native) passent en
+                      tête de liste : le repère le plus important, celui qu'on
+                      veut voir sans avoir à parcourir toute la liste. Tri stable :
+                      l'ordre relatif au sein de chaque groupe ne bouge pas. */}
+                  {[...previewedWarnings]
+                    .sort((a, b) => (logEntryFlag(a.code) === 'rasterized' ? 0 : 1) - (logEntryFlag(b.code) === 'rasterized' ? 0 : 1))
+                    .map((w, i) => {
+                      const flag = logEntryFlag(w.code);
+                      const tagText = flag ? logEntryTagText(w, fontOverrides) : undefined;
+                      return (
+                        <li key={i}>
+                          <button
+                            type="button"
+                            className={`f2s-log-entry${w.severity === 'blocking' ? ' f2s-log-entry--blocking' : ''}${flag ? ` f2s-log-entry--${flag}` : ''}`}
+                            title={`${w.nodeName}: ${logEntryTooltip(w, tagText)}\nClick to select it in Figma.`}
+                            onClick={() => selectSourceNodes([w.sourceNodeId])}
+                          >
+                            {/* Le nom du calque (nodeName) vient de Figma, où le nom par défaut d'un
+                                calque texte est son contenu entier : sur un long paragraphe, ça
+                                déborde. Tronqué en priorité sur une ligne, à gauche : le tag (la
+                                raison) reste entier à droite, le libellé complet reste dans `title`.
+                                Le message n'est affiché que si l'entrée n'a pas de tag (ex.
+                                placeholder inconnu) : sinon la raison est déjà dans le tag. */}
+                            <span className="f2s-log-entry-text">
+                              <strong className="f2s-log-entry-name">{w.nodeName}</strong>
+                              {!tagText && <span className="f2s-log-entry-message">: {w.message}</span>}
+                            </span>
+                            {tagText && <span className={`f2s-log-entry-flag f2s-log-entry-flag--${flag}`}>{tagText}</span>}
+                            <SelectInFigmaIcon />
+                          </button>
+                        </li>
+                      );
+                    })}
+                </ul>
               ) : (
                 <p className="f2s-toolbar-muted">No issues detected on this frame.</p>
               )}

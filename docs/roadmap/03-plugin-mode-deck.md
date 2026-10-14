@@ -16,14 +16,15 @@ Lot traité le 14 octobre 2026 (décisions de Billel notées sous chaque tâche)
 - [x] **Noms des frames.** Le rail n'affiche que des numéros, alors que le mode Template affiche les noms. → Index plus nom tronqué.
   - Fait : « 2. Quarterly results… », sans le préfixe `[Slides Ready]` (identique sur toutes les copies), nom Figma complet en infobulle.
 - [x] **Fidélité visible avant l'export.** Il faut ouvrir chaque slide pour savoir ce qui sera converti en image. → Un badge avec le nombre d'éléments rasterisés sur chaque vignette concernée, et un résumé au-dessus du rail (« 3 rasterized on 2 slides »).
-  - Fait : badge « 2 rasterized » en bas à gauche de la vignette (même rouge que le tag du rapport, le haut droit reste au badge d'échec d'export), résumé en tête du rail, masqué s'il n'y a rien.
+  - Fait : badge « 2 rasterized » en bas à gauche de la vignette (le haut droit reste au badge d'échec d'export), résumé en tête du rail, masqué s'il n'y a rien.
+  - Retour du 14 octobre : le rouge disait « erreur » alors qu'une image n'empêche pas l'export. En mode Deck, badge et tags « rasterisé » passent à l'encre (le ton « info » des notifications). Le rouge reste au mode Template, où un élément rasterisé bloque la création.
 
 ## Rapport de fidélité
 
 - [x] **Lignes cliquables sans indice.** Un clic sélectionne le calque dans Figma, rien ne le dit. → Icône au survol et mention « Click to select in Figma ».
-  - Fait : icône « cursor » de Carbon (même bibliothèque que la roue des réglages) en bout de ligne, au survol et au focus clavier, place réservée pour que la ligne ne bouge pas. Phrase « Click a row to select the layer in Figma. » sous la liste, pour ne pas repousser les lignes sous le pli. Le mode Template est à aligner dans le lot 04.
+  - Fait : icône « cursor » de Carbon (même bibliothèque que la roue des réglages) en bout de ligne, retournée pour pointer vers le haut à droite, hors du plugin, vers Figma. Toujours visible (grisée, à l'encre au survol) : c'est le seul indice depuis que la phrase sous la liste est retirée (on ne la voyait jamais, tout en bas). Survol de ligne en fond gris 300 de la DA au lieu de la bordure orange, dans les deux modes. Infobulle « Click to select it in Figma. ».
 - [x] **Correction loin du problème.** La liste dit « Gradient » ou « Effect », mais la solution est dans le header. → Un bouton « Fix with a Slides-ready copy » dans l'en-tête de la liste quand des éléments sont rasterisés (selon D).
-  - Décision (D) : pas de bouton dans le rapport, « Prepare for Slides » reste dans le header. À la place, une ligne sous la liste indique où est la correction, seulement quand la slide a un dégradé, un effet, un rayon ou un espacement des lettres que la copie sait simplifier (pas pour un masque ou un vecteur, qui restent des images).
+  - Décision (D) : pas de bouton dans le rapport, « Prepare for Slides » reste dans le header. La ligne de renvoi ajoutée sous la liste a été retirée le 14 octobre : tout en bas, on ne la voyait pas.
 
 ## Idées abandonnées
 

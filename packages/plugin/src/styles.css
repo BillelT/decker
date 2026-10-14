@@ -66,6 +66,10 @@
      #f2ece8 hérité du monogramme sortaient de la palette. */
   --color-surface: var(--color-bg);
   --color-surface-muted: var(--color-gray-100);
+  /* Fond des champs (nom, polices, rôles) : blanc pur, demandé le
+     2026-10-14 pour détacher les champs du fond #fbfaf9. Hors rampe de la
+     DA, comme le tag "approximated". En thème sombre, la surface. */
+  --color-field: #ffffff;
 
   /* Tapis du tag "approximé" (.f2s-log-entry-flag--visual-diff) : opaque, et
      volontairement PAS redéfini en thème sombre. Un tapis translucide
@@ -127,6 +131,7 @@ html.f2s-theme-dark {
   --color-gray-100: #332c26;
   --color-surface: #211c17;
   --color-surface-muted: #2a231d;
+  --color-field: var(--color-surface);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -139,6 +144,7 @@ html.f2s-theme-dark {
     --color-text: hsl(30, 20%, 98%);
     --color-surface: #211c17;
     --color-surface-muted: #2a231d;
+    --color-field: var(--color-surface);
   }
 }
 
@@ -293,61 +299,47 @@ a {
 .f2s-logo-link {
   display: inline-flex;
   align-items: center;
-  flex: none;
-  text-decoration: none;
-}
-
-/* 26px : la hauteur du bouton Settings et de la zone cliquable de "Buy me a
-   coffee", pour que tout le footer s'aligne sur une seule hauteur.
-   `box-sizing: border-box` (règle `*` en tête de fichier) fait que la
-   bordure tient DANS ces 26px. */
-.f2s-logo {
-  width: 26px;
-  height: 26px;
-  flex: none;
-  display: flex;
-  align-items: center;
   justify-content: center;
-  border: 1px solid var(--color-text);
-  border-radius: 0;
-  transition: transform var(--b-duration) var(--b-ease-default);
+  flex: none;
+  /* Zone cliquable à la hauteur du footer (26 px), le B lui-même reste à la
+     taille du texte voisin. Étroite (11 px) mais conforme à WCAG 2.5.8 : un
+     cercle de 24 px centré dessus ne touche pas le lien voisin, 8 px plus
+     loin. */
+  min-height: 26px;
+  padding-inline: 2px;
+  color: var(--color-text);
+  text-decoration: none;
+  transition: opacity var(--b-duration) var(--b-ease-default);
 }
 
-/* 85% plutôt que 100% : le symbole flottait au ras de la bordure, un peu
-   trop grand dans son cadre. Un pourcentage (plutôt qu'une taille fixe en
-   px) garde le même ratio cadre/symbole sur les deux tailles de boîte
-   existantes (28px ici, 24px en win95, cf. styles.win95.css) sans dupliquer
-   la règle par skin. */
-.f2s-logo svg {
-  width: 85%;
-  height: 85%;
+/* Sans contour : le B seul, à la hauteur de ligne de "Buy me a coffee"
+   (14 px, texte de 12 px), centré sur le même axe. */
+.f2s-logo {
   display: block;
+  flex: none;
+}
+
+.f2s-logo svg {
+  display: block;
+  width: auto;
+  height: 14px;
 }
 
 .f2s-logo svg > * {
   fill: var(--color-text);
 }
 
+/* Le disque de fond orange de l'asset : hors cadre depuis le recadrage, et
+   masqué pour qu'aucun bord ne dépasse. */
 .f2s-logo svg > rect:first-child {
-  fill: none;
+  display: none;
 }
 
-/* Sans son rond de fond, le B seul n'occupe qu'environ 25% de la largeur et
-   46% de la hauteur de la viewBox : il flottait perdu au milieu de sa
-   bordure. Agrandi autour du centre de sa propre boîte englobante
-   (x 30.6→50.2, y 21→58, donc centre 40.4 / 39.5) pour remplir le cadre
-   comme le faisait l'aplat. */
-.f2s-logo svg > *:not(:first-child) {
-  transform: scale(1.55);
-  transform-origin: 40.4px 39.5px;
-}
-
-.f2s-logo-link:hover .f2s-logo {
-  transform: translateY(-1px);
-}
-
-.f2s-logo-link:active .f2s-logo {
-  transform: translateY(0.5px);
+/* Survol de la signature : opacité 0.7, comme le lien-signature de la DA. */
+@media (hover: hover) and (pointer: fine) {
+  .f2s-logo-link:hover {
+    opacity: 0.7;
+  }
 }
 
 /* ---- Toolbar (polices) ---- */
@@ -419,7 +411,7 @@ a {
   font-family: inherit;
   font-size: 12px;
   border: 1px solid var(--color-border);
-  background: var(--color-surface);
+  background: var(--color-field);
   color: var(--color-text);
   border-radius: 4px;
   padding: 3px 8px;
@@ -462,7 +454,7 @@ a {
   font-family: inherit;
   font-size: 12px;
   border: 1px solid var(--color-border);
-  background: var(--color-surface);
+  background: var(--color-field);
   color: var(--color-text);
   border-radius: 4px;
   padding: 3px 8px;
@@ -495,7 +487,7 @@ a {
   font-family: inherit;
   font-size: 12px;
   border: 1px solid var(--color-border);
-  background: var(--color-surface);
+  background: var(--color-field);
   color: var(--color-text);
   border-radius: 4px;
   padding: 3px 8px;
@@ -1035,17 +1027,19 @@ a.f2s-btn {
   border-color: var(--color-orange-80);
 }
 
-/* Même tag que "Rasterized" dans le rapport (.f2s-log-entry-flag--rasterized),
-   posé en bas à gauche : le coin haut droit appartient au badge d'échec
-   d'export. */
+/* Même tag que les éléments rasterisés du rapport du deck : encre, pas le
+   rouge d'erreur (l'export n'est pas bloqué). Posé en bas à gauche : le coin
+   haut droit appartient au badge d'échec d'export. Le liseré clair le
+   détache d'une slide sombre. */
 .f2s-frame-badge {
   position: absolute;
   left: 4px;
   bottom: 4px;
   padding: 2px 6px;
   border-radius: 4px;
-  background: var(--color-error);
-  color: #fff;
+  background: var(--color-text);
+  color: var(--color-bg);
+  box-shadow: 0 0 0 1px var(--color-bg);
   font-size: 12px;
   font-weight: 700;
   line-height: 1.3;
@@ -1209,19 +1203,6 @@ a.f2s-btn {
   margin-inline: auto;
 }
 
-.f2s-logs-notes {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin-top: 4px;
-}
-
-.f2s-logs-notes p {
-  margin: 0;
-  line-height: 1.4;
-  text-wrap: pretty;
-}
-
 .f2s-deck-caption {
   font-size: 12px;
   line-height: 1.3;
@@ -1268,34 +1249,28 @@ a.f2s-btn {
   border: 1px solid var(--color-border);
   border-radius: 6px;
   padding: 6px 10px;
+  transition: background-color var(--b-duration) var(--b-ease-default);
 }
 
-.f2s-log-entry:hover {
-  border-color: var(--color-orange);
-}
-
-/* Indice du geste "cliquer pour sélectionner dans Figma" (rapport du deck) :
-   l'outil de sélection de Figma, en bout de ligne, révélé au survol et au
-   focus clavier. Sa place est réservée même invisible, pour que la ligne ne
-   se recompose pas sous le pointeur. Sans survol possible, il reste affiché. */
-.f2s-log-entry-select {
-  flex: none;
-  color: var(--color-text-muted);
-  transition: opacity var(--b-duration) var(--b-ease-default);
-}
-
+/* Survol : le fond passe au gris plus foncé de la DA (gray 300), sans
+   bordure orange, réservée à l'action principale. */
 @media (hover: hover) and (pointer: fine) {
-  .f2s-log-entry-select {
-    opacity: 0;
+  .f2s-log-entry:hover {
+    background: var(--color-gray-300);
   }
 
   .f2s-log-entry:hover .f2s-log-entry-select {
-    opacity: 1;
+    color: var(--color-text);
   }
 }
 
-.f2s-log-entry:focus-visible .f2s-log-entry-select {
-  opacity: 1;
+/* Repère permanent du geste "cliquer pour sélectionner dans Figma" (rapport
+   du deck) : l'outil de sélection de Figma en bout de ligne, tourné vers
+   l'extérieur du plugin. Grisé au repos, à l'encre au survol. */
+.f2s-log-entry-select {
+  flex: none;
+  color: var(--color-text-muted);
+  transition: color var(--b-duration) var(--b-ease-default);
 }
 
 /* Mode template uniquement (TemplatePanel.tsx) : `.f2s-log-entry` y est un
@@ -1318,20 +1293,21 @@ a.f2s-btn {
   cursor: pointer;
 }
 
-/* Sélecteur de rôle de placeholder (audit — associer un contenu à
-   [[title]]/[[body]]/[[image]]… directement depuis le rapport, sans
-   renommer le calque à la main dans Figma). Volontairement discret : ce
-   n'est pas le repère principal de la ligne, juste une action disponible. */
+/* Sélecteur de rôle de placeholder : associer un calque à [[title]],
+   [[body]], [[image]]… depuis le rapport, sans renommer le calque à la main
+   dans Figma. Il porte aussi `.f2s-font-dropdown` : même champ que le
+   sélecteur de polices et ceux du panneau Styles (fond, biseau, anneau gris
+   au clic). Seuls la taille et le texte grisé de "No role" lui sont propres. */
 .f2s-log-entry-role {
   flex: none;
-  font-size: 12px;
-  font-family: inherit;
   color: var(--color-text-muted);
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
   padding: 2px 4px;
   max-width: 110px;
+}
+
+/* Un calque qui a un rôle (liste Composition) : la valeur s'écrit à l'encre. */
+.f2s-log-entry-role:not(:has(option[value=""]:checked)) {
+  color: var(--color-text);
 }
 
 /* Une seule ligne, tronquée : voir le commentaire sur `f2s-log-entry-text`
@@ -1402,14 +1378,14 @@ a.f2s-btn {
   border-color: var(--color-error);
 }
 
-/* Liste "Content" du mode template : distingue d'un coup d'œil les calques
-   DÉJÀ tagués d'un rôle de placeholder du reste du layout. Volontairement
-   limité à la graisse du nom, sans fond ni bordure propres : les deux skins
-   repeignent `.f2s-log-entry` avec une spécificité supérieure
-   (`html.f2s-skin--…`), une couleur posée ici ne tiendrait qu'en modern.
-   Le rôle lui-même reste écrit en toutes lettres à droite du nom. */
-.f2s-log-entry--tagged .f2s-log-entry-name {
-  font-weight: 700;
+/* Calque en conflit de composition (rôle en double, rôle incompatible avec
+   le type de calque) : contour rouge, la raison écrite sous le nom. En
+   `outline` plutôt qu'en `border` : les deux skins repeignent la bordure de
+   `.f2s-log-entry` avec une spécificité supérieure, et un contour ne décale
+   pas la ligne. */
+.f2s-log-entry--conflict {
+  outline: 1px solid var(--color-error);
+  outline-offset: -1px;
 }
 
 /* Contient désormais la raison précise ("Font "Zodiak" → "Inter"",
@@ -1441,6 +1417,19 @@ a.f2s-btn {
 
 .f2s-log-entry-flag--rasterized {
   background: var(--color-error);
+}
+
+/* Mode deck : une image dans Slides n'empêche pas l'export, ce n'est pas une
+   erreur. Le tag passe à l'encre (le ton "info" des notifications), plus
+   appuyé que le tag orange clair d'un élément seulement approximé. Le rouge
+   reste au mode Template, où un élément rasterisé bloque la création. */
+.f2s-deck-column .f2s-log-entry-flag--rasterized {
+  background: var(--color-text);
+  color: var(--color-bg);
+}
+
+.f2s-deck-column .f2s-log-entry--rasterized {
+  border-color: var(--color-border);
 }
 
 /* Repère plus discret que "Rasterized" : l'élément reste natif et éditable,
@@ -1564,17 +1553,6 @@ a.f2s-btn {
   border-color: var(--color-orange);
 }
 
-/* Rôle de placeholder en texte neutre (les anciens badges colorés
-   title/subtitle=orange, image/logo=rouge ne portaient aucune sémantique
-   lisible — décoration retirée, cf. audit). */
-.f2s-tmpl-role {
-  flex: none;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
-}
 
 /* Le nom du calque tagué devient le label du placeholder (p.label) : sur un
    calque texte, ce nom par défaut est son contenu entier — tronqué sur une
@@ -1894,7 +1872,7 @@ a.f2s-btn {
    le même axe, sans toucher au padding ni à la hauteur. Le skin Windows 95
    a sa propre police, d'où le périmètre au skin modern. */
 html:not(.f2s-skin--win95) .f2s-footer-settings > span,
-html:not(.f2s-skin--win95) .f2s-coffee-link > span {
+html:not(.f2s-skin--win95) .f2s-coffee-label > span {
   position: relative;
   top: 1px;
 }
@@ -1950,29 +1928,52 @@ html:not(.f2s-skin--win95)
   gap: 16px;
 }
 
+/* Logo + "Buy me a coffee" : 10 px entre le B et le texte (2 px de marge
+   interne du lien du logo + 8 px d'écart). */
+.f2s-signature {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 /* "Buy me a coffee" : lien texte de la DA (`.text-link` : encre, 12px, 500,
-   souligné au survol) suivi d'une flèche en diagonale, qui dit qu'il ouvre
-   un site externe. La zone cliquable garde les 26px de haut du footer. */
+   souligné au survol) suivi d'une petite flèche en diagonale, qui dit qu'il
+   ouvre un site externe. La zone cliquable garde les 26px de haut du footer. */
 .f2s-coffee-link {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
   min-height: 26px;
   color: var(--color-text);
   font-size: 12px;
+  line-height: 14px;
   font-weight: 500;
   text-decoration: none;
   white-space: nowrap;
 }
 
-.f2s-coffee-link:hover {
-  text-decoration: underline;
-  text-underline-offset: 2px;
+/* Texte et flèche dans un même bloc : le soulignement du survol est tracé
+   sous le bloc entier, flèche comprise, plutôt qu'en `text-decoration` qui
+   s'arrête au dernier caractère. */
+.f2s-coffee-label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
 }
 
-.f2s-coffee-link svg {
+.f2s-coffee-label svg {
   flex: none;
   display: block;
+}
+
+.f2s-coffee-link:hover .f2s-coffee-label::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -2px;
+  height: 1px;
+  background: currentColor;
 }
 
 /* Statut du dernier export (réussi ou non) : pastille + texte tronqué sur

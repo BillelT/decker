@@ -159,10 +159,18 @@ async function requestFailure(step: RequestStep, res: Response): Promise<Error> 
 }
 
 /**
- * Monogramme "B" — assets/logo.svg (depuis la racine du projet). Signature
- * de l'auteur, posée en pied de panneau à gauche de "Buy me a coffee" :
- * les deux pointent vers moi, autant qu'ils voisinent, et la zone Settings
- * garde son seul rôle de réglages.
+ * Monogramme "B" (assets/logo.svg, à la racine du projet), recadré sur le
+ * seul B : la viewBox d'origine (80 × 80) le centre dans un disque de fond,
+ * masqué ici, et laissait la moitié de la boîte vide autour de lui. Boîte
+ * englobante du B mesurée au rendu (getBBox).
+ */
+const LOGO_MARK_SVG = __LOGO_SVG__.replace(/viewBox="[^"]*"/, 'viewBox="30.62 21 19.24 37.5"');
+
+/**
+ * Signature de l'auteur, posée en pied de panneau à gauche de "Buy me a
+ * coffee" : les deux pointent vers moi, autant qu'ils voisinent, et la zone
+ * Settings garde son seul rôle de réglages. Lien vers mon propre domaine :
+ * `rel="noopener"` (convention de la skill signature).
  */
 function Logo() {
   return (
@@ -170,11 +178,11 @@ function Logo() {
       className="f2s-logo-link"
       href="https://billeltighidet.fr"
       target="_blank"
-      rel="noreferrer"
+      rel="noopener"
       title="billeltighidet.fr"
-      aria-label="Made by Billel Tighidet — billeltighidet.fr"
+      aria-label="Made by Billel Tighidet, billeltighidet.fr (opens in a new tab)"
     >
-      <span className="f2s-logo" dangerouslySetInnerHTML={{ __html: __LOGO_SVG__ }} />
+      <span className="f2s-logo" dangerouslySetInnerHTML={{ __html: LOGO_MARK_SVG }} />
     </a>
   );
 }
@@ -201,9 +209,9 @@ function GearIcon() {
 }
 
 /** Flèche en diagonale d'un lien qui ouvre un site externe (icône "arrow--up-right" d'IBM Carbon, même bibliothèque que l'engrenage). */
-function ArrowUpRightIcon() {
+function ArrowUpRightIcon({ size = 12 }: { size?: number }) {
   return (
-    <svg width="12" height="12" viewBox="0 0 32 32" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <path d="M10,6V8H22.59L6,24.59,7.41,26,24,9.41V22h2V6Z" />
     </svg>
   );
@@ -1839,11 +1847,18 @@ function App() {
         </div>
         <div className="f2s-footer-actions">
           {renderExportStatus()}
-          <Logo />
-          <a href="https://buymeacoffee.com/billelt" target="_blank" rel="noopener noreferrer" className="f2s-coffee-link">
-            <span>Buy me a coffee</span>
-            <ArrowUpRightIcon />
-          </a>
+          {/* Signature et soutien vont ensemble (les deux pointent vers moi) :
+              groupés, avec leur propre écart, plus serré que celui du footer. */}
+          <div className="f2s-signature">
+            <Logo />
+            <a href="https://buymeacoffee.com/billelt" target="_blank" rel="noopener noreferrer" className="f2s-coffee-link">
+              {/* Le soulignement du survol est tracé sous ce bloc, flèche comprise. */}
+              <span className="f2s-coffee-label">
+                <span>Buy me a coffee</span>
+                <ArrowUpRightIcon size={9} />
+              </span>
+            </a>
+          </div>
         </div>
       </footer>
 

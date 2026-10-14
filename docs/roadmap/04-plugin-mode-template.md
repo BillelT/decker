@@ -10,8 +10,12 @@ Ce qui rend la création d'un template moins bloquante et plus guidée. La struc
 ## Structure du rapport
 
 - [ ] **Ordre inversé par rapport au Deck.** Les erreurs passent au-dessus de l'aperçu, et la tâche principale (assigner les rôles, liste Content) est tout en bas, invisible en 960×560. → Même ordre dans les deux modes : aperçu, « To fix », Content. Idéalement, Content à côté de l'aperçu (selon C).
-  - C tranché : aperçu en haut, rapport dessous, comme le Deck. Reprendre aussi du lot 03 la colonne commune aperçu/rapport (`.f2s-deck-column`), l'icône de sélection au survol des lignes et la phrase « Click a row to select the layer in Figma. ».
-- [ ] **Rôle affiché deux fois.** Libellé « TITLE » et sélecteur « [[title]] » sur la même ligne. → Garder seulement le sélecteur, avec un style marqué quand un rôle est assigné.
+  - C tranché : aperçu en haut, rapport dessous, comme le Deck. Reprendre aussi du lot 03 la colonne commune aperçu/rapport (`.f2s-deck-column`) et l'icône de sélection en bout de ligne.
+  - Fait le 14 octobre : « Composition » est passée sous l'aperçu, juste au-dessus de « Content » (voir plus bas). Reste au-dessus de l'aperçu la seule boîte bloquante « Fix before creating the template ».
+- [x] **Rôle affiché deux fois.** Libellé « TITLE » et sélecteur « [[title]] » sur la même ligne. → Garder seulement le sélecteur, avec un style marqué quand un rôle est assigné.
+  - Fait : puce retirée, le sélecteur seul porte le rôle, écrit à l'encre (« No role » reste grisé).
+- [x] **Composition et Content.** Demandé le 14 octobre : « Composition » liste les calques qui ont un rôle, sous la même forme que « Content », qui ne garde que les autres. Un calque passe dans Composition dès qu'il reçoit un rôle et revient dans Content quand on le lui retire (`ui/compositionRows.ts`). Les conflits (rôle en double, `[[title]]` sur une forme…) ne forment plus une liste à part : la ligne du calque prend un contour rouge et la raison s'écrit sous son nom.
+- [x] **Sélecteurs de rôle.** Un clic à la souris affichait l'anneau du focus clavier. Ils prennent maintenant le style des champs (comme le sélecteur de polices) : fond blanc, biseau, anneau gris au clic.
 
 ## Panneau Styles
 

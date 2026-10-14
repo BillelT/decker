@@ -169,20 +169,6 @@ html.f2s-skin--win95 .f2s-footer-left {
   gap: 6px;
 }
 
-/* Le logo prend la même hauteur que le bouton voisin — "Buy me a coffee"
-   depuis qu'il a quitté la zone Settings (mesuré en rendu réel). Un
-   align-items:stretch + aspect-ratio:1/1 aurait évité de recopier cette
-   valeur à la main, mais casse ici : le SVG du logo est dimensionné en
-   width/height 100% (styles.css), donc sans hauteur explicite sur .f2s-logo
-   le stretch n'a rien à partir de quoi se calculer (dépendance circulaire)
-   et le logo explose à la taille de remplacement par défaut (300×300) —
-   vérifié en rendu. Valeur fixe donc, à réajuster si le gabarit du bouton
-   change (24px depuis le passage du texte des boutons en 12px). */
-html.f2s-skin--win95 .f2s-logo {
-  width: 24px;
-  height: 24px;
-}
-
 html.f2s-skin--win95 .f2s-toolbar {
   gap: 8px;
   padding: 6px;
@@ -463,10 +449,6 @@ html.f2s-skin--win95 .f2s-frame-badge {
   border-radius: 0;
 }
 
-html.f2s-skin--win95 .f2s-tmpl-role {
-  color: #000;
-}
-
 /* ---- Progression / erreurs ---- */
 
 html.f2s-skin--win95 .f2s-spinner {
@@ -683,10 +665,8 @@ html.f2s-skin--win95 .f2s-font-combobox-list::-webkit-scrollbar {
 /* ---- Signature de l'auteur ----
    Rien à repeindre ici : le monogramme est monochrome et prend
    `--color-text`, que ce fichier remappe déjà sur le noir système (bloc
-   racine). Le fond du panneau se voit au travers de la marque et joue le
-   rôle du gris #c0c0c0. Seule exception au tronc commun : pas de transform
-   au survol, comme partout dans ce skin. */
-html.f2s-skin--win95 .f2s-logo-link:hover .f2s-logo,
-html.f2s-skin--win95 .f2s-logo-link:active .f2s-logo {
-  transform: none;
+   racine). Seule exception au tronc commun : pas de fondu au survol, comme
+   partout dans ce skin. */
+html.f2s-skin--win95 .f2s-logo-link {
+  transition: none;
 }

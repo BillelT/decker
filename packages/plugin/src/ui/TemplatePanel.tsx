@@ -4,6 +4,7 @@ import { placeholderRoleTagsForKind } from './placeholderRoleOptions.js';
 import { usePacedExportCursor } from './pacedExportCursor.js';
 import { RetroExportPreview } from './RetroExportPreview.js';
 import { Toast } from './StatusIcon.js';
+import { splitCompositionRows } from './compositionRows.js';
 import { useRailReorder } from './useRailReorder.js';
 import { TemplateStylePanel, type TemplateStylePanelProps } from './TemplateStylePanel.js';
 import type { ExportCursor } from './exportCursor.js';
@@ -18,53 +19,68 @@ function setPlaceholderRole(sourceNodeId: string, tag: string): void {
 }
 
 /**
- * Liste "Content" : TOUS les calques taguables du layout, avec leur rôle
- * de placeholder courant et le sélecteur pour le changer ou le retirer.
- *
- * Remplace l'ancienne paire "Placeholders" (chips, en lecture seule) +
- * sélecteur greffé sur les entrées d'avertissement : un layout sans aucun
- * défaut de fidélité ne produisant aucun avertissement, il n'offrait alors
- * AUCUN moyen d'assigner un rôle depuis le plugin, alors que c'est
- * précisément le layout le plus abouti (TODO.md § Mode template, point 9).
+ * Lignes de calques du rapport de template, communes aux listes
+ * "Composition" (calques avec un rôle de placeholder) et "Content" (les
+ * autres) : nom, note de fidélité éventuelle, et le sélecteur pour poser,
+ * changer ou retirer le rôle. Le rôle n'est écrit qu'une fois, dans le
+ * sélecteur (l'ancienne puce "TITLE" le répétait sur la même ligne).
  *
  * `noteByNode` : la note de fidélité (police substituée, radius approximé…)
- * du calque, quand une existe, affichée en tag juste à côté du sélecteur de
- * rôle plutôt que dans une liste "Notes" séparée qui répétait alors les
- * mêmes calques (retour utilisateur). Construit par le parent, qui n'y met
- * que les notes AVEC tag court (police/radius) : un message générique sans
- * tag (ex. "Unknown placeholder tag") ne tiendrait pas sur cette ligne et
- * reste dans "Notes", qui ne liste donc plus que ce que "Content" ne peut
- * pas porter.
+ * du calque, affichée en tag à côté du sélecteur plutôt que répétée dans
+ * "Notes". Construit par le parent, qui n'y met que les notes AVEC tag
+ * court : un message générique ne tiendrait pas sur cette ligne et reste
+ * dans "Notes".
+ *
+ * `conflicts` : les problèmes de composition du calque (rôle en double,
+ * rôle incompatible avec un calque qui n'est pas du texte…), voir
+ * compositionRows.ts. La ligne prend une bordure rouge et la raison
+ * s'écrit sous le nom : la couleur ne porte jamais seule le sens.
  */
-function TemplateElementList({ elements, noteByNode }: { elements: TemplateElement[]; noteByNode: Map<string, { flag: 'rasterized' | 'visual-diff'; text: string; tooltip: string }> }) {
+function TemplateElementList({
+  elements,
+  noteByNode,
+  conflicts,
+}: {
+  elements: TemplateElement[];
+  noteByNode: Map<string, { flag: 'rasterized' | 'visual-diff'; text: string; tooltip: string }>;
+  conflicts?: Map<string, string[]>;
+}) {
   return (
     <ul className="f2s-tmpl-list">
       {elements.map((el) => {
         const role = el.role as PlaceholderRole | undefined;
+        const roleTag = role ? CANONICAL_TAG_FOR_ROLE[role] : undefined;
         const note = noteByNode.get(el.sourceNodeId);
+        const problems = conflicts?.get(el.sourceNodeId);
+        // Le rôle courant reste dans la liste même s'il ne convient pas au
+        // type de calque (tag posé à la main dans Figma) : sans lui, le
+        // sélecteur afficherait un autre rôle que celui du calque.
+        const tags = placeholderRoleTagsForKind(el.kind);
+        const options = roleTag && !tags.includes(roleTag) ? [...tags, roleTag] : tags;
         return (
-          <li key={el.id} className={`f2s-log-entry${role ? ' f2s-log-entry--tagged' : ''}`}>
+          <li key={el.id} className={`f2s-log-entry${problems ? ' f2s-log-entry--wrap f2s-log-entry--conflict' : ''}`}>
             <button
               type="button"
               className="f2s-log-entry-clickarea"
-              title={note ? note.tooltip : el.label ? `${el.name} (${el.label})` : el.name}
+              title={[note ? note.tooltip : el.label ? `${el.name} (${el.label})` : el.name, ...(problems ?? [])].join('\n')}
               onClick={() => selectSourceNodes([el.sourceNodeId])}
             >
               <span className="f2s-log-entry-text">
                 <strong className="f2s-log-entry-name">{el.name}</strong>
+                {problems && <span className="f2s-log-entry-message">{problems.join(' ')}</span>}
               </span>
-              {role && <span className="f2s-tmpl-role">{role}</span>}
               {note && <span className={`f2s-log-entry-flag f2s-log-entry-flag--${note.flag}`}>{note.text}</span>}
             </button>
             <select
-              className="f2s-log-entry-role"
-              value={role ? CANONICAL_TAG_FOR_ROLE[role] : ''}
+              className="f2s-font-dropdown f2s-log-entry-role"
+              value={roleTag ?? ''}
               title="Assign this layer to a Slides template placeholder role"
               aria-label={`Placeholder role for ${el.name}`}
+              aria-invalid={problems ? true : undefined}
               onChange={(e) => setPlaceholderRole(el.sourceNodeId, (e.target as HTMLSelectElement).value)}
             >
               <option value="">No role</option>
-              {placeholderRoleTagsForKind(el.kind).map((tag) => (
+              {options.map((tag) => (
                 <option key={tag} value={tag}>
                   [[{tag}]]
                 </option>
@@ -82,8 +98,8 @@ function TemplateElementList({ elements, noteByNode }: { elements: TemplateEleme
  * panneau Logs du mode deck (DeckPanel.tsx) : même structure de bouton,
  * même troncature sur une ligne pour le nom de calque, tag à droite.
  *
- * Purement informatif : l'assignation d'un rôle de placeholder vit
- * désormais dans la liste "Content" (`TemplateElementList`), qui couvre
+ * Purement informatif : l'assignation d'un rôle de placeholder vit dans les
+ * listes "Composition" et "Content" (`TemplateElementList`), qui couvrent
  * TOUS les calques et pas seulement ceux qui ont un avertissement.
  *
  * `wrap` passe la ligne en deux temps (nom, puis message sur plusieurs
@@ -265,6 +281,12 @@ export function TemplatePanel({
   }
   const leftoverNotes = fidelityNotes.filter((w) => !consumedNotes.has(w));
 
+  // Composition = calques avec un rôle, Content = les autres ; un conflit
+  // de composition marque la ligne de son calque (voir compositionRows.ts).
+  // "Aucun placeholder" n'a pas de ligne : la section vide le dit déjà.
+  const rows = splitCompositionRows(previewedLayout?.elements ?? [], compositionWarnings);
+  const unattachedComposition = rows.unattached.filter((w) => w.code !== 'LAYOUT_WITHOUT_PLACEHOLDER');
+
   if (order.length === 0) {
     return (
       <div className="f2s-body">
@@ -375,29 +397,12 @@ export function TemplatePanel({
                 <p className="f2s-export-failure-message">{previewedFailure}</p>
               </div>
             )}
-            {(blockingWarnings.length > 0 || compositionWarnings.length > 0) && (
-              <div className="f2s-tmpl-panel">
-              {blockingWarnings.length > 0 && (
-                <div className="f2s-logs f2s-tmpl-section--blocking">
-                  <div className="f2s-logs-header">
-                    <h3 className="f2s-tmpl-heading">Fix before creating the template</h3>
-                  </div>
-                  <TemplateLogList warnings={blockingWarnings} fontOverrides={fontOverrides} />
+            {blockingWarnings.length > 0 && (
+              <div className="f2s-logs f2s-tmpl-section--blocking">
+                <div className="f2s-logs-header">
+                  <h3 className="f2s-tmpl-heading">Fix before creating the template</h3>
                 </div>
-              )}
-
-              {/* Composition (TODO.md § Mode template, point 7) : ni un défaut de
-                  fidélité, ni un blocage, mais une intention douteuse qui retombera sur
-                  tous les futurs utilisateurs du template. Gardée à part des "Notes"
-                  de fidélité, qui, elles, ne parlent que du rendu. */}
-              {compositionWarnings.length > 0 && (
-                <div className="f2s-logs">
-                  <div className="f2s-logs-header">
-                    <h3 className="f2s-tmpl-heading">Composition</h3>
-                  </div>
-                  <TemplateLogList warnings={compositionWarnings} fontOverrides={fontOverrides} wrap />
-                </div>
-              )}
+                <TemplateLogList warnings={blockingWarnings} fontOverrides={fontOverrides} />
               </div>
             )}
 
@@ -417,6 +422,19 @@ export function TemplatePanel({
             )}
 
             <div className="f2s-tmpl-panel">
+              {/* Composition (TODO.md § Mode template, point 7) : les calques qui
+                  deviendront des placeholders. Un calque y passe dès qu'il reçoit
+                  un rôle, et revient dans Content quand on le lui retire. */}
+              <section className="f2s-tmpl-section">
+                <h3 className="f2s-tmpl-heading">Composition</h3>
+                {rows.tagged.length === 0 ? (
+                  <p className="f2s-toolbar-muted">No placeholder yet. Pick a role for a layer in Content.</p>
+                ) : (
+                  <TemplateElementList elements={rows.tagged} noteByNode={noteByNode} conflicts={rows.conflicts} />
+                )}
+                {unattachedComposition.length > 0 && <TemplateLogList warnings={unattachedComposition} fontOverrides={fontOverrides} wrap />}
+              </section>
+
               <section className="f2s-tmpl-section">
                 <h3 className="f2s-tmpl-heading">Content</h3>
                 {previewedLayout.elements.length === 0 ? (
@@ -424,8 +442,10 @@ export function TemplatePanel({
                     Nothing to tag in this layout yet. A placeholder can also be set by prefixing a layer name in Figma with <code>[[title]]</code>,{' '}
                     <code>[[body]]</code>, <code>[[image]]</code>, <code>[[subtitle]]</code> or <code>[[logo]]</code>.
                   </p>
+                ) : rows.untagged.length === 0 ? (
+                  <p className="f2s-toolbar-muted">Every layer has a role.</p>
                 ) : (
-                  <TemplateElementList elements={previewedLayout.elements} noteByNode={noteByNode} />
+                  <TemplateElementList elements={rows.untagged} noteByNode={noteByNode} />
                 )}
               </section>
 
