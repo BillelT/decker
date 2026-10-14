@@ -2,7 +2,7 @@
 
 Ce qui rend l'export d'un deck plus lisible et plus rapide à corriger. La structure du canvas dépend de l'arbitrage C, les boutons « Fix » de l'arbitrage D (tranché le 14 octobre : « Prepare for Slides » reste dans le header, tel quel).
 
-Lot traité le 14 octobre 2026 (décisions de Billel notées sous chaque tâche). Arbitrage C tranché : on garde l'aperçu en haut et le rapport dessous. Arbitrage D tranché pendant le lot 02 : « Prepare for Slides » reste dans le header. Le lot 03 est clos.
+Lot traité le 14 octobre 2026 (décisions de Billel notées sous chaque tâche). Arbitrage C tranché : on garde l'aperçu en haut et le rapport dessous. Le lot 03 est clos.
 
 ## Structure
 

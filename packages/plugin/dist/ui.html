@@ -417,25 +417,6 @@ a {
   border: 0;
 }
 
-.f2s-dim-box {
-  font-size: 12px;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  border-radius: 6px;
-  padding: 2px 10px;
-  min-width: 24px;
-  text-align: center;
-}
-
-.f2s-dim-sep {
-  color: var(--color-text-muted);
-}
-
-.f2s-dim-unit {
-  font-size: 12px;
-  color: var(--color-text-muted);
-}
-
 /* Champ de nommage du deck/template (topbar) — largeur fixe (voir le
    commentaire sur .f2s-topbar) : ne se redimensionne plus jamais selon
    l'état des boutons d'action ou le mode deck/template. */
@@ -941,15 +922,34 @@ a.f2s-btn {
   margin-top: 8px;
 }
 
-.f2s-frame-text {
-  font-size: 12px;
-  color: var(--color-text-muted);
-}
-
 .f2s-frame-index {
   font-size: 12px;
   color: var(--color-text-muted);
   flex: none;
+}
+
+/* Nom de la frame (mode deck) : texte simple, même corps que l'index, tronqué
+   d'un seul côté pour laisser l'index et la croix à leur place. Le nom Figma
+   complet reste dans l'infobulle. */
+.f2s-frame-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Résumé de fidélité en tête du rail : ce qui deviendra une image dans
+   Slides, avant même de lancer l'export. */
+.f2s-rail-summary {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--color-text);
+  text-wrap: balance;
 }
 
 /* Nom de la vignette (mode template) : visuellement du texte au repos, se
@@ -1017,6 +1017,7 @@ a.f2s-btn {
 }
 
 .f2s-frame-preview {
+  position: relative;
   border-radius: 8px;
   border: 2.5px solid transparent;
   background: var(--color-surface-muted);
@@ -1037,6 +1038,26 @@ a.f2s-btn {
 
 .f2s-frame-preview.is-active {
   border-color: var(--color-orange-80);
+}
+
+/* Même tag que "Rasterized" dans le rapport (.f2s-log-entry-flag--rasterized),
+   posé en bas à gauche : le coin haut droit appartient au badge d'échec
+   d'export. */
+.f2s-frame-badge {
+  position: absolute;
+  left: 4px;
+  bottom: 4px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--color-error);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+  pointer-events: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .f2s-frame-preview img {
@@ -1131,6 +1152,88 @@ a.f2s-btn {
   border: none;
 }
 
+/* ---- Mode deck : aperçu et rapport sur une même colonne ----
+   `.f2s-canvas--deck` est un conteneur de taille : la colonne en tire sa
+   largeur, la plus petite de trois bornes (largeur du canvas ; 640 px, au-delà
+   l'aperçu ne gagne plus rien ; largeur de l'aperçu à 65 % de la hauteur du
+   canvas, d'après le ratio de la frame posé par DeckPanel). L'aperçu et la
+   boîte Content remplissent tous deux cette largeur : leurs bords coïncident
+   à toute taille de fenêtre. Une frame portrait garde une colonne d'au moins
+   360 px pour que le rapport reste lisible ; son image se centre alors dans
+   le cadre. */
+.f2s-canvas--deck {
+  container-type: size;
+}
+
+.f2s-deck-column {
+  width: min(100%, 640px);
+  width: max(min(100%, 360px), min(100%, 640px, 65cqh * var(--f2s-frame-ratio, 1.7778)));
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* La légende colle à l'aperçu (8 px), le rapport s'en détache (24 px). */
+.f2s-deck-figure {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* `auto` devant le ratio : il s'applique à la boîte de contenu, bordure et
+   biseau Windows 95 (padding) ne le faussent pas. */
+.f2s-deck-figure .f2s-canvas-preview {
+  max-width: none;
+  max-height: 65cqh;
+  aspect-ratio: auto var(--f2s-frame-ratio, 1.7778);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.f2s-deck-figure .f2s-canvas-preview img {
+  min-width: 0;
+  min-height: 0;
+}
+
+/* La fenêtre d'export garde sa propre hauteur (barres de titre et de statut
+   en plus de l'image), mais prend la largeur de la colonne : pas de saut de
+   largeur au lancement de l'export. */
+.f2s-deck-figure .f2s-canvas-preview--retro {
+  display: block;
+  aspect-ratio: auto;
+  max-height: none;
+  overflow: visible;
+}
+
+.f2s-deck-figure .f2s-retro-canvas {
+  max-height: 65cqh;
+  margin-inline: auto;
+}
+
+.f2s-logs-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 4px;
+}
+
+.f2s-logs-notes p {
+  margin: 0;
+  line-height: 1.4;
+  text-wrap: pretty;
+}
+
+.f2s-deck-caption {
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--color-text-muted);
+  text-align: start;
+}
+
 /* ---- Logs (rapport de fidélité) : sous la preview + dimensions du deck ----
    Les données (nativeCount/rasterCount/warnings) arrivent déjà avec
    `candidate-added`/`candidate-updated` (code.ts) mais étaient ignorées côté
@@ -1174,6 +1277,30 @@ a.f2s-btn {
 
 .f2s-log-entry:hover {
   border-color: var(--color-orange);
+}
+
+/* Indice du geste "cliquer pour sélectionner dans Figma" (rapport du deck) :
+   l'outil de sélection de Figma, en bout de ligne, révélé au survol et au
+   focus clavier. Sa place est réservée même invisible, pour que la ligne ne
+   se recompose pas sous le pointeur. Sans survol possible, il reste affiché. */
+.f2s-log-entry-select {
+  flex: none;
+  color: var(--color-text-muted);
+  transition: opacity var(--b-duration) var(--b-ease-default);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .f2s-log-entry-select {
+    opacity: 0;
+  }
+
+  .f2s-log-entry:hover .f2s-log-entry-select {
+    opacity: 1;
+  }
+}
+
+.f2s-log-entry:focus-visible .f2s-log-entry-select {
+  opacity: 1;
 }
 
 /* Mode template uniquement (TemplatePanel.tsx) : `.f2s-log-entry` y est un
@@ -2571,11 +2698,11 @@ html.f2s-skin--win95 .f2s-toolbar-label {
 }
 
 html.f2s-skin--win95 .f2s-toolbar-muted,
-html.f2s-skin--win95 .f2s-frame-text,
 html.f2s-skin--win95 .f2s-frame-index,
+html.f2s-skin--win95 .f2s-frame-name,
 html.f2s-skin--win95 .f2s-frame-name-input,
-html.f2s-skin--win95 .f2s-dim-unit,
-html.f2s-skin--win95 .f2s-dim-sep,
+html.f2s-skin--win95 .f2s-deck-caption,
+html.f2s-skin--win95 .f2s-log-entry-select,
 html.f2s-skin--win95 .f2s-font-original,
 html.f2s-skin--win95 .f2s-font-arrow,
 html.f2s-skin--win95 .f2s-empty-steps,
@@ -2657,12 +2784,11 @@ html.f2s-skin--win95 .f2s-btn:disabled {
   text-shadow: 1px 1px 0 var(--w95-white);
 }
 
-/* ---- Champs (saisie, listes déroulantes, boîtes de dimensions) ---- */
+/* ---- Champs (saisie, listes déroulantes) ---- */
 
 html.f2s-skin--win95 .f2s-title-input,
 html.f2s-skin--win95 .f2s-font-dropdown,
-html.f2s-skin--win95 .f2s-font-combobox,
-html.f2s-skin--win95 .f2s-dim-box {
+html.f2s-skin--win95 .f2s-font-combobox {
   font-size: 12px;
   border: none;
   border-radius: 0;
@@ -2723,6 +2849,10 @@ html.f2s-skin--win95 .f2s-style-aside {
 
 html.f2s-skin--win95 .f2s-canvas {
   padding: 12px;
+  gap: 12px;
+}
+
+html.f2s-skin--win95 .f2s-deck-column {
   gap: 12px;
 }
 
@@ -2828,7 +2958,8 @@ html.f2s-skin--win95 .f2s-log-entry--blocking {
   color: var(--color-error);
 }
 
-html.f2s-skin--win95 .f2s-log-entry-flag {
+html.f2s-skin--win95 .f2s-log-entry-flag,
+html.f2s-skin--win95 .f2s-frame-badge {
   border-radius: 0;
 }
 
@@ -3129,12 +3260,11 @@ html.f2s-skin--modern .f2s-btn:active:not(:disabled) {
   box-shadow: var(--hyb-pressed);
 }
 
-/* ---- Champs (saisie, listes déroulantes, boîtes de dimensions) ---- */
+/* ---- Champs (saisie, listes déroulantes) ---- */
 
 html.f2s-skin--modern .f2s-title-input,
 html.f2s-skin--modern .f2s-font-dropdown,
-html.f2s-skin--modern .f2s-font-combobox,
-html.f2s-skin--modern .f2s-dim-box {
+html.f2s-skin--modern .f2s-font-combobox {
   border: none;
   border-radius: 0;
   box-shadow: var(--hyb-in);
@@ -3241,7 +3371,8 @@ html.f2s-skin--modern .f2s-log-entry--blocking {
   border-color: transparent;
 }
 
-html.f2s-skin--modern .f2s-log-entry-flag {
+html.f2s-skin--modern .f2s-log-entry-flag,
+html.f2s-skin--modern .f2s-frame-badge {
   border-radius: 0;
 }
 
@@ -3852,6 +3983,54 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     postToPlugin({ type: "select-nodes", nodeIds: sourceNodeIds });
   }
 
+  // src/ui/frameLabels.ts
+  var READY_PREFIXES = ["[Slides Ready] ", "[Template Ready] "];
+  function displayFrameName(name) {
+    for (const prefix of READY_PREFIXES) {
+      if (name.startsWith(prefix)) return name.slice(prefix.length);
+    }
+    return name;
+  }
+  var COMMON_RATIOS = [
+    [16, 9],
+    [16, 10],
+    [4, 3],
+    [3, 2],
+    [1, 1],
+    [21, 9],
+    [5, 4],
+    [9, 16],
+    [10, 16],
+    [3, 4],
+    [2, 3],
+    [4, 5]
+  ];
+  var RATIO_TOLERANCE = 0.01;
+  function gcd(a3, b2) {
+    return b2 === 0 ? a3 : gcd(b2, a3 % b2);
+  }
+  function aspectRatioLabel(width, height) {
+    if (!(width > 0) || !(height > 0)) return "";
+    const ratio = width / height;
+    for (const [w3, h3] of COMMON_RATIOS) {
+      if (Math.abs(ratio - w3 / h3) / (w3 / h3) <= RATIO_TOLERANCE) return `${w3}:${h3}`;
+    }
+    const rw = Math.round(width);
+    const rh = Math.round(height);
+    const divisor = gcd(rw, rh);
+    if (rw / divisor <= 32 && rh / divisor <= 32) return `${rw / divisor}:${rh / divisor}`;
+    return `${(Math.round(ratio * 100) / 100).toString()}:1`;
+  }
+  function frameSizeCaption(width, height) {
+    const size = `${Math.round(width)} \xD7 ${Math.round(height)} px`;
+    const ratio = aspectRatioLabel(width, height);
+    return ratio ? `${size} \xB7 ${ratio}` : size;
+  }
+  var englishPlural = new Intl.PluralRules("en");
+  function countLabel(count, one, other = `${one}s`) {
+    return `${count} ${englishPlural.select(count) === "one" ? one : other}`;
+  }
+
   // src/ui/logEntryFlag.ts
   var RASTERIZED_WARNING_CODES = /* @__PURE__ */ new Set([
     "FONT_MISSING",
@@ -4310,6 +4489,17 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
   }
 
   // src/ui/DeckPanel.tsx
+  var PREPARE_FIXES_CODES = /* @__PURE__ */ new Set([
+    "GRADIENT_RASTERIZED",
+    "MULTIPLE_FILLS_RASTERIZED",
+    "CONTAINER_BACKGROUND_RASTERIZED",
+    "EFFECT_RASTERIZED",
+    "CORNER_RADIUS_RASTERIZED",
+    "LETTER_SPACING_LOST"
+  ]);
+  function SelectInFigmaIcon() {
+    return /* @__PURE__ */ u3("svg", { className: "f2s-log-entry-select", width: "14", height: "14", viewBox: "0 0 32 32", fill: "currentColor", xmlns: "http://www.w3.org/2000/svg", "aria-hidden": "true", children: /* @__PURE__ */ u3("path", { d: "M23,28a1,1,0,0,1-.71-.29l-6.13-6.14-3.33,5a1,1,0,0,1-1,.44,1,1,0,0,1-.81-.7l-6-20A1,1,0,0,1,6.29,5l20,6a1,1,0,0,1,.7.81,1,1,0,0,1-.44,1l-5,3.33,6.14,6.13a1,1,0,0,1,0,1.42l-4,4A1,1,0,0,1,23,28Zm0-2.41L25.59,23l-7.16-7.15,5.25-3.5L7.49,7.49l4.86,16.19,3.5-5.25Z" }) });
+  }
   function DeckPanel({
     order,
     setOrder,
@@ -4340,6 +4530,10 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     const previewedFrame = exportingFrame ?? activeFrame;
     const highlightedId = pacedCursor?.frameId ?? activeId;
     const previewedFailure = previewedFrame ? failedSlides?.[previewedFrame.id] : void 0;
+    const rasterizedSlideIds = order.filter((id) => (frames[id]?.rasterCount ?? 0) > 0);
+    const rasterizedTotal = rasterizedSlideIds.reduce((sum, id) => sum + (frames[id]?.rasterCount ?? 0), 0);
+    const previewedWarnings = previewedFrame?.warnings ?? [];
+    const preparable = previewedWarnings.some((w3) => PREPARE_FIXES_CODES.has(w3.code));
     const previewSettled = exportConcluded && !pacedCursor;
     h2(() => {
       if (previewSettled) onPreviewSettled();
@@ -4376,98 +4570,134 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     return /* @__PURE__ */ u3("div", { className: "f2s-body", children: [
       notice && /* @__PURE__ */ u3(Toast, { notice, onDismiss: onDismissNotice }, notice.id),
       /* @__PURE__ */ u3("p", { className: "f2s-sr-only", role: "status", children: pacedCursor ? `Generating slide ${pacedCursor.index + 1} of ${pacedCursor.total}` : announcement }),
-      /* @__PURE__ */ u3("aside", { className: "f2s-sidebar", children: order.map((id, index) => {
-        const failure = failedSlides?.[id];
-        const f4 = frames[id];
-        if (!f4) return null;
-        const item = itemState(id, index);
-        return /* @__PURE__ */ u3("div", { ref: registerItem(id), className: item.className, style: item.style, children: [
-          /* @__PURE__ */ u3(
-            "button",
-            {
-              type: "button",
-              className: `f2s-frame-preview${highlightedId === id ? " is-active" : ""}${failure ? " f2s-frame-preview--failed" : ""}${pacedCursor?.frameId === id ? " is-exporting" : ""}`,
-              onClick: () => selectFrame(id),
-              onPointerDown: (e3) => onThumbPointerDown(e3, id),
-              onKeyDown: (e3) => onThumbKeyDown(e3, id),
-              "aria-keyshortcuts": "Alt+ArrowUp Alt+ArrowDown",
-              title: failure ? `Export failed: ${failure}` : void 0,
-              children: f4.previewDataUrl && /* @__PURE__ */ u3("img", { src: f4.previewDataUrl, alt: f4.name, draggable: false })
-            }
-          ),
-          /* @__PURE__ */ u3("div", { className: "f2s-frame-info", children: [
-            /* @__PURE__ */ u3("span", { className: "f2s-frame-text", children: index + 1 }),
-            /* @__PURE__ */ u3("div", { className: "f2s-frame-controls", children: /* @__PURE__ */ u3(
-              "button",
-              {
-                type: "button",
-                className: "f2s-icon-btn",
-                disabled: locked,
-                title: locked ? "An export is running. Wait for it to finish before changing the list." : `Remove slide ${index + 1}`,
-                "aria-label": `Remove slide ${index + 1}`,
-                onClick: () => onRemove(id),
-                children: "\u2715"
-              }
-            ) })
-          ] })
-        ] }, id);
-      }) }),
-      /* @__PURE__ */ u3("main", { className: "f2s-canvas", children: previewedFrame ? /* @__PURE__ */ u3(S, { children: [
-        previewedFailure && !exportingFrame && /* @__PURE__ */ u3("div", { className: "f2s-logs f2s-tmpl-section--blocking f2s-export-failure", role: "alert", children: [
-          /* @__PURE__ */ u3("div", { className: "f2s-logs-header", children: /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "This slide failed to export" }) }),
-          /* @__PURE__ */ u3("p", { className: "f2s-export-failure-message", children: previewedFailure })
-        ] }),
-        exportingFrame && pacedCursor ? /* @__PURE__ */ u3("div", { className: "f2s-canvas-preview f2s-canvas-preview--retro", children: /* @__PURE__ */ u3(
-          RetroExportPreview,
+      /* @__PURE__ */ u3("aside", { className: "f2s-sidebar", children: [
+        rasterizedTotal > 0 && /* @__PURE__ */ u3(
+          "p",
           {
-            src: exportingFrame.previewDataUrl,
-            frameName: exportingFrame.name,
-            index: pacedCursor.index,
-            total: pacedCursor.total
+            className: "f2s-rail-summary f2s-tabular",
+            title: "Rasterized elements become images in Slides: they look the same but can't be edited there.",
+            children: [
+              rasterizedTotal,
+              " rasterized on ",
+              countLabel(rasterizedSlideIds.length, "slide")
+            ]
           }
-        ) }) : /* @__PURE__ */ u3("div", { className: "f2s-canvas-preview", children: previewedFrame.previewDataUrl && /* @__PURE__ */ u3("img", { src: previewedFrame.previewDataUrl, alt: previewedFrame.name }) }),
-        /* @__PURE__ */ u3("div", { className: "f2s-toolbar-group", children: [
-          /* @__PURE__ */ u3("span", { className: "f2s-toolbar-label", children: "Dimensions :" }),
-          /* @__PURE__ */ u3("span", { className: "f2s-dim-box", children: Math.round(previewedFrame.width) }),
-          /* @__PURE__ */ u3("span", { className: "f2s-dim-sep", children: "\xD7" }),
-          /* @__PURE__ */ u3("span", { className: "f2s-dim-box", children: Math.round(previewedFrame.height) }),
-          /* @__PURE__ */ u3("span", { className: "f2s-dim-unit", children: "px" })
-        ] }),
-        /* @__PURE__ */ u3("div", { className: "f2s-logs", children: [
-          /* @__PURE__ */ u3("div", { className: "f2s-logs-header", children: [
-            /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Content" }),
-            previewedFrame.nativeCount !== void 0 && previewedFrame.rasterCount !== void 0 && /* @__PURE__ */ u3("span", { className: "f2s-toolbar-muted f2s-tabular", children: [
-              previewedFrame.nativeCount,
-              " native \xB7 ",
-              previewedFrame.rasterCount,
-              " rasterized"
-            ] })
-          ] }),
-          previewedFrame.warnings && previewedFrame.warnings.length > 0 ? /* @__PURE__ */ u3("ul", { className: "f2s-tmpl-list", children: [...previewedFrame.warnings].sort((a3, b2) => (logEntryFlag(a3.code) === "rasterized" ? 0 : 1) - (logEntryFlag(b2.code) === "rasterized" ? 0 : 1)).map((w3, i3) => {
-            const flag = logEntryFlag(w3.code);
-            const tagText = flag ? logEntryTagText(w3, fontOverrides) : void 0;
-            return /* @__PURE__ */ u3("li", { children: /* @__PURE__ */ u3(
+        ),
+        order.map((id, index) => {
+          const failure = failedSlides?.[id];
+          const f4 = frames[id];
+          if (!f4) return null;
+          const item = itemState(id, index);
+          const name = displayFrameName(f4.name);
+          const rasterCount = f4.rasterCount ?? 0;
+          return /* @__PURE__ */ u3("div", { ref: registerItem(id), className: item.className, style: item.style, children: [
+            /* @__PURE__ */ u3(
               "button",
               {
                 type: "button",
-                className: `f2s-log-entry${w3.severity === "blocking" ? " f2s-log-entry--blocking" : ""}${flag ? ` f2s-log-entry--${flag}` : ""}`,
-                title: `${w3.nodeName}: ${logEntryTooltip(w3, tagText)}`,
-                onClick: () => selectSourceNodes([w3.sourceNodeId]),
+                className: `f2s-frame-preview${highlightedId === id ? " is-active" : ""}${failure ? " f2s-frame-preview--failed" : ""}${pacedCursor?.frameId === id ? " is-exporting" : ""}`,
+                onClick: () => selectFrame(id),
+                onPointerDown: (e3) => onThumbPointerDown(e3, id),
+                onKeyDown: (e3) => onThumbKeyDown(e3, id),
+                "aria-keyshortcuts": "Alt+ArrowUp Alt+ArrowDown",
+                title: failure ? `Export failed: ${failure}` : void 0,
                 children: [
-                  /* @__PURE__ */ u3("span", { className: "f2s-log-entry-text", children: [
-                    /* @__PURE__ */ u3("strong", { className: "f2s-log-entry-name", children: w3.nodeName }),
-                    !tagText && /* @__PURE__ */ u3("span", { className: "f2s-log-entry-message", children: [
-                      ": ",
-                      w3.message
-                    ] })
-                  ] }),
-                  tagText && /* @__PURE__ */ u3("span", { className: `f2s-log-entry-flag f2s-log-entry-flag--${flag}`, children: tagText })
+                  f4.previewDataUrl && /* @__PURE__ */ u3("img", { src: f4.previewDataUrl, alt: name, draggable: false }),
+                  rasterCount > 0 && /* @__PURE__ */ u3("span", { className: "f2s-frame-badge f2s-tabular", children: [
+                    rasterCount,
+                    " rasterized"
+                  ] })
                 ]
               }
-            ) }, i3);
-          }) }) : /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: "No issues detected on this frame." })
-        ] })
-      ] }) : /* @__PURE__ */ u3("p", { className: "f2s-canvas-empty", children: "Select a frame on the left to preview it." }) })
+            ),
+            /* @__PURE__ */ u3("div", { className: "f2s-frame-info", children: [
+              /* @__PURE__ */ u3("span", { className: "f2s-frame-index", children: [
+                index + 1,
+                "."
+              ] }),
+              /* @__PURE__ */ u3("span", { className: "f2s-frame-name", title: f4.name, children: name }),
+              /* @__PURE__ */ u3("div", { className: "f2s-frame-controls", children: /* @__PURE__ */ u3(
+                "button",
+                {
+                  type: "button",
+                  className: "f2s-icon-btn",
+                  disabled: locked,
+                  title: locked ? "An export is running. Wait for it to finish before changing the list." : `Remove slide ${index + 1}`,
+                  "aria-label": `Remove slide ${index + 1}`,
+                  onClick: () => onRemove(id),
+                  children: "\u2715"
+                }
+              ) })
+            ] })
+          ] }, id);
+        })
+      ] }),
+      /* @__PURE__ */ u3(
+        "main",
+        {
+          className: "f2s-canvas f2s-canvas--deck",
+          style: previewedFrame && previewedFrame.height > 0 ? { "--f2s-frame-ratio": String(previewedFrame.width / previewedFrame.height) } : void 0,
+          children: previewedFrame ? /* @__PURE__ */ u3("div", { className: "f2s-deck-column", children: [
+            previewedFailure && !exportingFrame && /* @__PURE__ */ u3("div", { className: "f2s-logs f2s-tmpl-section--blocking f2s-export-failure", role: "alert", children: [
+              /* @__PURE__ */ u3("div", { className: "f2s-logs-header", children: /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "This slide failed to export" }) }),
+              /* @__PURE__ */ u3("p", { className: "f2s-export-failure-message", children: previewedFailure })
+            ] }),
+            /* @__PURE__ */ u3("figure", { className: "f2s-deck-figure", children: [
+              exportingFrame && pacedCursor ? /* @__PURE__ */ u3("div", { className: "f2s-canvas-preview f2s-canvas-preview--retro", children: /* @__PURE__ */ u3(
+                RetroExportPreview,
+                {
+                  src: exportingFrame.previewDataUrl,
+                  frameName: displayFrameName(exportingFrame.name),
+                  index: pacedCursor.index,
+                  total: pacedCursor.total
+                }
+              ) }) : /* @__PURE__ */ u3("div", { className: "f2s-canvas-preview", children: previewedFrame.previewDataUrl && /* @__PURE__ */ u3("img", { src: previewedFrame.previewDataUrl, alt: displayFrameName(previewedFrame.name) }) }),
+              /* @__PURE__ */ u3("figcaption", { className: "f2s-deck-caption f2s-tabular", children: frameSizeCaption(previewedFrame.width, previewedFrame.height) })
+            ] }),
+            /* @__PURE__ */ u3("div", { className: "f2s-logs", children: [
+              /* @__PURE__ */ u3("div", { className: "f2s-logs-header", children: [
+                /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Content" }),
+                previewedFrame.nativeCount !== void 0 && previewedFrame.rasterCount !== void 0 && /* @__PURE__ */ u3("span", { className: "f2s-toolbar-muted f2s-tabular", children: [
+                  previewedFrame.nativeCount,
+                  " native \xB7 ",
+                  previewedFrame.rasterCount,
+                  " rasterized"
+                ] })
+              ] }),
+              previewedWarnings.length > 0 ? /* @__PURE__ */ u3(S, { children: [
+                /* @__PURE__ */ u3("ul", { className: "f2s-tmpl-list", children: [...previewedWarnings].sort((a3, b2) => (logEntryFlag(a3.code) === "rasterized" ? 0 : 1) - (logEntryFlag(b2.code) === "rasterized" ? 0 : 1)).map((w3, i3) => {
+                  const flag = logEntryFlag(w3.code);
+                  const tagText = flag ? logEntryTagText(w3, fontOverrides) : void 0;
+                  return /* @__PURE__ */ u3("li", { children: /* @__PURE__ */ u3(
+                    "button",
+                    {
+                      type: "button",
+                      className: `f2s-log-entry${w3.severity === "blocking" ? " f2s-log-entry--blocking" : ""}${flag ? ` f2s-log-entry--${flag}` : ""}`,
+                      title: `${w3.nodeName}: ${logEntryTooltip(w3, tagText)}`,
+                      onClick: () => selectSourceNodes([w3.sourceNodeId]),
+                      children: [
+                        /* @__PURE__ */ u3("span", { className: "f2s-log-entry-text", children: [
+                          /* @__PURE__ */ u3("strong", { className: "f2s-log-entry-name", children: w3.nodeName }),
+                          !tagText && /* @__PURE__ */ u3("span", { className: "f2s-log-entry-message", children: [
+                            ": ",
+                            w3.message
+                          ] })
+                        ] }),
+                        tagText && /* @__PURE__ */ u3("span", { className: `f2s-log-entry-flag f2s-log-entry-flag--${flag}`, children: tagText }),
+                        /* @__PURE__ */ u3(SelectInFigmaIcon, {})
+                      ]
+                    }
+                  ) }, i3);
+                }) }),
+                /* @__PURE__ */ u3("div", { className: "f2s-logs-notes", children: [
+                  /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: "Click a row to select the layer in Figma." }),
+                  preparable && /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: "\u201CPrepare for Slides\u201D simplifies gradients, effects and letter spacing so they stay editable." })
+                ] })
+              ] }) : /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: "No issues detected on this frame." })
+            ] })
+          ] }) : /* @__PURE__ */ u3("p", { className: "f2s-canvas-empty", children: "Select a frame on the left to preview it." })
+        }
+      )
     ] });
   }
 

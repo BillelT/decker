@@ -10,6 +10,7 @@ Ce qui rend la création d'un template moins bloquante et plus guidée. La struc
 ## Structure du rapport
 
 - [ ] **Ordre inversé par rapport au Deck.** Les erreurs passent au-dessus de l'aperçu, et la tâche principale (assigner les rôles, liste Content) est tout en bas, invisible en 960×560. → Même ordre dans les deux modes : aperçu, « To fix », Content. Idéalement, Content à côté de l'aperçu (selon C).
+  - C tranché : aperçu en haut, rapport dessous, comme le Deck. Reprendre aussi du lot 03 la colonne commune aperçu/rapport (`.f2s-deck-column`), l'icône de sélection au survol des lignes et la phrase « Click a row to select the layer in Figma. ».
 - [ ] **Rôle affiché deux fois.** Libellé « TITLE » et sélecteur « [[title]] » sur la même ligne. → Garder seulement le sélecteur, avec un style marqué quand un rôle est assigné.
 
 ## Panneau Styles
