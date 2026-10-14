@@ -198,11 +198,11 @@ html.f2s-skin--win95 .f2s-toolbar-label {
 }
 
 html.f2s-skin--win95 .f2s-toolbar-muted,
-html.f2s-skin--win95 .f2s-frame-text,
 html.f2s-skin--win95 .f2s-frame-index,
+html.f2s-skin--win95 .f2s-frame-name,
 html.f2s-skin--win95 .f2s-frame-name-input,
-html.f2s-skin--win95 .f2s-dim-unit,
-html.f2s-skin--win95 .f2s-dim-sep,
+html.f2s-skin--win95 .f2s-deck-caption,
+html.f2s-skin--win95 .f2s-log-entry-select,
 html.f2s-skin--win95 .f2s-font-original,
 html.f2s-skin--win95 .f2s-font-arrow,
 html.f2s-skin--win95 .f2s-empty-steps,
@@ -284,12 +284,11 @@ html.f2s-skin--win95 .f2s-btn:disabled {
   text-shadow: 1px 1px 0 var(--w95-white);
 }
 
-/* ---- Champs (saisie, listes déroulantes, boîtes de dimensions) ---- */
+/* ---- Champs (saisie, listes déroulantes) ---- */
 
 html.f2s-skin--win95 .f2s-title-input,
 html.f2s-skin--win95 .f2s-font-dropdown,
-html.f2s-skin--win95 .f2s-font-combobox,
-html.f2s-skin--win95 .f2s-dim-box {
+html.f2s-skin--win95 .f2s-font-combobox {
   font-size: 12px;
   border: none;
   border-radius: 0;
@@ -350,6 +349,10 @@ html.f2s-skin--win95 .f2s-style-aside {
 
 html.f2s-skin--win95 .f2s-canvas {
   padding: 12px;
+  gap: 12px;
+}
+
+html.f2s-skin--win95 .f2s-deck-column {
   gap: 12px;
 }
 
@@ -455,7 +458,8 @@ html.f2s-skin--win95 .f2s-log-entry--blocking {
   color: var(--color-error);
 }
 
-html.f2s-skin--win95 .f2s-log-entry-flag {
+html.f2s-skin--win95 .f2s-log-entry-flag,
+html.f2s-skin--win95 .f2s-frame-badge {
   border-radius: 0;
 }
 

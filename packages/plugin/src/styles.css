@@ -412,25 +412,6 @@ a {
   border: 0;
 }
 
-.f2s-dim-box {
-  font-size: 12px;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  border-radius: 6px;
-  padding: 2px 10px;
-  min-width: 24px;
-  text-align: center;
-}
-
-.f2s-dim-sep {
-  color: var(--color-text-muted);
-}
-
-.f2s-dim-unit {
-  font-size: 12px;
-  color: var(--color-text-muted);
-}
-
 /* Champ de nommage du deck/template (topbar) — largeur fixe (voir le
    commentaire sur .f2s-topbar) : ne se redimensionne plus jamais selon
    l'état des boutons d'action ou le mode deck/template. */
@@ -936,15 +917,34 @@ a.f2s-btn {
   margin-top: 8px;
 }
 
-.f2s-frame-text {
-  font-size: 12px;
-  color: var(--color-text-muted);
-}
-
 .f2s-frame-index {
   font-size: 12px;
   color: var(--color-text-muted);
   flex: none;
+}
+
+/* Nom de la frame (mode deck) : texte simple, même corps que l'index, tronqué
+   d'un seul côté pour laisser l'index et la croix à leur place. Le nom Figma
+   complet reste dans l'infobulle. */
+.f2s-frame-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Résumé de fidélité en tête du rail : ce qui deviendra une image dans
+   Slides, avant même de lancer l'export. */
+.f2s-rail-summary {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--color-text);
+  text-wrap: balance;
 }
 
 /* Nom de la vignette (mode template) : visuellement du texte au repos, se
@@ -1012,6 +1012,7 @@ a.f2s-btn {
 }
 
 .f2s-frame-preview {
+  position: relative;
   border-radius: 8px;
   border: 2.5px solid transparent;
   background: var(--color-surface-muted);
@@ -1032,6 +1033,26 @@ a.f2s-btn {
 
 .f2s-frame-preview.is-active {
   border-color: var(--color-orange-80);
+}
+
+/* Même tag que "Rasterized" dans le rapport (.f2s-log-entry-flag--rasterized),
+   posé en bas à gauche : le coin haut droit appartient au badge d'échec
+   d'export. */
+.f2s-frame-badge {
+  position: absolute;
+  left: 4px;
+  bottom: 4px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--color-error);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+  pointer-events: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .f2s-frame-preview img {
@@ -1126,6 +1147,88 @@ a.f2s-btn {
   border: none;
 }
 
+/* ---- Mode deck : aperçu et rapport sur une même colonne ----
+   `.f2s-canvas--deck` est un conteneur de taille : la colonne en tire sa
+   largeur, la plus petite de trois bornes (largeur du canvas ; 640 px, au-delà
+   l'aperçu ne gagne plus rien ; largeur de l'aperçu à 65 % de la hauteur du
+   canvas, d'après le ratio de la frame posé par DeckPanel). L'aperçu et la
+   boîte Content remplissent tous deux cette largeur : leurs bords coïncident
+   à toute taille de fenêtre. Une frame portrait garde une colonne d'au moins
+   360 px pour que le rapport reste lisible ; son image se centre alors dans
+   le cadre. */
+.f2s-canvas--deck {
+  container-type: size;
+}
+
+.f2s-deck-column {
+  width: min(100%, 640px);
+  width: max(min(100%, 360px), min(100%, 640px, 65cqh * var(--f2s-frame-ratio, 1.7778)));
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* La légende colle à l'aperçu (8 px), le rapport s'en détache (24 px). */
+.f2s-deck-figure {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* `auto` devant le ratio : il s'applique à la boîte de contenu, bordure et
+   biseau Windows 95 (padding) ne le faussent pas. */
+.f2s-deck-figure .f2s-canvas-preview {
+  max-width: none;
+  max-height: 65cqh;
+  aspect-ratio: auto var(--f2s-frame-ratio, 1.7778);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.f2s-deck-figure .f2s-canvas-preview img {
+  min-width: 0;
+  min-height: 0;
+}
+
+/* La fenêtre d'export garde sa propre hauteur (barres de titre et de statut
+   en plus de l'image), mais prend la largeur de la colonne : pas de saut de
+   largeur au lancement de l'export. */
+.f2s-deck-figure .f2s-canvas-preview--retro {
+  display: block;
+  aspect-ratio: auto;
+  max-height: none;
+  overflow: visible;
+}
+
+.f2s-deck-figure .f2s-retro-canvas {
+  max-height: 65cqh;
+  margin-inline: auto;
+}
+
+.f2s-logs-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 4px;
+}
+
+.f2s-logs-notes p {
+  margin: 0;
+  line-height: 1.4;
+  text-wrap: pretty;
+}
+
+.f2s-deck-caption {
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--color-text-muted);
+  text-align: start;
+}
+
 /* ---- Logs (rapport de fidélité) : sous la preview + dimensions du deck ----
    Les données (nativeCount/rasterCount/warnings) arrivent déjà avec
    `candidate-added`/`candidate-updated` (code.ts) mais étaient ignorées côté
@@ -1169,6 +1272,30 @@ a.f2s-btn {
 
 .f2s-log-entry:hover {
   border-color: var(--color-orange);
+}
+
+/* Indice du geste "cliquer pour sélectionner dans Figma" (rapport du deck) :
+   l'outil de sélection de Figma, en bout de ligne, révélé au survol et au
+   focus clavier. Sa place est réservée même invisible, pour que la ligne ne
+   se recompose pas sous le pointeur. Sans survol possible, il reste affiché. */
+.f2s-log-entry-select {
+  flex: none;
+  color: var(--color-text-muted);
+  transition: opacity var(--b-duration) var(--b-ease-default);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .f2s-log-entry-select {
+    opacity: 0;
+  }
+
+  .f2s-log-entry:hover .f2s-log-entry-select {
+    opacity: 1;
+  }
+}
+
+.f2s-log-entry:focus-visible .f2s-log-entry-select {
+  opacity: 1;
 }
 
 /* Mode template uniquement (TemplatePanel.tsx) : `.f2s-log-entry` y est un
