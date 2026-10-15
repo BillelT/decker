@@ -1646,7 +1646,7 @@ a.f2s-btn {
 
 /* Mode template : l'aperçu s'étire sur toute la colonne, la boîte d'échec
    au-dessus suit la même largeur plutôt que le plafond de 640px du deck. */
-.f2s-tmpl-report > .f2s-export-failure {
+.f2s-tmpl-report > .f2s-logs {
   max-width: none;
 }
 

@@ -145,7 +145,8 @@ html.f2s-skin--modern .f2s-canvas--template {
   padding: 12px;
 }
 
-html.f2s-skin--modern .f2s-tmpl-panel .f2s-tmpl-section {
+html.f2s-skin--modern .f2s-tmpl-panel .f2s-tmpl-section,
+html.f2s-skin--modern .f2s-tmpl-report > .f2s-logs {
   padding: 8px 12px;
 }
 
