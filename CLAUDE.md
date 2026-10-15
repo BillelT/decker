@@ -47,3 +47,11 @@
   l'utilisateur dit avoir terminé ses mises à jour ou demande comment
   mettre en ligne. Ne jamais redemander si le plugin est publié ou en
   local : il l'est.
+- **Les tokens de la DA ne se recopient jamais à la main.** La source est
+  `skills/design-tokens/token.css` du dépôt `BillelT/billel-skill`. Après
+  une mise à jour de la DA : `npm run tokens:sync` (ou
+  `node scripts/sync-tokens.mjs <chemin d'un clone de billel-skill>`),
+  qui réécrit `tokens/token.css` et les fichiers `generated/` du plugin et
+  du backend, puis rebuild du plugin. Les seules valeurs posées en dur
+  sont les exceptions listées dans `docs/roadmap/README.md` (chantier
+  transverse).

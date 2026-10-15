@@ -3,7 +3,9 @@ import { deriveCodeChallenge, generateCodeVerifier } from '../auth/pkce.js';
 import { buildAuthUrl, createOAuthClient, exchangeCodeForTokens, fetchUserEmail } from '../auth/oauth.js';
 import { popAuthResult, popCodeVerifier, popSkin, stashAuthResult, stashCodeVerifier, stashSkin } from '../auth/pendingAuth.js';
 import { cacheAccessToken, createSession, destroySession, getEmail, getRefreshToken } from '../auth/session.js';
+import { DESIGN_TOKENS_CSS } from '../generated/designTokens.js';
 import { DECKER_FAVICON, DECKER_MARK_SVG, PERSONAL_MARK_SVG, escapeHtml } from './brand.js';
+import { CABINET_GROTESK_BASE64 } from './fontData.js';
 
 export const authRouter = Router();
 
@@ -198,9 +200,8 @@ function renderWin95Page(content: PageContent): string {
 function renderModernPage(content: PageContent): string {
   const iconPath =
     content.accent === 'success'
-      ? '<path d="M20 34 L29 43 L46 24" stroke="#F2ECE8" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>'
-      : '<path d="M24 24 L42 42 M42 24 L24 42" stroke="#F2ECE8" stroke-width="4.5" stroke-linecap="round"/>';
-  const accentColor = content.accent === 'success' ? '#F06800' : '#E00000';
+      ? '<path d="M20 34 L29 43 L46 24" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>'
+      : '<path d="M24 24 L42 42 M42 24 L24 42" stroke="currentColor" stroke-width="4.5" stroke-linecap="round"/>';
 
   return `<!doctype html>
 <html lang="en">
@@ -210,16 +211,18 @@ function renderModernPage(content: PageContent): string {
 <title>${escapeHtml(content.title)}</title>
 <link rel="icon" type="image/svg+xml" href="${DECKER_FAVICON}" />
 <style>
+  @font-face {
+    font-family: "Cabinet Grotesk";
+    src: url("data:font/woff2;base64,${CABINET_GROTESK_BASE64}") format("woff2-variations");
+    font-weight: 400 900;
+    font-style: normal;
+    font-display: swap;
+  }
+  ${DESIGN_TOKENS_CSS}
   :root {
     color-scheme: light;
-    --f2s-orange: #f06800;
-    /* Survol du bouton orange : orange éclairci, comme le CTA de la DA (--b-accent-hover). */
-    --f2s-orange-hover: hsl(20, 100%, 62%);
-    /* Rampe de la DA (token.css) : --b-white, --b-ink, --b-text-muted. */
-    --f2s-bg: hsl(30, 20%, 98%);
-    --f2s-surface: hsl(30, 20%, 98%);
-    --f2s-text: hsl(30, 12%, 6%);
-    --f2s-text-muted: hsl(22, 8%, 22%);
+    /* Exception (arbitrage G) : la DA n'a pas encore de couleur d'erreur. */
+    --f2s-error: #e00000;
     --hyb-hi: rgba(255, 255, 255, 0.9);
     --hyb-lo: rgba(18, 15, 13, 0.22);
     --hyb-lo-strong: rgba(18, 15, 13, 0.4);
@@ -234,38 +237,42 @@ function renderModernPage(content: PageContent): string {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 1.25rem;
-    padding: 1.5rem;
-    background: var(--f2s-bg);
-    color: var(--f2s-text);
-    font-family: 'Cabinet Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    gap: var(--b-space-20);
+    padding: var(--b-space-24);
+    background: var(--b-surface);
+    color: var(--b-text);
+    font-family: var(--b-font-sans);
   }
   .card {
     width: 100%;
     max-width: 400px;
-    background: var(--f2s-surface);
+    background: var(--b-surface);
     border-radius: 0;
-    padding: 2.5rem 2rem;
+    padding: var(--b-space-48) var(--b-space-32);
     text-align: center;
     box-shadow: var(--hyb-out), 0 12px 32px rgba(18, 15, 13, 0.08);
   }
-  .brand { display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 2rem; }
+  .brand { display: flex; align-items: center; justify-content: center; gap: var(--b-space-8); margin-bottom: var(--b-space-32); }
   .brand-mark { width: 28px; height: 28px; border-radius: 0; flex-shrink: 0; }
-  .brand-name { font-size: 0.95rem; font-weight: 600; letter-spacing: 0.01em; }
-  .status-icon { width: 64px; height: 64px; margin: 0 auto 1.5rem; }
-  h1 { margin: 0 0 0.75rem; font-size: 1.3rem; font-weight: 700; text-wrap: balance; }
-  p.body { margin: 0 0 2rem; color: var(--f2s-text-muted); font-size: 0.95rem; line-height: 1.5; text-wrap: balance; }
+  .brand-name { font-size: var(--b-text-base); font-weight: var(--b-font-semibold); letter-spacing: var(--b-tracking-tight); }
+  .status-icon { width: 64px; height: 64px; margin: 0 auto var(--b-space-24); }
+  .status-icon--success { color: var(--b-ink); }
+  .status-icon--success circle { fill: var(--b-accent); }
+  .status-icon--error { color: var(--b-white); }
+  .status-icon--error circle { fill: var(--f2s-error); }
+  h1 { margin: 0 0 var(--b-space-12); font-size: var(--b-text-xl); font-weight: var(--b-font-bold); line-height: var(--b-leading-tight); text-wrap: balance; }
+  p.body { margin: 0 0 var(--b-space-32); color: var(--b-text-muted); font-size: var(--b-text-base); line-height: var(--b-leading-relaxed); text-wrap: balance; }
   .btn {
     display: inline-flex; align-items: center; justify-content: center; width: 100%;
-    padding: 0.75rem 1.25rem; border-radius: 0; background: var(--f2s-orange); color: var(--f2s-text);
-    font-size: 0.95rem; font-weight: 600; text-decoration: none; border: none; cursor: pointer;
+    padding: var(--b-space-12) var(--b-space-20); border-radius: 0; background: var(--b-accent); color: var(--b-ink);
+    font-size: var(--b-text-base); font-weight: var(--b-font-semibold); line-height: var(--b-leading-tight); text-decoration: none; border: none; cursor: pointer;
     box-shadow: var(--hyb-out);
   }
   .btn:active { box-shadow: var(--hyb-pressed); }
   @media (hover: hover) and (pointer: fine) {
-    .btn:hover { background: var(--f2s-orange-hover); }
+    .btn:hover { background: var(--b-accent-hover); }
   }
-  .fallback { margin: 1rem 0 0; font-size: 0.8rem; color: var(--f2s-text-muted); }
+  .fallback { margin: var(--b-space-16) 0 0; font-size: var(--b-text-xs); color: var(--b-text-muted); }
   .credit { display: flex; justify-content: center; }
   .credit a { display: inline-flex; opacity: 0.6; }
   .credit a:hover { opacity: 1; }
@@ -278,8 +285,8 @@ function renderModernPage(content: PageContent): string {
       <svg class="brand-mark" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${DECKER_MARK_SVG.replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '')}</svg>
       <span class="brand-name">Decker</span>
     </div>
-    <svg class="status-icon" viewBox="0 0 66 66" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <circle cx="33" cy="33" r="33" fill="${accentColor}"/>
+    <svg class="status-icon status-icon--${content.accent}" viewBox="0 0 66 66" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <circle cx="33" cy="33" r="33"/>
       ${iconPath}
     </svg>
     <h1>${escapeHtml(content.heading)}</h1>

@@ -9,8 +9,8 @@
  * `.card__media`, pour que les rangées de cards restent régulières.
  *
  * Vocabulaire commun à tous les schémas : un cadre blanc bordé = une maquette
- * Figma ou une diapo Slides, une barre `accent-soft` = un titre, des barres
- * `gray-300` = du texte, un aplat `gray-100` = une image, l'orange = ce que
+ * Figma ou une diapo Slides, une barre `accent-40` = un titre, des barres
+ * `gray-200` = du texte, un aplat `gray-100` = une image, l'orange = ce que
  * Decker fait ou ce que l'utilisateur a sélectionné.
  */
 
@@ -21,10 +21,10 @@ const svg = (label: string, body: string): string =>
 
 /** Contenu factice d'une maquette : vignette + trois lignes de texte. */
 const frameContent = (x: number, y: number, accent: boolean): string => `
-  <rect x="${x + 10}" y="${y + 10}" width="36" height="42" fill="${accent ? 'var(--b-accent-soft)' : 'var(--b-gray-100)'}" />
-  <rect x="${x + 54}" y="${y + 12}" width="52" height="5" fill="var(--b-gray-300)" />
-  <rect x="${x + 54}" y="${y + 24}" width="38" height="5" fill="var(--b-gray-300)" />
-  <rect x="${x + 54}" y="${y + 36}" width="46" height="5" fill="var(--b-gray-300)" />`;
+  <rect x="${x + 10}" y="${y + 10}" width="36" height="42" fill="${accent ? 'var(--b-accent-40)' : 'var(--b-gray-100)'}" />
+  <rect x="${x + 54}" y="${y + 12}" width="52" height="5" fill="var(--b-gray-200)" />
+  <rect x="${x + 54}" y="${y + 24}" width="38" height="5" fill="var(--b-gray-200)" />
+  <rect x="${x + 54}" y="${y + 36}" width="46" height="5" fill="var(--b-gray-200)" />`;
 
 /** Poignées de sélection Figma aux quatre coins d'une maquette. */
 const handles = (x: number, y: number, w: number, h: number): string =>
@@ -45,7 +45,7 @@ const frame = (x: number, y: number, selected: boolean): string => {
   const w = 118;
   const h = 62;
   return `
-  <rect x="${x}" y="${y - 11}" width="34" height="5" fill="var(--b-gray-300)" />
+  <rect x="${x}" y="${y - 11}" width="34" height="5" fill="var(--b-gray-200)" />
   <rect x="${x}" y="${y}" width="${w}" height="${h}" fill="var(--b-surface)"
     stroke="${selected ? 'var(--b-accent)' : 'var(--b-border)'}" stroke-width="${selected ? 1.5 : 1}" />
   ${frameContent(x, y, selected)}
@@ -60,11 +60,11 @@ export const STEP_PICK_FRAMES_SVG = svg(
 
 /** Contenu d'une diapo, identique des deux côtés de l'étape 2 : c'est ce qui porte le "pixel for pixel". */
 const slideContent = (x: number, y: number): string => `
-  <rect x="${x + 12}" y="${y + 14}" width="64" height="8" fill="var(--b-accent-soft)" />
+  <rect x="${x + 12}" y="${y + 14}" width="64" height="8" fill="var(--b-accent-40)" />
   <rect x="${x + 12}" y="${y + 34}" width="42" height="40" fill="var(--b-gray-100)" />
-  <rect x="${x + 62}" y="${y + 34}" width="44" height="6" fill="var(--b-gray-300)" />
-  <rect x="${x + 62}" y="${y + 48}" width="44" height="6" fill="var(--b-gray-300)" />
-  <rect x="${x + 62}" y="${y + 62}" width="30" height="6" fill="var(--b-gray-300)" />`;
+  <rect x="${x + 62}" y="${y + 34}" width="44" height="6" fill="var(--b-gray-200)" />
+  <rect x="${x + 62}" y="${y + 48}" width="44" height="6" fill="var(--b-gray-200)" />
+  <rect x="${x + 62}" y="${y + 62}" width="30" height="6" fill="var(--b-gray-200)" />`;
 
 /**
  * How it works, étape 2 : maquette Figma à gauche, diapo Slides à droite. Les deux portent
@@ -97,24 +97,24 @@ export const STEP_GET_DECK_SVG = svg(
   <rect x="20" y="28" width="280" height="144" fill="var(--b-surface)" stroke="var(--b-border)" />
   <rect x="20" y="28" width="280" height="20" fill="var(--b-gray-100)" />
   <line x1="20" y1="48" x2="300" y2="48" stroke="var(--b-border)" />
-  <g fill="var(--b-gray-300)">
+  <g fill="var(--b-gray-200)">
     <circle cx="32" cy="38" r="2.5" /><circle cx="42" cy="38" r="2.5" /><circle cx="52" cy="38" r="2.5" />
   </g>
   <rect x="30" y="58" width="52" height="30" fill="var(--b-surface)" stroke="var(--b-accent)" stroke-width="1.5" />
-  <rect x="36" y="64" width="24" height="4" fill="var(--b-accent-soft)" />
-  <rect x="36" y="73" width="40" height="4" fill="var(--b-gray-300)" />
+  <rect x="36" y="64" width="24" height="4" fill="var(--b-accent-40)" />
+  <rect x="36" y="73" width="40" height="4" fill="var(--b-gray-200)" />
   <rect x="30" y="96" width="52" height="30" fill="var(--b-surface)" stroke="var(--b-border)" />
-  <rect x="36" y="102" width="24" height="4" fill="var(--b-gray-300)" />
-  <rect x="36" y="111" width="40" height="4" fill="var(--b-gray-300)" />
+  <rect x="36" y="102" width="24" height="4" fill="var(--b-gray-200)" />
+  <rect x="36" y="111" width="40" height="4" fill="var(--b-gray-200)" />
   <rect x="30" y="134" width="52" height="30" fill="var(--b-surface)" stroke="var(--b-border)" />
-  <rect x="36" y="140" width="24" height="4" fill="var(--b-gray-300)" />
-  <rect x="36" y="149" width="40" height="4" fill="var(--b-gray-300)" />
+  <rect x="36" y="140" width="24" height="4" fill="var(--b-gray-200)" />
+  <rect x="36" y="149" width="40" height="4" fill="var(--b-gray-200)" />
   <rect x="94" y="58" width="190" height="106" fill="var(--b-surface)" stroke="var(--b-border)" />
-  <rect x="106" y="70" width="104" height="10" fill="var(--b-accent-soft)" />
+  <rect x="106" y="70" width="104" height="10" fill="var(--b-accent-40)" />
   <rect x="106" y="92" width="76" height="58" fill="var(--b-gray-100)" />
-  <rect x="194" y="92" width="78" height="6" fill="var(--b-gray-300)" />
-  <rect x="194" y="106" width="78" height="6" fill="var(--b-gray-300)" />
-  <rect x="194" y="120" width="52" height="6" fill="var(--b-gray-300)" />`,
+  <rect x="194" y="92" width="78" height="6" fill="var(--b-gray-200)" />
+  <rect x="194" y="106" width="78" height="6" fill="var(--b-gray-200)" />
+  <rect x="194" y="120" width="52" height="6" fill="var(--b-gray-200)" />`,
 );
 
 /* ------------------------------------------------------------------ *
@@ -135,11 +135,11 @@ export const FEATURE_FREE_SVG = svg(
   <rect x="74" y="34" width="172" height="132" fill="var(--b-surface)" stroke="var(--b-border)" />
   <rect x="74" y="34" width="172" height="22" fill="var(--b-gray-100)" />
   <line x1="74" y1="56" x2="246" y2="56" stroke="var(--b-border)" />
-  <rect x="90" y="72" width="56" height="6" fill="var(--b-gray-300)" />
-  <rect x="90" y="88" width="42" height="16" fill="var(--b-gray-300)" />
+  <rect x="90" y="72" width="56" height="6" fill="var(--b-gray-200)" />
+  <rect x="90" y="88" width="42" height="16" fill="var(--b-gray-200)" />
   <rect x="90" y="120" width="140" height="16" fill="var(--b-surface)" stroke="var(--b-border)" />
-  <rect x="98" y="125" width="60" height="6" fill="var(--b-gray-300)" />
-  <rect x="90" y="146" width="66" height="12" fill="var(--b-gray-300)" />
+  <rect x="98" y="125" width="60" height="6" fill="var(--b-gray-200)" />
+  <rect x="90" y="146" width="66" height="12" fill="var(--b-gray-200)" />
   <line x1="62" y1="178" x2="258" y2="22" stroke="var(--b-accent)" stroke-width="3" stroke-linecap="round" />`,
 );
 
@@ -152,20 +152,20 @@ export const FEATURE_FULL_DECK_SVG = svg(
     .map(
       ([x, y]) => `
   <rect x="${x}" y="${y}" width="44" height="32" fill="var(--b-surface)" stroke="var(--b-border)" />
-  <rect x="${x + 6}" y="${y + 6}" width="20" height="4" fill="var(--b-accent-soft)" />
-  <rect x="${x + 6}" y="${y + 16}" width="32" height="4" fill="var(--b-gray-300)" />
-  <rect x="${x + 6}" y="${y + 24}" width="24" height="4" fill="var(--b-gray-300)" />`,
+  <rect x="${x + 6}" y="${y + 6}" width="20" height="4" fill="var(--b-accent-40)" />
+  <rect x="${x + 6}" y="${y + 16}" width="32" height="4" fill="var(--b-gray-200)" />
+  <rect x="${x + 6}" y="${y + 24}" width="24" height="4" fill="var(--b-gray-200)" />`,
     )
     .join('')}
   ${arrow(130, 156, 100)}
   <rect x="180" y="70" width="118" height="80" fill="var(--b-gray-100)" stroke="var(--b-border)" />
   <rect x="174" y="62" width="118" height="80" fill="var(--b-surface)" stroke="var(--b-border)" />
   <rect x="168" y="54" width="118" height="80" fill="var(--b-surface)" stroke="var(--b-border)" />
-  <rect x="180" y="66" width="60" height="10" fill="var(--b-accent-soft)" />
+  <rect x="180" y="66" width="60" height="10" fill="var(--b-accent-40)" />
   <rect x="180" y="86" width="44" height="36" fill="var(--b-gray-100)" />
-  <rect x="234" y="86" width="40" height="6" fill="var(--b-gray-300)" />
-  <rect x="234" y="100" width="40" height="6" fill="var(--b-gray-300)" />
-  <rect x="234" y="114" width="26" height="6" fill="var(--b-gray-300)" />`,
+  <rect x="234" y="86" width="40" height="6" fill="var(--b-gray-200)" />
+  <rect x="234" y="100" width="40" height="6" fill="var(--b-gray-200)" />
+  <rect x="234" y="114" width="26" height="6" fill="var(--b-gray-200)" />`,
 );
 
 /** Export template : une maquette devient une mise en page réutilisable, thème compris. */
@@ -173,11 +173,11 @@ export const FEATURE_TEMPLATE_SVG = svg(
   'A single Figma frame turning into a reusable Slides layout with its theme colors',
   `
   <rect x="20" y="50" width="110" height="82" fill="var(--b-surface)" stroke="var(--b-border)" />
-  <rect x="32" y="62" width="58" height="10" fill="var(--b-accent-soft)" />
+  <rect x="32" y="62" width="58" height="10" fill="var(--b-accent-40)" />
   <rect x="32" y="82" width="40" height="38" fill="var(--b-gray-100)" />
-  <rect x="80" y="82" width="38" height="6" fill="var(--b-gray-300)" />
-  <rect x="80" y="96" width="38" height="6" fill="var(--b-gray-300)" />
-  <rect x="80" y="110" width="24" height="6" fill="var(--b-gray-300)" />
+  <rect x="80" y="82" width="38" height="6" fill="var(--b-gray-200)" />
+  <rect x="80" y="96" width="38" height="6" fill="var(--b-gray-200)" />
+  <rect x="80" y="110" width="24" height="6" fill="var(--b-gray-200)" />
   ${arrow(142, 168, 91)}
   <rect x="180" y="50" width="120" height="82" fill="var(--b-surface)" stroke="var(--b-border)" />
   <g fill="none" stroke="var(--b-accent)" stroke-width="1" stroke-dasharray="4 3">
@@ -187,9 +187,9 @@ export const FEATURE_TEMPLATE_SVG = svg(
   </g>
   <g>
     <rect x="180" y="146" width="18" height="18" fill="var(--b-accent)" />
-    <rect x="204" y="146" width="18" height="18" fill="var(--b-accent-soft)" />
+    <rect x="204" y="146" width="18" height="18" fill="var(--b-accent-40)" />
     <rect x="228" y="146" width="18" height="18" fill="var(--b-ink)" />
-    <rect x="252" y="146" width="18" height="18" fill="var(--b-gray-300)" />
+    <rect x="252" y="146" width="18" height="18" fill="var(--b-gray-200)" />
   </g>`,
 );
 
@@ -203,7 +203,7 @@ const pickRow = (y: number, checked: boolean): string => `
       : `<rect x="90" y="${y}" width="16" height="16" fill="var(--b-surface)" stroke="var(--b-border)" />`
   }
   <rect x="116" y="${y + 1}" width="20" height="14" fill="var(--b-gray-100)" />
-  <rect x="146" y="${y + 5}" width="80" height="6" fill="var(--b-gray-300)" />`;
+  <rect x="146" y="${y + 5}" width="80" height="6" fill="var(--b-gray-200)" />`;
 
 /** Choix des maquettes : la liste du plugin, avec ses cases à cocher. */
 export const FEATURE_PICK_SVG = svg(
@@ -212,7 +212,7 @@ export const FEATURE_PICK_SVG = svg(
   <rect x="76" y="26" width="168" height="148" fill="var(--b-surface)" stroke="var(--b-border)" />
   <rect x="76" y="26" width="168" height="22" fill="var(--b-gray-100)" />
   <line x1="76" y1="48" x2="244" y2="48" stroke="var(--b-border)" />
-  <rect x="88" y="34" width="52" height="6" fill="var(--b-gray-300)" />
+  <rect x="88" y="34" width="52" height="6" fill="var(--b-gray-200)" />
   ${pickRow(62, true)}${pickRow(92, true)}${pickRow(122, false)}${pickRow(152, true)}`,
 );
 
@@ -221,19 +221,19 @@ export const FEATURE_NATIVE_SVG = svg(
   'A flattened screenshot on the left, the same slide as editable objects on the right',
   `
   <rect x="20" y="50" width="110" height="82" fill="var(--b-gray-100)" stroke="var(--b-border)" />
-  <g fill="none" stroke="var(--b-gray-300)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <g fill="none" stroke="var(--b-gray-200)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <circle cx="56" cy="76" r="7" />
     <polyline points="34,116 62,90 84,110 98,98 116,116" />
   </g>
   ${arrow(142, 168, 91)}
   <rect x="180" y="50" width="120" height="82" fill="var(--b-surface)" stroke="var(--b-border)" />
-  <rect x="194" y="64" width="64" height="12" fill="var(--b-accent-soft)" />
+  <rect x="194" y="64" width="64" height="12" fill="var(--b-accent-40)" />
   <rect x="190" y="60" width="72" height="20" fill="none" stroke="var(--b-accent)" />
   ${handles(190, 60, 72, 20)}
   <rect x="194" y="90" width="44" height="30" fill="var(--b-gray-100)" />
-  <rect x="248" y="90" width="40" height="6" fill="var(--b-gray-300)" />
-  <rect x="248" y="102" width="40" height="6" fill="var(--b-gray-300)" />
-  <rect x="248" y="114" width="26" height="6" fill="var(--b-gray-300)" />`,
+  <rect x="248" y="90" width="40" height="6" fill="var(--b-gray-200)" />
+  <rect x="248" y="102" width="40" height="6" fill="var(--b-gray-200)" />
+  <rect x="248" y="114" width="26" height="6" fill="var(--b-gray-200)" />`,
 );
 
 /** Rien de gardé : le bouclier, et un stockage qui reste vide une fois l'export fini. */
@@ -241,8 +241,8 @@ export const FEATURE_PRIVATE_SVG = svg(
   'A shield above an empty storage box',
   `
   <path d="M160 26 L198 40 V80 C198 105 180 122 160 132 C140 122 122 105 122 80 V40 Z"
-    fill="var(--b-accent-soft)" stroke="var(--b-accent)" stroke-width="2" stroke-linejoin="round" />
+    fill="var(--b-accent-40)" stroke="var(--b-accent)" stroke-width="2" stroke-linejoin="round" />
   <polyline points="144,78 155,90 178,62" fill="none" stroke="var(--b-ink)" stroke-width="3"
     stroke-linecap="round" stroke-linejoin="round" />
-  <rect x="92" y="148" width="136" height="30" fill="none" stroke="var(--b-gray-300)" stroke-dasharray="5 4" />`,
+  <rect x="92" y="148" width="136" height="30" fill="none" stroke="var(--b-gray-200)" stroke-dasharray="5 4" />`,
 );

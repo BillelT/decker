@@ -49,7 +49,6 @@ html.f2s-skin--win95 {
   --color-gray-200: var(--w95-face);
   --color-gray-100: var(--w95-light);
   --color-text-muted: var(--color-gray-800);
-  --color-scrollbar: var(--color-gray-200);
   --color-gray-light: var(--color-gray-100);
   --color-border: var(--w95-shadow);
   --color-surface: var(--w95-white);

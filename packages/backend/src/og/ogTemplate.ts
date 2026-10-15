@@ -55,6 +55,7 @@
  *   légales (privacy, terms) n'ont pas de propos propre à raconter en
  *   vignette, les distinguer n'aurait décrit que leur titre, pas le produit.
  */
+import { DESIGN_TOKENS_CSS } from '../generated/designTokens.js';
 import { CABINET_GROTESK_BASE64 } from '../routes/fontData.js';
 import { DECKER_MARK_SVG } from '../routes/brand.js';
 import {
@@ -72,22 +73,12 @@ const CSS = `
   font-style: normal;
 }
 
-/* Palette et biseaux hybrides, repris tels quels de
-   packages/backend/src/routes/marketingStyles.ts (:root) et
-   packages/plugin/src/styles.modern.css (--hyb-*), valeurs "clair" : cette
-   carte statique ne suit pas le thème sombre de Figma, pas plus que les
-   pages HTML rendues côté serveur (auth.ts). --b-border/--b-surface-muted
-   recopiés de --color-border/--color-surface-muted (styles.css du plugin). */
+${DESIGN_TOKENS_CSS}
+
+/* Les tokens --b-* viennent de la DA (src/generated/designTokens.ts). Ce
+   :root ne garde que les biseaux hybrides (packages/plugin/src/styles.modern.css)
+   et l'exception du tag "approximated" du plugin. */
 :root {
-  --b-ink: hsl(30, 12%, 6%);
-  --b-white: hsl(30, 20%, 98%);
-  --b-surface: hsl(30, 20%, 98%);
-  --b-surface-muted: hsl(30, 23%, 93%);
-  --b-border: hsl(18, 8%, 84%);
-  --b-scrollbar: hsl(18, 8%, 84%);
-  --b-muted: hsl(22, 8%, 22%);
-  --b-accent: #f06800;
-  --b-accent-red: #f04000;
   --b-accent-soft: #ffc599;
 
   --hyb-hi: rgba(255, 255, 255, 0.9);
@@ -189,12 +180,12 @@ body {
 .demo-topbar-left { display: flex; align-items: center; gap: 16px; }
 
 .demo-tabs { display: inline-flex; gap: 2px; padding: 2px; background: var(--b-surface-muted); border: 1px solid var(--b-border); }
-.demo-tab { font-size: 12px; font-weight: 700; color: var(--b-muted); padding: 5px 14px; }
+.demo-tab { font-size: 12px; font-weight: 700; color: var(--b-text-muted); padding: 5px 14px; }
 .demo-tab.is-active { background: var(--b-white); color: var(--b-ink); box-shadow: var(--hyb-pressed); }
 
 .demo-title-group { display: flex; align-items: center; gap: 8px; }
-.demo-label { font-size: 12px; font-weight: 700; color: var(--b-muted); white-space: nowrap; }
-.demo-input { font-size: 12px; color: var(--b-muted); background: var(--b-surface); box-shadow: var(--hyb-in); padding: 3px 8px; width: 150px; }
+.demo-label { font-size: 12px; font-weight: 700; color: var(--b-text-muted); white-space: nowrap; }
+.demo-input { font-size: 12px; color: var(--b-text-muted); background: var(--b-surface); box-shadow: var(--hyb-in); padding: 3px 8px; width: 150px; }
 
 .demo-topbar-actions { display: flex; align-items: center; gap: 16px; }
 /* Bordure transparente en base (comme .f2s-btn) : le secondaire la passe à
@@ -205,23 +196,23 @@ body {
 .demo-btn--primary { background: var(--b-accent); color: var(--b-ink); }
 
 .demo-toolbar { display: flex; align-items: center; gap: 8px; padding: 12px 16px; flex: none; }
-.demo-muted { font-size: 12px; font-weight: 500; color: var(--b-muted); }
+.demo-muted { font-size: 12px; font-weight: 500; color: var(--b-text-muted); }
 .demo-font-select { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; }
 .demo-font-original,
-.demo-font-arrow { color: var(--b-muted); }
+.demo-font-arrow { color: var(--b-text-muted); }
 .demo-font-dropdown { font-size: 12px; font-weight: 700; color: var(--b-ink); background: var(--b-surface); box-shadow: var(--hyb-in); padding: 3px 8px; }
 
 .demo-body { flex: 1; min-height: 0; display: flex; border-top: 1px solid var(--b-border); }
 
 .demo-sidebar { flex: none; width: 190px; padding: 8px 16px 16px; display: flex; flex-direction: column; gap: 16px; border-right: 1px solid var(--b-border); }
 .demo-thumb { aspect-ratio: 16 / 9; width: 100%; box-shadow: var(--hyb-in); border: 2px solid transparent; background: var(--b-surface-muted); overflow: hidden; position: relative; }
-.demo-thumb.is-active { border-color: var(--b-accent-red); }
-.demo-thumb__index { position: absolute; left: 0; bottom: -18px; font-size: 12px; color: var(--b-muted); }
+.demo-thumb.is-active { border-color: var(--b-accent); }
+.demo-thumb__index { position: absolute; left: 0; bottom: -18px; font-size: 12px; color: var(--b-text-muted); }
 
 .demo-canvas { flex: 1; min-width: 0; padding: 20px 24px; display: flex; flex-direction: column; align-items: center; gap: 24px; }
-.demo-canvas-preview { width: 100%; max-width: 640px; aspect-ratio: 16 / 9; border: 1px solid var(--b-scrollbar); overflow: hidden; position: relative; flex: none; }
+.demo-canvas-preview { width: 100%; max-width: 640px; aspect-ratio: 16 / 9; border: 1px solid var(--b-border); overflow: hidden; position: relative; flex: none; }
 
-.demo-dims { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--b-muted); flex: none; }
+.demo-dims { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--b-text-muted); flex: none; }
 .demo-dim-box { box-shadow: var(--hyb-in); background: var(--b-surface); padding: 2px 10px; min-width: 24px; text-align: center; color: var(--b-ink); }
 
 /* ---- Rapport "Content" (voir .f2s-logs / .f2s-log-entry de styles.css) ---- */

@@ -23,7 +23,8 @@ La palette est alignée sur la DA. Restent les choix visuels qui donnent sa hié
   - Décision du 14 octobre : thème sombre retiré du plugin, avec le réglage *Appearance*. L'UI reste claire quel que soit le thème de Figma ; seul l'habillage (Modern ou Windows 95) se choisit.
 - [x] ~~**`gray-50`** posé dans le plugin le 15 octobre pour les sections, hors de la rampe de la DA.~~
   - Tranché : `gray-50` fait partie de la DA (`--b-gray-50`, rôle `--b-surface-subtle` pour les fonds de section).
-- [ ] **`--b-gray-900`** n'a pas été recalibré : il a presque la même clarté que `gray-700`. À trancher dans la DA.
+- [x] ~~**`--b-gray-900`** n'a pas été recalibré : il a presque la même clarté que `gray-700`.~~
+  - Tranché dans la DA le 14 octobre : l'ancien `gray-900` (`#333231`) est retiré, doublon de `gray-800` (1.09:1 entre les deux).
 
 ## Robustesse
 

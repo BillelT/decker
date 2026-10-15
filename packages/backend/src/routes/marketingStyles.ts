@@ -1,3 +1,4 @@
+import { DESIGN_TOKENS_CSS } from '../generated/designTokens.js';
 import { CABINET_GROTESK_BASE64 } from './fontData.js';
 
 /**
@@ -18,37 +19,11 @@ export const MARKETING_CSS = `
   font-display: swap;
 }
 
+${DESIGN_TOKENS_CSS}
+
+/* Tout ce qui précède vient de la DA (src/generated/designTokens.ts, voir
+   scripts/sync-tokens.mjs). Ce :root ne garde que ce qui est propre au site. */
 :root {
-  /* Rampe de la DA (token.css, recalibrée le 2026-10-13 sur la logique de
-     Tailwind stone) : blanc quasi neutre, léger orange porté par gray-100. */
-  --b-black: hsl(30, 12%, 6%); /* #110f0d */
-  --b-white: hsl(30, 20%, 98%); /* #fbfaf9 */
-  --b-ink: hsl(30, 12%, 6%); /* #110f0d */
-  --b-gray-700: hsl(22, 8%, 22%); /* #3d3734 */
-  --b-gray-300: hsl(18, 8%, 84%); /* #d9d5d3 */
-  --b-gray-100: hsl(30, 23%, 93%); /* #f1ede9 */
-  --b-text: var(--b-ink);
-  --b-text-muted: var(--b-gray-700);
-  --b-text-faint: var(--b-gray-700);
-  --b-text-control: var(--b-gray-700);
-  --b-surface: var(--b-white);
-  --b-surface-muted: var(--b-gray-100);
-  --b-surface-sunken: var(--b-gray-100);
-  --b-border: var(--b-gray-300);
-  --b-border-subtle: var(--b-gray-100);
-  --b-accent: #f06800;
-  --b-accent-red: #f04000;
-  /* Survol du CTA : orange éclairci (DA, --b-accent-hover). --b-accent-red
-     reste un accent graphique, jamais un état d'interaction. */
-  --b-accent-hover: hsl(20, 100%, 62%); /* #ff7e3d */
-  --b-accent-soft: #ffc599;
-  --b-selection: rgba(240, 104, 0, 0.2);
-  --b-scrollbar-thumb: rgba(0, 0, 0, .18);
-
-  --b-space-2: 2px; --b-space-4: 4px; --b-space-6: 6px; --b-space-8: 8px;
-  --b-space-12: 12px; --b-space-16: 16px; --b-space-20: 20px; --b-space-24: 24px;
-  --b-space-32: 32px; --b-space-48: 48px; --b-space-64: 64px; --b-space-96: 96px;
-
   /* Conteneur des sections principales : pas de padding latéral, la marge auto
      fait le travail : sous 1280px, --b-side pour cent de marge de chaque
      côté, puis 1280px centrés au-delà.
@@ -62,23 +37,9 @@ export const MARKETING_CSS = `
   --b-side: 2.5;
   --b-container-width: calc(100% - var(--b-side) * 2%);
 
-  --b-font-sans: "Cabinet Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --b-text-xs: 12px; --b-text-sm: 14px; --b-text-base: 16px; --b-text-lg: 18px;
-  --b-text-xl: 20px; --b-text-3xl: 36px; --b-text-4xl: 44px; --b-text-6xl: 72px;
-  --b-font-regular: 400; --b-font-medium: 500; --b-font-semibold: 600; --b-font-bold: 700;
-  --b-leading-none: 1.02; --b-leading-tight: 1.2; --b-leading-snug: 1.333;
-  --b-leading-normal: 1.4; --b-leading-relaxed: 1.5;
-  --b-tracking-tight: -.01em; --b-tracking-tighter: -.03em; --b-tracking-wide: .08em;
-
-  --b-focus-outline: 2px solid var(--b-black);
-  --b-focus-offset: 2px;
-  --b-ease: cubic-bezier(.16, 1, .3, 1);
-  --b-ease-default: cubic-bezier(.4, 0, .2, 1);
-  --b-ease-out: cubic-bezier(.23, 1, .32, 1);
-  --b-ease-in-out: cubic-bezier(.77, 0, .175, 1);
-  --b-ease-drawer: cubic-bezier(.32, .72, 0, 1);
-  --b-ease-icon: cubic-bezier(.2, 0, 0, 1);
-  --b-duration-instant: .05s; --b-duration-fast: .12s; --b-duration: .15s; --b-duration-slow: .2s;
+  /* Hors DA, à trancher : titre des pages légales, entre --b-text-3xl (36px)
+     et --b-text-6xl (72px). */
+  --b-text-4xl: 44px;
 
   /* Biseau "hybride" (mêmes tokens que packages/plugin/src/styles.modern.css)
      appliqué aux boutons ; le reste de la marque (palette, layout, typo) est inchangé. */
@@ -137,8 +98,6 @@ body {
   color: var(--b-text);
   background: var(--b-surface);
 }
-::selection { background: var(--b-selection); }
-* { scrollbar-width: thin; scrollbar-color: var(--b-scrollbar-thumb) transparent; }
 a { color: inherit; }
 
 /* ---------- Buttons (b-button) ---------- */
@@ -177,7 +136,7 @@ a { color: inherit; }
   .secondary:hover { background-color: var(--b-ink); color: var(--b-white); }
   .nav-link:hover { color: var(--b-ink); }
   .header__nav .nav-link:hover { color: var(--b-text-muted); }
-  .carousel__btn:hover:not(:disabled) { background-color: var(--b-gray-300); }
+  .carousel__btn:hover:not(:disabled) { background-color: var(--b-gray-200); }
 }
 
 /* ---------- Links (b-button) ---------- */
@@ -391,7 +350,7 @@ a { color: inherit; }
   background-color: var(--b-surface-muted); color: var(--b-ink); box-shadow: var(--hyb-out);
 }
 .carousel__btn:active:not(:disabled) { box-shadow: var(--hyb-pressed); }
-.carousel__btn:disabled { color: var(--b-gray-300); cursor: default; }
+.carousel__btn:disabled { color: var(--b-gray-200); cursor: default; }
 .carousel__btn:disabled:active { transform: none; }
 .carousel__btn svg { width: 20px; height: 20px; display: block; }
 

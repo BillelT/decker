@@ -8,107 +8,67 @@
   font-display: swap;
 }
 
+/* Les valeurs viennent de la DA : src/generated/tokens.css (--b-*), injecté
+   avant cette feuille au build (voir scripts/sync-tokens.mjs). Les --color-*
+   ci-dessous ne sont que des rôles du plugin branchés sur ces tokens : on n'y
+   pose aucune valeur, sauf les trois exceptions signalées. Le skin Windows 95
+   (styles.win95.css) redéfinit ces rôles avec sa propre palette. */
 :root {
-  --color-orange: #f06800;
-  --color-orange-20: rgba(240, 104, 0, 0.2);
-  --color-orange-40: rgba(240, 104, 0, 0.4);
-  --color-orange-80: rgba(240, 104, 0, 0.8);
-  /* Survol du bouton principal : un orange ÉCLAIRCI, hsl(20, 100%, 62%).
-     L'ancien orange-red (#f04000) est un accent graphique que la DA interdit
-     sur un état d'interaction, et il tombait à 6° du rouge d'erreur. Encre
-     dessus : 7.56:1 (6.09:1 sur l'orange au repos). */
-  --color-orange-hover: hsl(20, 100%, 62%); /* #ff7e3d */
-  /* Rouge PLEIN réservé aux états d'erreur/bloquants.*/
+  --color-orange: var(--b-accent);
+  --color-orange-20: var(--b-accent-20);
+  --color-orange-40: var(--b-accent-40);
+  /* Survol du bouton principal : orange éclairci. --b-accent-red est un
+     accent graphique, jamais un état d'interaction. Encre dessus : 7.56:1. */
+  --color-orange-hover: var(--b-accent-hover);
+  /* Exception (arbitrage G) : la DA n'a pas encore de couleur d'erreur.
+     Rouge plein réservé aux états d'erreur et bloquants, toujours avec une
+     icône ou un libellé. */
   --color-error: #e00000;
-  /* Encre et blanc de marque : --b-ink / --b-white de la DA (token.css,
-     rampe recalibrée le 2026-10-13 sur la logique de Tailwind stone). Le
-     blanc est quasi neutre ; l'ancien #fff9f5 teintait tout le panneau en
-     pêche. */
-  --color-bg: hsl(30, 20%, 98%); /* #fbfaf9 */
-  --color-text: hsl(30, 12%, 6%); /* #110f0d */
+  --color-bg: var(--b-surface);
+  --color-text: var(--b-text);
 
-  /* Rampe de gris de la DA, renumérotée le 2026-10-14 (100, 200, 400, 500,
-     600, 800 : l'ancien 300 est devenu le 200, l'ancien 600 le 500, l'ancien
-     700 le 800, et le 600 est un nouveau palier). Seuls les paliers dont le
-     plugin se sert sont repris.
-
-     Répartition des rôles (contrastes WCAG 2.1 mesurés sur --color-bg) :
+  /* Rampe de gris de la DA. Rôles dans le plugin (contrastes sur le fond) :
      - 800 : texte secondaire. 11.23:1.
      - 600 : texte discret, onglet inactif. 4.75:1 sur le gray-100 des
-       onglets, de quoi bien distinguer le survol (encre).
-     - 500 : affordance NON textuelle qui doit se voir (curseur de
-       défilement, bordure de survol d'une vignette, anneau de focus des
-       champs). 3.43:1, seul palier à passer les 3:1 du critère 1.4.11 ;
-       jamais un texte.
-     - 200 : bordures (--b-border dans la DA), aplats de survol, tags neutres.
-     - 100 : surfaces creusées. */
-  --color-gray-800: hsl(22, 8%, 22%); /* #3d3734 */
-  --color-gray-600: hsl(24, 6%, 41%); /* #6f6762 */
-  --color-gray-500: hsl(25, 6%, 53%); /* #8e8680 */
-  --color-gray-200: hsl(18, 8%, 84%); /* #d9d5d3 */
-  --color-gray-100: hsl(30, 23%, 93%); /* #f1ede9 */
-  /* 50 : fond des sections du skin Modern (Content, Composition, Colors,
-     Typography...), plus clair que le gray-100 des surfaces creusées. */
-  --color-gray-50: hsl(40 10% 96% / 1);
+       onglets.
+     - 500 : affordance NON textuelle qui doit se voir (bordure de survol
+       d'une vignette, anneau de focus des champs). 3.43:1 ; jamais un texte.
+     - 200 : bordures, aplats de survol, tags neutres.
+     - 100 : surfaces creusées.
+     - 50 : fond des sections (--b-surface-subtle). */
+  --color-gray-800: var(--b-gray-800);
+  --color-gray-600: var(--b-gray-600);
+  --color-gray-500: var(--b-gray-500);
+  --color-gray-200: var(--b-gray-200);
+  --color-gray-100: var(--b-gray-100);
+  --color-gray-50: var(--b-gray-50);
 
-  /* Texte secondaire : libellés de section, légendes, rôles de placeholder,
-     onglets inactifs. Même rôle que --b-text-muted dans la DA. */
-  --color-text-muted: var(--color-gray-800);
-  /* Le curseur de défilement était au gris 200, soit 1.40:1 sur le fond :
-     mesurable, mais pas visible. Au gris 500 il passe 3:1 et redevient une
-     vraie prise. Le gris 200, lui, reste sur les aplats de survol (la croix
-     de suppression du rail, qui virait à l'orange de marque alors que
-     supprimer une vignette n'est pas l'action que le produit met en avant). */
-  --color-scrollbar: var(--color-gray-500);
+  --color-text-muted: var(--b-text-muted);
   --color-gray-light: var(--color-gray-100);
-  /* Bordures en gray-200, comme --b-border dans la DA et sur le site. */
-  --color-border: var(--color-gray-200);
-  /* Surfaces : la DA n'a qu'un blanc (--b-surface) et un fond discret
-     (--b-surface-muted = gray-100). L'ancien blanc pur #ffffff et le
-     #f2ece8 hérité du monogramme sortaient de la palette. */
-  --color-surface: var(--color-bg);
-  --color-surface-muted: var(--color-gray-100);
-  /* Fond des champs (nom, polices, rôles) : blanc pur, demandé le
-     2026-10-14 pour détacher les champs du fond #fbfaf9. Hors rampe de la
-     DA, comme le tag "approximated". */
+  --color-border: var(--b-border);
+  --color-surface: var(--b-surface);
+  --color-surface-muted: var(--b-surface-muted);
+  /* Exception : fond des champs (nom, polices, rôles) en blanc pur, demandé
+     le 2026-10-14 pour détacher les champs du fond. Hors rampe de la DA. */
   --color-field: #ffffff;
-  /* Fond des sections (Content, Composition, Notes, boîtes d'erreur, Colors,
-     Typography) : gray-50, demandé le 2026-10-15 (c'était du blanc pur le
-     2026-10-14) pour que chaque section se détache du fond du panneau. */
-  --color-section: var(--color-gray-50);
+  --color-section: var(--b-surface-subtle);
 
-  /* Tapis du tag "approximé" (.f2s-log-entry-flag--visual-diff) : opaque. Un
-     tapis translucide (--color-orange-40) prenait la couleur du fond sous
-     lui ; l'aplat avec --color-badge-ink tient 12.45:1. Exception assumée,
-     propre au plugin : la DA n'a pas d'orange clair opaque. */
+  /* Exception : tapis du tag "approximated" (.f2s-log-entry-flag--visual-diff),
+     orange clair opaque que la DA n'a pas. Un tapis translucide prenait la
+     couleur du fond ; l'aplat avec l'encre tient 12.45:1. */
   --color-orange-soft: #ffc599;
-  /* Encre des tags. */
-  --color-badge-ink: hsl(30, 12%, 6%);
+  --color-badge-ink: var(--b-ink);
   /* Tag neutre ("3 rasterized" en mode Deck) : gray-800 sur gray-200, 8.05:1. */
   --color-tag-neutral-ink: var(--color-gray-800);
   /* Texte posé sur l'orange (bouton principal, survol du secondaire, coche
-     de succès) : encre fixe, comme le CTA de la DA (b-button) et du site.
-     6.09:1, quand le blanc ne faisait que 3.01:1. */
-  --color-on-accent: hsl(30, 12%, 6%);
-
-  /* Mouvement : courbes et durées du DS (token.css), à la place des mots-clés
-     CSS natifs et des valeurs en dur. */
-  --b-ease-default: cubic-bezier(0.4, 0, 0.2, 1);
-  --b-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-  --b-ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
-  --b-ease-icon: cubic-bezier(0.2, 0, 0, 1);
-  --b-duration-instant: 0.05s;
-  --b-duration-fast: 0.12s;
-  --b-duration: 0.15s;
-  --b-duration-slow: 0.2s;
+     de succès) : encre, comme le CTA de la DA. 6.09:1. */
+  --color-on-accent: var(--b-ink);
+  /* Texte posé sur le rouge d'erreur (badges, pastille d'échec). */
+  --color-on-error: var(--b-white);
 }
 
 * {
   box-sizing: border-box;
-}
-
-::selection {
-  background: var(--color-orange-20);
 }
 
 html,
@@ -169,24 +129,8 @@ a {
   color: var(--color-orange);
 }
 
-/* Scrollbar (WebKit) — flèches/piste/poignée en #DCD5D0 (spec DS). 6px
-   (au lieu de 10px) pour que toutes les scrollbars restent fines, en
-   cohérence avec scrollbar-width: thin ci-dessous pour Firefox — sauf en
-   win95 (styles.win95.css), qui garde volontairement l'ascenseur
-   16px/motif tramé d'origine. */
-*::-webkit-scrollbar {
-  display: block;
-  width: 11px;
-}
-*::-webkit-scrollbar-thumb {
-  background: var(--color-scrollbar);
-  border-radius: 999px;
-  border: 3px solid transparent;
-  background-clip: content-box;
-}
-*::-webkit-scrollbar-track {
-  background: transparent;
-}
+/* Barres de défilement : celles de la DA (tokens.css), sauf en win95
+   (styles.win95.css), qui garde l'ascenseur 16px tramé d'origine. */
 
 /* ---- Top bar ---- */
 
@@ -553,8 +497,8 @@ a {
    leur propre anneau (`outline: none` + ombre grise) et le skin Windows 95
    (pointillé) gardent la main. */
 :where(button, a[href], select, summary, [tabindex]:not([tabindex='-1'])):focus-visible {
-  outline: 2px solid var(--color-text);
-  outline-offset: 2px;
+  outline: var(--b-focus-outline);
+  outline-offset: var(--b-focus-offset);
 }
 
 /* Boutons du header : padding 6px 12px, texte 14px. */
@@ -974,7 +918,7 @@ a.f2s-btn {
 }
 
 .f2s-frame-preview.is-active {
-  border-color: var(--color-orange-80);
+  border-color: var(--color-orange);
 }
 
 /* Pastille de la vignette, avec le nombre d'éléments concernés dans les deux
@@ -1001,7 +945,7 @@ a.f2s-btn {
 
 .f2s-frame-badge--error {
   background: var(--color-error);
-  color: #fff;
+  color: var(--color-on-error);
 }
 
 .f2s-frame-preview img {
@@ -1074,10 +1018,7 @@ a.f2s-btn {
      toujours visible (audit) — .f2s-canvas reste scrollable pour le reste. */
   max-height: 65%;
   flex: none;
-  /* Filet décoratif autour de l'aperçu : gris 200, la valeur qu'il avait
-     déjà via --color-scrollbar. Nommé explicitement pour qu'il ne suive plus
-     le curseur de défilement, qui vient de passer au gris 500 et
-     transformerait ce cheveu en cadre appuyé. */
+  /* Filet décoratif autour de l'aperçu : gris 200. */
   border: 1px solid var(--color-gray-200);
 }
 
@@ -1334,7 +1275,7 @@ a.f2s-btn {
   letter-spacing: 0.01em;
   padding: 3px 6px;
   border-radius: 4px;
-  color: #fff;
+  color: var(--color-on-error);
   /* À 9-10px, le poids 700 de la variable rendait flou/pâteux dans le
      lissage par défaut du navigateur (retour utilisateur) : force un
      lissage niveau de gris, net même à cette taille. */
@@ -1631,7 +1572,7 @@ a.f2s-btn {
   height: 16px;
   border-radius: 50%;
   background: var(--color-error);
-  color: #fff;
+  color: var(--color-on-error);
   font-size: 9px;
   font-weight: 700;
   line-height: 16px;
@@ -1931,7 +1872,7 @@ html:not(.f2s-skin--win95)
 }
 
 .f2s-status-icon--error {
-  color: #fff;
+  color: var(--color-on-error);
 }
 
 .f2s-status-icon--error .f2s-status-icon-disc {
@@ -2017,7 +1958,7 @@ html:not(.f2s-skin--win95)
   max-width: 480px;
   background: var(--color-bg);
   border: 1px solid var(--color-border);
-  border-radius: 12px;
+  border-radius: var(--b-radius-md);
   box-shadow: 0 12px 32px rgba(18, 15, 13, 0.18);
   display: flex;
   flex-direction: column;
@@ -2150,7 +2091,7 @@ html:not(.f2s-skin--win95)
 .f2s-tab.is-active {
   background: var(--color-bg);
   color: var(--color-text);
-  box-shadow: 0 1px 2px rgba(18, 15, 13, 0.16);
+  box-shadow: var(--b-shadow-raised);
 }
 
 /* ---- Aperçu d'export "Windows 95" ----

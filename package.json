@@ -12,8 +12,10 @@
     "build": "npm run build --workspace packages/shared && npm run build --workspaces --if-present",
     "pretest": "npm run build --workspace packages/shared",
     "test": "npm run test --workspaces --if-present",
-    "lint": "npm run lint --workspaces --if-present",
-    "calibrate": "npm run calibrate --workspace packages/backend"
+    "lint": "node scripts/sync-tokens.mjs --check && npm run lint --workspaces --if-present",
+    "calibrate": "npm run calibrate --workspace packages/backend",
+    "tokens:sync": "node scripts/sync-tokens.mjs",
+    "tokens:check": "node scripts/sync-tokens.mjs --check"
   },
   "devDependencies": {
     "typescript": "^5.6.3"

@@ -54,10 +54,14 @@ const fontDataUri = `data:font/woff2;base64,${fontBase64}`;
 // le skin modern (biseaux/angles droits) sous `html.f2s-skin--modern`.
 // L'ordre compte : à spécificité égale, la feuille d'un skin doit passer
 // après styles.css pour l'emporter.
+// Les tokens de la DA (src/generated/tokens.css, produit par
+// scripts/sync-tokens.mjs) passent en tête : styles.css s'appuie sur leurs
+// variables --b-*.
+const designTokens = await readFile('src/generated/tokens.css', 'utf8');
 const stylesTemplate = await readFile('src/styles.css', 'utf8');
 const win95Styles = await readFile('src/styles.win95.css', 'utf8');
 const modernStyles = await readFile('src/styles.modern.css', 'utf8');
-const styles = `${stylesTemplate}\n${win95Styles}\n${modernStyles}`.replace('__FONT_DATA_URI__', () => fontDataUri);
+const styles = `${designTokens}\n${stylesTemplate}\n${win95Styles}\n${modernStyles}`.replace('__FONT_DATA_URI__', () => fontDataUri);
 
 const template = await readFile('src/ui.html', 'utf8');
 const html = template.replace('__STYLES__', () => styles).replace('__UI_SCRIPT__', () => uiScript);
