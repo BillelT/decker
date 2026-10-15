@@ -66,13 +66,13 @@ Ils conditionnent plusieurs tâches. Les trancher avant d'attaquer les fichiers 
 | E | Fenêtre d'export Win95 dans le skin Modern | Easter egg assumé, ou version Modern | 05 |
 | F | Texte en 14 px | La partie « header sur une ligne à 960 px » est tranchée (voir plus bas) ; reste la taille du texte | 05 |
 | G | Couleur d'erreur absente de la DA | Rouge plus sombre que `--b-accent-red`, toujours avec icône et libellé | 05, DA |
-| I | `gray-50` posé dans le plugin le 15 octobre, hors de la rampe de la DA | L'ajouter à `token.css`, ou se replier sur `gray-100` / le blanc | 05, DA |
 
 Tranchés le 14 octobre 2026 :
 
 - **D** : « Prepare for Slides » reste dans le header, tel quel. Retravailler les slides dans Figma est une force du plugin.
 - **F** (header) : les libellés du lot 02 tiennent sur une ligne à 960 px, dans les deux modes et les deux skins.
 - **C** : on garde l'aperçu en haut et le rapport dessous, dans les deux modes. Pas de rapport à droite : à côté des couleurs et de la typo du mode Template, il ferait un panneau fourre-tout.
+- **I** : `gray-50` (`hsl(40 10% 96%)`) fait partie de la DA (`--b-gray-50`, rôle `--b-surface-subtle` pour les fonds de section).
 - **H** : thème sombre retiré du plugin, avec le réglage *Appearance*. Seul l'habillage (Modern ou Windows 95) se choisit. Fait (`1f68e9d`).
 
 ## Ordre conseillé

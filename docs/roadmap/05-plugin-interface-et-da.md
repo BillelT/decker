@@ -9,7 +9,7 @@ La palette est alignée sur la DA. Restent les choix visuels qui donnent sa hié
 - [ ] **Typographie plate** (arbitrage F). Presque tout est en 12 px, les titres de section sont en 12 px gris, certains badges sont à 9 px. → Une échelle 14 / 13 / 12, des titres en couleur d'encre, plus rien sous 12 px. Vérifier ensuite que le header tient à 960 px.
 - [x] **Sections peu visibles** (skin Modern). Le creux des sections (Content, Composition, « Fix before creating the template », Notes, Colors, Typography) avait un bord bas et droit en blanc sur un fond quasi blanc : on ne voyait pas où finissait la section.
   - Fait le 14 octobre : fond blanc `#ffffff` et creux dessiné sur les quatre côtés (haut et gauche plus sombres que bas et droite). Le skin Windows 95, gris, n'avait pas le problème et ne change pas.
-  - Revu le 15 octobre (`612ca28`) : fond `gray-50` (`hsl(40 10% 96%)`) au lieu du blanc pur. Ce gris n'existe pas dans la DA : à y ajouter ou à remplacer (voir « Couleurs encore ouvertes »).
+  - Revu le 15 octobre (`612ca28`) : fond `gray-50` (`hsl(40 10% 96%)`) au lieu du blanc pur. Ce gris fait désormais partie de la DA (`--b-gray-50`, rôle `--b-surface-subtle`).
 - [ ] **Deux systèmes d'icônes.** Croix « ✕ » en texte dans le rail et la barre Win95, icônes SVG dans la modale. → Une seule source SVG en `currentColor`.
 
 ## Animation d'export (arbitrage E)
@@ -21,7 +21,8 @@ La palette est alignée sur la DA. Restent les choix visuels qui donnent sa hié
 - [ ] **Couleur d'erreur** (arbitrage G). Le plugin pose `#e00000` en dur, faute de token dans la DA ; ce rouge est à 6° de teinte de `--b-accent-red`. → Le définir dans la DA, plus sombre que l'accent rouge, toujours accompagné d'une icône et d'un libellé.
 - [x] ~~**Thème sombre** (arbitrage H). La DA a 4 valeurs sombres (dont 2 dérivées en transparence) ; le plugin a dû inventer le reste (surface, surface creusée, survol, gris intermédiaire). → Rampe sombre complète dans la DA, puis alignement du plugin.~~
   - Décision du 14 octobre : thème sombre retiré du plugin, avec le réglage *Appearance*. L'UI reste claire quel que soit le thème de Figma ; seul l'habillage (Modern ou Windows 95) se choisit.
-- [ ] **`gray-50`** posé dans le plugin le 15 octobre pour les sections, hors de la rampe de la DA. → L'ajouter à `token.css` ou se replier sur un palier existant.
+- [x] ~~**`gray-50`** posé dans le plugin le 15 octobre pour les sections, hors de la rampe de la DA.~~
+  - Tranché : `gray-50` fait partie de la DA (`--b-gray-50`, rôle `--b-surface-subtle` pour les fonds de section).
 - [ ] **`--b-gray-900`** n'a pas été recalibré : il a presque la même clarté que `gray-700`. À trancher dans la DA.
 
 ## Robustesse
