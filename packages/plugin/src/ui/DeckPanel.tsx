@@ -146,18 +146,7 @@ export function DeckPanel({
         <main className="f2s-canvas">
           {/* État vide qui oriente : le parcours joué en animation, et ses
               trois étapes écrites avec le nom exact des boutons. */}
-          <EmptyStateDemo
-            actionLabel="Export"
-            steps={[
-              <>Select frames on the Figma canvas.</>,
-              <>
-                Click <strong>Add</strong>: they join the deck in the order you selected them.
-              </>,
-              <>
-                Click <strong>Export</strong> to create the presentation in Google Slides.
-              </>,
-            ]}
-          />
+          <EmptyStateDemo actionLabel="Export" description="Select frames on the Figma canvas, click Add, then Export to create the presentation in Google Slides." />
         </main>
       </div>
     );

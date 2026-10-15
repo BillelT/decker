@@ -12,7 +12,7 @@ Le site (decker.billeltighidet.fr, rendu par `packages/backend/src/routes/pages.
 ## Contenu
 
 - [ ] **Vidéo de démo périmée.** Elle montre l'ancienne interface (« Select frames to add », barre noire, ancienne palette). → La réenregistrer après la publication de la nouvelle version du plugin.
-- [ ] **Card Templates inexacte.** Elle parle d'« a single frame », alors que le mode accepte jusqu'à 10 layouts. → Corriger le texte.
+- [ ] **Card Templates inexacte.** Elle parle d'« a single frame », alors que le mode accepte plusieurs layouts (sans plafond depuis le 15 octobre). → Corriger le texte.
 - [ ] **Promesse « Matched, pixel for pixel ».** Le plugin signale lui-même des éléments approximés ou rasterisés. → Reformuler, ou renvoyer vers le rapport de fidélité pour rester honnête.
 - [ ] **Apostrophes droites** (« you're », « doesn't »). → Apostrophes typographiques (’).
 

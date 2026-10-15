@@ -1511,7 +1511,7 @@ function App() {
           {exporting && (
             <button
               type="button"
-              className="f2s-btn f2s-btn--secondary"
+              className="f2s-btn f2s-btn--ghost"
               disabled={canceling}
               title={`Stop after the ${isDeck ? 'slide' : 'layout'} being written. What's already created stays in Google Slides.`}
               onClick={handleCancelExport}

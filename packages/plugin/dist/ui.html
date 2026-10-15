@@ -988,16 +988,10 @@ a.f2s-btn {
 /* ---- Démo de l'état vide (EmptyStateDemo.tsx) ----
    Les styles de base décrivent l'état FINAL (frames ajoutées au rail,
    curseur sur le bouton principal) : c'est ce qui reste affiché après la
-   lecture, ou d'emblée en mouvement réduit. Les keyframes, sur 7 s,
+   lecture, ou d'emblée en mouvement réduit. Les keyframes, en boucle de 7 s,
    décrivent le trajet : sélection de deux frames (0 à 40 %), clic sur Add
-   (52 à 56 %), clic sur le bouton principal (68 à 72 %). */
-
-.f2s-empty-demo {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-}
+   (52 à 56 %), clic sur le bouton principal (68 à 72 %), puis tout
+   s'efface (92 à 100 %) pour repartir de l'état initial. */
 
 .f2s-demo {
   --f2s-demo-duration: 7s;
@@ -1015,15 +1009,7 @@ a.f2s-btn {
   position: absolute;
   animation-duration: var(--f2s-demo-duration);
   animation-fill-mode: both;
-  animation-iteration-count: 1;
-}
-
-.f2s-demo.is-paused > * {
-  animation-play-state: paused;
-}
-
-.f2s-demo.is-done > * {
-  animation: none;
+  animation-iteration-count: infinite;
 }
 
 .f2s-demo-canvas {
@@ -1103,7 +1089,7 @@ a.f2s-btn {
 }
 
 @keyframes f2s-demo-cursor {
-  0%, 8% { transform: translate(180px, 172px) scale(1); }
+  0%, 8% { transform: translate(180px, 172px) scale(1); opacity: 1; }
   20% { transform: translate(56px, 46px) scale(1); }
   21% { transform: translate(56px, 46px) scale(0.85); }
   24% { transform: translate(56px, 46px) scale(1); }
@@ -1115,7 +1101,10 @@ a.f2s-btn {
   56% { transform: translate(266px, 24px) scale(1); }
   68% { transform: translate(300px, 166px) scale(1); }
   70% { transform: translate(300px, 166px) scale(0.85); }
-  72%, 100% { transform: translate(300px, 166px) scale(1); }
+  72%, 92% { transform: translate(300px, 166px) scale(1); opacity: 1; }
+  96% { transform: translate(300px, 166px) scale(1); opacity: 0; }
+  97% { transform: translate(180px, 172px) scale(1); opacity: 0; }
+  100% { transform: translate(180px, 172px) scale(1); opacity: 1; }
 }
 
 @keyframes f2s-demo-select-1 {
@@ -1144,69 +1133,19 @@ a.f2s-btn {
 
 @keyframes f2s-demo-thumb-1 {
   0%, 55% { opacity: 0; translate: 0 12px; }
-  60%, 100% { opacity: 1; translate: 0 0; }
+  60%, 92% { opacity: 1; translate: 0 0; }
+  100% { opacity: 0; translate: 0 0; }
 }
 
 @keyframes f2s-demo-thumb-2 {
   0%, 58% { opacity: 0; translate: 0 12px; }
-  63%, 100% { opacity: 1; translate: 0 0; }
-}
-
-/* Étapes écrites : pendant la lecture, la courante est à l'encre et les
-   autres en gris faible (numéro et nom de bouton compris). */
-.f2s-empty-steps--demo {
-  color: var(--color-text);
-}
-
-.f2s-empty-steps--demo li::before,
-.f2s-empty-steps--demo strong {
-  color: inherit;
-  border-color: currentColor;
-}
-
-.f2s-empty-steps--demo li {
-  animation-duration: var(--f2s-demo-duration, 7s);
-  animation-fill-mode: both;
-}
-
-.f2s-empty-steps--demo li:nth-child(1) { animation-name: f2s-demo-step-1; }
-.f2s-empty-steps--demo li:nth-child(2) { animation-name: f2s-demo-step-2; }
-.f2s-empty-steps--demo li:nth-child(3) { animation-name: f2s-demo-step-3; }
-
-.f2s-empty-steps--demo.is-paused li {
-  animation-play-state: paused;
-}
-
-.f2s-empty-steps--demo.is-done li {
-  animation: none;
-}
-
-@keyframes f2s-demo-step-1 {
-  0%, 46% { color: var(--color-text); }
-  48%, 99% { color: var(--b-text-faint); }
-  100% { color: var(--color-text); }
-}
-
-@keyframes f2s-demo-step-2 {
-  0%, 46% { color: var(--b-text-faint); }
-  48%, 62% { color: var(--color-text); }
-  64%, 99% { color: var(--b-text-faint); }
-  100% { color: var(--color-text); }
-}
-
-@keyframes f2s-demo-step-3 {
-  0%, 62% { color: var(--b-text-faint); }
-  64%, 100% { color: var(--color-text); }
+  63%, 92% { opacity: 1; translate: 0 0; }
+  100% { opacity: 0; translate: 0 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .f2s-demo > *,
-  .f2s-empty-steps--demo li {
+  .f2s-demo > * {
     animation: none;
-  }
-
-  .f2s-demo-control {
-    display: none;
   }
 }
 
@@ -1312,7 +1251,11 @@ a.f2s-btn {
   overflow: hidden;
   cursor: pointer;
   padding: 0;
-  touch-action: none;
+  /* `pan-y` et non `none` : `none` coupait le défilement du rail dès que
+     le pointeur passait sur une vignette. Le drag à la souris n'en dépend
+     pas ; au doigt, un glissé vertical fait défiler le rail et le
+     réordonnancement passe par Alt + flèches. */
+  touch-action: pan-y;
 }
 
 /* Retour hover = sélection (pas le drag, qui reste discret tant qu'aucun
@@ -4524,40 +4467,18 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
   }
 
   // src/ui/EmptyStateDemo.tsx
-  function EmptyStateDemo({ actionLabel, steps }) {
-    const [run, setRun] = d2(0);
-    const [state, setState] = d2("playing");
-    function onControl() {
-      if (state === "playing") setState("paused");
-      else if (state === "paused") setState("playing");
-      else {
-        setRun((n2) => n2 + 1);
-        setState("playing");
-      }
-    }
-    return /* @__PURE__ */ u3("div", { className: "f2s-empty-demo", children: [
-      /* @__PURE__ */ u3(
-        "div",
-        {
-          className: `f2s-demo${state === "paused" ? " is-paused" : ""}${state === "done" ? " is-done" : ""}`,
-          "aria-hidden": "true",
-          children: [
-            /* @__PURE__ */ u3("div", { className: "f2s-demo-canvas" }),
-            /* @__PURE__ */ u3("div", { className: "f2s-demo-frame f2s-demo-frame--1" }),
-            /* @__PURE__ */ u3("div", { className: "f2s-demo-frame f2s-demo-frame--2" }),
-            /* @__PURE__ */ u3("div", { className: "f2s-demo-frame f2s-demo-frame--3" }),
-            /* @__PURE__ */ u3("div", { className: "f2s-demo-window" }),
-            /* @__PURE__ */ u3("div", { className: "f2s-demo-btn f2s-demo-btn--add", children: "Add" }),
-            /* @__PURE__ */ u3("div", { className: "f2s-demo-thumb f2s-demo-thumb--1" }),
-            /* @__PURE__ */ u3("div", { className: "f2s-demo-thumb f2s-demo-thumb--2" }),
-            /* @__PURE__ */ u3("div", { className: "f2s-demo-btn f2s-demo-btn--primary", children: actionLabel }),
-            /* @__PURE__ */ u3("svg", { className: "f2s-demo-cursor", viewBox: "0 0 16 20", width: "16", height: "20", onAnimationEnd: () => setState("done"), children: /* @__PURE__ */ u3("path", { d: "M1 1 L1 16 L5 12.5 L8 19 L10.5 18 L7.5 11.5 L12.5 11.5 Z" }) })
-          ]
-        },
-        run
-      ),
-      /* @__PURE__ */ u3("ol", { className: `f2s-empty-steps f2s-empty-steps--demo${state === "paused" ? " is-paused" : ""}${state === "done" ? " is-done" : ""}`, children: steps.map((step, i3) => /* @__PURE__ */ u3("li", { children: /* @__PURE__ */ u3("span", { children: step }) }, i3)) }, `steps-${run}`),
-      /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--ghost f2s-demo-control", onClick: onControl, children: state === "playing" ? "Pause" : state === "paused" ? "Play" : "Replay" })
+  function EmptyStateDemo({ actionLabel, description }) {
+    return /* @__PURE__ */ u3("div", { className: "f2s-demo", role: "img", "aria-label": description, children: [
+      /* @__PURE__ */ u3("div", { className: "f2s-demo-canvas" }),
+      /* @__PURE__ */ u3("div", { className: "f2s-demo-frame f2s-demo-frame--1" }),
+      /* @__PURE__ */ u3("div", { className: "f2s-demo-frame f2s-demo-frame--2" }),
+      /* @__PURE__ */ u3("div", { className: "f2s-demo-frame f2s-demo-frame--3" }),
+      /* @__PURE__ */ u3("div", { className: "f2s-demo-window" }),
+      /* @__PURE__ */ u3("div", { className: "f2s-demo-btn f2s-demo-btn--add", children: "Add" }),
+      /* @__PURE__ */ u3("div", { className: "f2s-demo-thumb f2s-demo-thumb--1" }),
+      /* @__PURE__ */ u3("div", { className: "f2s-demo-thumb f2s-demo-thumb--2" }),
+      /* @__PURE__ */ u3("div", { className: "f2s-demo-btn f2s-demo-btn--primary", children: actionLabel }),
+      /* @__PURE__ */ u3("svg", { className: "f2s-demo-cursor", viewBox: "0 0 16 20", width: "16", height: "20", children: /* @__PURE__ */ u3("path", { d: "M1 1 L1 16 L5 12.5 L8 19 L10.5 18 L7.5 11.5 L12.5 11.5 Z" }) })
     ] });
   }
 
@@ -4777,25 +4698,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     if (order.length === 0) {
       return /* @__PURE__ */ u3("div", { className: "f2s-body", children: [
         notice && /* @__PURE__ */ u3(Toast, { notice, onDismiss: onDismissNotice }, notice.id),
-        /* @__PURE__ */ u3("main", { className: "f2s-canvas", children: /* @__PURE__ */ u3(
-          EmptyStateDemo,
-          {
-            actionLabel: "Export",
-            steps: [
-              /* @__PURE__ */ u3(S, { children: "Select frames on the Figma canvas." }),
-              /* @__PURE__ */ u3(S, { children: [
-                "Click ",
-                /* @__PURE__ */ u3("strong", { children: "Add" }),
-                ": they join the deck in the order you selected them."
-              ] }),
-              /* @__PURE__ */ u3(S, { children: [
-                "Click ",
-                /* @__PURE__ */ u3("strong", { children: "Export" }),
-                " to create the presentation in Google Slides."
-              ] })
-            ]
-          }
-        ) })
+        /* @__PURE__ */ u3("main", { className: "f2s-canvas", children: /* @__PURE__ */ u3(EmptyStateDemo, { actionLabel: "Export", description: "Select frames on the Figma canvas, click Add, then Export to create the presentation in Google Slides." }) })
       ] });
     }
     return /* @__PURE__ */ u3("div", { className: "f2s-body", children: [
@@ -5534,25 +5437,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     if (order.length === 0) {
       return /* @__PURE__ */ u3("div", { className: "f2s-body", children: [
         notice && /* @__PURE__ */ u3(Toast, { notice, onDismiss: onDismissNotice }, notice.id),
-        /* @__PURE__ */ u3("main", { className: "f2s-canvas", children: /* @__PURE__ */ u3(
-          EmptyStateDemo,
-          {
-            actionLabel: "Create template",
-            steps: [
-              /* @__PURE__ */ u3(S, { children: "Select the frames to use as layouts on the Figma canvas." }),
-              /* @__PURE__ */ u3(S, { children: [
-                "Click ",
-                /* @__PURE__ */ u3("strong", { children: "Add" }),
-                ": they join the template in the order you selected them."
-              ] }),
-              /* @__PURE__ */ u3(S, { children: [
-                "Click ",
-                /* @__PURE__ */ u3("strong", { children: "Create template" }),
-                " to build it in Google Slides."
-              ] })
-            ]
-          }
-        ) }),
+        /* @__PURE__ */ u3("main", { className: "f2s-canvas", children: /* @__PURE__ */ u3(EmptyStateDemo, { actionLabel: "Create template", description: "Select frames on the Figma canvas, click Add, then Create template to build it in Google Slides." }) }),
         /* @__PURE__ */ u3("aside", { className: "f2s-style-aside", children: styleAside })
       ] });
     }
@@ -6888,7 +6773,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
             "button",
             {
               type: "button",
-              className: "f2s-btn f2s-btn--secondary",
+              className: "f2s-btn f2s-btn--ghost",
               disabled: canceling,
               title: `Stop after the ${isDeck ? "slide" : "layout"} being written. What's already created stays in Google Slides.`,
               onClick: handleCancelExport,

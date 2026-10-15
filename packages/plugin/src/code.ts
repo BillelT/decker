@@ -30,13 +30,6 @@ const MAX_FRAMES_WARNING = 20;
 const ADD_FAILED_MESSAGE = "Couldn't add the selection. Reopen the plugin and retry.";
 const PREPARE_FAILED_MESSAGE = "Couldn't prepare the frames. Reopen the plugin and retry.";
 const EXPORT_PREPARE_FAILED_MESSAGE = "Couldn't read the frames. Reopen the plugin and retry.";
-/**
- * Un template reste un petit jeu de layouts réutilisables (cf. "Simple
- * Light" et les ~8 layouts prédéfinis d'une présentation Slides neuve) —
- * pas un deck complet : le plafond est volontairement plus bas que
- * `MAX_FRAMES_WARNING`.
- */
-const TEMPLATE_MAX_LAYOUTS = 10;
 // 320px produisait un aperçu visiblement pixellisé une fois agrandi dans le
 // grand canvas de l'UI (jusqu'à 640px CSS, donc ~1280px physiques en HiDPI).
 const PREVIEW_WIDTH = 960;
@@ -339,7 +332,7 @@ async function loadTaggedFrames(pending: PendingSlide[], templatePending: Pendin
   // Ready]` ET les layouts bruts pas encore préparés d'une session
   // précédente repeuplent la liste de layouts.
   const templateTagged = figma.currentPage.findAll((n) => isExportable(n) && (isTemplateReady(n) || isTemplateTracked(n))) as ExportableNode[];
-  if (templateTagged.length > 0) await addTemplateLayoutNodes(templateTagged, templatePending, idGen);
+  if (templateTagged.length > 0) await addTemplateLayoutNodes(templateTagged, templatePending, idGen, false);
 }
 
 /**
@@ -629,25 +622,18 @@ function postTemplateCandidateMessage(type: 'template-candidate-added' | 'templa
  *    (`enforceTemplateStrictness`) : un template doit rester 100% natif ;
  * 2. l'UI reçoit en plus les calques taguables/couleurs/typos détectés, pour le
  *    rapport de contenu communicable (couleurs, typos, layouts) ;
- * 3. le plafond `TEMPLATE_MAX_LAYOUTS` est DUR (l'ajout au-delà est refusé,
- *    pas juste signalé) : c'est une limite produit du plugin — un template
- *    reste un petit jeu de layouts, comme les ~8 layouts prédéfinis d'une
- *    présentation Slides neuve — pas une limite de l'API Slides.
+ * 3. aucun plafond (retiré le 15 octobre : un thème Slides a déjà 11
+ *    layouts plus son Master, et on peut en ajouter) ; au-delà de
+ *    `MAX_FRAMES_WARNING` d'un coup, le même avertissement que le deck.
  */
-async function addTemplateLayoutNodes(nodes: ExportableNode[], pending: PendingSlide[], idGen: ReturnType<typeof createIdGenerator>): Promise<void> {
+async function addTemplateLayoutNodes(nodes: ExportableNode[], pending: PendingSlide[], idGen: ReturnType<typeof createIdGenerator>, userAction = true): Promise<void> {
   const known = new Set(pending.map((p) => p.frame.id));
   const candidates = filterMatchingRatio(nodes.filter((n) => !known.has(n.id)), pending[0]?.frame, 'template');
   if (candidates.length === 0) return;
 
-  const remaining = TEMPLATE_MAX_LAYOUTS - pending.length;
-  const toAdd = candidates.slice(0, Math.max(0, remaining));
-  if (toAdd.length < candidates.length) {
-    const left = candidates.length - toAdd.length;
-    postNotice(
-      'template',
-      'error',
-      `${framesWerent(left)} added, a template holds ${TEMPLATE_MAX_LAYOUTS} layouts max.`,
-    );
+  const toAdd = candidates;
+  if (userAction && toAdd.length > MAX_FRAMES_WARNING) {
+    postNotice('template', 'info', `Adding ${toAdd.length} layouts, creating the template will take longer.`);
   }
 
   for (const frame of toAdd) {

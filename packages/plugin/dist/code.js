@@ -1486,7 +1486,6 @@
   var ADD_FAILED_MESSAGE = "Couldn't add the selection. Reopen the plugin and retry.";
   var PREPARE_FAILED_MESSAGE = "Couldn't prepare the frames. Reopen the plugin and retry.";
   var EXPORT_PREPARE_FAILED_MESSAGE = "Couldn't read the frames. Reopen the plugin and retry.";
-  var TEMPLATE_MAX_LAYOUTS = 10;
   var PREVIEW_WIDTH = 960;
   var SLIDES_READY_KEY = "slidesExportReady";
   var DECK_TAG = "true";
@@ -1640,7 +1639,7 @@
     const deckTagged = figma.currentPage.findAll((n) => isExportable(n) && (isSlidesReady(n) || isTracked(n)));
     if (deckTagged.length > 0) await addFrames(deckTagged, pending, idGen, false);
     const templateTagged = figma.currentPage.findAll((n) => isExportable(n) && (isTemplateReady(n) || isTemplateTracked(n)));
-    if (templateTagged.length > 0) await addTemplateLayoutNodes(templateTagged, templatePending, idGen);
+    if (templateTagged.length > 0) await addTemplateLayoutNodes(templateTagged, templatePending, idGen, false);
   }
   function flattenAutoLayout(node) {
     if ("layoutMode" in node && node.layoutMode !== "NONE") {
@@ -1801,19 +1800,13 @@
       fontSubstitutions: collectFontSubstitutions(slide)
     });
   }
-  async function addTemplateLayoutNodes(nodes, pending, idGen) {
+  async function addTemplateLayoutNodes(nodes, pending, idGen, userAction = true) {
     const known = new Set(pending.map((p) => p.frame.id));
     const candidates = filterMatchingRatio(nodes.filter((n) => !known.has(n.id)), pending[0]?.frame, "template");
     if (candidates.length === 0) return;
-    const remaining = TEMPLATE_MAX_LAYOUTS - pending.length;
-    const toAdd = candidates.slice(0, Math.max(0, remaining));
-    if (toAdd.length < candidates.length) {
-      const left = candidates.length - toAdd.length;
-      postNotice(
-        "template",
-        "error",
-        `${framesWerent(left)} added, a template holds ${TEMPLATE_MAX_LAYOUTS} layouts max.`
-      );
+    const toAdd = candidates;
+    if (userAction && toAdd.length > MAX_FRAMES_WARNING) {
+      postNotice("template", "info", `Adding ${toAdd.length} layouts, creating the template will take longer.`);
     }
     for (const frame of toAdd) {
       const previewDataUrl = await generatePreview(frame);

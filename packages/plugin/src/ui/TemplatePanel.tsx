@@ -323,18 +323,7 @@ export function TemplatePanel({
         {notice && <Toast key={notice.id} notice={notice} onDismiss={onDismissNotice} />}
         <main className="f2s-canvas">
           {/* Même état vide que le deck (DeckPanel), pour le parcours template. */}
-          <EmptyStateDemo
-            actionLabel="Create template"
-            steps={[
-              <>Select the frames to use as layouts on the Figma canvas.</>,
-              <>
-                Click <strong>Add</strong>: they join the template in the order you selected them.
-              </>,
-              <>
-                Click <strong>Create template</strong> to build it in Google Slides.
-              </>,
-            ]}
-          />
+          <EmptyStateDemo actionLabel="Create template" description="Select frames on the Figma canvas, click Add, then Create template to build it in Google Slides." />
         </main>
         <aside className="f2s-style-aside">
           {styleAside}
