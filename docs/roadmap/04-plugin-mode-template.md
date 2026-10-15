@@ -6,11 +6,13 @@ Ce qui rend la création d'un template moins bloquante et plus guidée. La struc
 
 - [ ] **Blocage muet.** Un seul layout en erreur grise « Create template », et la raison n'est que dans une infobulle. → Afficher « 1 layout to fix » près du bouton ; un clic mène au layout en cause.
   - En partie couvert le 14 octobre : la vignette du layout en cause porte la pastille rouge « 3 to fix » dans le rail. Reste le compteur près du bouton et le clic qui y mène.
+  - Décision du 15 octobre : pas de bouton à côté. Tant qu'un layout bloque, « Create template » (inutilisable) devient lui-même le bouton qui mène aux erreurs, une par une, dans l'ordre des layouts.
+  - Aparté du 15 octobre : un vecteur à forme complexe (icône, illustration) reste rasterisé après « Prepare for Slides » et bloque tout le template, en rouge, sans explication (`serialize/templateValidation.ts` reclasse tout raster en bloquant). Règle à revoir, voir la recommandation dans la conversation du 15 octobre.
 - [ ] **Correction sur place.** La boîte « Fix before creating the template » liste les causes sans proposer d'action. → Un bouton « Fix automatically » dans la boîte, qui lance le reformatage sur ce layout : il corrige justement les dégradés et les ombres.
 
 ## Structure du rapport
 
-- [ ] **Ordre inversé par rapport au Deck.** Les erreurs passent au-dessus de l'aperçu, et la tâche principale (assigner les rôles, liste Content) est tout en bas, invisible en 960×560. → Même ordre dans les deux modes : aperçu, « To fix », Content. Idéalement, Content à côté de l'aperçu (selon C).
+- [ ] **Ordre inversé par rapport au Deck.** (À requestionner le 15 octobre : tout est déjà là, l'ordre actuel est peut-être le bon. La colonne Content dans l'aside arrivera avec les éléments du Master.) Les erreurs passent au-dessus de l'aperçu, et la tâche principale (assigner les rôles, liste Content) est tout en bas, invisible en 960×560. → Même ordre dans les deux modes : aperçu, « To fix », Content. Idéalement, Content à côté de l'aperçu (selon C).
   - C tranché : aperçu en haut, rapport dessous, comme le Deck. Reprendre aussi du lot 03 la colonne commune aperçu/rapport (`.f2s-deck-column`).
   - ~~Icône de sélection en bout de ligne~~ : retirée des deux modes le 14 octobre (`c3129ee`), plus rien à reprendre.
   - Plus de liste « To fix » séparée : les conflits de composition s'affichent sur la ligne du calque (voir plus bas). L'ordre visé devient donc : boîte bloquante, aperçu, Composition, Content.
