@@ -263,8 +263,11 @@ a {
   transition: opacity var(--b-duration) var(--b-ease-default);
 }
 
-/* Sans contour : le B seul, à la hauteur de ligne de "Buy me a coffee"
-   (14 px, texte de 12 px), centré sur le même axe. */
+/* Sans contour : le B seul, centré sur l'axe de "Buy me a coffee" (texte de
+   12 px). Alignement optique, pas géométrique : le B est recadré au ras de
+   son tracé et plein, donc à 14 px il paraît plus grand que les capitales
+   (~9 px) et que l'icône Settings voisine, dont le tracé garde une marge
+   interne. 12 px le ramène à la même masse visuelle. */
 .f2s-logo {
   display: block;
   flex: none;
@@ -273,7 +276,7 @@ a {
 .f2s-logo svg {
   display: block;
   width: auto;
-  height: 14px;
+  height: 12px;
 }
 
 .f2s-logo svg > * {
