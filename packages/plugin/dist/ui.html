@@ -4168,7 +4168,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
 
   // src/serialize/templateSummary.ts
   function emptyUsage() {
-    return { text: 0, link: 0, background: 0, fill: 0, stroke: 0 };
+    return { frame: 0, text: 0, link: 0, background: 0, fill: 0, stroke: 0 };
   }
   function colorKey(hex, alpha) {
     return `${hex}:${alpha.toFixed(2)}`;
@@ -4969,11 +4969,11 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     return Math.max(...channels) - Math.min(...channels);
   }
   function usageOf(c3) {
-    return c3.usage ?? { text: 0, link: 0, background: 0, fill: 0, stroke: 0 };
+    return c3.usage ?? { frame: 0, text: 0, link: 0, background: 0, fill: 0, stroke: 0 };
   }
   function accentScore(c3) {
     const u4 = usageOf(c3);
-    return u4.fill + u4.stroke + u4.background + u4.text / 20;
+    return u4.frame + u4.fill + u4.stroke + u4.background + u4.text / 20;
   }
   function suggestColorRoles(colors, current) {
     const next = { ...current };
@@ -4991,12 +4991,14 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
       takenRoles.add(role);
       free.splice(free.indexOf(best), 1);
     };
-    assign("LIGHT1", (c3) => usageOf(c3).background);
+    const asBackground = (c3) => usageOf(c3).frame * 1e3 + usageOf(c3).background;
+    assign("LIGHT1", asBackground);
     assign("DARK1", (c3) => usageOf(c3).text);
     assign("HYPERLINK", (c3) => usageOf(c3).link);
     const neutral = (c3) => chroma(c3.hex) < ACCENT_MIN_CHROMA;
     assign("DARK2", (c3) => usageOf(c3).text, neutral);
-    assign("LIGHT2", (c3) => usageOf(c3).background, neutral);
+    if (free.some((c3) => usageOf(c3).frame > 0)) assign("LIGHT2", asBackground, (c3) => usageOf(c3).frame > 0);
+    else assign("LIGHT2", (c3) => usageOf(c3).background, neutral);
     for (const role of ACCENT_ROLES) assign(role, accentScore, (c3) => chroma(c3.hex) >= ACCENT_MIN_CHROMA);
     return next;
   }

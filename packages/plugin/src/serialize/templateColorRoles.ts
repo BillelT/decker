@@ -9,11 +9,14 @@ import { colorKey, type ColorUsage, type TemplateColorSwatch } from './templateS
  * celle du texte, mais la couleur la plus écrite l'est.
  *
  * Ordre d'attribution (le premier servi gagne la couleur) :
- * 1. Text & background 2 (`LIGHT1`, fond par défaut des slides) : la
- *    couleur la plus utilisée en fond ;
+ * 1. Text & background 2 (`LIGHT1`, fond par défaut des slides) : le fond
+ *    de frame le plus fréquent parmi les layouts (à défaut, le plus grand
+ *    aplat de fond) ;
  * 2. Text & background 1 (`DARK1`, texte par défaut) : la plus écrite ;
  * 3. Link (`HYPERLINK`) : la plus utilisée sur des liens ;
- * 4. Text & background 3 et 4 (`DARK2`, `LIGHT2`) : deuxièmes texte et fond ;
+ * 4. Text & background 3 (`DARK2`) : le deuxième texte, s'il est neutre ;
+ *    Text & background 4 (`LIGHT2`) : le deuxième fond de frame le plus
+ *    fréquent, quelle que soit sa teinte, sinon un aplat de fond neutre ;
  * 5. Accent 1 à 6 : les couleurs vives restantes, portées par des éléments
  *    (aplats, contours, mots colorés), de la plus présente à la moins.
  *
@@ -35,13 +38,13 @@ function chroma(hex: string): number {
 }
 
 function usageOf(c: TemplateColorSwatch): ColorUsage {
-  return c.usage ?? { text: 0, link: 0, background: 0, fill: 0, stroke: 0 };
+  return c.usage ?? { frame: 0, text: 0, link: 0, background: 0, fill: 0, stroke: 0 };
 }
 
 /** Un mot coloré pèse moins qu'un aplat : 20 caractères valent un élément. */
 function accentScore(c: TemplateColorSwatch): number {
   const u = usageOf(c);
-  return u.fill + u.stroke + u.background + u.text / 20;
+  return u.frame + u.fill + u.stroke + u.background + u.text / 20;
 }
 
 export function suggestColorRoles(colors: TemplateColorSwatch[], current: Record<string, ThemeColorRole>): Record<string, ThemeColorRole> {
@@ -62,14 +65,19 @@ export function suggestColorRoles(colors: TemplateColorSwatch[], current: Record
     free.splice(free.indexOf(best), 1);
   };
 
-  assign('LIGHT1', (c) => usageOf(c).background);
+  // Un fond de frame l'emporte toujours sur un aplat : c'est le vrai fond
+  // des slides. À nombre de layouts égal, la plus grande surface d'aplat
+  // départage.
+  const asBackground = (c: TemplateColorSwatch) => usageOf(c).frame * 1000 + usageOf(c).background;
+  assign('LIGHT1', asBackground);
   assign('DARK1', (c) => usageOf(c).text);
   assign('HYPERLINK', (c) => usageOf(c).link);
   // Un gris secondaire (légende, carte) fait un bon texte ou fond n°2 ; une
   // couleur vive y serait perdue pour les accents.
   const neutral = (c: TemplateColorSwatch) => chroma(c.hex) < ACCENT_MIN_CHROMA;
   assign('DARK2', (c) => usageOf(c).text, neutral);
-  assign('LIGHT2', (c) => usageOf(c).background, neutral);
+  if (free.some((c) => usageOf(c).frame > 0)) assign('LIGHT2', asBackground, (c) => usageOf(c).frame > 0);
+  else assign('LIGHT2', (c) => usageOf(c).background, neutral);
   for (const role of ACCENT_ROLES) assign(role, accentScore, (c) => chroma(c.hex) >= ACCENT_MIN_CHROMA);
 
   return next;

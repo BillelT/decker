@@ -1163,7 +1163,7 @@
   // src/serialize/templateSummary.ts
   var BACKGROUND_AREA_RATIO = 0.25;
   function emptyUsage() {
-    return { text: 0, link: 0, background: 0, fill: 0, stroke: 0 };
+    return { frame: 0, text: 0, link: 0, background: 0, fill: 0, stroke: 0 };
   }
   function toHex(color) {
     const channel = (v) => Math.round(Math.min(1, Math.max(0, v)) * 255).toString(16).padStart(2, "0").toUpperCase();
@@ -1185,7 +1185,7 @@
       swatch.usage[use] += weight;
       if (!existing) byKey.set(key, swatch);
     };
-    if (frame.background) record(frame.background.color, "background", 1);
+    if (frame.background) record(frame.background.color, "frame", 1);
     for (const el of elements) {
       switch (el.kind) {
         case "shape":

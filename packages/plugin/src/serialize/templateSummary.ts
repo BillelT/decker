@@ -24,13 +24,15 @@ export interface TemplateColorSwatch {
  * sombre a un texte clair, et seul l'usage dit lequel est le texte.
  * - `text` et `link` : nombre de caractères (un paragraphe pèse plus qu'un
  *   libellé) ;
- * - `background` : fond de frame (1 par layout) et aplats qui couvrent au
- *   moins `BACKGROUND_AREA_RATIO` de la frame (cartes, panneaux), pondérés
- *   par leur surface ;
+ * - `frame` : nombre de layouts dont c'est le fond de frame (devenu le
+ *   vrai fond de page Slides) ;
+ * - `background` : aplats qui couvrent au moins `BACKGROUND_AREA_RATIO` de
+ *   la frame (cartes, panneaux), pondérés par leur surface ;
  * - `fill` : les autres aplats (pastilles, boutons, puces), en nombre ;
  * - `stroke` : contours et lignes, en nombre.
  */
 export interface ColorUsage {
+  frame: number;
   text: number;
   link: number;
   background: number;
@@ -42,7 +44,7 @@ export interface ColorUsage {
 export const BACKGROUND_AREA_RATIO = 0.25;
 
 function emptyUsage(): ColorUsage {
-  return { text: 0, link: 0, background: 0, fill: 0, stroke: 0 };
+  return { frame: 0, text: 0, link: 0, background: 0, fill: 0, stroke: 0 };
 }
 
 export interface TemplateFontUsage {
@@ -127,7 +129,7 @@ export function summarizeColors(
     if (!existing) byKey.set(key, swatch);
   };
 
-  if (frame.background) record(frame.background.color, 'background', 1);
+  if (frame.background) record(frame.background.color, 'frame', 1);
 
   for (const el of elements) {
     switch (el.kind) {

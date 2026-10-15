@@ -40,7 +40,7 @@ describe('summarizeColors', () => {
       baseShape({ id: 'el3', fill: { type: 'SOLID', color: red } }),
     ];
     const colors = summarizeColors(elements);
-    expect(colors).toEqual([{ hex: '#FF0000', alpha: 1, usageCount: 2, usage: { text: 0, link: 0, background: 0, fill: 2, stroke: 0 } }]);
+    expect(colors).toEqual([{ hex: '#FF0000', alpha: 1, usageCount: 2, usage: { frame: 0, text: 0, link: 0, background: 0, fill: 2, stroke: 0 } }]);
   });
 
   it('treats the same RGB with a different alpha as a distinct swatch', () => {
@@ -70,9 +70,9 @@ describe('summarizeColors', () => {
     ];
     const colors = summarizeColors(elements, { background: { type: 'SOLID', color: ink }, frameSize: { width: 100, height: 100 } });
     const usage = Object.fromEntries(colors.map((c) => [c.hex, c.usage]));
-    expect(usage['#000000']).toEqual({ text: 12, link: 0, background: 1, fill: 0, stroke: 0 });
-    expect(usage['#FFFFE6']).toEqual({ text: 0, link: 0, background: 0.5, fill: 0, stroke: 0 });
-    expect(usage['#0000FF']).toEqual({ text: 0, link: 4, background: 0, fill: 1, stroke: 0 });
+    expect(usage['#000000']).toEqual({ frame: 1, text: 12, link: 0, background: 0, fill: 0, stroke: 0 });
+    expect(usage['#FFFFE6']).toEqual({ frame: 0, text: 0, link: 0, background: 0.5, fill: 0, stroke: 0 });
+    expect(usage['#0000FF']).toEqual({ frame: 0, text: 0, link: 4, background: 0, fill: 1, stroke: 0 });
   });
 
   it('collects stroke and text run colors too', () => {
