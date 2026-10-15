@@ -3,6 +3,7 @@ import { logEntryFlag, logEntryTagText, logEntryTooltip } from './logEntryFlag.j
 import { placeholderRoleTagsForKind } from './placeholderRoleOptions.js';
 import { usePacedExportCursor } from './pacedExportCursor.js';
 import { RetroExportPreview } from './RetroExportPreview.js';
+import { EmptyStateDemo } from './EmptyStateDemo.js';
 import { Toast } from './StatusIcon.js';
 import { splitCompositionRows } from './compositionRows.js';
 import { useRailReorder } from './useRailReorder.js';
@@ -12,7 +13,10 @@ import { postToPlugin, selectSourceNodes, type Notice, type TemplateElement, typ
 import { CANONICAL_TAG_FOR_ROLE } from '../serialize/placeholder.js';
 import { COMPOSITION_WARNING_CODES } from '../serialize/templateComposition.js';
 import { hasPrepareFixableBlocking } from '../serialize/templateValidation.js';
+import { suggestPlaceholderRoles } from '../serialize/templatePlaceholderRoles.js';
 import type { PlaceholderRole } from '@figma-to-slides/shared';
+
+const SUGGESTION_PLURALS = new Intl.PluralRules('en');
 
 /** `tag` vide = option "No role" : le sandbox retire le tag du calque au lieu d'en poser un. */
 function setPlaceholderRole(sourceNodeId: string, tag: string): void {
@@ -195,6 +199,7 @@ export function TemplatePanel({
   onRename,
   onRenameCommit,
   fontOverrides,
+  setFontOverrides,
   exportCursor,
   exportAttempt,
   exportConcluded,
@@ -206,6 +211,20 @@ export function TemplatePanel({
   onPacedCursorChange,
 }: TemplatePanelProps) {
   const { itemRefs, itemState, registerItem, onThumbPointerDown, onThumbKeyDown, announcement } = useRailReorder(order, setOrder, locked);
+
+  // L'aside reste affiché même sans layout : il marque le mode template, et
+  // ses sections vides disent ce qu'elles montreront.
+  const styleAside = (
+    <TemplateStylePanel
+      colors={colors}
+      fonts={fonts}
+      fontOverrides={fontOverrides}
+      setFontOverrides={setFontOverrides}
+      colorRoles={colorRoles}
+      setColorRoles={setColorRoles}
+      onNotice={onNotice}
+    />
+  );
 
   const activeLayout = activeId ? layouts[activeId] : undefined;
   // Aperçu d'export "paced" — voir DeckPanel et pacedExportCursor.ts.
@@ -291,35 +310,34 @@ export function TemplatePanel({
   const rows = splitCompositionRows(previewedLayout?.elements ?? [], compositionWarnings);
   const unattachedComposition = rows.unattached.filter((w) => w.code !== 'LAYOUT_WITHOUT_PLACEHOLDER');
 
+  const placeholderSuggestions = suggestPlaceholderRoles(previewedLayout?.elements ?? []);
+  function applyPlaceholderSuggestions() {
+    for (const { sourceNodeId, tag } of placeholderSuggestions) setPlaceholderRole(sourceNodeId, tag);
+    const count = placeholderSuggestions.length;
+    onNotice(`${count} ${SUGGESTION_PLURALS.select(count) === 'one' ? 'role' : 'roles'} suggested. Change any of them in Composition.`);
+  }
+
   if (order.length === 0) {
     return (
       <div className="f2s-body">
         {notice && <Toast key={notice.id} notice={notice} onDismiss={onDismissNotice} />}
         <main className="f2s-canvas">
           {/* Même état vide que le deck (DeckPanel), pour le parcours template. */}
-          <ol className="f2s-empty-steps">
-            <li>Select the frames to use as layouts on the Figma canvas.</li>
-            <li>
-              <span>
+          <EmptyStateDemo
+            actionLabel="Create template"
+            steps={[
+              <>Select the frames to use as layouts on the Figma canvas.</>,
+              <>
                 Click <strong>Add</strong>: they join the template in the order you selected them.
-              </span>
-            </li>
-            <li>
-              <span>
+              </>,
+              <>
                 Click <strong>Create template</strong> to build it in Google Slides.
-              </span>
-            </li>
-          </ol>
+              </>,
+            ]}
+          />
         </main>
         <aside className="f2s-style-aside">
-          <TemplateStylePanel
-            colors={colors}
-            fonts={fonts}
-            fontOverrides={fontOverrides}
-            colorRoles={colorRoles}
-            setColorRoles={setColorRoles}
-            onNotice={onNotice}
-          />
+          {styleAside}
         </aside>
       </div>
     );
@@ -454,7 +472,26 @@ export function TemplatePanel({
                   deviendront des placeholders. Un calque y passe dès qu'il reçoit
                   un rôle, et revient dans Content quand on le lui retire. */}
               <section className="f2s-tmpl-section">
-                <h3 className="f2s-tmpl-heading">Composition</h3>
+                <div className="f2s-section-head">
+                  <h3 className="f2s-tmpl-heading">Composition</h3>
+                  {/* Propose title, subtitle et body d'après la taille et la
+                      longueur des textes de CE layout, sans toucher à un
+                      calque qui a déjà un rôle (templatePlaceholderRoles.ts).
+                      Chaque rôle posé reste modifiable dans sa ligne. */}
+                  <button
+                    type="button"
+                    className="f2s-btn f2s-btn--ghost"
+                    disabled={locked || placeholderSuggestions.length === 0}
+                    title={
+                      placeholderSuggestions.length === 0
+                        ? 'Nothing left to suggest in this layout: its title, subtitle and body are set, or no other text fits them.'
+                        : 'Tag the title, subtitle and body of this layout from the size and length of its texts.'
+                    }
+                    onClick={applyPlaceholderSuggestions}
+                  >
+                    Suggest roles
+                  </button>
+                </div>
                 {rows.tagged.length === 0 ? (
                   <p className="f2s-toolbar-muted">No placeholder yet. Pick a role for a layer in Content.</p>
                 ) : (
@@ -492,14 +529,7 @@ export function TemplatePanel({
         )}
       </main>
       <aside className="f2s-style-aside">
-        <TemplateStylePanel
-          colors={colors}
-          fonts={fonts}
-          fontOverrides={fontOverrides}
-          colorRoles={colorRoles}
-          setColorRoles={setColorRoles}
-          onNotice={onNotice}
-        />
+        {styleAside}
       </aside>
     </div>
   );

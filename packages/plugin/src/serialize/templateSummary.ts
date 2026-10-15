@@ -1,4 +1,4 @@
-import type { IRColor, IRElement, PlaceholderRole } from '@figma-to-slides/shared';
+import type { IRColor, IRElement, IRPaint, PlaceholderRole } from '@figma-to-slides/shared';
 
 /**
  * brief-creation-template-google-slides.md — "focus d'abord sur le
@@ -15,6 +15,34 @@ export interface TemplateColorSwatch {
   usageCount: number;
   /** Nom de la variable Figma liée à cette couleur, si au moins une occurrence en référence une (`IRColor.variableName`) — affiché à la place du hex dans l'onglet Style. */
   variableName?: string;
+  /** À quoi sert la couleur, pour "Suggest roles" (templateColorRoles.ts). */
+  usage?: ColorUsage;
+}
+
+/**
+ * Usage d'une couleur, par fonction plutôt que par luminosité : une palette
+ * sombre a un texte clair, et seul l'usage dit lequel est le texte.
+ * - `text` et `link` : nombre de caractères (un paragraphe pèse plus qu'un
+ *   libellé) ;
+ * - `background` : fond de frame (1 par layout) et aplats qui couvrent au
+ *   moins `BACKGROUND_AREA_RATIO` de la frame (cartes, panneaux), pondérés
+ *   par leur surface ;
+ * - `fill` : les autres aplats (pastilles, boutons, puces), en nombre ;
+ * - `stroke` : contours et lignes, en nombre.
+ */
+export interface ColorUsage {
+  text: number;
+  link: number;
+  background: number;
+  fill: number;
+  stroke: number;
+}
+
+/** Part de la frame à partir de laquelle un aplat compte comme un fond plutôt qu'un élément. */
+export const BACKGROUND_AREA_RATIO = 0.25;
+
+function emptyUsage(): ColorUsage {
+  return { text: 0, link: 0, background: 0, fill: 0, stroke: 0 };
 }
 
 export interface TemplateFontUsage {
@@ -43,6 +71,17 @@ export interface TemplateElementSummary {
   /** Rôle actuellement tagué sur le calque, s'il y en a un. */
   role?: PlaceholderRole;
   label?: string;
+  /** Pour un texte : de quoi deviner son rôle ("Suggest roles", templatePlaceholderRoles.ts). */
+  text?: TextStats;
+}
+
+export interface TextStats {
+  /** Plus grande taille de police du calque, en px Figma. */
+  fontSizePx: number;
+  chars: number;
+  paragraphs: number;
+  /** Haut du calque dans la frame : départage deux textes de même taille. */
+  y: number;
 }
 
 export function toHex(color: IRColor): string {
@@ -64,33 +103,47 @@ export function colorKey(hex: string, alpha: number): string {
   return `${hex}:${alpha.toFixed(2)}`;
 }
 
-/** Couleurs distinctes utilisées par la frame (fills et contours de forme, contours de ligne, texte), dans l'ordre d'apparition. */
-export function summarizeColors(elements: IRElement[]): TemplateColorSwatch[] {
+/**
+ * Couleurs distinctes utilisées par la frame (fond, fills et contours de
+ * forme, contours de ligne, texte), dans l'ordre d'apparition. Le fond et
+ * la taille de la frame sont optionnels : sans eux, aucun usage "fond"
+ * n'est compté.
+ */
+export function summarizeColors(
+  elements: IRElement[],
+  frame: { background?: IRPaint; frameSize?: { width: number; height: number } } = {},
+): TemplateColorSwatch[] {
   const byKey = new Map<string, TemplateColorSwatch>();
+  const frameArea = frame.frameSize ? frame.frameSize.width * frame.frameSize.height : 0;
 
-  const record = (color: IRColor) => {
+  const record = (color: IRColor, use: keyof ColorUsage, weight: number) => {
     const hex = toHex(color);
     const key = colorKey(hex, color.a);
     const existing = byKey.get(key);
-    if (existing) {
-      existing.usageCount++;
-      if (!existing.variableName && color.variableName) existing.variableName = color.variableName;
-    } else {
-      byKey.set(key, { hex, alpha: color.a, usageCount: 1, variableName: color.variableName });
-    }
+    const swatch = existing ?? { hex, alpha: color.a, usageCount: 0, variableName: color.variableName, usage: emptyUsage() };
+    swatch.usageCount++;
+    if (!swatch.variableName && color.variableName) swatch.variableName = color.variableName;
+    swatch.usage![use] += weight;
+    if (!existing) byKey.set(key, swatch);
   };
+
+  if (frame.background) record(frame.background.color, 'background', 1);
 
   for (const el of elements) {
     switch (el.kind) {
       case 'shape':
-        if (el.fill) record(el.fill.color);
-        if (el.stroke) record(el.stroke.color);
+        if (el.fill) {
+          const ratio = frameArea > 0 ? (el.rect.w * el.rect.h) / frameArea : 0;
+          if (ratio >= BACKGROUND_AREA_RATIO) record(el.fill.color, 'background', Math.min(1, ratio));
+          else record(el.fill.color, 'fill', 1);
+        }
+        if (el.stroke) record(el.stroke.color, 'stroke', 1);
         break;
       case 'line':
-        record(el.stroke.color);
+        record(el.stroke.color, 'stroke', 1);
         break;
       case 'text':
-        for (const run of el.runs) record(run.color);
+        for (const run of el.runs) record(run.color, run.link ? 'link' : 'text', Math.max(1, run.end - run.start));
         break;
       case 'image':
         break;
@@ -152,6 +205,16 @@ export function summarizeTaggableElements(elements: IRElement[]): TemplateElemen
       kind: el.kind,
       role: el.placeholder?.role,
       label: el.placeholder?.label,
+      ...(el.kind === 'text'
+        ? {
+            text: {
+              fontSizePx: el.runs.reduce((max, run) => Math.max(max, run.fontSizePx), 0),
+              chars: el.content.trim().length,
+              paragraphs: Math.max(1, el.content.split('\n').filter((line) => line.trim()).length),
+              y: el.rect.y,
+            },
+          }
+        : {}),
     });
   }
   return result;
@@ -173,8 +236,12 @@ export function aggregateColorSwatches(perLayoutColors: TemplateColorSwatch[][])
       if (existing) {
         existing.usageCount += c.usageCount;
         if (!existing.variableName && c.variableName) existing.variableName = c.variableName;
+        if (c.usage) {
+          const usage = (existing.usage ??= emptyUsage());
+          for (const use of Object.keys(usage) as (keyof ColorUsage)[]) usage[use] += c.usage[use];
+        }
       } else {
-        byKey.set(key, { ...c });
+        byKey.set(key, { ...c, usage: c.usage ? { ...c.usage } : undefined });
       }
     }
   }

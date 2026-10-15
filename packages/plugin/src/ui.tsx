@@ -1819,6 +1819,7 @@ function App() {
           onRename={renameTemplateLayout}
           onRenameCommit={commitTemplateLayoutRename}
           fontOverrides={fontOverrides}
+          setFontOverrides={setFontOverrides}
           exportCursor={exportSource === 'template' ? exportCursor : undefined}
           exportAttempt={exportSource === 'template' && exportState !== 'canceled' ? exportAttempt : undefined}
           exportConcluded={exportSource === 'template' && concludedExport}

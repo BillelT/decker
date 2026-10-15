@@ -46,11 +46,11 @@ describe('mapDocumentToBatches', () => {
     expect(Object.keys(batch.requests[0])[0]).toBe('createSlide');
   });
 
-  it('creates the underlay before the background before regular elements (spec §2.4 + §7.1)', () => {
+  it('writes the frame background as the native page background, not as a shape (spec §2.4 + §7.1)', () => {
     const doc = baseDoc([
       baseSlide({
         underlay: { assetKey: 'underlay-1', opacity: 0.3 },
-        background: { type: 'SOLID', color: { r: 1, g: 1, b: 1, a: 1 } },
+        background: { type: 'SOLID', color: { r: 1, g: 0.5, b: 0, a: 1, themeRole: 'LIGHT1' } },
         elements: [
           {
             kind: 'shape',
@@ -66,14 +66,19 @@ describe('mapDocumentToBatches', () => {
     ]);
     const [batch] = mapDocumentToBatches(doc, (key) => `https://cdn/${key}`, UNCALIBRATED_DEFAULTS);
     const createImageIdx = batch.requests.findIndex((r) => 'createImage' in r);
-    const backgroundIdx = batch.requests.findIndex(
-      (r) => 'createShape' in r && (r as any).createShape.objectId.endsWith('_background'),
-    );
     const elementIdx = batch.requests.findIndex((r) => 'createShape' in r && (r as any).createShape.objectId === 'el1');
+    const backgroundRequest = batch.requests.find((r) => 'updatePageProperties' in r);
 
     expect(createImageIdx).toBeGreaterThan(-1);
-    expect(createImageIdx).toBeLessThan(backgroundIdx);
-    expect(backgroundIdx).toBeLessThan(elementIdx);
+    expect(createImageIdx).toBeLessThan(elementIdx);
+    expect(batch.requests.some((r) => 'createShape' in r && (r as any).createShape.objectId.endsWith('_background'))).toBe(false);
+    expect(backgroundRequest).toEqual({
+      updatePageProperties: {
+        objectId: 'f2s_page_frame1',
+        pageProperties: { pageBackgroundFill: { solidFill: { color: { themeColor: 'LIGHT1' }, alpha: 1 } } },
+        fields: 'pageBackgroundFill',
+      },
+    });
   });
 
   it('resolves image assetKeys through the provided resolver', () => {

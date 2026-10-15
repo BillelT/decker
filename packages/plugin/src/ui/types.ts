@@ -5,6 +5,8 @@
  * template (cf. audit UI).
  */
 
+import type { ColorUsage, TextStats } from '../serialize/templateSummary.js';
+
 export interface FrameCandidate {
   id: string;
   name: string;
@@ -68,6 +70,7 @@ export interface TemplateElement {
   kind: 'text' | 'shape' | 'image' | 'line';
   role?: string;
   label?: string;
+  text?: TextStats;
 }
 
 export interface TemplateColorSwatch {
@@ -75,6 +78,7 @@ export interface TemplateColorSwatch {
   alpha: number;
   usageCount: number;
   variableName?: string;
+  usage?: ColorUsage;
 }
 
 export interface TemplateFontUsage {

@@ -839,6 +839,231 @@ a.f2s-btn {
   font-weight: 700;
 }
 
+/* ---- Démo de l'état vide (EmptyStateDemo.tsx) ----
+   Les styles de base décrivent l'état FINAL (frames ajoutées au rail,
+   curseur sur le bouton principal) : c'est ce qui reste affiché après la
+   lecture, ou d'emblée en mouvement réduit. Les keyframes, sur 7 s,
+   décrivent le trajet : sélection de deux frames (0 à 40 %), clic sur Add
+   (52 à 56 %), clic sur le bouton principal (68 à 72 %). */
+
+.f2s-empty-demo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.f2s-demo {
+  --f2s-demo-duration: 7s;
+  position: relative;
+  width: 400px;
+  height: 190px;
+  flex: none;
+  font-size: var(--b-text-xs);
+  font-weight: var(--b-font-medium);
+  line-height: 1;
+  user-select: none;
+}
+
+.f2s-demo > * {
+  position: absolute;
+  animation-duration: var(--f2s-demo-duration);
+  animation-fill-mode: both;
+  animation-iteration-count: 1;
+}
+
+.f2s-demo.is-paused > * {
+  animation-play-state: paused;
+}
+
+.f2s-demo.is-done > * {
+  animation: none;
+}
+
+.f2s-demo-canvas {
+  inset: 0 180px 0 0;
+  border-radius: var(--b-radius-md);
+  background: var(--b-surface-sunken);
+}
+
+.f2s-demo-frame {
+  width: 80px;
+  height: 45px;
+  border-radius: var(--b-radius-2xs);
+  background: var(--b-surface);
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+.f2s-demo-frame--1 { left: 16px; top: 24px; animation-name: f2s-demo-select-1; }
+.f2s-demo-frame--2 { left: 120px; top: 24px; animation-name: f2s-demo-select-2; }
+.f2s-demo-frame--3 { left: 68px; top: 108px; }
+
+.f2s-demo-window {
+  inset: 0 0 0 236px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--b-radius-md);
+  background: var(--b-surface);
+}
+
+.f2s-demo-btn {
+  left: 248px;
+  height: 24px;
+  padding: 0 var(--b-space-8);
+  display: flex;
+  align-items: center;
+  border-radius: var(--b-radius-xs);
+  white-space: nowrap;
+}
+
+.f2s-demo-btn--add {
+  top: 12px;
+  border: 1px solid var(--b-ink);
+  color: var(--b-ink);
+  animation-name: f2s-demo-press-add;
+}
+
+.f2s-demo-btn--primary {
+  top: 154px;
+  background: var(--color-orange);
+  color: var(--color-on-accent);
+  animation-name: f2s-demo-press-primary;
+}
+
+.f2s-demo-thumb {
+  left: 248px;
+  width: 64px;
+  height: 36px;
+  border-radius: var(--b-radius-2xs);
+  background: var(--b-surface-sunken);
+  border: 1px solid var(--color-border);
+}
+
+.f2s-demo-thumb--1 { top: 48px; animation-name: f2s-demo-thumb-1; }
+.f2s-demo-thumb--2 { top: 94px; animation-name: f2s-demo-thumb-2; }
+
+/* La pointe du curseur est son coin haut gauche : translate = point visé. */
+.f2s-demo-cursor {
+  left: 0;
+  top: 0;
+  color: var(--b-ink);
+  fill: currentColor;
+  stroke: var(--b-white);
+  stroke-width: 1.2;
+  stroke-linejoin: round;
+  transform: translate(300px, 166px);
+  animation-name: f2s-demo-cursor;
+  animation-timing-function: var(--b-ease-in-out);
+}
+
+@keyframes f2s-demo-cursor {
+  0%, 8% { transform: translate(180px, 172px) scale(1); }
+  20% { transform: translate(56px, 46px) scale(1); }
+  21% { transform: translate(56px, 46px) scale(0.85); }
+  24% { transform: translate(56px, 46px) scale(1); }
+  36% { transform: translate(160px, 46px) scale(1); }
+  37% { transform: translate(160px, 46px) scale(0.85); }
+  40% { transform: translate(160px, 46px) scale(1); }
+  52% { transform: translate(266px, 24px) scale(1); }
+  54% { transform: translate(266px, 24px) scale(0.85); }
+  56% { transform: translate(266px, 24px) scale(1); }
+  68% { transform: translate(300px, 166px) scale(1); }
+  70% { transform: translate(300px, 166px) scale(0.85); }
+  72%, 100% { transform: translate(300px, 166px) scale(1); }
+}
+
+@keyframes f2s-demo-select-1 {
+  0%, 20% { outline-color: transparent; }
+  21%, 55% { outline-color: var(--color-thumb-active); }
+  57%, 100% { outline-color: transparent; }
+}
+
+@keyframes f2s-demo-select-2 {
+  0%, 36% { outline-color: transparent; }
+  37%, 55% { outline-color: var(--color-thumb-active); }
+  57%, 100% { outline-color: transparent; }
+}
+
+@keyframes f2s-demo-press-add {
+  0%, 53% { scale: 1; background: transparent; }
+  54% { scale: 0.97; background: var(--b-surface-sunken); }
+  57%, 100% { scale: 1; background: transparent; }
+}
+
+@keyframes f2s-demo-press-primary {
+  0%, 69% { scale: 1; }
+  70% { scale: 0.97; }
+  73%, 100% { scale: 1; }
+}
+
+@keyframes f2s-demo-thumb-1 {
+  0%, 55% { opacity: 0; translate: 0 12px; }
+  60%, 100% { opacity: 1; translate: 0 0; }
+}
+
+@keyframes f2s-demo-thumb-2 {
+  0%, 58% { opacity: 0; translate: 0 12px; }
+  63%, 100% { opacity: 1; translate: 0 0; }
+}
+
+/* Étapes écrites : pendant la lecture, la courante est à l'encre et les
+   autres en gris faible (numéro et nom de bouton compris). */
+.f2s-empty-steps--demo {
+  color: var(--color-text);
+}
+
+.f2s-empty-steps--demo li::before,
+.f2s-empty-steps--demo strong {
+  color: inherit;
+  border-color: currentColor;
+}
+
+.f2s-empty-steps--demo li {
+  animation-duration: var(--f2s-demo-duration, 7s);
+  animation-fill-mode: both;
+}
+
+.f2s-empty-steps--demo li:nth-child(1) { animation-name: f2s-demo-step-1; }
+.f2s-empty-steps--demo li:nth-child(2) { animation-name: f2s-demo-step-2; }
+.f2s-empty-steps--demo li:nth-child(3) { animation-name: f2s-demo-step-3; }
+
+.f2s-empty-steps--demo.is-paused li {
+  animation-play-state: paused;
+}
+
+.f2s-empty-steps--demo.is-done li {
+  animation: none;
+}
+
+@keyframes f2s-demo-step-1 {
+  0%, 46% { color: var(--color-text); }
+  48%, 99% { color: var(--b-text-faint); }
+  100% { color: var(--color-text); }
+}
+
+@keyframes f2s-demo-step-2 {
+  0%, 46% { color: var(--b-text-faint); }
+  48%, 62% { color: var(--color-text); }
+  64%, 99% { color: var(--b-text-faint); }
+  100% { color: var(--color-text); }
+}
+
+@keyframes f2s-demo-step-3 {
+  0%, 62% { color: var(--b-text-faint); }
+  64%, 100% { color: var(--color-text); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .f2s-demo > *,
+  .f2s-empty-steps--demo li {
+    animation: none;
+  }
+
+  .f2s-demo-control {
+    display: none;
+  }
+}
+
 .f2s-frame-info {
   display: flex;
   align-items: center;
@@ -1467,6 +1692,29 @@ a.f2s-btn {
 
 .f2s-tmpl-font-family {
   font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Titre de section suivi d'une action ghost ("Suggest roles"). La hauteur
+   minimale garde le même rythme vertical avec ou sans bouton. */
+.f2s-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 24px;
+}
+
+/* Police de remplacement dans Slides, sous le nom de la police d'origine :
+   même sélecteur que le bandeau "Fonts", aligné sur le texte de la ligne. */
+.f2s-style-font-replace {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 34px;
+  min-width: 0;
 }
 
 /* ---- Aside "Styles" : liste compacte façon Figma (Color/Text styles) ---- */

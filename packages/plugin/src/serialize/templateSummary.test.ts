@@ -40,7 +40,7 @@ describe('summarizeColors', () => {
       baseShape({ id: 'el3', fill: { type: 'SOLID', color: red } }),
     ];
     const colors = summarizeColors(elements);
-    expect(colors).toEqual([{ hex: '#FF0000', alpha: 1, usageCount: 2 }]);
+    expect(colors).toEqual([{ hex: '#FF0000', alpha: 1, usageCount: 2, usage: { text: 0, link: 0, background: 0, fill: 2, stroke: 0 } }]);
   });
 
   it('treats the same RGB with a different alpha as a distinct swatch', () => {
@@ -48,10 +48,31 @@ describe('summarizeColors', () => {
       baseShape({ fill: { type: 'SOLID', color: { r: 0, g: 0, b: 1, a: 1 } } }),
       baseShape({ id: 'el3', fill: { type: 'SOLID', color: { r: 0, g: 0, b: 1, a: 0.5 } } }),
     ];
-    expect(summarizeColors(elements)).toEqual([
+    expect(summarizeColors(elements).map(({ hex, alpha, usageCount }) => ({ hex, alpha, usageCount }))).toEqual([
       { hex: '#0000FF', alpha: 1, usageCount: 1 },
       { hex: '#0000FF', alpha: 0.5, usageCount: 1 },
     ]);
+  });
+
+  it('records what each color is used for: background, large fill, text, link', () => {
+    const ink = { r: 0, g: 0, b: 0, a: 1 };
+    const cream = { r: 1, g: 1, b: 0.9, a: 1 };
+    const blue = { r: 0, g: 0, b: 1, a: 1 };
+    const elements: IRElement[] = [
+      baseShape({ rect: { x: 0, y: 0, w: 100, h: 50 }, fill: { type: 'SOLID', color: cream } }),
+      baseShape({ id: 'el3', rect: { x: 0, y: 0, w: 10, h: 10 }, fill: { type: 'SOLID', color: blue } }),
+      baseText({
+        runs: [
+          { start: 0, end: 12, fontFamily: 'Inter', fontWeight: 400, italic: false, fontSizePx: 16, color: ink },
+          { start: 12, end: 16, fontFamily: 'Inter', fontWeight: 400, italic: false, fontSizePx: 16, color: blue, link: 'https://example.com' },
+        ],
+      }),
+    ];
+    const colors = summarizeColors(elements, { background: { type: 'SOLID', color: ink }, frameSize: { width: 100, height: 100 } });
+    const usage = Object.fromEntries(colors.map((c) => [c.hex, c.usage]));
+    expect(usage['#000000']).toEqual({ text: 12, link: 0, background: 1, fill: 0, stroke: 0 });
+    expect(usage['#FFFFE6']).toEqual({ text: 0, link: 0, background: 0.5, fill: 0, stroke: 0 });
+    expect(usage['#0000FF']).toEqual({ text: 0, link: 4, background: 0, fill: 1, stroke: 0 });
   });
 
   it('collects stroke and text run colors too', () => {
@@ -132,7 +153,7 @@ describe('summarizeTaggableElements', () => {
       baseShape({ id: 'b', sourceNodeId: 'nb', sourceNodeName: 'Photo slot', placeholder: { role: 'IMAGE', label: 'Image' } }),
     ];
     expect(summarizeTaggableElements(elements)).toEqual([
-      { id: 'a', sourceNodeId: 'na', name: 'Heading', kind: 'text', role: undefined, label: undefined },
+      { id: 'a', sourceNodeId: 'na', name: 'Heading', kind: 'text', role: undefined, label: undefined, text: { fontSizePx: 0, chars: 5, paragraphs: 1, y: 0 } },
       { id: 'b', sourceNodeId: 'nb', name: 'Photo slot', kind: 'shape', role: 'IMAGE', label: 'Image' },
     ]);
   });

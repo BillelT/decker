@@ -1161,6 +1161,10 @@
   }
 
   // src/serialize/templateSummary.ts
+  var BACKGROUND_AREA_RATIO = 0.25;
+  function emptyUsage() {
+    return { text: 0, link: 0, background: 0, fill: 0, stroke: 0 };
+  }
   function toHex(color) {
     const channel = (v) => Math.round(Math.min(1, Math.max(0, v)) * 255).toString(16).padStart(2, "0").toUpperCase();
     return `#${channel(color.r)}${channel(color.g)}${channel(color.b)}`;
@@ -1168,30 +1172,35 @@
   function colorKey(hex, alpha) {
     return `${hex}:${alpha.toFixed(2)}`;
   }
-  function summarizeColors(elements) {
+  function summarizeColors(elements, frame = {}) {
     const byKey = /* @__PURE__ */ new Map();
-    const record = (color) => {
+    const frameArea = frame.frameSize ? frame.frameSize.width * frame.frameSize.height : 0;
+    const record = (color, use, weight) => {
       const hex = toHex(color);
       const key = colorKey(hex, color.a);
       const existing = byKey.get(key);
-      if (existing) {
-        existing.usageCount++;
-        if (!existing.variableName && color.variableName) existing.variableName = color.variableName;
-      } else {
-        byKey.set(key, { hex, alpha: color.a, usageCount: 1, variableName: color.variableName });
-      }
+      const swatch = existing ?? { hex, alpha: color.a, usageCount: 0, variableName: color.variableName, usage: emptyUsage() };
+      swatch.usageCount++;
+      if (!swatch.variableName && color.variableName) swatch.variableName = color.variableName;
+      swatch.usage[use] += weight;
+      if (!existing) byKey.set(key, swatch);
     };
+    if (frame.background) record(frame.background.color, "background", 1);
     for (const el of elements) {
       switch (el.kind) {
         case "shape":
-          if (el.fill) record(el.fill.color);
-          if (el.stroke) record(el.stroke.color);
+          if (el.fill) {
+            const ratio = frameArea > 0 ? el.rect.w * el.rect.h / frameArea : 0;
+            if (ratio >= BACKGROUND_AREA_RATIO) record(el.fill.color, "background", Math.min(1, ratio));
+            else record(el.fill.color, "fill", 1);
+          }
+          if (el.stroke) record(el.stroke.color, "stroke", 1);
           break;
         case "line":
-          record(el.stroke.color);
+          record(el.stroke.color, "stroke", 1);
           break;
         case "text":
-          for (const run of el.runs) record(run.color);
+          for (const run of el.runs) record(run.color, run.link ? "link" : "text", Math.max(1, run.end - run.start));
           break;
         case "image":
           break;
@@ -1222,7 +1231,15 @@
         name: el.sourceNodeName ?? el.placeholder?.label ?? el.kind,
         kind: el.kind,
         role: el.placeholder?.role,
-        label: el.placeholder?.label
+        label: el.placeholder?.label,
+        ...el.kind === "text" ? {
+          text: {
+            fontSizePx: el.runs.reduce((max, run) => Math.max(max, run.fontSizePx), 0),
+            chars: el.content.trim().length,
+            paragraphs: Math.max(1, el.content.split("\n").filter((line) => line.trim()).length),
+            y: el.rect.y
+          }
+        } : {}
       });
     }
     return result;
@@ -1236,8 +1253,12 @@
         if (existing) {
           existing.usageCount += c.usageCount;
           if (!existing.variableName && c.variableName) existing.variableName = c.variableName;
+          if (c.usage) {
+            const usage = existing.usage ??= emptyUsage();
+            for (const use of Object.keys(usage)) usage[use] += c.usage[use];
+          }
         } else {
-          byKey.set(key, { ...c });
+          byKey.set(key, { ...c, usage: c.usage ? { ...c.usage } : void 0 });
         }
       }
     }
@@ -1392,6 +1413,9 @@
           return el;
       }
     });
+  }
+  function applyThemeRoleToBackground(background, colorRoles) {
+    return background ? { ...background, color: recolor(background.color, colorRoles) } : background;
   }
 
   // src/serialize/templatePlaceholderText.ts
@@ -1772,7 +1796,7 @@
       // liste remplace l'ancien résumé des seuls placeholders DÉJÀ tagués,
       // dont elle est un sur-ensemble (elle porte `role`/`label`).
       elements: summarizeTaggableElements(slide.elements),
-      colors: summarizeColors(slide.elements),
+      colors: summarizeColors(slide.elements, { background: slide.background, frameSize: slide.frameSize }),
       fonts: summarizeFonts(slide.elements),
       fontSubstitutions: collectFontSubstitutions(slide)
     });
@@ -2242,10 +2266,11 @@
     }
     const { slides, assets } = await collectSlidesAndAssets(pending, orderedIds, msg.fontOverrides ?? {}, 2);
     const colorRoles = msg.colorRoles ?? {};
-    const allColors = aggregateColorSwatches(slides.map((s) => summarizeColors(s.elements)));
+    const allColors = aggregateColorSwatches(slides.map((s) => summarizeColors(s.elements, { background: s.background, frameSize: s.frameSize })));
     const theme = buildTemplateTheme(colorRoles, allColors);
     for (const slide of slides) {
       slide.elements = applyThemeRolesToElements(slide.elements, colorRoles);
+      slide.background = applyThemeRoleToBackground(slide.background, colorRoles);
       slide.elements = applyPlaceholderText(slide.elements);
     }
     const doc = {

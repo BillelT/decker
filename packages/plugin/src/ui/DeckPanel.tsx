@@ -3,6 +3,7 @@ import { displayFrameName } from './frameLabels.js';
 import { logEntryFlag, logEntryTagText, logEntryTooltip } from './logEntryFlag.js';
 import { usePacedExportCursor } from './pacedExportCursor.js';
 import { RetroExportPreview } from './RetroExportPreview.js';
+import { EmptyStateDemo } from './EmptyStateDemo.js';
 import { Toast } from './StatusIcon.js';
 import { useRailReorder } from './useRailReorder.js';
 import type { ExportCursor } from './exportCursor.js';
@@ -143,21 +144,20 @@ export function DeckPanel({
       <div className="f2s-body">
         {notice && <Toast key={notice.id} notice={notice} onDismiss={onDismissNotice} />}
         <main className="f2s-canvas">
-          {/* État vide qui oriente : les trois étapes du parcours, avec le nom
-              exact des boutons qui les déclenchent. */}
-          <ol className="f2s-empty-steps">
-            <li>Select frames on the Figma canvas.</li>
-            <li>
-              <span>
+          {/* État vide qui oriente : le parcours joué en animation, et ses
+              trois étapes écrites avec le nom exact des boutons. */}
+          <EmptyStateDemo
+            actionLabel="Export"
+            steps={[
+              <>Select frames on the Figma canvas.</>,
+              <>
                 Click <strong>Add</strong>: they join the deck in the order you selected them.
-              </span>
-            </li>
-            <li>
-              <span>
+              </>,
+              <>
                 Click <strong>Export</strong> to create the presentation in Google Slides.
-              </span>
-            </li>
-          </ol>
+              </>,
+            ]}
+          />
         </main>
       </div>
     );

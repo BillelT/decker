@@ -1,6 +1,9 @@
 import type { ThemeColorRole } from '@figma-to-slides/shared';
+import { AVAILABLE_SLIDES_FONTS } from '../serialize/fonts.js';
+import { suggestColorRoles } from '../serialize/templateColorRoles.js';
 import { colorKey } from '../serialize/templateSummary.js';
 import { THEME_ROLE_LABELS, VISIBLE_THEME_ROLES } from '../serialize/templateTheme.js';
+import { FontCombobox } from './FontCombobox.js';
 import type { TemplateColorSwatch, TemplateFontUsage } from './types.js';
 
 export interface TemplateStylePanelProps {
@@ -8,6 +11,8 @@ export interface TemplateStylePanelProps {
   fonts: TemplateFontUsage[];
   /** Choix manuel de police (bandeau "Fonts") — voir logEntryFlag.ts pour le même besoin côté Logs. */
   fontOverrides: Record<string, string>;
+  /** Même état que le bandeau "Fonts" : les deux sélecteurs restent synchronisés. */
+  setFontOverrides: (updater: (prev: Record<string, string>) => Record<string, string>) => void;
   colorRoles: Record<string, ThemeColorRole>;
   setColorRoles: (updater: (prev: Record<string, ThemeColorRole>) => Record<string, ThemeColorRole>) => void;
   /** Information à afficher dans le toast du panneau (ex. un rôle repris à une autre couleur). */
@@ -33,7 +38,9 @@ function colorLabel(c: TemplateColorSwatch): string {
  * tout rôle non assigné avec `DEFAULT_THEME_ROLE_COLORS`) — ce panneau
  * reste strictement additif, jamais requis pour créer un template.
  */
-export function TemplateStylePanel({ colors, fonts, fontOverrides, colorRoles, setColorRoles, onNotice }: TemplateStylePanelProps) {
+const SUGGESTION_PLURALS = new Intl.PluralRules('en');
+
+export function TemplateStylePanel({ colors, fonts, fontOverrides, setFontOverrides, colorRoles, setColorRoles, onNotice }: TemplateStylePanelProps) {
   const assignedKeyByRole = new Map<ThemeColorRole, string>();
   for (const [key, role] of Object.entries(colorRoles)) assignedKeyByRole.set(role, key);
   const sortedColors = [...colors].sort((a, b) => b.usageCount - a.usageCount);
@@ -76,12 +83,40 @@ export function TemplateStylePanel({ colors, fonts, fontOverrides, colorRoles, s
     });
   }
 
+  // Rôles proposés d'après l'usage de chaque couleur (texte, fond, lien,
+  // élément), sans jamais toucher à un choix déjà fait : voir
+  // templateColorRoles.ts. Bouton désactivé quand il n'a plus rien à proposer.
+  const suggestedRoles = suggestColorRoles(colors, colorRoles);
+  const suggestedCount = Object.keys(suggestedRoles).length - Object.keys(colorRoles).length;
+
+  function applySuggestedRoles() {
+    setColorRoles(() => suggestedRoles);
+    onNotice(`${suggestedCount} ${SUGGESTION_PLURALS.select(suggestedCount) === 'one' ? 'role' : 'roles'} suggested. Change any of them below.`);
+  }
+
   return (
     <div className="f2s-style-panel">
       <section className="f2s-tmpl-section">
-        <h3 className="f2s-tmpl-heading f2s-style-heading">Colors</h3>
+        <div className="f2s-section-head">
+          <h3 className="f2s-tmpl-heading f2s-style-heading">Colors</h3>
+          {colors.length > 0 && (
+            <button
+              type="button"
+              className="f2s-btn f2s-btn--ghost"
+              disabled={suggestedCount === 0}
+              title={
+                suggestedCount === 0
+                  ? 'Nothing left to suggest: every role or color is already assigned.'
+                  : 'Fill the free roles from how each color is used: text, background, links, then vivid colors as accents.'
+              }
+              onClick={applySuggestedRoles}
+            >
+              Suggest roles
+            </button>
+          )}
+        </div>
         {colors.length === 0 ? (
-          <p className="f2s-toolbar-muted">No color detected yet. Add layouts first.</p>
+          <p className="f2s-toolbar-muted">The colors of your layouts will appear here, ready to map to the Slides theme.</p>
         ) : (
           <ul className="f2s-style-list">
             {sortedColors.map((c) => {
@@ -125,27 +160,37 @@ export function TemplateStylePanel({ colors, fonts, fontOverrides, colorRoles, s
       <section className="f2s-tmpl-section">
         <h3 className="f2s-tmpl-heading f2s-style-heading">Typography</h3>
         {fonts.length === 0 ? (
-          <p className="f2s-toolbar-muted">No text detected yet.</p>
+          <p className="f2s-toolbar-muted">The fonts of your layouts will appear here, ready to replace.</p>
         ) : (
           <ul className="f2s-style-list">
             {fonts.map((f) => {
-              // Reflète le choix courant du sélecteur "Fonts" plutôt que la
-              // résolution par défaut figée au moment du serialize — voir
-              // logEntryFlag.ts::logEntryTagText pour le même besoin côté Logs.
-              // Une police disponible dans Slides (sans `original`) peut aussi
-              // être remplacée depuis le bandeau : son choix s'indexe sur sa
-              // propre famille.
-              const family = fontOverrides[f.original ?? f.family] ?? f.family;
+              // Même clé que le bandeau "Fonts" (police d'origine si
+              // substituée, sinon sa propre famille) : changer l'un change
+              // l'autre. `family` reflète le choix courant plutôt que la
+              // résolution figée au serialize (cf. logEntryFlag.ts).
+              const key = f.original ?? f.family;
+              const family = fontOverrides[key] ?? f.family;
               return (
-                <li key={f.original ?? f.family} className="f2s-style-row">
+                <li key={key} className="f2s-style-row">
                   <div className="f2s-style-row-main">
                     <span className="f2s-style-font-swatch" style={{ fontFamily: family }}>
                       Aa
                     </span>
                     <span className="f2s-style-font-info">
-                      <span className="f2s-tmpl-font-family">{family}</span>
+                      <span className="f2s-tmpl-font-family" title={key}>
+                        {key}
+                      </span>
                       <span className="f2s-toolbar-muted">{f.weights.join(', ')}</span>
                     </span>
+                  </div>
+                  <div className="f2s-style-font-replace">
+                    <span className="f2s-font-arrow">→</span>
+                    <FontCombobox
+                      value={family}
+                      options={AVAILABLE_SLIDES_FONTS}
+                      ariaLabel={`Replacement font for "${key}"`}
+                      onChange={(value) => setFontOverrides((prev) => ({ ...prev, [key]: value }))}
+                    />
                   </div>
                 </li>
               );

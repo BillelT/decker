@@ -1,4 +1,4 @@
-import type { IRElement, IRColor, IRShape, IRText, IRLine, ThemeColorRole } from '@figma-to-slides/shared';
+import type { IRElement, IRColor, IRPaint, IRShape, IRText, IRLine, ThemeColorRole } from '@figma-to-slides/shared';
 import { colorKey, toHex, type TemplateColorSwatch } from './templateSummary.js';
 
 /**
@@ -138,4 +138,9 @@ export function applyThemeRolesToElements(elements: IRElement[], colorRoles: Rec
         return el;
     }
   });
+}
+
+/** Même chose pour le fond de la frame, devenu un vrai fond de page Slides : il suit le thème comme le reste. */
+export function applyThemeRoleToBackground(background: IRPaint | undefined, colorRoles: Record<string, ThemeColorRole>): IRPaint | undefined {
+  return background ? { ...background, color: recolor(background.color, colorRoles) } : background;
 }

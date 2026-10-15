@@ -64,7 +64,7 @@ function mapSlide(
   }
 
   if (slide.background) {
-    requests.push(...mapBackground(slide, pageObjectId, scale, offsetXPt, offsetYPt));
+    requests.push(...mapBackground(slide, pageObjectId));
   }
 
   for (const el of slide.elements) {
@@ -128,37 +128,26 @@ function mapUnderlay(
   ];
 }
 
-function mapBackground(
-  slide: IRSlide,
-  pageObjectId: string,
-  scale: number,
-  offsetX: number,
-  offsetY: number,
-): SlidesRequest[] {
+/**
+ * Fond uni de la frame Figma, écrit comme vrai fond de page Slides
+ * (`pageBackgroundFill`) et non plus comme un rectangle plein cadre posé
+ * sous le contenu. Deux raisons :
+ * 1. l'utilisateur le change depuis "Background" dans Slides, au lieu de
+ *    tomber sur un rectangle verrouillé à sélectionner par erreur ;
+ * 2. Slides peint les éléments du Master et du layout ENTRE le fond de la
+ *    page et son contenu : un rectangle plein cadre les masquait, ce qui
+ *    rendait impossible tout élément récurrent écrit sur le Master
+ *    (TODO.md § Mode template, point 3).
+ * Le fond couvre toute la page, bandes de letterbox comprises.
+ */
+function mapBackground(slide: IRSlide, pageObjectId: string): SlidesRequest[] {
   if (!slide.background) return [];
-  const wPt = slide.frameSize.width * scale;
-  const hPt = slide.frameSize.height * scale;
-  const objectId = `f2s_${slide.sourceNodeId}_background`;
   return [
     {
-      createShape: {
-        objectId,
-        shapeType: 'RECTANGLE',
-        elementProperties: {
-          pageObjectId,
-          size: { width: pt(wPt), height: pt(hPt) },
-          transform: identityTransform(offsetX, offsetY),
-        },
-      },
-    },
-    {
-      updateShapeProperties: {
-        objectId,
-        shapeProperties: {
-          shapeBackgroundFill: { solidFill: toSolidFill(slide.background.color) },
-          outline: { propertyState: 'NOT_RENDERED' },
-        },
-        fields: 'shapeBackgroundFill.solidFill,outline.propertyState',
+      updatePageProperties: {
+        objectId: pageObjectId,
+        pageProperties: { pageBackgroundFill: { solidFill: toSolidFill(slide.background.color) } },
+        fields: 'pageBackgroundFill',
       },
     },
   ];

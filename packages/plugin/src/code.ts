@@ -6,7 +6,7 @@ import { reformatForSlides } from './serialize/reformatForSlides.js';
 import { enforceTemplateStrictness, hasBlockingWarnings } from './serialize/templateValidation.js';
 import { aggregateColorSwatches, summarizeColors, summarizeFonts, summarizeTaggableElements } from './serialize/templateSummary.js';
 import { collectCompositionWarnings } from './serialize/templateComposition.js';
-import { applyThemeRolesToElements, buildTemplateTheme } from './serialize/templateTheme.js';
+import { applyThemeRolesToElements, applyThemeRoleToBackground, buildTemplateTheme } from './serialize/templateTheme.js';
 import { applyPlaceholderText } from './serialize/templatePlaceholderText.js';
 import { clearPlaceholderTag, KNOWN_ROLE_TAGS, parsePlaceholderTag, setPlaceholderTag } from './serialize/placeholder.js';
 import { nextSelectionOrder } from './serialize/selectionOrder.js';
@@ -615,7 +615,7 @@ function postTemplateCandidateMessage(type: 'template-candidate-added' | 'templa
     // liste remplace l'ancien résumé des seuls placeholders DÉJÀ tagués,
     // dont elle est un sur-ensemble (elle porte `role`/`label`).
     elements: summarizeTaggableElements(slide.elements),
-    colors: summarizeColors(slide.elements),
+    colors: summarizeColors(slide.elements, { background: slide.background, frameSize: slide.frameSize }),
     fonts: summarizeFonts(slide.elements),
     fontSubstitutions: collectFontSubstitutions(slide),
   });
@@ -1412,10 +1412,11 @@ async function handleTemplateCreateRequest(
   // à écrire sur le Master à partir de ces MÊMES couleurs (garantit que
   // `theme` et les éléments recolorés restent cohérents entre eux).
   const colorRoles = msg.colorRoles ?? {};
-  const allColors = aggregateColorSwatches(slides.map((s) => summarizeColors(s.elements)));
+  const allColors = aggregateColorSwatches(slides.map((s) => summarizeColors(s.elements, { background: s.background, frameSize: s.frameSize })));
   const theme = buildTemplateTheme(colorRoles, allColors);
   for (const slide of slides) {
     slide.elements = applyThemeRolesToElements(slide.elements, colorRoles);
+    slide.background = applyThemeRoleToBackground(slide.background, colorRoles);
     // Le texte réel d'un calque tagué [[role]] cède la place à un
     // indicateur lisible ([Title], [Body text]…) — seulement pour un
     // template, jamais un deck ponctuel (TODO.md § Mode template, point 6).

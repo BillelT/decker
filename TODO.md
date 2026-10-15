@@ -202,6 +202,12 @@ les suivants) :
    transparent ?). À valider par un spike comme l'a été l'écriture du thème
    (`spikes/masterThemeSpike.ts`), plutôt qu'en déduction : aucun
    environnement Figma/Slides réel n'est disponible côté dev.
+   **Étape 1 faite le 2026-10-15** : `mapBackground` n'émet plus de
+   rectangle, il écrit le fond de la frame comme vrai fond de page
+   (`updatePageProperties` / `pageBackgroundFill`). Slides peint le Master
+   entre ce fond et le contenu : un élément récurrent posé sur le Master
+   doit donc rester visible. À confirmer dans un vrai Slides avant
+   d'écrire l'UI « On every slide » (étape 2).
 4. ~~**Slide de style guide optionnelle.**~~ — abandonné (2026-08-03) :
    l'idée initiale (checkbox à l'export générant une slide swatches/rôles/
    échantillon typo en 1ère position) servait surtout de preuve visuelle de

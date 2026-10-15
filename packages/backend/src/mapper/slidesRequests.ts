@@ -222,7 +222,7 @@ export interface ColorScheme {
 
 export interface UpdatePagePropertiesRequest {
   objectId: string;
-  pageProperties: { colorScheme: ColorScheme };
+  pageProperties: { colorScheme: ColorScheme } | { pageBackgroundFill: { solidFill: SolidFill } };
   fields: string;
 }
 
