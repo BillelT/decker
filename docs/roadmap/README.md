@@ -32,7 +32,7 @@ Fait (commits `c60238f` et `584b710` sur `decker`, `48413de` sur `billel-skill`)
 
 ## Le focus maintenant
 
-Lots 01, 02 et 03 terminés. On est sur le **lot 04 (mode Template)**, 5 tâches sur 12 faites.
+Lots 01, 02 et 03 terminés. On est sur le **lot 04 (mode Template)**, 7 tâches sur 12 closes (dont une abandonnée).
 
 Retouches d'interface faites le 15 octobre en dehors des lots (`4b275ad` à `7d66acf`), reportées dans les fichiers concernés :
 

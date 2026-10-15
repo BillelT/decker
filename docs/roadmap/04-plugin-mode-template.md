@@ -11,7 +11,7 @@ Ce qui rend la création d'un template moins bloquante et plus guidée. La struc
 
 ## Structure du rapport
 
-- [ ] **Ordre inversé par rapport au Deck.** (À requestionner le 15 octobre : tout est déjà là, l'ordre actuel est peut-être le bon. La colonne Content dans l'aside arrivera avec les éléments du Master.) Les erreurs passent au-dessus de l'aperçu, et la tâche principale (assigner les rôles, liste Content) est tout en bas, invisible en 960×560. → Même ordre dans les deux modes : aperçu, « To fix », Content. Idéalement, Content à côté de l'aperçu (selon C).
+- [x] **Ordre inversé par rapport au Deck.** Fermé le 15 octobre : l'ordre actuel est le bon. La boîte « Fix before creating the template » reste au-dessus de l'aperçu, parce que c'est elle qui bloque ; viennent ensuite l'aperçu, Composition et Content. (À requestionner le 15 octobre : tout est déjà là, l'ordre actuel est peut-être le bon. La colonne Content dans l'aside arrivera avec les éléments du Master.) Les erreurs passent au-dessus de l'aperçu, et la tâche principale (assigner les rôles, liste Content) est tout en bas, invisible en 960×560. → Même ordre dans les deux modes : aperçu, « To fix », Content. Idéalement, Content à côté de l'aperçu (selon C).
   - C tranché : aperçu en haut, rapport dessous, comme le Deck. Reprendre aussi du lot 03 la colonne commune aperçu/rapport (`.f2s-deck-column`).
   - ~~Icône de sélection en bout de ligne~~ : retirée des deux modes le 14 octobre (`c3129ee`), plus rien à reprendre.
   - Plus de liste « To fix » séparée : les conflits de composition s'affichent sur la ligne du calque (voir plus bas). L'ordre visé devient donc : boîte bloquante, aperçu, Composition, Content.
@@ -36,4 +36,4 @@ Ce qui rend la création d'un template moins bloquante et plus guidée. La struc
 ## Idées à valider (fonctions qui manquent)
 
 - [ ] **Suggestion automatique des rôles de placeholder** : le plus grand texte en `[[title]]`, le suivant en `[[subtitle]]`, le bloc de texte long en `[[body]]`, à confirmer d'un clic.
-- [ ] **Aperçu du layout tel qu'il sera dans Slides**, placeholders vides, pour vérifier le rendu avant de créer le template.
+- [x] ~~**Aperçu du layout tel qu'il sera dans Slides**~~. Abandonné le 15 octobre : l'export est fidèle au pixel, et après « Prepare for Slides » la copie sur le canvas montre déjà ce que Slides affichera.
