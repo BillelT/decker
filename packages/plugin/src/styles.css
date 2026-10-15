@@ -657,6 +657,10 @@ a.f2s-btn {
 
 .f2s-toast {
   --f2s-toast-tone: var(--color-error);
+  /* Trois ombres transparentes superposées (contact, proche, diffuse) plutôt
+     qu'un seul flou : le toast flotte au-dessus du contenu sans halo gris. */
+  --f2s-toast-shadow: 0 1px 2px rgba(18, 15, 13, 0.1), 0 4px 8px rgba(18, 15, 13, 0.08),
+    0 12px 24px rgba(18, 15, 13, 0.1);
   position: absolute;
   top: 10px;
   left: 50%;
@@ -668,7 +672,7 @@ a.f2s-btn {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 8px;
-  box-shadow: 0 8px 20px rgba(18, 15, 13, 0.18);
+  box-shadow: var(--f2s-toast-shadow);
   display: flex;
   align-items: center;
   gap: 8px;

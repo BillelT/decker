@@ -1457,9 +1457,9 @@
 
   // src/code.ts
   var MAX_FRAMES_WARNING = 20;
-  var ADD_FAILED_MESSAGE = "Couldn't add the selection. Close and reopen the plugin, then try again.";
-  var PREPARE_FAILED_MESSAGE = "Couldn't prepare the frames for Slides. Close and reopen the plugin, then try again.";
-  var EXPORT_PREPARE_FAILED_MESSAGE = "Couldn't read the frames to export. Close and reopen the plugin, then try again.";
+  var ADD_FAILED_MESSAGE = "Couldn't add the selection. Reopen the plugin and retry.";
+  var PREPARE_FAILED_MESSAGE = "Couldn't prepare the frames. Reopen the plugin and retry.";
+  var EXPORT_PREPARE_FAILED_MESSAGE = "Couldn't read the frames. Reopen the plugin and retry.";
   var TEMPLATE_MAX_LAYOUTS = 10;
   var PREVIEW_WIDTH = 960;
   var SLIDES_READY_KEY = "slidesExportReady";
@@ -1570,12 +1570,7 @@
     const kept = nodes.filter((n) => sameAspectRatio(n, ref));
     const rejected = nodes.length - kept.length;
     if (rejected > 0) {
-      const them = rejected === 1 ? "it" : "them";
-      postNotice(
-        mode,
-        "error",
-        `${framesWerent(rejected)} added: a ${mode === "template" ? "template" : "presentation"} has a single page size, so every frame needs the aspect ratio of "${stripReadyPrefix(ref.name)}". Resize ${them} to match, then add ${them} again.`
-      );
+      postNotice(mode, "error", `${framesWerent(rejected)} added, all ${mode === "template" ? "layouts" : "slides"} must share one aspect ratio.`);
     }
     return kept;
   }
@@ -1585,7 +1580,7 @@
     const toAdd = filterMatchingRatio(candidates, pending[0]?.frame, "deck");
     if (toAdd.length === 0) return;
     if (userAction && toAdd.length > MAX_FRAMES_WARNING) {
-      postNotice("deck", "info", `Adding ${toAdd.length} frames. Above ${MAX_FRAMES_WARNING}, the export takes longer.`);
+      postNotice("deck", "info", `Adding ${toAdd.length} frames, the export will take longer.`);
     }
     for (const frame of toAdd) {
       const previewDataUrl = await generatePreview(frame);
@@ -1610,7 +1605,7 @@
   async function addSelectedFrames(pending, idGen) {
     const selected = orderedSelectedFrames();
     if (selected.length === 0) {
-      postNotice("deck", "error", "Select at least one frame on the Figma canvas, then click Add.");
+      postNotice("deck", "error", "Select a frame on the canvas first.");
       return;
     }
     await addFrames(selected, pending, idGen);
@@ -1696,18 +1691,17 @@
     await addLintAnnotations(copy, warnings);
     return { copy, warnings };
   }
-  function postPreparedNotice(mode, count, issues) {
-    const noun = mode === "template" ? count === 1 ? "layout" : "layouts" : count === 1 ? "frame" : "frames";
-    const copies = count === 1 ? "The copy sits next to the original" : "The copies sit next to the originals";
-    if (issues === 0) {
-      postNotice(mode, "success", `Prepared ${count} ${noun} for Slides. ${copies}, with no issues found.`);
+  function postPreparedNotice(mode, count, framesToReview) {
+    const noun = mode === "template" ? count === 1 ? "layout" : "layouts" : count === 1 ? "slide" : "slides";
+    if (framesToReview === 0) {
+      postNotice(mode, "success", mode === "template" ? "Layouts ready" : "Slides ready");
       return;
     }
-    postNotice(
-      mode,
-      "info",
-      `Prepared ${count} ${noun} for Slides. ${copies}, with ${issues} ${issues === 1 ? "issue" : "issues"} outlined on the canvas: red for an element turned into an image, orange for an approximation.`
-    );
+    const flagged = `${framesToReview} ${framesToReview === 1 ? mode === "template" ? "layout" : "slide" : noun}`;
+    postNotice(mode, "info", mode === "template" ? `${flagged} ${framesToReview === 1 ? "needs" : "need"} fixes` : `${flagged} may need edits`);
+  }
+  function reviewableWarnings(warnings) {
+    return warnings.filter((w) => w.code !== "VECTOR_RASTERIZED").length;
   }
   async function handlePrepareForSlides(pending, idGen, fontOverrides, deckFrameIds) {
     const deckNodes = (await Promise.all(deckFrameIds.map((id) => figma.getNodeByIdAsync(id)))).filter((n) => n !== null && isExportable(n));
@@ -1715,7 +1709,7 @@
     const targets = /* @__PURE__ */ new Map();
     for (const n of [...deckNodes, ...canvasSelected]) targets.set(n.id, n);
     if (targets.size === 0) {
-      postNotice("deck", "error", "Select at least one frame on the Figma canvas, or add frames to the deck first.");
+      postNotice("deck", "error", "Select a frame or add one first.");
       return;
     }
     const copies = [];
@@ -1725,7 +1719,7 @@
       const wasAlreadyTagged = isSlidesReady(frame);
       const { copy, warnings } = await prepareFrameForSlides(frame, fontOverrides);
       copies.push(copy);
-      totalWarnings += warnings.length;
+      if (reviewableWarnings(warnings) > 0) totalWarnings += 1;
       if (wasAlreadyTagged) {
         await refreshPendingEntry(copy, pending, idGen);
       } else {
@@ -1778,7 +1772,7 @@
       postNotice(
         "template",
         "error",
-        `A template holds up to ${TEMPLATE_MAX_LAYOUTS} layouts, so ${framesWerent(left)} added. Remove a layout to make room, then add ${left === 1 ? "it" : "them"} again.`
+        `${framesWerent(left)} added, a template holds ${TEMPLATE_MAX_LAYOUTS} layouts max.`
       );
     }
     for (const frame of toAdd) {
@@ -1794,7 +1788,7 @@
   async function addSelectedTemplateLayouts(pending, idGen) {
     const selected = orderedSelectedFrames();
     if (selected.length === 0) {
-      postNotice("template", "error", "Select at least one frame on the Figma canvas, then click Add.");
+      postNotice("template", "error", "Select a frame on the canvas first.");
       return;
     }
     await addTemplateLayoutNodes(selected, pending, idGen);
@@ -1819,7 +1813,7 @@
     const targets = /* @__PURE__ */ new Map();
     for (const n of [...listNodes, ...canvasSelected]) targets.set(n.id, n);
     if (targets.size === 0) {
-      postNotice("template", "error", "Select at least one frame on the Figma canvas, or add layouts to the template first.");
+      postNotice("template", "error", "Select a frame or add a layout first.");
       return;
     }
     const copies = [];
@@ -1829,7 +1823,7 @@
       const wasAlreadyTagged = isTemplateReady(frame);
       const { copy, warnings } = await prepareFrameForSlides(frame, fontOverrides, TEMPLATE_TAG);
       copies.push(copy);
-      totalWarnings += warnings.length;
+      if (reviewableWarnings(warnings) > 0) totalWarnings += 1;
       if (wasAlreadyTagged) {
         await refreshTemplateEntry(copy, pending, idGen);
       } else {

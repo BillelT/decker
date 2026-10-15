@@ -186,7 +186,16 @@ html.f2s-skin--modern .f2s-modal {
 html.f2s-skin--modern .f2s-toast {
   border: none;
   border-radius: 0;
-  box-shadow: var(--hyb-out), 0 8px 20px rgba(18, 15, 13, 0.18);
+  box-shadow: var(--hyb-out), var(--f2s-toast-shadow);
+}
+
+/* Barre de durée logée à l'intérieur du biseau (comme en win95), pas sur son
+   arête : 2px de tolérance de chaque côté, sans écraser le rehaut. */
+html.f2s-skin--modern .f2s-toast-timer {
+  left: 2px;
+  right: 2px;
+  bottom: 2px;
+  height: 2px;
 }
 
 /* ---- Tab menus des réglages : segmented control aux angles droits, l'onglet

@@ -27,9 +27,9 @@ const MAX_FRAMES_WARNING = 20;
 // Échecs inattendus côté sandbox (exception dans la sérialisation, un
 // `exportAsync`, le clonage…) : le message dit quoi faire, la cause
 // technique part dans la console.
-const ADD_FAILED_MESSAGE = "Couldn't add the selection. Close and reopen the plugin, then try again.";
-const PREPARE_FAILED_MESSAGE = "Couldn't prepare the frames for Slides. Close and reopen the plugin, then try again.";
-const EXPORT_PREPARE_FAILED_MESSAGE = "Couldn't read the frames to export. Close and reopen the plugin, then try again.";
+const ADD_FAILED_MESSAGE = "Couldn't add the selection. Reopen the plugin and retry.";
+const PREPARE_FAILED_MESSAGE = "Couldn't prepare the frames. Reopen the plugin and retry.";
+const EXPORT_PREPARE_FAILED_MESSAGE = "Couldn't read the frames. Reopen the plugin and retry.";
 /**
  * Un template reste un petit jeu de layouts réutilisables (cf. "Simple
  * Light" et les ~8 layouts prédéfinis d'une présentation Slides neuve) —
@@ -243,12 +243,7 @@ function filterMatchingRatio(nodes: ExportableNode[], reference: ExportableNode 
   const kept = nodes.filter((n) => sameAspectRatio(n, ref));
   const rejected = nodes.length - kept.length;
   if (rejected > 0) {
-    const them = rejected === 1 ? 'it' : 'them';
-    postNotice(
-      mode,
-      'error',
-      `${framesWerent(rejected)} added: a ${mode === 'template' ? 'template' : 'presentation'} has a single page size, so every frame needs the aspect ratio of "${stripReadyPrefix(ref.name)}". Resize ${them} to match, then add ${them} again.`,
-    );
+    postNotice(mode, 'error', `${framesWerent(rejected)} added, all ${mode === 'template' ? 'layouts' : 'slides'} must share one aspect ratio.`);
   }
   return kept;
 }
@@ -268,7 +263,7 @@ async function addFrames(nodes: ExportableNode[], pending: PendingSlide[], idGen
   // Un avertissement, pas une erreur : l'ajout se fait quand même. Pas à la
   // réouverture du plugin (`userAction` faux), où personne n'a rien ajouté.
   if (userAction && toAdd.length > MAX_FRAMES_WARNING) {
-    postNotice('deck', 'info', `Adding ${toAdd.length} frames. Above ${MAX_FRAMES_WARNING}, the export takes longer.`);
+    postNotice('deck', 'info', `Adding ${toAdd.length} frames, the export will take longer.`);
   }
 
   // Spec §7.0 RÈGLE performance : séquentiel avec yield entre chaque frame,
@@ -320,7 +315,7 @@ async function refreshPendingEntry(frame: ExportableNode, pending: PendingSlide[
 async function addSelectedFrames(pending: PendingSlide[], idGen: ReturnType<typeof createIdGenerator>): Promise<void> {
   const selected = orderedSelectedFrames();
   if (selected.length === 0) {
-    postNotice('deck', 'error', 'Select at least one frame on the Figma canvas, then click Add.');
+    postNotice('deck', 'error', 'Select a frame on the canvas first.');
     return;
   }
   await addFrames(selected, pending, idGen);
@@ -478,22 +473,24 @@ async function prepareFrameForSlides(
 }
 
 /**
- * Bilan de « Prepare for Slides » : dit ce qui a été fait (des copies, posées
- * à côté des originaux, que seule une infobulle mentionnait jusque-là) et ce
- * qui reste à regarder sur le canvas.
+ * Bilan de « Prepare for Slides » : une ligne. Rien à signaler = "ready" ;
+ * sinon le nombre de frames à regarder sur le canvas (annotées). Une simple
+ * vectorisation n'y compte pas : le rendu est identique, seul un
+ * redimensionnement ultérieur pixelise.
  */
-function postPreparedNotice(mode: PanelMode, count: number, issues: number): void {
-  const noun = mode === 'template' ? (count === 1 ? 'layout' : 'layouts') : count === 1 ? 'frame' : 'frames';
-  const copies = count === 1 ? 'The copy sits next to the original' : 'The copies sit next to the originals';
-  if (issues === 0) {
-    postNotice(mode, 'success', `Prepared ${count} ${noun} for Slides. ${copies}, with no issues found.`);
+function postPreparedNotice(mode: PanelMode, count: number, framesToReview: number): void {
+  const noun = mode === 'template' ? (count === 1 ? 'layout' : 'layouts') : count === 1 ? 'slide' : 'slides';
+  if (framesToReview === 0) {
+    postNotice(mode, 'success', mode === 'template' ? 'Layouts ready' : 'Slides ready');
     return;
   }
-  postNotice(
-    mode,
-    'info',
-    `Prepared ${count} ${noun} for Slides. ${copies}, with ${issues} ${issues === 1 ? 'issue' : 'issues'} outlined on the canvas: red for an element turned into an image, orange for an approximation.`,
-  );
+  const flagged = `${framesToReview} ${framesToReview === 1 ? (mode === 'template' ? 'layout' : 'slide') : noun}`;
+  postNotice(mode, 'info', mode === 'template' ? `${flagged} ${framesToReview === 1 ? 'needs' : 'need'} fixes` : `${flagged} may need edits`);
+}
+
+/** Avertissements qui comptent dans le bilan : la vectorisation seule n'en est pas un. */
+function reviewableWarnings(warnings: LintWarning[]): number {
+  return warnings.filter((w) => w.code !== 'VECTOR_RASTERIZED').length;
 }
 
 /**
@@ -524,7 +521,7 @@ async function handlePrepareForSlides(
   for (const n of [...deckNodes, ...canvasSelected]) targets.set(n.id, n);
 
   if (targets.size === 0) {
-    postNotice('deck', 'error', 'Select at least one frame on the Figma canvas, or add frames to the deck first.');
+    postNotice('deck', 'error', 'Select a frame or add one first.');
     return;
   }
 
@@ -536,7 +533,7 @@ async function handlePrepareForSlides(
     const wasAlreadyTagged = isSlidesReady(frame);
     const { copy, warnings } = await prepareFrameForSlides(frame, fontOverrides);
     copies.push(copy);
-    totalWarnings += warnings.length;
+    if (reviewableWarnings(warnings) > 0) totalWarnings += 1;
 
     if (wasAlreadyTagged) {
       await refreshPendingEntry(copy, pending, idGen);
@@ -627,7 +624,7 @@ async function addTemplateLayoutNodes(nodes: ExportableNode[], pending: PendingS
     postNotice(
       'template',
       'error',
-      `A template holds up to ${TEMPLATE_MAX_LAYOUTS} layouts, so ${framesWerent(left)} added. Remove a layout to make room, then add ${left === 1 ? 'it' : 'them'} again.`,
+      `${framesWerent(left)} added, a template holds ${TEMPLATE_MAX_LAYOUTS} layouts max.`,
     );
   }
 
@@ -647,7 +644,7 @@ async function addTemplateLayoutNodes(nodes: ExportableNode[], pending: PendingS
 async function addSelectedTemplateLayouts(pending: PendingSlide[], idGen: ReturnType<typeof createIdGenerator>): Promise<void> {
   const selected = orderedSelectedFrames();
   if (selected.length === 0) {
-    postNotice('template', 'error', 'Select at least one frame on the Figma canvas, then click Add.');
+    postNotice('template', 'error', 'Select a frame on the canvas first.');
     return;
   }
   await addTemplateLayoutNodes(selected, pending, idGen);
@@ -701,7 +698,7 @@ async function handlePrepareTemplateForSlides(
   for (const n of [...listNodes, ...canvasSelected]) targets.set(n.id, n);
 
   if (targets.size === 0) {
-    postNotice('template', 'error', 'Select at least one frame on the Figma canvas, or add layouts to the template first.');
+    postNotice('template', 'error', 'Select a frame or add a layout first.');
     return;
   }
 
@@ -713,7 +710,7 @@ async function handlePrepareTemplateForSlides(
     const wasAlreadyTagged = isTemplateReady(frame);
     const { copy, warnings } = await prepareFrameForSlides(frame, fontOverrides, TEMPLATE_TAG);
     copies.push(copy);
-    totalWarnings += warnings.length;
+    if (reviewableWarnings(warnings) > 0) totalWarnings += 1;
 
     if (wasAlreadyTagged) {
       await refreshTemplateEntry(copy, pending, idGen);

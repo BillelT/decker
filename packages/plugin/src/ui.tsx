@@ -113,7 +113,7 @@ function addLabel(count: number): string {
 }
 
 /** Message par défaut d'un lot échoué sans `error` côté backend. */
-const FAILED_SLIDE_FALLBACK = 'This slide could not be written to Google Slides.';
+const FAILED_SLIDE_FALLBACK = "This slide couldn't be written to Google Slides.";
 
 /** Domaine public (Privacy Policy / Terms) — distinct du backend d'API (`backend.baseUrl`), voir CLAUDE.md. */
 const SITE_URL = 'https://decker.billeltighidet.fr';
@@ -127,7 +127,7 @@ declare const __DEBUG_TOOLS__: boolean;
 /** Le backend a répondu 401 : la session Google persistée n'est plus valide — à purger avant de relancer la connexion. */
 class AuthExpiredError extends Error {
   constructor() {
-    super('Your Google session has expired. Sign in again, then retry.');
+    super('Google session expired. Sign in again, then retry.');
   }
 }
 
@@ -211,8 +211,8 @@ function ArrowUpRightIcon({ size = 12 }: { size?: number }) {
 
 /** Message de fin d'un export réussi : toast en haut du panneau ET statut du footer. */
 function successMessage(mode: AppMode, slideCount: number): string {
-  if (mode === 'template') return `Template created in Google Slides (${slideCount} layout${slideCount === 1 ? '' : 's'}).`;
-  return `${slideCount} slide${slideCount === 1 ? '' : 's'} exported to Google Slides.`;
+  if (mode === 'template') return 'Template created in Google Slides.';
+  return `${slideCount} slide${slideCount === 1 ? '' : 's'} exported.`;
 }
 
 /** Barre de titre du skin Windows 95 : la fenêtre du plugin en devient une vraie fenêtre 95. */
@@ -991,7 +991,7 @@ function App() {
       // créée, on la propose quand même plutôt que de ne rien montrer.
       return {
         status: 'failed',
-        error: 'Export timed out after 3 minutes. The presentation may still be processing; check your Google Drive, or retry once it settles.',
+        error: 'Export timed out. The presentation may still appear in your Drive.',
         resultUrl: lastPresentationUrl,
         failedSlides: {},
         retryable: Boolean(lastPresentationId),
@@ -1066,7 +1066,7 @@ function App() {
     }
     cancelRequestedRef.current = false;
     setCanceling(false);
-    const message = "Couldn't cancel. The export keeps going and will finish on its own.";
+    const message = "Couldn't cancel. The export will finish on its own.";
     if (modeRef.current === 'template') showTemplateSelectionNotice(message);
     else showSelectionNotice(message);
   }
@@ -1105,7 +1105,7 @@ function App() {
         if (result.status === 'error') {
           // eslint-disable-next-line no-console
           console.error('[decker] Google sign-in failed:', result.message);
-          setLoginError("Google sign-in didn't complete. Try again.");
+          setLoginError("Sign-in didn't complete. Try again.");
           setAuthUrl(undefined);
           return;
         }

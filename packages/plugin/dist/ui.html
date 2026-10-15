@@ -662,6 +662,10 @@ a.f2s-btn {
 
 .f2s-toast {
   --f2s-toast-tone: var(--color-error);
+  /* Trois ombres transparentes superposées (contact, proche, diffuse) plutôt
+     qu'un seul flou : le toast flotte au-dessus du contenu sans halo gris. */
+  --f2s-toast-shadow: 0 1px 2px rgba(18, 15, 13, 0.1), 0 4px 8px rgba(18, 15, 13, 0.08),
+    0 12px 24px rgba(18, 15, 13, 0.1);
   position: absolute;
   top: 10px;
   left: 50%;
@@ -673,7 +677,7 @@ a.f2s-btn {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 8px;
-  box-shadow: 0 8px 20px rgba(18, 15, 13, 0.18);
+  box-shadow: var(--f2s-toast-shadow);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -3246,7 +3250,16 @@ html.f2s-skin--modern .f2s-modal {
 html.f2s-skin--modern .f2s-toast {
   border: none;
   border-radius: 0;
-  box-shadow: var(--hyb-out), 0 8px 20px rgba(18, 15, 13, 0.18);
+  box-shadow: var(--hyb-out), var(--f2s-toast-shadow);
+}
+
+/* Barre de durée logée à l'intérieur du biseau (comme en win95), pas sur son
+   arête : 2px de tolérance de chaque côté, sans écraser le rehaut. */
+html.f2s-skin--modern .f2s-toast-timer {
+  left: 2px;
+  right: 2px;
+  bottom: 2px;
+  height: 2px;
 }
 
 /* ---- Tab menus des réglages : segmented control aux angles droits, l'onglet
@@ -3701,37 +3714,37 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
 
   // src/ui/requestErrors.ts
   function describeHttpFailure(step, status) {
-    if (status === 413) return "An image is too large to upload. Reduce the size of the rasterized elements, then try again.";
-    if (status === 429) return "Too many requests in a short time. Wait a minute, then try again.";
-    if (step === "retry" && (status === 404 || status === 409)) return "These items can't be retried anymore. Export again to create a new presentation.";
-    if (status === 403) return "Access was refused. Sign out from Settings, sign back in, then try again.";
+    if (status === 413) return "An image is too large to upload. Simplify it, then retry.";
+    if (status === 429) return "Too many requests. Wait a minute, then retry.";
+    if (step === "retry" && (status === 404 || status === 409)) return "Can't retry these anymore. Export again.";
+    if (status === 403) return "Access refused. Sign out in Settings, then sign back in.";
     if (status === 400 || status === 404 || status === 415 || status === 422) {
-      return "The request was rejected as incomplete. Close and reopen the plugin, then try again.";
+      return "Request rejected. Reopen the plugin and retry.";
     }
     const service = step === "sign-in" ? "The sign-in service" : "The export server";
-    if (status === 502 || status === 503 || status === 504) return `${service} is unavailable right now. Try again in a moment.`;
-    if (status >= 500) return `${service} ran into a problem. Try again in a moment.`;
-    return `The request failed (error ${status}). Try again in a moment.`;
+    if (status === 502 || status === 503 || status === 504) return `${service} is unavailable right now. Retry shortly.`;
+    if (status >= 500) return `${service} ran into a problem. Retry shortly.`;
+    return `Request failed (error ${status}). Retry shortly.`;
   }
   function describeNetworkFailure(step) {
     const service = step === "sign-in" ? "the sign-in service" : "the export server";
-    return `Can't reach ${service}. Check your internet connection, then try again.`;
+    return `Can't reach ${service}. Check your connection.`;
   }
-  var POLL_INTERRUPTED_MESSAGE = "The connection was interrupted during the export. The presentation may still finish: check your Google Drive, or try again.";
+  var POLL_INTERRUPTED_MESSAGE = "Connection lost. The presentation may still appear in your Drive.";
   function describeJobFailure(noun) {
     const subject = noun === "layout" ? "The template" : "The presentation";
-    return `${subject} couldn't be created in Google Slides. Try again in a moment.`;
+    return `${subject} couldn't be created. Retry shortly.`;
   }
   function describeSlideFailure(raw, noun) {
     const status = Number(/Slides API (\d{3})/.exec(raw)?.[1] ?? NaN);
     if (status === 400 && /image/i.test(raw)) {
-      return `Google Slides rejected an image on this ${noun}, too large or in a format it can't read. Simplify the rasterized elements in Figma, then retry.`;
+      return `Google Slides rejected an image on this ${noun}. Simplify it in Figma, then retry.`;
     }
-    if (status === 400) return `Google Slides rejected an element on this ${noun}. Retry; if it keeps failing, simplify the ${noun} in Figma (fewer effects or layers).`;
-    if (status === 401 || status === 403) return "Google refused access to the presentation. Sign out from Settings, sign back in, then retry.";
-    if (status === 429) return "Google Slides is limiting requests right now. Wait a minute, then retry.";
+    if (status === 400) return `Google Slides rejected an element on this ${noun}. Retry, or simplify it in Figma.`;
+    if (status === 401 || status === 403) return "Google refused access. Sign out in Settings, sign back in, then retry.";
+    if (status === 429) return "Google Slides is rate limiting. Wait a minute, then retry.";
     if (status >= 500) return `Google Slides had a temporary problem with this ${noun}. Retry it.`;
-    return `This ${noun} couldn't be written to Google Slides. Retry; if it keeps failing, simplify it in Figma.`;
+    return `This ${noun} couldn't be written to Google Slides. Retry, or simplify it.`;
   }
 
   // src/ui/exportCursor.ts
@@ -5361,11 +5374,11 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
   function addLabel(count) {
     return count === 0 ? "Add frames" : `Add ${count} frame${count === 1 ? "" : "s"}`;
   }
-  var FAILED_SLIDE_FALLBACK = "This slide could not be written to Google Slides.";
+  var FAILED_SLIDE_FALLBACK = "This slide couldn't be written to Google Slides.";
   var SITE_URL = "https://decker.billeltighidet.fr";
   var AuthExpiredError = class extends Error {
     constructor() {
-      super("Your Google session has expired. Sign in again, then retry.");
+      super("Google session expired. Sign in again, then retry.");
     }
   };
   async function request(step, url, init) {
@@ -5418,8 +5431,8 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     return /* @__PURE__ */ u3("svg", { width: size, height: size, viewBox: "0 0 32 32", fill: "currentColor", xmlns: "http://www.w3.org/2000/svg", "aria-hidden": "true", children: /* @__PURE__ */ u3("path", { d: "M10,6V8H22.59L6,24.59,7.41,26,24,9.41V22h2V6Z" }) });
   }
   function successMessage(mode, slideCount) {
-    if (mode === "template") return `Template created in Google Slides (${slideCount} layout${slideCount === 1 ? "" : "s"}).`;
-    return `${slideCount} slide${slideCount === 1 ? "" : "s"} exported to Google Slides.`;
+    if (mode === "template") return "Template created in Google Slides.";
+    return `${slideCount} slide${slideCount === 1 ? "" : "s"} exported.`;
   }
   function TitleBar({ mode }) {
     return /* @__PURE__ */ u3("div", { className: "f2s-titlebar", children: [
@@ -5972,7 +5985,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
         }
         return {
           status: "failed",
-          error: "Export timed out after 3 minutes. The presentation may still be processing; check your Google Drive, or retry once it settles.",
+          error: "Export timed out. The presentation may still appear in your Drive.",
           resultUrl: lastPresentationUrl,
           failedSlides: {},
           retryable: Boolean(lastPresentationId)
@@ -6033,7 +6046,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
       }
       cancelRequestedRef.current = false;
       setCanceling(false);
-      const message = "Couldn't cancel. The export keeps going and will finish on its own.";
+      const message = "Couldn't cancel. The export will finish on its own.";
       if (modeRef.current === "template") showTemplateSelectionNotice(message);
       else showSelectionNotice(message);
     }
@@ -6058,7 +6071,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
           }
           if (result.status === "error") {
             console.error("[decker] Google sign-in failed:", result.message);
-            setLoginError("Google sign-in didn't complete. Try again.");
+            setLoginError("Sign-in didn't complete. Try again.");
             setAuthUrl(void 0);
             return;
           }
