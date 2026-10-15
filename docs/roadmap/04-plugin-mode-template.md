@@ -5,13 +5,16 @@ Ce qui rend la création d'un template moins bloquante et plus guidée. La struc
 ## Blocage et correction
 
 - [ ] **Blocage muet.** Un seul layout en erreur grise « Create template », et la raison n'est que dans une infobulle. → Afficher « 1 layout to fix » près du bouton ; un clic mène au layout en cause.
+  - En partie couvert le 14 octobre : la vignette du layout en cause porte la pastille rouge « 3 to fix » dans le rail. Reste le compteur près du bouton et le clic qui y mène.
 - [ ] **Correction sur place.** La boîte « Fix before creating the template » liste les causes sans proposer d'action. → Un bouton « Fix automatically » dans la boîte, qui lance le reformatage sur ce layout : il corrige justement les dégradés et les ombres.
 
 ## Structure du rapport
 
 - [ ] **Ordre inversé par rapport au Deck.** Les erreurs passent au-dessus de l'aperçu, et la tâche principale (assigner les rôles, liste Content) est tout en bas, invisible en 960×560. → Même ordre dans les deux modes : aperçu, « To fix », Content. Idéalement, Content à côté de l'aperçu (selon C).
-  - C tranché : aperçu en haut, rapport dessous, comme le Deck. Reprendre aussi du lot 03 la colonne commune aperçu/rapport (`.f2s-deck-column`) et l'icône de sélection en bout de ligne.
-  - Fait le 14 octobre : « Composition » est passée sous l'aperçu, juste au-dessus de « Content » (voir plus bas). Reste au-dessus de l'aperçu la seule boîte bloquante « Fix before creating the template ».
+  - C tranché : aperçu en haut, rapport dessous, comme le Deck. Reprendre aussi du lot 03 la colonne commune aperçu/rapport (`.f2s-deck-column`).
+  - ~~Icône de sélection en bout de ligne~~ : retirée des deux modes le 14 octobre (`c3129ee`), plus rien à reprendre.
+  - Plus de liste « To fix » séparée : les conflits de composition s'affichent sur la ligne du calque (voir plus bas). L'ordre visé devient donc : boîte bloquante, aperçu, Composition, Content.
+  - Fait le 14 octobre : « Composition » est passée sous l'aperçu, juste au-dessus de « Content » (voir plus bas). Reste au-dessus de l'aperçu la seule boîte bloquante « Fix before creating the template ». Depuis le 15 octobre (`fbb5fd0`), elle suit la largeur et le padding des sections.
 - [x] **Rôle affiché deux fois.** Libellé « TITLE » et sélecteur « [[title]] » sur la même ligne. → Garder seulement le sélecteur, avec un style marqué quand un rôle est assigné.
   - Fait : puce retirée, le sélecteur seul porte le rôle, écrit à l'encre (« No role » reste grisé).
 - [x] **Composition et Content.** Demandé le 14 octobre : « Composition » liste les calques qui ont un rôle, sous la même forme que « Content », qui ne garde que les autres. Un calque passe dans Composition dès qu'il reçoit un rôle et revient dans Content quand on le lui retire (`ui/compositionRows.ts`). Les conflits (rôle en double, `[[title]]` sur une forme…) ne forment plus une liste à part : la ligne du calque prend un contour rouge et la raison s'écrit sous son nom.

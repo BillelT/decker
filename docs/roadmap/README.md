@@ -1,6 +1,6 @@
 # Roadmap Decker
 
-Mise à jour : 14 octobre 2026.
+Mise à jour : 15 octobre 2026.
 
 ## Où on en est : la palette est corrigée
 
@@ -32,6 +32,15 @@ Fait (commits `c60238f` et `584b710` sur `decker`, `48413de` sur `billel-skill`)
 
 ## Le focus maintenant
 
+Lots 01, 02 et 03 terminés. On est sur le **lot 04 (mode Template)**, 3 tâches sur 12 faites.
+
+Retouches d'interface faites le 15 octobre en dehors des lots (`4b275ad` à `7d66acf`), reportées dans les fichiers concernés :
+
+- Footer : alignement optique (B à 12 px, icône Settings à 13 px). Plus de statut ni d'« Export again » après un succès ; « Open in Slides » redevient « Export again » une fois cliqué (02).
+- Sections en `gray-50`, champs et vignettes du rail en creux, opacités du biseau revues (05).
+- Messages d'erreur et d'info en une ligne, toasts en ombres superposées (06 : messages d'erreur faits).
+- Boîtes d'erreur du mode Template à la largeur et au padding des sections (04).
+
 On passe aux choses qui manquent, aux problèmes de flow et d'UX, et à tout ce qui rend le plugin plus simple à utiliser et plus clair à lire. Ensuite le site, avec un easter egg jouable dans le footer.
 
 ## Les fichiers
@@ -53,23 +62,24 @@ Ils conditionnent plusieurs tâches. Les trancher avant d'attaquer les fichiers 
 
 | # | Question | Options | Fichiers touchés |
 |---|---|---|---|
-| A | Biseaux en `box-shadow` sur les boutons (plugin et site), alors que la DA impose zéro ombre sur un bouton | La DA admet une variante en relief, ou les deux projets reviennent à plat | 05, 07 |
+| A | Biseaux en `box-shadow` sur les boutons (plugin et site), alors que la DA impose zéro ombre sur un bouton. Sections, champs et vignettes sont désormais en creux (15 octobre) : la question ne porte plus que sur les boutons | La DA admet une variante en relief, ou les boutons reviennent à plat | 05, 07 |
 | E | Fenêtre d'export Win95 dans le skin Modern | Easter egg assumé, ou version Modern | 05 |
 | F | Texte en 14 px | La partie « header sur une ligne à 960 px » est tranchée (voir plus bas) ; reste la taille du texte | 05 |
 | G | Couleur d'erreur absente de la DA | Rouge plus sombre que `--b-accent-red`, toujours avec icône et libellé | 05, DA |
+| I | `gray-50` posé dans le plugin le 15 octobre, hors de la rampe de la DA | L'ajouter à `token.css`, ou se replier sur `gray-100` / le blanc | 05, DA |
 
 Tranchés le 14 octobre 2026 :
 
 - **D** : « Prepare for Slides » reste dans le header, tel quel. Retravailler les slides dans Figma est une force du plugin.
 - **F** (header) : les libellés du lot 02 tiennent sur une ligne à 960 px, dans les deux modes et les deux skins.
 - **C** : on garde l'aperçu en haut et le rapport dessous, dans les deux modes. Pas de rapport à droite : à côté des couleurs et de la typo du mode Template, il ferait un panneau fourre-tout.
-- **H** : thème sombre retiré du plugin, avec le réglage *Appearance*. Seul l'habillage (Modern ou Windows 95) se choisit.
+- **H** : thème sombre retiré du plugin, avec le réglage *Appearance*. Seul l'habillage (Modern ou Windows 95) se choisit. Fait (`1f68e9d`).
 
 ## Ordre conseillé
 
 1. **01** : aucun arbitrage, petits correctifs, gros gain.
 2. **02** : fait le 14 octobre 2026.
-3. **03** : fait le 14 octobre 2026. **04** ensuite, plus aucun arbitrage en attente.
+3. **03** : fait le 14 octobre 2026. **04** en cours, plus aucun arbitrage en attente.
 4. **05** : la DA, après A, E, F, G.
 5. **06** : les textes en dernier, parce que les états vides citent les nouveaux libellés.
 6. **07** et **08** : le site, en parallèle du plugin.
