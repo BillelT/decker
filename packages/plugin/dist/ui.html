@@ -6239,6 +6239,10 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
       });
     }
     const exporting = exportState === "exporting";
+    const [resultOpened, setResultOpened] = d2(false);
+    h2(() => {
+      if (exporting) setResultOpened(false);
+    }, [exporting]);
     const successVisible = exportState === "done" && (previewSettled || exportSource !== mode);
     h2(() => {
       if (!successVisible || exportSource === void 0) return;
@@ -6285,11 +6289,12 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
           ] }) })
         ] });
       }
-      if (resultCurrent && resultUrl && exportState !== "canceled") {
+      if (resultCurrent && resultUrl && exportState !== "canceled" && !resultOpened) {
         return /* @__PURE__ */ u3(
           "a",
           {
             href: resultUrl,
+            onClick: () => setResultOpened(true),
             target: "_blank",
             rel: "noopener noreferrer",
             className: "f2s-btn f2s-btn--primary f2s-btn--icon-end",
@@ -6341,24 +6346,6 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
             /* @__PURE__ */ u3("span", { className: "f2s-footer-status-text", children: exportError })
           ] }),
           retryable && /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--secondary f2s-btn--footer", disabled: retrying, onClick: handleRetryFailedSlides, children: retrying ? "Retrying\u2026" : `Retry ${failedCount} failed ${noun}${failedCount === 1 ? "" : "s"}` })
-        ] });
-      }
-      if (successVisible && exportState === "done") {
-        return /* @__PURE__ */ u3(S, { children: [
-          /* @__PURE__ */ u3("p", { className: "f2s-footer-status f2s-footer-status--success", role: "status", children: [
-            /* @__PURE__ */ u3(StatusIcon, { tone: "success" }),
-            /* @__PURE__ */ u3("span", { className: "f2s-footer-status-text", children: successMessage(mode, exportedCount) })
-          ] }),
-          /* @__PURE__ */ u3(
-            "button",
-            {
-              type: "button",
-              className: "f2s-btn f2s-btn--secondary f2s-btn--footer",
-              title: againTitle,
-              onClick: mode === "deck" ? startExport : startTemplateCreate,
-              children: mode === "deck" ? "Export again" : "Create again"
-            }
-          )
         ] });
       }
       if (exportState === "canceled" && previewSettled) {

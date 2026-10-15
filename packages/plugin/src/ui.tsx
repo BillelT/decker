@@ -1368,6 +1368,14 @@ function App() {
   }
 
   const exporting = exportState === 'exporting';
+  // « Open in Slides » n'est le bouton principal que jusqu'à son premier clic :
+  // l'utilisateur va vérifier sa présentation dans Slides, et à son retour le
+  // bouton redevient un export classique (« Export again »), sans qu'il faille
+  // fermer le plugin. Remis à zéro dès qu'un nouvel export démarre.
+  const [resultOpened, setResultOpened] = useState(false);
+  useEffect(() => {
+    if (exporting) setResultOpened(false);
+  }, [exporting]);
   // Un aperçu démonté (l'utilisateur a changé d'onglet sitôt l'export
   // conclu) ne signalera jamais sa fin : il n'y a alors plus rien à attendre.
   const successVisible = exportState === 'done' && (previewSettled || exportSource !== mode);
@@ -1479,10 +1487,11 @@ function App() {
       );
     }
 
-    if (resultCurrent && resultUrl && exportState !== 'canceled') {
+    if (resultCurrent && resultUrl && exportState !== 'canceled' && !resultOpened) {
       return (
         <a
           href={resultUrl}
+          onClick={() => setResultOpened(true)}
           target="_blank"
           rel="noopener noreferrer"
           className="f2s-btn f2s-btn--primary f2s-btn--icon-end"
@@ -1558,9 +1567,10 @@ function App() {
 
   /**
    * Statut du dernier export de ce mode, dans le footer, avec l'action qui
-   * en découle juste à côté : « Retry » après un échec, « Export again »
-   * après un succès (le lien vers la présentation est alors le bouton
-   * principal), le lien vers ce qui a été créé après une annulation. Masqué
+   * en découle juste à côté : « Retry » après un échec, le lien vers ce qui
+   * a été créé après une annulation. Rien après un succès : le toast le dit,
+   * et le bouton principal (« Open in Slides », puis « Export again » une
+   * fois ouvert) porte la suite. Masqué
    * dès que le panneau a changé depuis l'export : il ne décrirait plus ce
    * qu'on a sous les yeux.
    */
@@ -1583,24 +1593,6 @@ function App() {
               {retrying ? 'Retrying…' : `Retry ${failedCount} failed ${noun}${failedCount === 1 ? '' : 's'}`}
             </button>
           )}
-        </>
-      );
-    }
-    if (successVisible && exportState === 'done') {
-      return (
-        <>
-          <p className="f2s-footer-status f2s-footer-status--success" role="status">
-            <StatusIcon tone="success" />
-            <span className="f2s-footer-status-text">{successMessage(mode, exportedCount)}</span>
-          </p>
-          <button
-            type="button"
-            className="f2s-btn f2s-btn--secondary f2s-btn--footer"
-            title={againTitle}
-            onClick={mode === 'deck' ? startExport : startTemplateCreate}
-          >
-            {mode === 'deck' ? 'Export again' : 'Create again'}
-          </button>
         </>
       );
     }
