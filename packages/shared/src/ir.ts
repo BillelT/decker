@@ -12,6 +12,13 @@ export interface IRDocument {
   slides: IRSlide[];
   options: ExportOptions;
   /**
+   * `template` : création de template (vide d'abord le contenu par défaut
+   * du Master et des layouts). Absent = deck. Avant ce champ, le backend
+   * déduisait le mode de la présence de `theme`, si bien qu'un template
+   * sans aucun rôle de couleur gardait les placeholders par défaut.
+   */
+  kind?: 'deck' | 'template';
+  /**
    * Palette à écrire sur la page Master (mode template — audit 2026-08,
    * voir LIMITATIONS.md § Création de template). Les 12 rôles DOIVENT
    * tous être fournis si présent : l'API Slides exige les 12
@@ -190,6 +197,12 @@ export interface IRShape extends IRBase {
    */
   flipped?: boolean;
   fill?: IRPaint;
+  /**
+   * `weightPt` est en px Figma malgré son nom (historique) : le mapper le
+   * multiplie par l'échelle de la slide, comme positions et tailles. Il
+   * l'envoyait tel quel, d'où des contours 2,7 fois trop épais pour une
+   * frame de 1920 px sur une slide de 720 pt (corrigé le 15 octobre).
+   */
   stroke?: { color: IRColor; weightPt: number; dash: 'SOLID' | 'DASH' | 'DOT' };
 }
 

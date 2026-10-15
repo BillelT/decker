@@ -2272,6 +2272,7 @@
       slideSize: computeSlideSizePt(slides[0]?.frameSize),
       slides,
       options: { mode: "new-presentation", rasterScale: 2, includeUnderlay: false, underlayOpacity: 0.3, strictMode: true },
+      kind: "template",
       theme
     };
     postExportPayload(doc, assets);

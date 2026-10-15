@@ -86,9 +86,10 @@ export async function runExportJob(
       await updateJob(job.id, { presentationId, presentationUrl: presentationUrl(presentationId), masterObjectId });
     }
 
-    // Mode template (doc.theme présent) : on vide le contenu par défaut du
-    // Master et des layouts avant d'écrire quoi que ce soit.
-    if (doc.theme && presentationId && masterAndLayoutElementIds.length > 0) {
+    // Mode template : on vide le contenu par défaut du Master et des
+    // layouts avant d'écrire quoi que ce soit, palette ou pas. `doc.theme`
+    // reste accepté comme marqueur pour un plugin pas encore mis à jour.
+    if ((doc.kind === 'template' || doc.theme) && presentationId && masterAndLayoutElementIds.length > 0) {
       await clearMasterAndLayoutElements(accessToken, presentationId, masterAndLayoutElementIds);
     }
 

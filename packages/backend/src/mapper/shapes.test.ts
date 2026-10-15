@@ -60,6 +60,13 @@ describe('mapShape', () => {
     });
   });
 
+  it('scales the stroke weight with the slide, like positions and sizes (Figma px to Slides pt)', () => {
+    const shape = baseShape({ stroke: { color: { r: 0, g: 0, b: 0, a: 1 }, weightPt: 2, dash: 'SOLID' } });
+    const reqs = mapShape(shape, 'page1', 0.375, 0, 0);
+    const update = reqs.find((r) => 'updateShapeProperties' in r) as any;
+    expect(update.updateShapeProperties.shapeProperties.outline.weight).toEqual({ magnitude: 0.75, unit: 'PT' });
+  });
+
   it('maps TEXT_BOX shapeType down to RECTANGLE for non-text shapes reusing the enum', () => {
     const shape = baseShape({ shapeType: 'TEXT_BOX' });
     const [createReq] = mapShape(shape, 'page1', 1, 0, 0) as any;

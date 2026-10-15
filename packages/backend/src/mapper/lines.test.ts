@@ -31,6 +31,12 @@ describe('mapLine', () => {
     });
   });
 
+  it('scales the stroke weight with the slide (Figma px to Slides pt)', () => {
+    const line = baseLine({ stroke: { color: { r: 0, g: 0, b: 0, a: 1 }, weightPt: 4, dash: 'SOLID' } });
+    const update = mapLine(line, 'page1', 0.5, 0, 0).find((r) => 'updateLineProperties' in r) as any;
+    expect(update.updateLineProperties.lineProperties.weight).toEqual({ magnitude: 2, unit: 'PT' });
+  });
+
   it('maps stroke color/weight/dash into updateLineProperties', () => {
     const line = baseLine({ stroke: { color: { r: 1, g: 0, b: 0, a: 1 }, weightPt: 3, dash: 'DASH' } });
     const reqs = mapLine(line, 'page1', 1, 0, 0);

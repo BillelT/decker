@@ -17,7 +17,7 @@ export function mapLine(line: IRLine, pageObjectId: string, scale: number, offse
   const alpha = combinedAlpha(line.stroke.color.a, line.opacity);
   const lineProperties: LineProperties = {
     lineFill: { solidFill: { ...toSolidFill(line.stroke.color), alpha } },
-    weight: pt(line.stroke.weightPt),
+    weight: pt(line.stroke.weightPt * scale),
     dashStyle: line.stroke.dash,
   };
 

@@ -47,7 +47,7 @@ export function mapShape(
   if (shape.stroke) {
     shapeProperties.outline = {
       outlineFill: { solidFill: toSolidFill(shape.stroke.color) },
-      weight: pt(shape.stroke.weightPt),
+      weight: pt(shape.stroke.weightPt * scale),
       dashStyle: shape.stroke.dash,
       propertyState: 'RENDERED',
     };
