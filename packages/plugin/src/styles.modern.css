@@ -28,8 +28,8 @@ html.f2s-skin--modern {
      texte de marque (rgba sur --color-text) plutôt que sur un gris système
      fixe. */
   --hyb-hi: rgba(255, 255, 255, 0.9);
-  --hyb-lo: rgba(18, 15, 13, 0.22);
-  --hyb-lo-strong: rgba(18, 15, 13, 0.4);
+  --hyb-lo: rgba(18, 15, 13, 0.18);
+  --hyb-lo-strong: rgba(18, 15, 13, 0.43);
 
   --hyb-out: inset -1px -1px var(--hyb-lo), inset 1px 1px var(--hyb-hi), inset -2px -2px var(--hyb-lo-strong),
     inset 2px 2px var(--hyb-hi);
@@ -63,7 +63,7 @@ html.f2s-skin--modern .f2s-font-dropdown,
 html.f2s-skin--modern .f2s-font-combobox {
   border: none;
   border-radius: 0;
-  box-shadow: var(--hyb-in);
+  box-shadow: var(--hyb-well);
 }
 
 /* L'anneau de focus remplace le contour système : au 2px orange-40 il ne
@@ -74,7 +74,7 @@ html.f2s-skin--modern .f2s-title-input:focus,
 html.f2s-skin--modern .f2s-font-dropdown:focus,
 html.f2s-skin--modern .f2s-font-combobox:focus-within {
   outline: none;
-  box-shadow: var(--hyb-in), 0 0 0 2px var(--color-gray-500);
+  box-shadow: var(--hyb-well), 0 0 0 2px var(--color-gray-500);
 }
 
 html.f2s-skin--modern .f2s-font-combobox-list {

@@ -52,6 +52,9 @@
   --color-gray-500: hsl(25, 6%, 53%); /* #8e8680 */
   --color-gray-200: hsl(18, 8%, 84%); /* #d9d5d3 */
   --color-gray-100: hsl(30, 23%, 93%); /* #f1ede9 */
+  /* 50 : fond des sections du skin Modern (Content, Composition, Colors,
+     Typography...), plus clair que le gray-100 des surfaces creusées. */
+  --color-gray-50: hsl(40 10% 96% / 1);
 
   /* Texte secondaire : libellés de section, légendes, rôles de placeholder,
      onglets inactifs. Même rôle que --b-text-muted dans la DA. */
@@ -75,9 +78,9 @@
      DA, comme le tag "approximated". */
   --color-field: #ffffff;
   /* Fond des sections (Content, Composition, Notes, boîtes d'erreur, Colors,
-     Typography) : blanc pur aussi, demandé le 2026-10-14 pour que chaque
-     section se détache du fond du panneau. */
-  --color-section: #ffffff;
+     Typography) : gray-50, demandé le 2026-10-15 (c'était du blanc pur le
+     2026-10-14) pour que chaque section se détache du fond du panneau. */
+  --color-section: var(--color-gray-50);
 
   /* Tapis du tag "approximé" (.f2s-log-entry-flag--visual-diff) : opaque. Un
      tapis translucide (--color-orange-40) prenait la couleur du fond sous
@@ -1833,11 +1836,11 @@ html:not(.f2s-skin--win95)
   gap: 16px;
 }
 
-/* Logo + "Buy me a coffee" : 16 px entre le B et le texte. */
+/* Logo + "Buy me a coffee" : 12 px entre le B et le texte. */
 .f2s-signature {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
 /* "Buy me a coffee" : lien texte de la DA (`.text-link` : encre, 12px, 500,
@@ -3085,8 +3088,8 @@ html.f2s-skin--modern {
      texte de marque (rgba sur --color-text) plutôt que sur un gris système
      fixe. */
   --hyb-hi: rgba(255, 255, 255, 0.9);
-  --hyb-lo: rgba(18, 15, 13, 0.22);
-  --hyb-lo-strong: rgba(18, 15, 13, 0.4);
+  --hyb-lo: rgba(18, 15, 13, 0.18);
+  --hyb-lo-strong: rgba(18, 15, 13, 0.43);
 
   --hyb-out: inset -1px -1px var(--hyb-lo), inset 1px 1px var(--hyb-hi), inset -2px -2px var(--hyb-lo-strong),
     inset 2px 2px var(--hyb-hi);
@@ -3120,7 +3123,7 @@ html.f2s-skin--modern .f2s-font-dropdown,
 html.f2s-skin--modern .f2s-font-combobox {
   border: none;
   border-radius: 0;
-  box-shadow: var(--hyb-in);
+  box-shadow: var(--hyb-well);
 }
 
 /* L'anneau de focus remplace le contour système : au 2px orange-40 il ne
@@ -3131,7 +3134,7 @@ html.f2s-skin--modern .f2s-title-input:focus,
 html.f2s-skin--modern .f2s-font-dropdown:focus,
 html.f2s-skin--modern .f2s-font-combobox:focus-within {
   outline: none;
-  box-shadow: var(--hyb-in), 0 0 0 2px var(--color-gray-500);
+  box-shadow: var(--hyb-well), 0 0 0 2px var(--color-gray-500);
 }
 
 html.f2s-skin--modern .f2s-font-combobox-list {
