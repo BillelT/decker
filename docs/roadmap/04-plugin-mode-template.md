@@ -4,11 +4,10 @@ Ce qui rend la création d'un template moins bloquante et plus guidée. La struc
 
 ## Blocage et correction
 
-- [ ] **Blocage muet.** Un seul layout en erreur grise « Create template », et la raison n'est que dans une infobulle. → Afficher « 1 layout to fix » près du bouton ; un clic mène au layout en cause.
-  - En partie couvert le 14 octobre : la vignette du layout en cause porte la pastille rouge « 3 to fix » dans le rail. Reste le compteur près du bouton et le clic qui y mène.
-  - Décision du 15 octobre : pas de bouton à côté. Tant qu'un layout bloque, « Create template » (inutilisable) devient lui-même le bouton qui mène aux erreurs, une par une, dans l'ordre des layouts.
-  - Aparté du 15 octobre : un vecteur à forme complexe (icône, illustration) reste rasterisé après « Prepare for Slides » et bloque tout le template, en rouge, sans explication (`serialize/templateValidation.ts` reclasse tout raster en bloquant). Règle à revoir, voir la recommandation dans la conversation du 15 octobre.
-- [ ] **Correction sur place.** La boîte « Fix before creating the template » liste les causes sans proposer d'action. → Un bouton « Fix automatically » dans la boîte, qui lance le reformatage sur ce layout : il corrige justement les dégradés et les ombres.
+- [x] **Blocage muet.** Un seul layout en erreur grisait « Create template », et la raison n'était que dans une infobulle.
+  - Fait le 15 octobre : tant qu'un layout bloque, « Create template » devient « N issues to fix » ; chaque clic ouvre le layout en erreur suivant, dans l'ordre du rail.
+  - Fait le 15 octobre (aparté) : nouvelle règle de blocage (`serialize/templateValidation.ts`). Ne bloquent plus que les tags de placeholder mal écrits, les rasters qui figeraient un texte ou un placeholder, et ce que « Prepare » corrige (dégradé, ombre, fills multiples, tracking, police absente, rayon, style de ligne). Une forme complexe, un masque, un mode de fusion ou un fond de frame image sans texte partent en image sans bloquer, avec la pastille grise « N rasterized » sur la vignette et le tag gris « Complex shape » dans le rapport.
+- [x] **Correction sur place.** Fait le 15 octobre : bouton ghost « Prepare this layout » (le `.btn-ghost` de la DA) dans la boîte « Fix before creating the template », affiché seulement si un des blocages fait partie de ce que « Prepare » corrige. Il ne prépare que ce layout (pas la sélection du canvas), et la copie préparée reprend sa place dans le rail.
 
 ## Structure du rapport
 

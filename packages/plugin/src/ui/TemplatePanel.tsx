@@ -11,6 +11,7 @@ import type { ExportCursor } from './exportCursor.js';
 import { postToPlugin, selectSourceNodes, type Notice, type TemplateElement, type TemplateLayoutState, type TemplateWarning } from './types.js';
 import { CANONICAL_TAG_FOR_ROLE } from '../serialize/placeholder.js';
 import { COMPOSITION_WARNING_CODES } from '../serialize/templateComposition.js';
+import { hasPrepareFixableBlocking } from '../serialize/templateValidation.js';
 import type { PlaceholderRole } from '@figma-to-slides/shared';
 
 /** `tag` vide = option "No role" : le sandbox retire le tag du calque au lieu d'en poser un. */
@@ -154,6 +155,8 @@ export interface TemplatePanelProps extends TemplateStylePanelProps {
   /** Slide affichée par l'aperçu d'export, à chaque pas : le bouton principal en tire « Exporting 2/4 » (voir ui.tsx). */
   onPacedCursorChange: (cursor: ExportCursor | undefined) => void;
   onRemove: (id: string) => void;
+  /** « Prepare this layout » : reformate ce seul layout pour Slides, comme « Prepare for Slides » (voir ui.tsx). */
+  onPrepareLayout: (id: string) => void;
   onRename: (id: string, name: string) => void;
   /**
    * Validation du renommage (blur ou Entrée, pas à chaque frappe) : renomme
@@ -188,6 +191,7 @@ export function TemplatePanel({
   failedSlides,
   onPreviewSettled,
   onRemove,
+  onPrepareLayout,
   onRename,
   onRenameCommit,
   fontOverrides,
@@ -336,9 +340,11 @@ export function TemplatePanel({
           const layout = layouts[id];
           if (!layout) return null;
           const item = itemState(id, index);
-          // Même pastille que le Deck ("3 rasterized"), avec le nombre de
-          // problèmes à corriger : rouge, parce qu'ici ils bloquent la création.
+          // Même pastille que le Deck : rouge « 3 to fix » quand des problèmes
+          // bloquent la création, sinon grise « 2 rasterized » pour ce qui
+          // partira en image sans bloquer (icône, illustration).
           const toFix = layout.warnings.filter((w) => w.severity === 'blocking').length;
+          const rasterized = layout.warnings.filter((w) => w.severity !== 'blocking' && logEntryFlag(w.code) === 'rasterized').length;
           return (
             <div key={id} ref={registerItem(id)} className={item.className} style={item.style}>
               <button
@@ -352,12 +358,16 @@ export function TemplatePanel({
                   failure
                     ? `Export failed: ${failure}`
                     : layout.blocking
-                      ? 'Contains an element that would be rasterized. Open it to see the details.'
+                      ? 'This layout has issues to fix. Open it to see the details.'
                       : undefined
                 }
               >
                 {layout.previewDataUrl && <img src={layout.previewDataUrl} alt={layout.name} draggable={false} />}
-                {layout.blocking && toFix > 0 && <span className="f2s-frame-badge f2s-frame-badge--error f2s-tabular">{toFix} to fix</span>}
+                {layout.blocking && toFix > 0 ? (
+                  <span className="f2s-frame-badge f2s-frame-badge--error f2s-tabular">{toFix} to fix</span>
+                ) : (
+                  rasterized > 0 && <span className="f2s-frame-badge f2s-tabular">{rasterized} rasterized</span>
+                )}
               </button>
               <div className="f2s-frame-info">
                 <span className="f2s-frame-index">{index + 1}.</span>
@@ -405,6 +415,20 @@ export function TemplatePanel({
               <div className="f2s-logs f2s-tmpl-section--blocking">
                 <div className="f2s-logs-header">
                   <h3 className="f2s-tmpl-heading">Fix before creating the template</h3>
+                  {/* Même reformatage que « Prepare for Slides », sur ce seul
+                      layout. Seulement si un des blocages fait partie de ce
+                      qu'il corrige : sinon le bouton ne changerait rien. */}
+                  {hasPrepareFixableBlocking(blockingWarnings) && (
+                    <button
+                      type="button"
+                      className="f2s-btn f2s-btn--ghost"
+                      disabled={locked}
+                      title="Duplicate this layout and reformat it for Slides: gradients, shadows, letter spacing and missing fonts are fixed automatically."
+                      onClick={() => onPrepareLayout(previewedLayout.id)}
+                    >
+                      Prepare this layout
+                    </button>
+                  )}
                 </div>
                 <TemplateLogList warnings={blockingWarnings} fontOverrides={fontOverrides} />
               </div>

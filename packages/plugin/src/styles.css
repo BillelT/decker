@@ -11,7 +11,7 @@
 /* Les valeurs viennent de la DA : src/generated/tokens.css (--b-*), injecté
    avant cette feuille au build (voir scripts/sync-tokens.mjs). Les --color-*
    ci-dessous ne sont que des rôles du plugin branchés sur ces tokens : on n'y
-   pose aucune valeur, sauf les trois exceptions signalées. Le skin Windows 95
+   pose aucune valeur, sauf les exceptions signalées. Le skin Windows 95
    (styles.win95.css) redéfinit ces rôles avec sa propre palette. */
 :root {
   --color-orange: var(--b-accent);
@@ -20,6 +20,9 @@
   /* Survol du bouton principal : orange éclairci. --b-accent-red est un
      accent graphique, jamais un état d'interaction. Encre dessus : 7.56:1. */
   --color-orange-hover: var(--b-accent-hover);
+  /* Exception (2026-10-15), à intégrer peut-être à la DA : contour de la
+     vignette active du rail, orange plus doux que l'orange de marque plein. */
+  --color-thumb-active: hsl(28, 72%, 52%); /* #dd7f2c */
   /* Exception (arbitrage G) : la DA n'a pas encore de couleur d'erreur.
      Rouge plein réservé aux états d'erreur et bloquants, toujours avec une
      icône ou un libellé. */
@@ -112,7 +115,6 @@ body {
   display: flex;
   flex-direction: column;
   position: relative;
-  padding-bottom: 57px;
 }
 
 button {
@@ -129,8 +131,16 @@ a {
   color: var(--color-orange);
 }
 
-/* Barres de défilement : celles de la DA (tokens.css), sauf en win95
-   (styles.win95.css), qui garde l'ascenseur 16px tramé d'origine. */
+/* Barres de défilement : celles de Chrome, en gris neutre (décision du
+   2026-10-15, exception à la DA). La DA (tokens.css) les teinte en noir à
+   18 %, ce qui donnait un pouce chaud sur le fond du panneau : remettre
+   `scrollbar-color` à `auto` rend ses couleurs natives au navigateur, en
+   gardant la largeur fine de la DA. Le skin win95 (styles.win95.css) garde
+   son ascenseur 16px tramé d'origine. */
+* {
+  scrollbar-color: auto;
+}
+
 
 /* ---- Top bar ---- */
 
@@ -530,6 +540,29 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   color: var(--color-bg);
 }
 
+/* Ghost : action utilitaire discrète, le .btn-ghost de la DA (ui-button) :
+   fond transparent, contour gray-200, texte gray-800 en 12px, fond gray-100
+   et texte à l'encre au survol. Sert à « Prepare this layout » dans la boîte
+   rouge d'un layout : l'action aide, elle ne doit pas concurrencer le bouton
+   principal du header. */
+.f2s-btn--ghost {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--b-space-2) var(--b-space-8);
+  border-color: var(--b-gray-200);
+  border-radius: var(--b-radius-xs);
+  background: transparent;
+  color: var(--b-text-control);
+  font-size: var(--b-text-xs);
+  font-weight: var(--b-font-medium);
+  line-height: var(--b-leading-tight);
+}
+
+.f2s-btn--ghost:hover:not(:disabled) {
+  background: var(--b-surface-sunken);
+  color: var(--b-ink);
+}
+
 .f2s-btn--primary {
   background: var(--color-orange);
   color: var(--color-on-accent);
@@ -918,7 +951,7 @@ a.f2s-btn {
 }
 
 .f2s-frame-preview.is-active {
-  border-color: var(--color-orange);
+  border-color: var(--color-thumb-active);
 }
 
 /* Pastille de la vignette, avec le nombre d'éléments concernés dans les deux
@@ -1242,7 +1275,7 @@ a.f2s-btn {
   color: var(--color-error);
 }
 
-.f2s-log-entry--rasterized {
+.f2s-log-entry--blocking.f2s-log-entry--rasterized {
   border-color: var(--color-error);
 }
 
@@ -1283,21 +1316,19 @@ a.f2s-btn {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Une image dans Slides n'est pas une erreur en soi : le tag est au gris
+   neutre et discret de la pastille des vignettes (gray-200, texte gray-800),
+   en Deck comme en Template. Il ne passe au rouge que sur une entrée qui
+   bloque la création du template (texte ou placeholder figé, ou problème que
+   « Prepare » corrige, voir serialize/templateValidation.ts). */
 .f2s-log-entry-flag--rasterized {
-  background: var(--color-error);
-}
-
-/* Mode deck : une image dans Slides n'empêche pas l'export, ce n'est pas une
-   erreur. Le tag passe au gris neutre et discret de la pastille des
-   vignettes (gray-200, texte gray-800). Le rouge reste au mode Template, où
-   un élément rasterisé bloque la création. */
-.f2s-deck-column .f2s-log-entry-flag--rasterized {
   background: var(--color-gray-200);
   color: var(--color-tag-neutral-ink);
 }
 
-.f2s-deck-column .f2s-log-entry--rasterized {
-  border-color: var(--color-border);
+.f2s-log-entry--blocking .f2s-log-entry-flag--rasterized {
+  background: var(--color-error);
+  color: var(--color-on-error);
 }
 
 /* Repère plus discret que "Rasterized" : l'élément reste natif et éditable,
@@ -1668,12 +1699,12 @@ a.f2s-btn {
 
 /* ---- Footer (settings / support) ---- */
 
+/* Dernier enfant de la colonne #app, dans le flux : le corps (rail, canvas,
+   aside) s'arrête pile sur sa bordure. En `position: fixed` avec une marge
+   basse devinée (57px), il laissait un vide de 14px sous le rail. */
 .f2s-footer {
   flex: none;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;

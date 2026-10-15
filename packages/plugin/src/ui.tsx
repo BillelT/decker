@@ -113,6 +113,9 @@ function addLabel(count: number): string {
 }
 
 /** Message par défaut d'un lot échoué sans `error` côté backend. */
+/** Pluriel anglais de « issue » (« 1 issue », « 2 issues »). */
+const ISSUE_PLURALS = new Intl.PluralRules('en');
+
 const FAILED_SLIDE_FALLBACK = "This slide couldn't be written to Google Slides.";
 
 /** Domaine public (Privacy Policy / Terms) — distinct du backend d'API (`backend.baseUrl`), voir CLAUDE.md. */
@@ -376,6 +379,20 @@ function App() {
 
   /** Un template ne peut être créé que si plus aucun layout n'a d'élément qui serait rasterisé. */
   const templateHasBlockingLayout = templateOrder.some((id) => templateLayouts[id]?.blocking);
+  /** Problèmes bloquants de tout le template, pour le libellé « 2 issues to fix ». */
+  const templateIssueCount = templateOrder.reduce(
+    (sum, id) => sum + (templateLayouts[id]?.warnings.filter((w) => w.severity === 'blocking').length ?? 0),
+    0,
+  );
+
+  /** Ouvre le layout en erreur qui suit celui affiché (en boucle), dans l'ordre du rail. */
+  function showNextTemplateIssue() {
+    const blocked = templateOrder.filter((id) => templateLayouts[id]?.blocking);
+    if (blocked.length === 0) return;
+    const current = activeTemplateId ? templateOrder.indexOf(activeTemplateId) : -1;
+    const next = blocked.find((id) => templateOrder.indexOf(id) > current) ?? blocked[0];
+    setActiveTemplateId(next);
+  }
 
   // Onglet "Style" du mode template (audit 2026-08, point 2 — TODO.md §
   // Mode template) : vue agrégée sur TOUT le template plutôt que par
@@ -677,14 +694,22 @@ function App() {
         }
         case 'template-candidate-removed': {
           const id = msg.id as string;
-          setTemplateOrder((prev) => prev.filter((x) => x !== id));
+          // Layout remplacé par sa copie préparée (« Prepare ») : la copie
+          // reprend sa place dans le rail et reste affichée.
+          const replacedBy = typeof msg.replacedBy === 'string' ? msg.replacedBy : undefined;
+          if (replacedBy) {
+            setTemplateOrder((prev) => prev.map((x) => (x === id ? replacedBy : x)));
+            setActiveTemplateId((prev) => (prev === id ? replacedBy : prev));
+          } else {
+            setTemplateOrder((prev) => prev.filter((x) => x !== id));
+          }
           setTemplateLayouts((prev) => {
             if (!(id in prev)) return prev;
             const next = { ...prev };
             delete next[id];
             return next;
           });
-          setActiveTemplateId((prev) => (prev === id ? undefined : prev));
+          if (!replacedBy) setActiveTemplateId((prev) => (prev === id ? undefined : prev));
           break;
         }
         case 'canvas-selection-changed':
@@ -1243,6 +1268,11 @@ function App() {
     postToPlugin({ type: 'prepare-for-slides', deckFrameIds: order, fontOverrides });
   }
 
+  /** « Prepare this layout » (boîte rouge d'un layout) : ce seul layout, sans la sélection du canvas. */
+  function handlePrepareTemplateLayout(id: string) {
+    postToPlugin({ type: 'prepare-template-for-slides', layoutFrameIds: [id], fontOverrides, onlyListed: true });
+  }
+
   function handlePrepareTemplateForSlides() {
     // Même flow côté template : le reformatage automatique élimine la
     // majorité des avertissements bloquants (dégradés aplatis, ombres
@@ -1454,6 +1484,21 @@ function App() {
   function renderPrimaryActions() {
     const isDeck = mode === 'deck';
     const startLabel = isDeck ? (exportedHere ? 'Export again' : 'Export') : exportedHere ? 'Create again' : 'Create template';
+    // Tant qu'un layout bloque, « Create template » (inutilisable) devient
+    // le bouton qui mène aux erreurs : chaque clic ouvre le layout suivant
+    // en erreur, dans l'ordre du rail (décision du 2026-10-15).
+    if (!isDeck && templateHasBlockingLayout && !(exportSource === mode && (exporting || settlingHere))) {
+      return (
+        <button
+          type="button"
+          className="f2s-btn f2s-btn--primary f2s-tabular"
+          title="Open the next layout to fix. The template can be created once every layout is fixed."
+          onClick={showNextTemplateIssue}
+        >
+          {templateIssueCount} {ISSUE_PLURALS.select(templateIssueCount) === 'one' ? 'issue' : 'issues'} to fix
+        </button>
+      );
+    }
     if (!sessionToken) return renderSignIn(startLabel);
 
     if (exportSource === mode && (exporting || settlingHere)) {
@@ -1503,14 +1548,8 @@ function App() {
       );
     }
 
-    const disabled = busyFromOtherMode || (isDeck ? order.length === 0 : templateOrder.length === 0 || templateHasBlockingLayout);
-    const title = busyFromOtherMode
-      ? busyTitle
-      : !isDeck && templateHasBlockingLayout
-        ? 'Fix the blocking issues listed below before creating the template.'
-        : exportedHere
-          ? againTitle
-          : undefined;
+    const disabled = busyFromOtherMode || (isDeck ? order.length === 0 : templateOrder.length === 0);
+    const title = busyFromOtherMode ? busyTitle : exportedHere ? againTitle : undefined;
     return (
       <button type="button" className="f2s-btn f2s-btn--primary" disabled={disabled} title={title} onClick={isDeck ? startExport : startTemplateCreate}>
         {startLabel}
@@ -1776,6 +1815,7 @@ function App() {
           failedSlides={failedSlidesHere}
           onPreviewSettled={() => setPreviewSettled(true)}
           onRemove={removeTemplateLayout}
+          onPrepareLayout={handlePrepareTemplateLayout}
           onRename={renameTemplateLayout}
           onRenameCommit={commitTemplateLayoutRename}
           fontOverrides={fontOverrides}

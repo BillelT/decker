@@ -37,10 +37,6 @@ ${DESIGN_TOKENS_CSS}
   --b-side: 2.5;
   --b-container-width: calc(100% - var(--b-side) * 2%);
 
-  /* Hors DA, à trancher : titre des pages légales, entre --b-text-3xl (36px)
-     et --b-text-6xl (72px). */
-  --b-text-4xl: 44px;
-
   /* Biseau "hybride" (mêmes tokens que packages/plugin/src/styles.modern.css)
      appliqué aux boutons ; le reste de la marque (palette, layout, typo) est inchangé. */
   --hyb-hi: rgba(255, 255, 255, 0.9);
@@ -230,7 +226,7 @@ a { color: inherit; }
   width: var(--b-container-width); max-width: var(--b-container); margin-inline: auto;
 }
 .section__title {
-  margin: 0 0 var(--b-space-16); font-size: var(--b-text-4xl); font-weight: var(--b-font-bold);
+  margin: 0 0 var(--b-space-16); font-size: var(--b-text-3xl); font-weight: var(--b-font-bold);
   letter-spacing: var(--b-tracking-tight); color: var(--b-ink);
   text-wrap: balance;
 }

@@ -53,7 +53,7 @@ const SHORT_TAG_LABELS: Record<string, string> = {
   EFFECT_RASTERIZED: 'Effect',
   BLEND_MODE_RASTERIZED: 'Blend mode',
   MASK_RASTERIZED: 'Mask',
-  VECTOR_RASTERIZED: 'Vector',
+  VECTOR_RASTERIZED: 'Complex shape',
   POLYGON_SIDES_UNSUPPORTED: 'Polygon sides',
   STAR_POINTS_UNSUPPORTED: 'Star points',
   LINE_RASTERIZED: 'Line style',

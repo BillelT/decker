@@ -92,7 +92,7 @@
       return { action: "native-shape-preset" };
     }
     if (input.kind === "VECTOR_LIKE") {
-      return { action: "raster", warningCode: "VECTOR_RASTERIZED", message: "Custom vector shape (icon, boolean operation, path): converted to an image." };
+      return { action: "raster", warningCode: "VECTOR_RASTERIZED", message: "Complex shape (icon, boolean operation, path): exported as an image." };
     }
     if (input.kind === "GROUP_LIKE") {
       if (input.container?.clipsContentWithOverflow) {
@@ -1130,29 +1130,31 @@
   }
 
   // src/serialize/templateValidation.ts
-  var RASTER_WARNING_CODES = /* @__PURE__ */ new Set([
+  var PREPARE_FIXABLE_CODES = /* @__PURE__ */ new Set([
     "FONT_MISSING",
     "GRADIENT_RASTERIZED",
     "EFFECT_RASTERIZED",
+    "LINE_RASTERIZED",
+    "LETTER_SPACING_LOST",
+    "CORNER_RADIUS_RASTERIZED",
+    "MULTIPLE_FILLS_RASTERIZED"
+  ]);
+  var UNFIXABLE_RASTER_CODES = /* @__PURE__ */ new Set([
     "BLEND_MODE_RASTERIZED",
     "MASK_RASTERIZED",
     "VECTOR_RASTERIZED",
     "POLYGON_SIDES_UNSUPPORTED",
     "STAR_POINTS_UNSUPPORTED",
-    "LINE_RASTERIZED",
-    "LETTER_SPACING_LOST",
-    "CORNER_RADIUS_RASTERIZED",
-    "MULTIPLE_FILLS_RASTERIZED",
-    "CONTAINER_BACKGROUND_RASTERIZED",
-    // Pas un raster, mais bloquant quand même en mode template : un tag de
-    // placeholder mal orthographié (`[[titel]]`…) signifie qu'un placeholder
-    // prévu MANQUERA dans le template livré — exactement le genre d'erreur qui
-    // retombe sur tous les futurs utilisateurs, donc à corriger avant création
-    // plutôt qu'à ignorer en silence.
-    "PLACEHOLDER_TAG_UNKNOWN"
+    "CONTAINER_BACKGROUND_RASTERIZED"
   ]);
-  function enforceTemplateStrictness(warnings) {
-    return warnings.map((w) => RASTER_WARNING_CODES.has(w.code) ? { ...w, severity: "blocking" } : w);
+  function enforceTemplateStrictness(warnings, holdsTextOrPlaceholder = () => false) {
+    return warnings.map((w) => {
+      if (w.code === "PLACEHOLDER_TAG_UNKNOWN" || PREPARE_FIXABLE_CODES.has(w.code)) return { ...w, severity: "blocking" };
+      if (UNFIXABLE_RASTER_CODES.has(w.code)) {
+        return holdsTextOrPlaceholder(w.sourceNodeId) ? { ...w, severity: "blocking" } : { ...w, severity: "warning" };
+      }
+      return w;
+    });
   }
   function hasBlockingWarnings(warnings) {
     return warnings.some((w) => w.severity === "blocking");
@@ -1738,9 +1740,23 @@
     postPreparedNotice("deck", copies.length, totalWarnings);
     await addFrames(newlyCreated, pending, idGen, false);
   }
+  function nodesHoldingTextOrPlaceholder(frame) {
+    const ids = /* @__PURE__ */ new Set();
+    const holders = frame.findAll((n) => n.type === "TEXT" || parsePlaceholderTag(n.name) !== void 0);
+    for (const holder of holders) {
+      let current = holder;
+      while (current && !ids.has(current.id)) {
+        ids.add(current.id);
+        if (current.id === frame.id) break;
+        current = current.parent;
+      }
+    }
+    return ids;
+  }
   function withCompositionWarnings(frame, slide) {
+    const frozen = nodesHoldingTextOrPlaceholder(frame);
     return [
-      ...enforceTemplateStrictness(slide.warnings),
+      ...enforceTemplateStrictness(slide.warnings, (id) => frozen.has(id)),
       ...collectCompositionWarnings({ sourceNodeId: frame.id, frameName: frame.name, elements: slide.elements })
     ];
   }
@@ -1807,9 +1823,9 @@
     postTemplateCandidateMessage("template-candidate-updated", frame, previewDataUrl, slide);
     return true;
   }
-  async function handlePrepareTemplateForSlides(pending, idGen, fontOverrides, layoutFrameIds) {
+  async function handlePrepareTemplateForSlides(pending, idGen, fontOverrides, layoutFrameIds, onlyListed = false) {
     const listNodes = (await Promise.all(layoutFrameIds.map((id) => figma.getNodeByIdAsync(id)))).filter((n) => n !== null && isExportable(n));
-    const canvasSelected = figma.currentPage.selection.filter(isExportable);
+    const canvasSelected = onlyListed ? [] : figma.currentPage.selection.filter(isExportable);
     const targets = /* @__PURE__ */ new Map();
     for (const n of [...listNodes, ...canvasSelected]) targets.set(n.id, n);
     if (targets.size === 0) {
@@ -1832,7 +1848,7 @@
         const rawIdx = pending.findIndex((p) => p.frame.id === frame.id);
         if (rawIdx !== -1) {
           pending.splice(rawIdx, 1);
-          figma.ui.postMessage({ type: "template-candidate-removed", id: frame.id });
+          figma.ui.postMessage({ type: "template-candidate-removed", id: frame.id, replacedBy: copy.id });
         }
       }
       await yieldToUi();
@@ -2072,7 +2088,8 @@
             templatePending,
             idGen,
             msg.fontOverrides ?? {},
-            msg.layoutFrameIds ?? []
+            msg.layoutFrameIds ?? [],
+            Boolean(msg.onlyListed)
           );
         } catch (err) {
           console.error(err);
@@ -2219,7 +2236,7 @@
     if (blocked) {
       figma.ui.postMessage({
         type: "export-error",
-        message: `"${blocked.frame.name}" still contains elements that would be converted to images. Fix them in Figma before creating the template.`
+        message: `"${blocked.frame.name}" still has issues to fix before creating the template.`
       });
       return;
     }

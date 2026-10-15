@@ -209,7 +209,7 @@ export function classifyNode(input: DecisionInput): Decision {
   }
 
   if (input.kind === 'VECTOR_LIKE') {
-    return { action: 'raster', warningCode: 'VECTOR_RASTERIZED', message: 'Custom vector shape (icon, boolean operation, path): converted to an image.' };
+    return { action: 'raster', warningCode: 'VECTOR_RASTERIZED', message: 'Complex shape (icon, boolean operation, path): exported as an image.' };
   }
 
   if (input.kind === 'GROUP_LIKE') {

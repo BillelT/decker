@@ -32,7 +32,7 @@ Fait (commits `c60238f` et `584b710` sur `decker`, `48413de` sur `billel-skill`)
 
 ## Le focus maintenant
 
-Lots 01, 02 et 03 terminés. On est sur le **lot 04 (mode Template)**, 3 tâches sur 12 faites.
+Lots 01, 02 et 03 terminés. On est sur le **lot 04 (mode Template)**, 5 tâches sur 12 faites.
 
 Retouches d'interface faites le 15 octobre en dehors des lots (`4b275ad` à `7d66acf`), reportées dans les fichiers concernés :
 
@@ -89,6 +89,6 @@ Chaque lot du plugin demande un rebuild (`F2S_BACKEND_URL=https://decker-gamma.v
 ## Chantier transverse
 
 - [x] **Une seule source de tokens.** Fait le 15 octobre : `tokens/token.css` est une copie de `skills/design-tokens/token.css` (billel-skill), tirée par `npm run tokens:sync` (ou `node scripts/sync-tokens.mjs <clone de billel-skill>`). Le script génère `packages/plugin/src/generated/tokens.css`, injecté en tête de `dist/ui.html` au build, et `packages/backend/src/generated/designTokens.ts`, injecté dans le site, la page de connexion et l'image OG. `npm run lint` échoue si les fichiers générés ne suivent plus `tokens/token.css`. Les `--color-*` du plugin ne sont plus que des alias des `--b-*`.
-  - Exceptions gardées, hors DA : `--color-error` `#e00000` (arbitrage G), `--color-field` `#ffffff` (fond des champs), tag « approximated » `#ffc599`, palette du skin Windows 95, biseaux `--hyb-*` (arbitrage A), logos.
-  - Écarts corrigés : anciens noms de gris du site (`gray-700`, `gray-300`), `--b-text-faint` du site passé au `gray-600` de la DA, barre de défilement de la DA dans le plugin, `--color-orange-80` remplacé par l'orange plein, `--b-accent-red` retiré de la vignette active de l'image OG, `#ffc599` des illustrations du site remplacé par `--b-accent-40`, page de connexion sur les tokens (tailles, espacements, police, coche à l'encre sur l'orange).
-  - Reste à trancher : `--b-text-4xl` (44px) du titre des pages légales, absent de la DA.
+  - Exceptions gardées, hors DA : `--color-error` `#e00000` (arbitrage G), `--color-field` `#ffffff` (fond des champs), tag « approximated » `#ffc599`, contour de la vignette active `hsl(28, 72%, 52%)` (`#dd7f2c`, peut-être à intégrer à la DA), barres de défilement natives de Chrome dans le plugin (gris neutre, au lieu du noir à 18 % de la DA), palette du skin Windows 95, biseaux `--hyb-*` (arbitrage A), logos.
+  - Écarts corrigés : anciens noms de gris du site (`gray-700`, `gray-300`), `--b-text-faint` du site passé au `gray-600` de la DA, barre de défilement de la DA dans le plugin, `--b-accent-red` retiré de la vignette active de l'image OG, `#ffc599` des illustrations du site remplacé par `--b-accent-40`, page de connexion sur les tokens (tailles, espacements, police, coche à l'encre sur l'orange).
+  - Le titre des pages légales passe de 44px (hors DA) à `--b-text-3xl` (36px).

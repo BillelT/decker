@@ -8,7 +8,7 @@ import { aggregateColorSwatches, summarizeColors, summarizeFonts, summarizeTagga
 import { collectCompositionWarnings } from './serialize/templateComposition.js';
 import { applyThemeRolesToElements, buildTemplateTheme } from './serialize/templateTheme.js';
 import { applyPlaceholderText } from './serialize/templatePlaceholderText.js';
-import { clearPlaceholderTag, KNOWN_ROLE_TAGS, setPlaceholderTag } from './serialize/placeholder.js';
+import { clearPlaceholderTag, KNOWN_ROLE_TAGS, parsePlaceholderTag, setPlaceholderTag } from './serialize/placeholder.js';
 import { nextSelectionOrder } from './serialize/selectionOrder.js';
 import { collectFontSubstitutions, withFontOverrides } from './serialize/fontChoices.js';
 
@@ -567,6 +567,27 @@ async function handlePrepareForSlides(
 }
 
 /**
+ * Calques qu'un raster figerait pour les futurs utilisateurs du template :
+ * chaque texte ou placeholder tagué, et tous ses ancêtres jusqu'à la frame
+ * (un groupe masqué qui contient un titre emporte ce titre dans l'image),
+ * frame comprise : un fond de frame rasterisé emporte tout le layout.
+ * Voir `enforceTemplateStrictness`.
+ */
+function nodesHoldingTextOrPlaceholder(frame: ExportableNode): Set<string> {
+  const ids = new Set<string>();
+  const holders = frame.findAll((n) => n.type === 'TEXT' || parsePlaceholderTag(n.name) !== undefined);
+  for (const holder of holders) {
+    let current: BaseNode | null = holder;
+    while (current && !ids.has(current.id)) {
+      ids.add(current.id);
+      if (current.id === frame.id) break;
+      current = current.parent;
+    }
+  }
+  return ids;
+}
+
+/**
  * Avertissements d'un layout de template : fidélité (durcie, un template
  * doit rester 100% natif) PUIS composition (TODO.md § Mode template,
  * point 7). Les seconds sont ajoutés APRÈS le durcissement, jamais avant :
@@ -574,8 +595,9 @@ async function handlePrepareForSlides(
  * jeu de codes que `enforceTemplateStrictness` reclasse.
  */
 function withCompositionWarnings(frame: ExportableNode, slide: PendingSlide['slide']): IRWarning[] {
+  const frozen = nodesHoldingTextOrPlaceholder(frame);
   return [
-    ...enforceTemplateStrictness(slide.warnings),
+    ...enforceTemplateStrictness(slide.warnings, (id) => frozen.has(id)),
     ...collectCompositionWarnings({ sourceNodeId: frame.id, frameName: frame.name, elements: slide.elements }),
   ];
 }
@@ -689,10 +711,12 @@ async function handlePrepareTemplateForSlides(
   idGen: ReturnType<typeof createIdGenerator>,
   fontOverrides: Record<string, string>,
   layoutFrameIds: string[],
+  /** « Prepare this layout » (boîte rouge d'un layout) : seulement les layouts listés, sans la sélection du canvas. */
+  onlyListed = false,
 ): Promise<void> {
   const listNodes = (await Promise.all(layoutFrameIds.map((id) => figma.getNodeByIdAsync(id))))
     .filter((n): n is ExportableNode => n !== null && isExportable(n as SceneNode));
-  const canvasSelected = figma.currentPage.selection.filter(isExportable);
+  const canvasSelected = onlyListed ? [] : figma.currentPage.selection.filter(isExportable);
 
   const targets = new Map<string, ExportableNode>();
   for (const n of [...listNodes, ...canvasSelected]) targets.set(n.id, n);
@@ -721,7 +745,9 @@ async function handlePrepareTemplateForSlides(
       const rawIdx = pending.findIndex((p) => p.frame.id === frame.id);
       if (rawIdx !== -1) {
         pending.splice(rawIdx, 1);
-        figma.ui.postMessage({ type: 'template-candidate-removed', id: frame.id });
+        // `replacedBy` : la copie prend la place de l'original dans le rail,
+        // au lieu de repartir en fin de liste.
+        figma.ui.postMessage({ type: 'template-candidate-removed', id: frame.id, replacedBy: copy.id });
       }
     }
     await yieldToUi();
@@ -1095,6 +1121,7 @@ async function main(): Promise<void> {
           idGen,
           (msg.fontOverrides as Record<string, string> | undefined) ?? {},
           (msg.layoutFrameIds as string[] | undefined) ?? [],
+          Boolean(msg.onlyListed),
         );
       } catch (err) {
         console.error(err);
@@ -1373,7 +1400,7 @@ async function handleTemplateCreateRequest(
   if (blocked) {
     figma.ui.postMessage({
       type: 'export-error',
-      message: `"${blocked.frame.name}" still contains elements that would be converted to images. Fix them in Figma before creating the template.`,
+      message: `"${blocked.frame.name}" still has issues to fix before creating the template.`,
     });
     return;
   }

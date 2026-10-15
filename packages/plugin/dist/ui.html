@@ -157,7 +157,7 @@
 /* Les valeurs viennent de la DA : src/generated/tokens.css (--b-*), injecté
    avant cette feuille au build (voir scripts/sync-tokens.mjs). Les --color-*
    ci-dessous ne sont que des rôles du plugin branchés sur ces tokens : on n'y
-   pose aucune valeur, sauf les trois exceptions signalées. Le skin Windows 95
+   pose aucune valeur, sauf les exceptions signalées. Le skin Windows 95
    (styles.win95.css) redéfinit ces rôles avec sa propre palette. */
 :root {
   --color-orange: var(--b-accent);
@@ -166,6 +166,9 @@
   /* Survol du bouton principal : orange éclairci. --b-accent-red est un
      accent graphique, jamais un état d'interaction. Encre dessus : 7.56:1. */
   --color-orange-hover: var(--b-accent-hover);
+  /* Exception (2026-10-15), à intégrer peut-être à la DA : contour de la
+     vignette active du rail, orange plus doux que l'orange de marque plein. */
+  --color-thumb-active: hsl(28, 72%, 52%); /* #dd7f2c */
   /* Exception (arbitrage G) : la DA n'a pas encore de couleur d'erreur.
      Rouge plein réservé aux états d'erreur et bloquants, toujours avec une
      icône ou un libellé. */
@@ -258,7 +261,6 @@ body {
   display: flex;
   flex-direction: column;
   position: relative;
-  padding-bottom: 57px;
 }
 
 button {
@@ -275,8 +277,16 @@ a {
   color: var(--color-orange);
 }
 
-/* Barres de défilement : celles de la DA (tokens.css), sauf en win95
-   (styles.win95.css), qui garde l'ascenseur 16px tramé d'origine. */
+/* Barres de défilement : celles de Chrome, en gris neutre (décision du
+   2026-10-15, exception à la DA). La DA (tokens.css) les teinte en noir à
+   18 %, ce qui donnait un pouce chaud sur le fond du panneau : remettre
+   `scrollbar-color` à `auto` rend ses couleurs natives au navigateur, en
+   gardant la largeur fine de la DA. Le skin win95 (styles.win95.css) garde
+   son ascenseur 16px tramé d'origine. */
+* {
+  scrollbar-color: auto;
+}
+
 
 /* ---- Top bar ---- */
 
@@ -676,6 +686,29 @@ html:not(.f2s-skin--win95) .f2s-btn:active:not(:disabled) {
   color: var(--color-bg);
 }
 
+/* Ghost : action utilitaire discrète, le .btn-ghost de la DA (ui-button) :
+   fond transparent, contour gray-200, texte gray-800 en 12px, fond gray-100
+   et texte à l'encre au survol. Sert à « Prepare this layout » dans la boîte
+   rouge d'un layout : l'action aide, elle ne doit pas concurrencer le bouton
+   principal du header. */
+.f2s-btn--ghost {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--b-space-2) var(--b-space-8);
+  border-color: var(--b-gray-200);
+  border-radius: var(--b-radius-xs);
+  background: transparent;
+  color: var(--b-text-control);
+  font-size: var(--b-text-xs);
+  font-weight: var(--b-font-medium);
+  line-height: var(--b-leading-tight);
+}
+
+.f2s-btn--ghost:hover:not(:disabled) {
+  background: var(--b-surface-sunken);
+  color: var(--b-ink);
+}
+
 .f2s-btn--primary {
   background: var(--color-orange);
   color: var(--color-on-accent);
@@ -1064,7 +1097,7 @@ a.f2s-btn {
 }
 
 .f2s-frame-preview.is-active {
-  border-color: var(--color-orange);
+  border-color: var(--color-thumb-active);
 }
 
 /* Pastille de la vignette, avec le nombre d'éléments concernés dans les deux
@@ -1388,7 +1421,7 @@ a.f2s-btn {
   color: var(--color-error);
 }
 
-.f2s-log-entry--rasterized {
+.f2s-log-entry--blocking.f2s-log-entry--rasterized {
   border-color: var(--color-error);
 }
 
@@ -1429,21 +1462,19 @@ a.f2s-btn {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Une image dans Slides n'est pas une erreur en soi : le tag est au gris
+   neutre et discret de la pastille des vignettes (gray-200, texte gray-800),
+   en Deck comme en Template. Il ne passe au rouge que sur une entrée qui
+   bloque la création du template (texte ou placeholder figé, ou problème que
+   « Prepare » corrige, voir serialize/templateValidation.ts). */
 .f2s-log-entry-flag--rasterized {
-  background: var(--color-error);
-}
-
-/* Mode deck : une image dans Slides n'empêche pas l'export, ce n'est pas une
-   erreur. Le tag passe au gris neutre et discret de la pastille des
-   vignettes (gray-200, texte gray-800). Le rouge reste au mode Template, où
-   un élément rasterisé bloque la création. */
-.f2s-deck-column .f2s-log-entry-flag--rasterized {
   background: var(--color-gray-200);
   color: var(--color-tag-neutral-ink);
 }
 
-.f2s-deck-column .f2s-log-entry--rasterized {
-  border-color: var(--color-border);
+.f2s-log-entry--blocking .f2s-log-entry-flag--rasterized {
+  background: var(--color-error);
+  color: var(--color-on-error);
 }
 
 /* Repère plus discret que "Rasterized" : l'élément reste natif et éditable,
@@ -1814,12 +1845,12 @@ a.f2s-btn {
 
 /* ---- Footer (settings / support) ---- */
 
+/* Dernier enfant de la colonne #app, dans le flux : le corps (rail, canvas,
+   aside) s'arrête pile sur sa bordure. En `position: fixed` avec une marge
+   basse devinée (57px), il laissait un vide de 14px sous le rail. */
 .f2s-footer {
   flex: none;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2566,14 +2597,10 @@ html.f2s-skin--win95 body {
   background: var(--w95-face);
 }
 
-/* Le panneau entier devient LA fenêtre : cadre en relief autour de tout.
-   Le padding-bottom (57px en base, pour son footer plus haut) doit rester
-   réservé au footer, plus court ici (~35px) mais toujours `position: fixed` :
-   sans son propre padding-bottom, le raccourci `padding: 3px` l'écrasait à
-   3px et le footer chevauchait le bas du canvas (rail + logs), masquant la
-   fin de la liste de logs même une fois le scroll interne remonté au max. */
+/* Le panneau entier devient LA fenêtre : cadre en relief autour de tout. Le
+   footer est dans le flux de la colonne (styles.css), sans place à réserver. */
 html.f2s-skin--win95 #app {
-  padding: 3px 3px 38px;
+  padding: 3px;
   background: var(--w95-face);
   box-shadow: var(--w95-out);
 }
@@ -3199,6 +3226,13 @@ html.f2s-skin--modern .f2s-btn {
 
 html.f2s-skin--modern .f2s-btn:active:not(:disabled) {
   box-shadow: var(--hyb-pressed);
+}
+
+/* Le ghost reste à plat (pas de biseau) : la DA n'admet aucune ombre sur un
+   bouton, et un relief le ferait lire comme une action de premier plan. */
+html.f2s-skin--modern .f2s-btn--ghost,
+html.f2s-skin--modern .f2s-btn--ghost:active:not(:disabled) {
+  box-shadow: none;
 }
 
 /* ---- Champs (saisie, listes déroulantes) ---- */
@@ -3971,7 +4005,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     EFFECT_RASTERIZED: "Effect",
     BLEND_MODE_RASTERIZED: "Blend mode",
     MASK_RASTERIZED: "Mask",
-    VECTOR_RASTERIZED: "Vector",
+    VECTOR_RASTERIZED: "Complex shape",
     POLYGON_SIDES_UNSUPPORTED: "Polygon sides",
     STAR_POINTS_UNSUPPORTED: "Star points",
     LINE_RASTERIZED: "Line style",
@@ -4752,6 +4786,20 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     "LAYOUT_WITHOUT_PLACEHOLDER"
   ]);
 
+  // src/serialize/templateValidation.ts
+  var PREPARE_FIXABLE_CODES = /* @__PURE__ */ new Set([
+    "FONT_MISSING",
+    "GRADIENT_RASTERIZED",
+    "EFFECT_RASTERIZED",
+    "LINE_RASTERIZED",
+    "LETTER_SPACING_LOST",
+    "CORNER_RADIUS_RASTERIZED",
+    "MULTIPLE_FILLS_RASTERIZED"
+  ]);
+  function hasPrepareFixableBlocking(warnings) {
+    return warnings.some((w3) => w3.severity === "blocking" && PREPARE_FIXABLE_CODES.has(w3.code));
+  }
+
   // src/ui/TemplatePanel.tsx
   function setPlaceholderRole(sourceNodeId, tag) {
     postToPlugin({ type: "set-placeholder-role", sourceNodeId, tag });
@@ -4832,6 +4880,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     failedSlides,
     onPreviewSettled,
     onRemove,
+    onPrepareLayout,
     onRename,
     onRenameCommit,
     fontOverrides,
@@ -4927,6 +4976,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
         if (!layout) return null;
         const item = itemState(id, index);
         const toFix = layout.warnings.filter((w3) => w3.severity === "blocking").length;
+        const rasterized = layout.warnings.filter((w3) => w3.severity !== "blocking" && logEntryFlag(w3.code) === "rasterized").length;
         return /* @__PURE__ */ u3("div", { ref: registerItem(id), className: item.className, style: item.style, children: [
           /* @__PURE__ */ u3(
             "button",
@@ -4937,12 +4987,15 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
               onPointerDown: (e3) => onThumbPointerDown(e3, id),
               onKeyDown: (e3) => onThumbKeyDown(e3, id),
               "aria-keyshortcuts": "Alt+ArrowUp Alt+ArrowDown",
-              title: failure ? `Export failed: ${failure}` : layout.blocking ? "Contains an element that would be rasterized. Open it to see the details." : void 0,
+              title: failure ? `Export failed: ${failure}` : layout.blocking ? "This layout has issues to fix. Open it to see the details." : void 0,
               children: [
                 layout.previewDataUrl && /* @__PURE__ */ u3("img", { src: layout.previewDataUrl, alt: layout.name, draggable: false }),
-                layout.blocking && toFix > 0 && /* @__PURE__ */ u3("span", { className: "f2s-frame-badge f2s-frame-badge--error f2s-tabular", children: [
+                layout.blocking && toFix > 0 ? /* @__PURE__ */ u3("span", { className: "f2s-frame-badge f2s-frame-badge--error f2s-tabular", children: [
                   toFix,
                   " to fix"
+                ] }) : rasterized > 0 && /* @__PURE__ */ u3("span", { className: "f2s-frame-badge f2s-tabular", children: [
+                  rasterized,
+                  " rasterized"
                 ] })
               ]
             }
@@ -4987,7 +5040,20 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
           /* @__PURE__ */ u3("p", { className: "f2s-export-failure-message", children: previewedFailure })
         ] }),
         blockingWarnings.length > 0 && /* @__PURE__ */ u3("div", { className: "f2s-logs f2s-tmpl-section--blocking", children: [
-          /* @__PURE__ */ u3("div", { className: "f2s-logs-header", children: /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Fix before creating the template" }) }),
+          /* @__PURE__ */ u3("div", { className: "f2s-logs-header", children: [
+            /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Fix before creating the template" }),
+            hasPrepareFixableBlocking(blockingWarnings) && /* @__PURE__ */ u3(
+              "button",
+              {
+                type: "button",
+                className: "f2s-btn f2s-btn--ghost",
+                disabled: locked,
+                title: "Duplicate this layout and reformat it for Slides: gradients, shadows, letter spacing and missing fonts are fixed automatically.",
+                onClick: () => onPrepareLayout(previewedLayout.id),
+                children: "Prepare this layout"
+              }
+            )
+          ] }),
           /* @__PURE__ */ u3(TemplateLogList, { warnings: blockingWarnings, fontOverrides })
         ] }),
         exportingLayout && pacedCursor ? /* @__PURE__ */ u3("div", { className: "f2s-canvas-preview f2s-canvas-preview--retro f2s-tmpl-preview", children: /* @__PURE__ */ u3(
@@ -5455,6 +5521,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
   function addLabel(count) {
     return count === 0 ? "Add frames" : `Add ${count} frame${count === 1 ? "" : "s"}`;
   }
+  var ISSUE_PLURALS = new Intl.PluralRules("en");
   var FAILED_SLIDE_FALLBACK = "This slide couldn't be written to Google Slides.";
   var SITE_URL = "https://decker.billeltighidet.fr";
   var AuthExpiredError = class extends Error {
@@ -5617,6 +5684,17 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
       return subs;
     }, [templateOrder, templateLayouts]);
     const templateHasBlockingLayout = templateOrder.some((id) => templateLayouts[id]?.blocking);
+    const templateIssueCount = templateOrder.reduce(
+      (sum, id) => sum + (templateLayouts[id]?.warnings.filter((w3) => w3.severity === "blocking").length ?? 0),
+      0
+    );
+    function showNextTemplateIssue() {
+      const blocked = templateOrder.filter((id) => templateLayouts[id]?.blocking);
+      if (blocked.length === 0) return;
+      const current = activeTemplateId ? templateOrder.indexOf(activeTemplateId) : -1;
+      const next = blocked.find((id) => templateOrder.indexOf(id) > current) ?? blocked[0];
+      setActiveTemplateId(next);
+    }
     const [colorRoles, setColorRoles] = d2({});
     const templateColors = T2(
       () => aggregateColorSwatches(templateOrder.map((id) => templateLayouts[id]?.colors ?? [])),
@@ -5819,14 +5897,20 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
           }
           case "template-candidate-removed": {
             const id = msg.id;
-            setTemplateOrder((prev) => prev.filter((x2) => x2 !== id));
+            const replacedBy = typeof msg.replacedBy === "string" ? msg.replacedBy : void 0;
+            if (replacedBy) {
+              setTemplateOrder((prev) => prev.map((x2) => x2 === id ? replacedBy : x2));
+              setActiveTemplateId((prev) => prev === id ? replacedBy : prev);
+            } else {
+              setTemplateOrder((prev) => prev.filter((x2) => x2 !== id));
+            }
             setTemplateLayouts((prev) => {
               if (!(id in prev)) return prev;
               const next = { ...prev };
               delete next[id];
               return next;
             });
-            setActiveTemplateId((prev) => prev === id ? void 0 : prev);
+            if (!replacedBy) setActiveTemplateId((prev) => prev === id ? void 0 : prev);
             break;
           }
           case "canvas-selection-changed":
@@ -6233,6 +6317,9 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     function handlePrepareForSlides() {
       postToPlugin({ type: "prepare-for-slides", deckFrameIds: order, fontOverrides });
     }
+    function handlePrepareTemplateLayout(id) {
+      postToPlugin({ type: "prepare-template-for-slides", layoutFrameIds: [id], fontOverrides, onlyListed: true });
+    }
     function handlePrepareTemplateForSlides() {
       postToPlugin({ type: "prepare-template-for-slides", layoutFrameIds: templateOrder, fontOverrides });
     }
@@ -6348,6 +6435,23 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     function renderPrimaryActions() {
       const isDeck = mode === "deck";
       const startLabel = isDeck ? exportedHere ? "Export again" : "Export" : exportedHere ? "Create again" : "Create template";
+      if (!isDeck && templateHasBlockingLayout && !(exportSource === mode && (exporting || settlingHere))) {
+        return /* @__PURE__ */ u3(
+          "button",
+          {
+            type: "button",
+            className: "f2s-btn f2s-btn--primary f2s-tabular",
+            title: "Open the next layout to fix. The template can be created once every layout is fixed.",
+            onClick: showNextTemplateIssue,
+            children: [
+              templateIssueCount,
+              " ",
+              ISSUE_PLURALS.select(templateIssueCount) === "one" ? "issue" : "issues",
+              " to fix"
+            ]
+          }
+        );
+      }
       if (!sessionToken) return renderSignIn(startLabel);
       if (exportSource === mode && (exporting || settlingHere)) {
         const verb = canceling ? "Canceling" : isDeck ? "Exporting" : "Creating";
@@ -6387,8 +6491,8 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
           }
         );
       }
-      const disabled = busyFromOtherMode || (isDeck ? order.length === 0 : templateOrder.length === 0 || templateHasBlockingLayout);
-      const title = busyFromOtherMode ? busyTitle : !isDeck && templateHasBlockingLayout ? "Fix the blocking issues listed below before creating the template." : exportedHere ? againTitle : void 0;
+      const disabled = busyFromOtherMode || (isDeck ? order.length === 0 : templateOrder.length === 0);
+      const title = busyFromOtherMode ? busyTitle : exportedHere ? againTitle : void 0;
       return /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--primary", disabled, title, onClick: isDeck ? startExport : startTemplateCreate, children: startLabel });
     }
     function renderSignIn(label) {
@@ -6588,6 +6692,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
           failedSlides: failedSlidesHere,
           onPreviewSettled: () => setPreviewSettled(true),
           onRemove: removeTemplateLayout,
+          onPrepareLayout: handlePrepareTemplateLayout,
           onRename: renameTemplateLayout,
           onRenameCommit: commitTemplateLayoutRename,
           fontOverrides,

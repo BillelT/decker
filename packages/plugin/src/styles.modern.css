@@ -56,6 +56,13 @@ html.f2s-skin--modern .f2s-btn:active:not(:disabled) {
   box-shadow: var(--hyb-pressed);
 }
 
+/* Le ghost reste à plat (pas de biseau) : la DA n'admet aucune ombre sur un
+   bouton, et un relief le ferait lire comme une action de premier plan. */
+html.f2s-skin--modern .f2s-btn--ghost,
+html.f2s-skin--modern .f2s-btn--ghost:active:not(:disabled) {
+  box-shadow: none;
+}
+
 /* ---- Champs (saisie, listes déroulantes) ---- */
 
 html.f2s-skin--modern .f2s-title-input,
