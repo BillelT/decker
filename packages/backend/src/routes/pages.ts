@@ -3,7 +3,7 @@ import { DECKER_FAVICON, DECKER_MARK_SVG, escapeHtml } from './brand.js';
 import { MARKETING_CSS } from './marketingStyles.js';
 import { OG_IMAGE_PNG_BASE64 } from '../og/ogImageData.js';
 import { OG_IMAGE } from '../og/variants.js';
-import { HERO_DEMO_HTML, HERO_DEMO_JS } from './heroDemo.js';
+import { HERO_DEMO_CSS, HERO_DEMO_HTML, HERO_DEMO_JS } from './heroDemo.js';
 import { EASTER_EGG_VERSION, easterEggScript } from './easterEgg.js';
 import {
   FEATURE_FREE_SVG,
@@ -96,6 +96,8 @@ function shell(opts: {
   path: string;
   jsonLdType: 'WebSite' | 'WebPage';
   main: string;
+  /** Styles propres à la page (la démo du hero n'alourdit que l'accueil). */
+  styles?: string;
   /** Script propre à la page, posé après le script commun. */
   script?: string;
 }): string {
@@ -139,7 +141,7 @@ function shell(opts: {
 <script type="application/ld+json">${JSON.stringify(jsonLd)}</script>
 
 <style>${MARKETING_CSS}</style>
-</head>
+${opts.styles ? `<style>${opts.styles}</style>\n` : ''}</head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
 ${header()}
@@ -462,6 +464,7 @@ pagesRouter.get('/', (_req, res) => {
       path: '/',
       jsonLdType: 'WebSite',
       main,
+      styles: HERO_DEMO_CSS,
       script: HERO_DEMO_JS,
     }),
   );

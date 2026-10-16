@@ -1,6 +1,5 @@
 import { DESIGN_TOKENS_CSS } from '../generated/designTokens.js';
 import { CABINET_GROTESK_BASE64 } from './fontData.js';
-import { HERO_DEMO_CSS } from './heroDemo.js';
 
 /**
  * DA "Billel" (design system perso, repo billel-skill), archétype b-marketing :
@@ -377,8 +376,6 @@ a { color: inherit; }
 
 .section__cta { display: flex; justify-content: flex-end; margin-top: var(--b-space-32); }
 .section__cta .btn { padding: var(--b-space-12) var(--b-space-16); }
-
-${HERO_DEMO_CSS}
 
 /* ---------- Footer (b-footer, compo marketing) ---------- */
 .footer {
