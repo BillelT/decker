@@ -504,47 +504,41 @@ main:focus { outline: none; }
 @media (max-width: 1160px) {
   .carousel__item { flex-basis: calc((100% + var(--b-gutter-vw) - 20px) / 1.6); }
 }
+/* Ecrans les plus etroits : le brand se reduit a son pictogramme pour que
+   les deux boutons tiennent sur la meme ligne. Le nom reste lu par les
+   lecteurs d'ecran. */
+@media (max-width: 374px) {
+  .header__brand-name {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip-path: inset(50%); white-space: nowrap;
+  }
+}
+/* Mobile : la card prend presque toute la largeur (la suivante depasse a
+   peine) pour que les descriptions gardent des lignes pleines. */
 @media (max-width: 600px) {
-  .carousel__item { flex-basis: calc((100% + var(--b-gutter-vw) - 20px) / 1.2); }
+  .carousel__item { flex-basis: calc((100% + var(--b-gutter-vw) - 20px) / 1.08); }
+  /* Ecrites pour deux lignes de 400px, les descriptions passent a trois
+     lignes sur un telephone : balance les repartit a parts egales plutot que
+     de laisser deux ou trois mots seuls sur la derniere. */
+  .carousel__item .card__desc { text-wrap: balance; }
 }
 
 @media (max-width: 720px) {
   .hero__title { font-size: var(--b-text-5xl); }
   .hero { padding-top: var(--b-space-64); }
   .hero__row { flex-direction: column; align-items: flex-start; gap: var(--b-space-24); }
-  /* Le brand, la nav et les boutons ne tiennent plus sur une seule ligne : au
-     lieu de laisser les boutons se compresser (leur texte passait alors sur
-     deux lignes), seule la ligne d'actions passe dessous. Les ancres restent
-     sur la ligne du brand, poussees a droite par un lead extensible, et les
-     boutons s'alignent a gauche sous l'ensemble. */
-  .header__inner { flex-wrap: wrap; row-gap: var(--b-space-12); }
-  .header__lead { flex: 1 1 auto; }
-  .header__nav { order: 1; flex: 0 1 auto; justify-content: flex-end; gap: var(--b-space-16); }
-  .header__actions { order: 2; width: 100%; flex: 0 0 auto; justify-content: flex-start; }
-  /* Le header tient sur deux lignes a ce palier, trois sur les ecrans les plus
-     etroits : les ancres visent d'autant plus bas, sur le cas le plus haut,
-     pour ne jamais ranger le surtitre de section dessous. */
-  .section[id] { scroll-margin-top: var(--b-space-96); }
+  /* Mobile : plus d'ancres dans le header, seulement le brand a gauche et
+     les deux boutons a droite, sur une ligne. Les sections restent a portee
+     en faisant defiler la page, et le footer garde ses liens. */
+  .header__nav { display: none; }
+  .header__lead, .header__actions { flex: 0 0 auto; }
+  .header__inner { gap: var(--b-space-12); }
+  .header__actions { gap: var(--b-space-8); }
+  .header__actions .btn { font-size: var(--b-text-sm); }
   .footer__top { flex-direction: column; }
   .footer__bottom { flex-direction: column; align-items: flex-start; }
   .card-grid { grid-template-columns: 1fr; }
   .section__cta { justify-content: flex-start; }
 }
 
-/* Paliers propres au header, a placer apres le bloc 720px : ils posent les
-   memes proprietes a specificite egale, et c'est donc l'ordre de cascade qui
-   decide. Ce qui les declenche est la largeur en dessous de laquelle le brand
-   et les trois ancres cessent de tenir sur une ligne. Les ancres etant un
-   repere secondaire, elles cedent avant le brand et les boutons : d'abord les
-   gouttieres, puis le corps de texte. En dessous de ~340px de large, plus rien
-   ne les fait tenir : elles reprennent alors leur propre ligne, sans deborder. */
-@media (max-width: 560px) {
-  .header__inner { gap: var(--b-space-16); }
-  .header__nav { gap: var(--b-space-12); flex-wrap: wrap; }
-  .header__nav .nav-link { font-size: var(--b-text-sm); }
-}
-@media (max-width: 400px) {
-  .header__nav { gap: var(--b-space-8); }
-  .header__nav .nav-link { font-size: var(--b-text-xs); }
-}
 `;

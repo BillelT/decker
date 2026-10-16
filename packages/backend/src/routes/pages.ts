@@ -260,7 +260,7 @@ function header(): string {
     <div class="header__lead">
       <a class="header__brand" href="/">
         <svg class="header__brand-mark" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${brandMarkInline()}</svg>
-        Decker
+        <span class="header__brand-name">Decker</span>
       </a>
     </div>
     <nav class="header__nav" aria-label="Page sections">
