@@ -121,10 +121,11 @@ a { color: inherit; }
   gap: var(--b-space-16); padding: var(--b-space-6) var(--b-space-12); border: 0;
   border-radius: 0; color: var(--b-ink); font-size: var(--b-text-base);
   font-weight: var(--b-font-bold); background-color: var(--b-accent);
+  box-shadow: var(--hyb-out);
 }
+.cta:active { box-shadow: var(--hyb-pressed); }
 /* Secondaire de la DA : contour à l'encre, fond encre au survol. L'orange
-   reste au seul CTA (un bouton orange par vue). Pas d'ombre sur un bouton
-   (règle de la DA), ni ici ni sur le CTA. Correction optique : un contour
+   reste au seul CTA (un bouton orange par vue). Correction optique : un contour
    sombre paraît plus grand qu'un aplat de même taille, et il ajoutait en
    plus 1px de chaque côté. Le padding retire ce pixel, puis un second sur
    l'axe horizontal, où l'écart se voyait le plus. */
@@ -133,7 +134,9 @@ a { color: inherit; }
   padding: calc(var(--b-space-6) - 1px) calc(var(--b-space-12) - 2px);
   border-radius: 0; color: var(--b-ink); font-size: var(--b-text-base);
   font-weight: var(--b-font-bold); background-color: transparent;
+  box-shadow: var(--hyb-out);
 }
+.secondary:active { box-shadow: var(--hyb-pressed); }
 /* Traînée de pixels sur le CTA du header, lancée par Export dans la démo du
    hero : elle montre où se trouve le vrai plugin. Les pixels sont posés par
    le script ; le calque passe sous le libellé, au-dessus du fond. */
@@ -291,7 +294,7 @@ a { color: inherit; }
 /* Ratio fixe : les aperçus restent alignés entre eux quelle que soit la
    longueur des textes en dessous. */
 .card__media {
-  display: block; width: 100%; aspect-ratio: 8 / 5;
+  display: block; width: 100%; aspect-ratio: 7 / 5;
   background: var(--b-surface); box-shadow: var(--hyb-in);
 }
 .card__body { display: flex; flex-direction: column; gap: var(--b-space-8); }
@@ -366,9 +369,11 @@ a { color: inherit; }
 
    D'ou V = 100% + une gouttiere, et pour n cards pleines plus une moitie :
    n x w + n x gouttiere-de-piste + w / 2 = V, soit w = (V - n x 20px) / (n + 0,5).
-   Les paliers en dessous reprennent la formule avec n = 2 puis n = 1. */
+   Deux cards et demie sur grand ecran (environ 530px de large, a la maniere
+   des cards de Dock en 560 x 460) : les visuels respirent. Les paliers en
+   dessous reprennent la formule avec n = 1. */
 .carousel__item {
-  flex: 0 0 calc((100% + var(--b-gutter-vw) - 60px) / 3.5);
+  flex: 0 0 calc((100% + var(--b-gutter-vw) - 40px) / 2.5);
   scroll-snap-align: start;
 }
 .carousel__controls { display: flex; justify-content: flex-end; gap: var(--b-space-8); padding-top: var(--b-space-48); }
@@ -492,9 +497,6 @@ main:focus { outline: none; }
    la fraction se resserre en descendant, faute de quoi la moitie de card en
    trop mangerait sur mobile la place qui manque deja. */
 @media (max-width: 1160px) {
-  .carousel__item { flex-basis: calc((100% + var(--b-gutter-vw) - 40px) / 2.5); }
-}
-@media (max-width: 840px) {
   .carousel__item { flex-basis: calc((100% + var(--b-gutter-vw) - 20px) / 1.6); }
 }
 @media (max-width: 600px) {

@@ -23,6 +23,7 @@
  * de `${` dedans.
  */
 import { PLUGIN_STYLES_CSS } from '../generated/pluginStyles.js';
+import { DECKER_MARK_SVG } from './brand.js';
 
 /**
  * Couleurs du faux deck affiché dans la démo. Ce sont celles d'un deck de
@@ -68,7 +69,6 @@ ${PLUGIN_STYLES_CSS}
 .dm {
   position: relative; width: 100%; aspect-ratio: 1440 / 840; overflow: clip;
   border-radius: var(--b-radius-md); background: ${CHROME.canvas};
-  box-shadow: ${CHROME.shadowWindow};
   --dm-forest: ${DECK.forest}; --dm-sand: ${DECK.sand}; --dm-clay: ${DECK.clay};
   --dm-rust: ${DECK.rust}; --dm-paper: ${DECK.paper};
   --dm-deck-font: Arial, Helvetica, sans-serif;
@@ -216,9 +216,12 @@ const STATUS_ICONS = {
   error: '<path d="M24 24 L42 42 M42 24 L24 42" stroke="currentColor" stroke-width="9" stroke-linecap="round"/>',
 };
 
-/** Icône du plugin dans la barre de sa fenêtre (cartes empilées de Decker). */
-export const DECKER_ICON =
-  '<svg viewBox="0 0 32 32" shape-rendering="crispEdges" aria-hidden="true"><rect x="3" y="15" width="20" height="14" fill="#7a3b12" stroke="#1a0d02"/><rect x="6" y="10" width="20" height="14" fill="#c1651c" stroke="#1a0d02"/><rect x="9" y="5" width="20" height="14" fill="#ffb238" stroke="#1a0d02"/></svg>';
+/** Icône du plugin dans la barre de sa fenêtre : le logo de Decker, celui du header. */
+export const DECKER_ICON = DECKER_MARK_SVG.replace('<svg ', '<svg aria-hidden="true" ');
+
+/** Icône d'un fichier Google Slides, comme dans l'en-tête de l'éditeur (une capture). */
+export const SLIDES_ICON =
+  '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="3" width="20" height="18" rx="4" fill="#fbbc04"/><rect x="6.5" y="8.5" width="11" height="7" rx="1.5" fill="#ffffff"/></svg>';
 
 /** Icône de fichier Figma dans un onglet (la grille de l'outil Frame). */
 export const FILE_ICON =
@@ -774,7 +777,7 @@ function act(name) {
 /* Export renvoie au vrai plugin : une traînée de pixels orange balaie le CTA
    du header de gauche à droite pour le désigner. En mouvement réduit, les
    pixels apparaissent et s'effacent ensemble, sans balayage. */
-var TRAIL_TONES = ['var(--b-accent-hover)', 'var(--b-accent-red)', 'color-mix(in oklab, var(--b-accent) 55%, var(--b-white))'];
+var TRAIL_TONES = ['var(--b-accent-hover)', 'var(--b-accent-red)', 'color-mix(in oklab, var(--b-accent) 35%, var(--b-white))', 'color-mix(in oklab, var(--b-accent-red) 60%, var(--b-ink))'];
 function ctaTrail() {
   var cta = document.querySelector('.header .cta');
   if (!cta || !cta.animate) return;
@@ -789,14 +792,14 @@ function ctaTrail() {
   var longest = 0;
   for (var c = 0; c < cols; c++) {
     for (var r = 0; r < rows; r++) {
-      if (Math.random() < 0.25) continue;
+      if (Math.random() < 0.1) continue;
       var px = document.createElement('i');
       px.style.cssText = 'left:' + c * size + 'px;top:' + r * size + 'px;width:' + size + 'px;height:' + size + 'px;background:' + TRAIL_TONES[Math.floor(Math.random() * TRAIL_TONES.length)];
       layer.appendChild(px);
-      var delay = reduceMotion ? 0 : c * 30 + Math.random() * 90;
-      var duration = reduceMotion ? 600 : 220 + Math.random() * 160;
+      var delay = reduceMotion ? 0 : c * 40 + Math.random() * 120;
+      var duration = reduceMotion ? 900 : 380 + Math.random() * 260;
       longest = Math.max(longest, delay + duration);
-      px.animate([{ opacity: 0 }, { opacity: 1 }, { opacity: 0 }], { duration: duration, delay: delay, easing: reduceMotion ? 'ease-out' : 'steps(3, end)', fill: 'both' });
+      px.animate([{ opacity: 0 }, { opacity: 1, offset: 0.25 }, { opacity: 1, offset: 0.6 }, { opacity: 0 }], { duration: duration, delay: delay, easing: reduceMotion ? 'ease-out' : 'steps(3, end)', fill: 'both' });
     }
   }
   cta.appendChild(layer);
