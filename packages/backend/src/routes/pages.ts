@@ -6,16 +6,18 @@ import { OG_IMAGE } from '../og/variants.js';
 import { HERO_DEMO_CSS, HERO_DEMO_HTML, HERO_DEMO_JS } from './heroDemo.js';
 import { EASTER_EGG_VERSION, easterEggScript } from './easterEgg.js';
 import {
-  FEATURE_FREE_SVG,
-  FEATURE_FULL_DECK_SVG,
-  FEATURE_NATIVE_SVG,
-  FEATURE_PICK_SVG,
-  FEATURE_PRIVATE_SVG,
-  FEATURE_TEMPLATE_SVG,
-  STEP_GET_DECK_SVG,
-  STEP_MATCHED_SVG,
-  STEP_PICK_FRAMES_SVG,
-} from './artwork.js';
+  FEATURE_FREE_HTML,
+  FEATURE_FULL_DECK_HTML,
+  FEATURE_NATIVE_HTML,
+  FEATURE_PICK_HTML,
+  FEATURE_PRIVATE_HTML,
+  FEATURE_SCENES_CSS,
+  FEATURE_SCENES_JS,
+  FEATURE_TEMPLATE_HTML,
+  STEP_GET_DECK_HTML,
+  STEP_MATCHED_HTML,
+  STEP_PICK_FRAMES_HTML,
+} from './featureScenes.js';
 
 export const pagesRouter = Router();
 
@@ -336,7 +338,7 @@ pagesRouter.get('/', (_req, res) => {
       <div class="carousel" data-carousel>
         <ul class="carousel__track" data-carousel-track tabindex="0" aria-label="What Decker does">
         <li class="carousel__item card">
-          ${FEATURE_FREE_SVG}
+          ${FEATURE_FREE_HTML}
           <div class="card__body">
             <p class="card__eyebrow">Pricing</p>
             <h3 class="card__title">100% free</h3>
@@ -344,7 +346,7 @@ pagesRouter.get('/', (_req, res) => {
           </div>
         </li>
         <li class="carousel__item card">
-          ${FEATURE_FULL_DECK_SVG}
+          ${FEATURE_FULL_DECK_HTML}
           <div class="card__body">
             <p class="card__eyebrow">Full deck</p>
             <h3 class="card__title">Export a whole file</h3>
@@ -352,7 +354,7 @@ pagesRouter.get('/', (_req, res) => {
           </div>
         </li>
         <li class="carousel__item card">
-          ${FEATURE_TEMPLATE_SVG}
+          ${FEATURE_TEMPLATE_HTML}
           <div class="card__body">
             <p class="card__eyebrow">Templates</p>
             <h3 class="card__title">Export a template</h3>
@@ -360,7 +362,7 @@ pagesRouter.get('/', (_req, res) => {
           </div>
         </li>
         <li class="carousel__item card">
-          ${FEATURE_PICK_SVG}
+          ${FEATURE_PICK_HTML}
           <div class="card__body">
             <p class="card__eyebrow">Control</p>
             <h3 class="card__title">Pick what you export</h3>
@@ -368,7 +370,7 @@ pagesRouter.get('/', (_req, res) => {
           </div>
         </li>
         <li class="carousel__item card">
-          ${FEATURE_NATIVE_SVG}
+          ${FEATURE_NATIVE_HTML}
           <div class="card__body">
             <p class="card__eyebrow">Fidelity</p>
             <h3 class="card__title">Real Slides objects</h3>
@@ -376,7 +378,7 @@ pagesRouter.get('/', (_req, res) => {
           </div>
         </li>
         <li class="carousel__item card">
-          ${FEATURE_PRIVATE_SVG}
+          ${FEATURE_PRIVATE_HTML}
           <div class="card__body">
             <p class="card__eyebrow">Privacy</p>
             <h3 class="card__title">Private by default</h3>
@@ -400,7 +402,7 @@ pagesRouter.get('/', (_req, res) => {
       <h2 class="section__title">Three steps to a live deck.</h2>
       <ol class="card-grid">
         <li class="card">
-          ${STEP_PICK_FRAMES_SVG}
+          ${STEP_PICK_FRAMES_HTML}
           <div class="card__body">
             <p class="card__eyebrow">Step 1</p>
             <h3 class="card__title">Pick your frames</h3>
@@ -408,7 +410,7 @@ pagesRouter.get('/', (_req, res) => {
           </div>
         </li>
         <li class="card">
-          ${STEP_MATCHED_SVG}
+          ${STEP_MATCHED_HTML}
           <div class="card__body">
             <p class="card__eyebrow">Step 2</p>
             <h3 class="card__title">Matched, pixel for pixel</h3>
@@ -416,7 +418,7 @@ pagesRouter.get('/', (_req, res) => {
           </div>
         </li>
         <li class="card">
-          ${STEP_GET_DECK_SVG}
+          ${STEP_GET_DECK_HTML}
           <div class="card__body">
             <p class="card__eyebrow">Step 3</p>
             <h3 class="card__title">Get your deck</h3>
@@ -464,8 +466,8 @@ pagesRouter.get('/', (_req, res) => {
       path: '/',
       jsonLdType: 'WebSite',
       main,
-      styles: HERO_DEMO_CSS,
-      script: HERO_DEMO_JS,
+      styles: HERO_DEMO_CSS + FEATURE_SCENES_CSS,
+      script: HERO_DEMO_JS + FEATURE_SCENES_JS,
     }),
   );
 });

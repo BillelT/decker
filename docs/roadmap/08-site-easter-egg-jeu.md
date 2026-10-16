@@ -72,7 +72,7 @@ Humour léger, rien de trompeur en dehors du jeu : aucune vraie URL, aucun vrai 
 - JavaScript et CSS natifs : le site est rendu côté serveur en chaînes HTML, sans framework.
 - Script chargé seulement au déclenchement, pour ne rien coûter au chargement de la page.
 - Fenêtres en `position: fixed`, animées en `transform` et `opacity` uniquement.
-- Visuels en SVG inline : les mini-slides peuvent reprendre les illustrations de `packages/backend/src/routes/artwork.ts`. Aucune image externe.
+- Visuels en SVG inline : les mini-slides peuvent reprendre les slides du faux deck Trailworn (`slide()` dans `packages/backend/src/routes/featureScenes.ts`). Aucune image externe.
 - Fichiers proposés : `packages/backend/src/routes/easterEgg.ts` (CSS et JS du jeu en chaînes) et le déclencheur dans le footer de `pages.ts`.
 
 ## Étapes

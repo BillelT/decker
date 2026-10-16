@@ -19,9 +19,10 @@ const SCOPE = '.dm-plugin';
 
 const HEADER = 'Généré par scripts/sync-plugin-styles.mjs depuis le CSS du plugin (skin modern). Ne pas modifier à la main.';
 
-// Morceaux du plugin absents de la démo : les garder alourdirait chaque
-// chargement de la page d'accueil pour rien.
-const UNUSED = /f2s-(modal|setting|login|resize-grip|grip-|titlebar|error\b|statusbar|progress\b|export-failure|canvas-empty)/;
+// Morceaux du plugin absents de la démo et des visuels des cards : les garder
+// alourdirait chaque chargement de la page d'accueil pour rien. La modale
+// Settings reste (card Privacy), sans son voile.
+const UNUSED = /f2s-(modal-overlay|login|resize-grip|grip-|titlebar|error\b|statusbar|progress\b|export-failure|canvas-empty)/;
 
 /** Découpe une liste de sélecteurs sur ses virgules de premier niveau. */
 function splitSelectors(text) {
