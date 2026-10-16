@@ -148,9 +148,12 @@ export async function createPresentation(
     firstSlideObjectId: body.slides[0].objectId,
     masterObjectId: body.masters[0].objectId,
     masterAndLayoutElementIds,
-    // Seul le corps (9 niveaux de puces) : le titre du Master est le parent
+    // Le corps (9 niveaux de puces) et le numéro de slide ("#" en bas à
+    // droite, absent des frames Figma). Pas le titre : il est le parent
     // des titres des layouts, le supprimer risquerait de les emporter.
-    masterPlaceholderIds: body.masters.flatMap((page) => (page.pageElements ?? []).filter((el) => el.shape?.placeholder?.type === 'BODY').map((el) => el.objectId)),
+    masterPlaceholderIds: body.masters.flatMap((page) =>
+      (page.pageElements ?? []).filter((el) => ['BODY', 'SLIDE_NUMBER'].includes(el.shape?.placeholder?.type ?? '')).map((el) => el.objectId),
+    ),
     layouts,
   };
 }

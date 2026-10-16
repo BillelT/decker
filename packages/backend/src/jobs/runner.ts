@@ -145,8 +145,9 @@ export async function runExportJob(
         if (used.has(layout.objectId) || (keepBlank && layout.name === 'BLANK')) continue;
         await applyBatch(accessToken, presentationId, { sourceSlideId: '__layout__', requests: [{ deleteObject: { objectId: layout.objectId } }] }).catch(() => undefined);
       }
-      // Puis le corps par défaut du Master (9 niveaux de puces) : plus aucun
-      // layout restant ne l'utilise. Un échec ici ne gêne rien.
+      // Puis le corps par défaut du Master (9 niveaux de puces) et son
+      // numéro de slide : plus aucun layout restant ne les utilise. Un
+      // échec ici ne gêne rien.
       for (const objectId of templateLayouts.masterPlaceholderIds ?? []) {
         await applyBatch(accessToken, presentationId, { sourceSlideId: '__master__', requests: [{ deleteObject: { objectId } }] }).catch(() => undefined);
       }

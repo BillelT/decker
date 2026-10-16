@@ -19,7 +19,7 @@ export { planTemplateLayouts, type LayoutAssignment, type NativeLayout } from '.
 export interface TemplateLayoutContext {
   layouts: NativeLayout[];
   plan: Record<string, LayoutAssignment>;
-  /** Corps par défaut du Master (9 niveaux de puces), à retirer une fois les layouts écrits. */
+  /** Corps (9 niveaux de puces) et numéro de slide par défaut du Master, à retirer une fois les layouts écrits. */
   masterPlaceholderIds?: string[];
 }
 
