@@ -1,4 +1,4 @@
-import { useRef } from 'preact/hooks';
+import { useEffect, useRef } from 'preact/hooks';
 import { postToPlugin } from './types.js';
 
 /**
@@ -13,15 +13,98 @@ import { postToPlugin } from './types.js';
  * plutôt que d'un delta écran : l'iframe grandit sous le pointeur, et la
  * distance pointeur/coin mesurée au pointerdown suffit à garder le coin
  * collé au curseur.
+ *
+ * Les écouteurs du drag sont posés sur `window` dans le pointerdown (comme
+ * le rail, voir useRailReorder.ts), pas sur le bouton. Quand Figma est lent
+ * à répondre, l'iframe est en retard sur la souris : le pointeur sort de
+ * l'iframe, la capture peut se perdre et le `pointerup` n'arrive jamais. Avec
+ * des écouteurs sur le bouton, le drag restait alors "actif" et le moindre
+ * survol de la poignée redimensionnait la fenêtre avec une position périmée
+ * (décalage de 10 à 20 px). Ici, un `pointermove` sans bouton enfoncé, un
+ * `pointercancel` ou un `pointerup` terminent toujours le drag, et un drag
+ * dont le bouton est resté enfoncé reprend dès que le pointeur revient.
  */
 export function ResizeGrip() {
-  const offsetRef = useRef<{ x: number; y: number } | undefined>();
-  const lastSizeRef = useRef<{ width: number; height: number } | undefined>();
-  const frameRef = useRef(0);
+  // Retire les écouteurs du drag en cours : appelé à sa fin, ou au démontage.
+  const detachRef = useRef<(() => void) | undefined>();
 
-  function sizeFrom(e: PointerEvent) {
-    const offset = offsetRef.current!;
-    return { width: Math.round(e.clientX + offset.x), height: Math.round(e.clientY + offset.y) };
+  useEffect(() => () => detachRef.current?.(), []);
+
+  function onPointerDown(e: PointerEvent) {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    detachRef.current?.();
+
+    const pointerId = e.pointerId;
+    const grip = e.currentTarget as HTMLElement;
+    const offset = { x: window.innerWidth - e.clientX, y: window.innerHeight - e.clientY };
+    let lastSize: { width: number; height: number } | undefined;
+    let frame = 0;
+
+    // La capture garde le flux d'événements sur la poignée quand le pointeur
+    // dépasse l'iframe ; les écouteurs sur `window` prennent le relais si elle
+    // se perd.
+    try {
+      grip.setPointerCapture(pointerId);
+    } catch {
+      // Pointeur déjà relâché : le garde `buttons === 0` ci-dessous prend le relais.
+    }
+
+    function sizeFrom(ev: PointerEvent) {
+      return { width: Math.round(ev.clientX + offset.x), height: Math.round(ev.clientY + offset.y) };
+    }
+    function finish(size: { width: number; height: number } | undefined) {
+      detach();
+      cancelAnimationFrame(frame);
+      frame = 0;
+      try {
+        grip.releasePointerCapture(pointerId);
+      } catch {
+        // Capture déjà perdue.
+      }
+      // Simple clic (ou chacun des deux clics d'un double clic) : rien n'a
+      // bougé, rien à appliquer ni à persister.
+      if (!size) return;
+      postToPlugin({ type: 'resize-ui', ...size });
+      postToPlugin({ type: 'save-ui-size', ...size });
+    }
+    function onPointerMove(ev: PointerEvent) {
+      if (ev.pointerId !== pointerId) return;
+      // Plus aucun bouton enfoncé alors qu'aucun pointerup n'est arrivé : le
+      // relâchement a eu lieu hors de l'iframe. On garde la dernière taille
+      // suivie, sans recalculer depuis une position qui n'est plus celle du drag.
+      if (ev.buttons === 0) {
+        finish(lastSize);
+        return;
+      }
+      lastSize = sizeFrom(ev);
+      // Un message par frame d'affichage au plus : pointermove peut tirer
+      // bien plus souvent, et chaque resize relance la mise en page.
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        if (lastSize) postToPlugin({ type: 'resize-ui', ...lastSize });
+      });
+    }
+    function onPointerUp(ev: PointerEvent) {
+      if (ev.pointerId !== pointerId) return;
+      finish(lastSize && sizeFrom(ev));
+    }
+    function onPointerCancel(ev: PointerEvent) {
+      if (ev.pointerId !== pointerId) return;
+      finish(lastSize);
+    }
+    function detach() {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerCancel);
+      detachRef.current = undefined;
+    }
+
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerCancel);
+    detachRef.current = detach;
   }
 
   return (
@@ -33,38 +116,7 @@ export function ResizeGrip() {
       tabIndex={-1}
       title="Drag to resize the plugin. Double-click to reset its size."
       aria-label="Resize the plugin window"
-      onPointerDown={(e) => {
-        if (e.button !== 0) return;
-        e.preventDefault();
-        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-        offsetRef.current = { x: window.innerWidth - e.clientX, y: window.innerHeight - e.clientY };
-      }}
-      onPointerMove={(e) => {
-        if (!offsetRef.current) return;
-        lastSizeRef.current = sizeFrom(e);
-        // Un message par frame d'affichage au plus : pointermove peut tirer
-        // bien plus souvent, et chaque resize relance la mise en page.
-        if (frameRef.current) return;
-        frameRef.current = requestAnimationFrame(() => {
-          frameRef.current = 0;
-          if (lastSizeRef.current) postToPlugin({ type: 'resize-ui', ...lastSizeRef.current });
-        });
-      }}
-      onPointerUp={(e) => {
-        if (!offsetRef.current) return;
-        // Simple clic (ou chacun des deux clics d'un double clic) : rien n'a
-        // bougé, rien à appliquer ni à persister.
-        const moved = lastSizeRef.current !== undefined;
-        const size = sizeFrom(e);
-        cancelAnimationFrame(frameRef.current);
-        frameRef.current = 0;
-        offsetRef.current = undefined;
-        lastSizeRef.current = undefined;
-        (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
-        if (!moved) return;
-        postToPlugin({ type: 'resize-ui', ...size });
-        postToPlugin({ type: 'save-ui-size', ...size });
-      }}
+      onPointerDown={onPointerDown}
       onDblClick={() => postToPlugin({ type: 'reset-ui-size' })}
     >
       <svg width="12" height="12" viewBox="0 0 14 14" fill="none" aria-hidden="true">

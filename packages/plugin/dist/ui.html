@@ -5770,12 +5770,67 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
 
   // src/ui/ResizeGrip.tsx
   function ResizeGrip() {
-    const offsetRef = A2();
-    const lastSizeRef = A2();
-    const frameRef = A2(0);
-    function sizeFrom(e3) {
-      const offset = offsetRef.current;
-      return { width: Math.round(e3.clientX + offset.x), height: Math.round(e3.clientY + offset.y) };
+    const detachRef = A2();
+    h2(() => () => detachRef.current?.(), []);
+    function onPointerDown(e3) {
+      if (e3.button !== 0) return;
+      e3.preventDefault();
+      detachRef.current?.();
+      const pointerId = e3.pointerId;
+      const grip = e3.currentTarget;
+      const offset = { x: window.innerWidth - e3.clientX, y: window.innerHeight - e3.clientY };
+      let lastSize;
+      let frame = 0;
+      try {
+        grip.setPointerCapture(pointerId);
+      } catch {
+      }
+      function sizeFrom(ev) {
+        return { width: Math.round(ev.clientX + offset.x), height: Math.round(ev.clientY + offset.y) };
+      }
+      function finish(size) {
+        detach();
+        cancelAnimationFrame(frame);
+        frame = 0;
+        try {
+          grip.releasePointerCapture(pointerId);
+        } catch {
+        }
+        if (!size) return;
+        postToPlugin({ type: "resize-ui", ...size });
+        postToPlugin({ type: "save-ui-size", ...size });
+      }
+      function onPointerMove(ev) {
+        if (ev.pointerId !== pointerId) return;
+        if (ev.buttons === 0) {
+          finish(lastSize);
+          return;
+        }
+        lastSize = sizeFrom(ev);
+        if (frame) return;
+        frame = requestAnimationFrame(() => {
+          frame = 0;
+          if (lastSize) postToPlugin({ type: "resize-ui", ...lastSize });
+        });
+      }
+      function onPointerUp(ev) {
+        if (ev.pointerId !== pointerId) return;
+        finish(lastSize && sizeFrom(ev));
+      }
+      function onPointerCancel(ev) {
+        if (ev.pointerId !== pointerId) return;
+        finish(lastSize);
+      }
+      function detach() {
+        window.removeEventListener("pointermove", onPointerMove);
+        window.removeEventListener("pointerup", onPointerUp);
+        window.removeEventListener("pointercancel", onPointerCancel);
+        detachRef.current = void 0;
+      }
+      window.addEventListener("pointermove", onPointerMove);
+      window.addEventListener("pointerup", onPointerUp);
+      window.addEventListener("pointercancel", onPointerCancel);
+      detachRef.current = detach;
     }
     return /* @__PURE__ */ u3(
       "button",
@@ -5785,34 +5840,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
         tabIndex: -1,
         title: "Drag to resize the plugin. Double-click to reset its size.",
         "aria-label": "Resize the plugin window",
-        onPointerDown: (e3) => {
-          if (e3.button !== 0) return;
-          e3.preventDefault();
-          e3.currentTarget.setPointerCapture(e3.pointerId);
-          offsetRef.current = { x: window.innerWidth - e3.clientX, y: window.innerHeight - e3.clientY };
-        },
-        onPointerMove: (e3) => {
-          if (!offsetRef.current) return;
-          lastSizeRef.current = sizeFrom(e3);
-          if (frameRef.current) return;
-          frameRef.current = requestAnimationFrame(() => {
-            frameRef.current = 0;
-            if (lastSizeRef.current) postToPlugin({ type: "resize-ui", ...lastSizeRef.current });
-          });
-        },
-        onPointerUp: (e3) => {
-          if (!offsetRef.current) return;
-          const moved = lastSizeRef.current !== void 0;
-          const size = sizeFrom(e3);
-          cancelAnimationFrame(frameRef.current);
-          frameRef.current = 0;
-          offsetRef.current = void 0;
-          lastSizeRef.current = void 0;
-          e3.currentTarget.releasePointerCapture(e3.pointerId);
-          if (!moved) return;
-          postToPlugin({ type: "resize-ui", ...size });
-          postToPlugin({ type: "save-ui-size", ...size });
-        },
+        onPointerDown,
         onDblClick: () => postToPlugin({ type: "reset-ui-size" }),
         children: /* @__PURE__ */ u3("svg", { width: "12", height: "12", viewBox: "0 0 14 14", fill: "none", "aria-hidden": "true", children: [
           /* @__PURE__ */ u3("path", { className: "f2s-grip-hi", d: "M3 13 13 3M7 13l6-6M11 13l2-2", "stroke-width": "1" }),
