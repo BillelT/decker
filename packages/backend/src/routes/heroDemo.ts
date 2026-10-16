@@ -4,13 +4,14 @@
  * desktop (macOS) : même markup, mêmes classes f2s-*, et le CSS du plugin
  * lui-même, régénéré par scripts/sync-plugin-styles.mjs et scopé sous
  * `.dm-plugin`. Seul l'habillage autour (barre d'onglets Figma, canvas,
- * fenêtre du plugin, fenêtre Slides) est propre à la démo.
+ * fenêtre du plugin) est propre à la démo.
  *
  * Elle se joue une fois avec un faux curseur (sélection de trois frames, Add,
- * réordonnancement dans le rail, Export, le deck ouvert dans Slides avec un
- * titre vraiment éditable, puis le mode Templates), et s'arrête sur un état
- * où tout marche : drag du rail, polices, rôles, couleurs, Export. Dès que le
- * visiteur clique ou tape dedans, le curseur s'efface et la démo est à lui.
+ * réordonnancement dans le rail, puis le mode Templates), et s'arrête sur un
+ * état à explorer : rail, polices, rôles, couleurs. Pas de faux export
+ * (décision du 16 octobre) : Export et Create template renvoient vers le
+ * vrai plugin. Dès que le visiteur clique ou tape dedans, le curseur
+ * s'efface et la démo est à lui.
  * Pas de bouton pause (décision du 16 octobre) : la lecture ne boucle pas, et
  * ne tourne que lorsque la démo est à l'écran.
  *
@@ -51,7 +52,6 @@ const CHROME = {
   close: '#ff5f57',
   minimize: '#febc2e',
   zoom: '#28c840',
-  slides: '#f4b400',
   shadow: '0 0 0.5px rgba(0, 0, 0, 0.15), 0 5px 12px rgba(0, 0, 0, 0.13), 0 1px 3px rgba(0, 0, 0, 0.1)',
   shadowWindow: '0 0 0.5px rgba(0, 0, 0, 0.3), 0 20px 48px rgba(0, 0, 0, 0.22), 0 2px 6px rgba(0, 0, 0, 0.12)',
 };
@@ -79,7 +79,7 @@ ${PLUGIN_STYLES_CSS}
   font-size: 12px; line-height: var(--b-leading-tight); color: var(--b-ink);
 }
 .dm-tabbar button, .dm-canvas button { font: inherit; color: inherit; touch-action: manipulation; }
-.dm button:focus-visible, .dm [contenteditable]:focus-visible { outline: var(--b-focus-outline); outline-offset: var(--b-focus-offset); }
+.dm button:focus-visible { outline: var(--b-focus-outline); outline-offset: var(--b-focus-offset); }
 
 /* Barre d'onglets de Figma desktop, version macOS */
 .dm-tabbar {
@@ -158,51 +158,6 @@ ${PLUGIN_STYLES_CSS}
 .dm .dm-plugin .f2s-frame-preview .dm-slide { width: 100%; height: 100%; pointer-events: none; }
 .dm .f2s-sidebar[hidden], .dm .f2s-style-aside[hidden] { display: none; }
 .dm .dm-plugin .f2s-style-font-swatch { font-family: var(--dm-deck-font); }
-.dm .f2s-retro-screen .dm-slide { width: 100%; }
-/* En Templates, la fenêtre d'export épouse l'image du plugin, plafonnée à
-   65 % de la hauteur du canvas : la slide HTML n'a pas de taille propre, on
-   lui donne celle que l'image aurait. */
-.dm .dm-plugin .f2s-tmpl-preview .dm-retro-slide { width: min(calc(65cqh * 16 / 9), calc(100cqw - 24px)); }
-@media (prefers-reduced-motion: no-preference) {
-  .dm .dm-retro-slide { animation: dm-build 2600ms steps(8, end) both; }
-  .dm .dm-retro-beam { animation: dm-beam 2600ms steps(8, end) both; }
-  @keyframes dm-build { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
-  @keyframes dm-beam { from { top: 0; } to { top: 100%; } }
-}
-.dm .dm-plugin .dm-retro-fill { transition: clip-path var(--dm-step, 2600ms) linear; }
-
-/* Fenêtre Slides (un navigateur macOS) */
-.dm .dm-slides {
-  position: absolute; left: 150px; top: 64px; width: 1140px; height: 740px; z-index: 3;
-  overflow: clip; border-radius: var(--b-radius-md); box-shadow: ${CHROME.shadowWindow};
-}
-@media (prefers-reduced-motion: no-preference) {
-  .dm .dm-slides { animation: dm-pop 200ms var(--b-ease-out) both; }
-  @keyframes dm-pop { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: none; } }
-}
-.dm-slides__bar { display: flex; align-items: center; gap: 12px; padding: 10px 16px 10px 0; flex: none; border-bottom: 1px solid var(--color-border); }
-.dm-slides__bar .dm-lights { padding-right: 4px; }
-.dm-slides__doc { width: 20px; height: 26px; flex: none; border-radius: var(--b-radius-2xs); background: ${CHROME.slides}; }
-.dm-slides__title { font-size: 15px; font-weight: var(--b-font-semibold); }
-.dm-slides__menu { display: flex; gap: 12px; margin-top: 2px; font-size: 12px; color: var(--color-text-muted); }
-.dm-slides__close { margin-left: auto; }
-.dm-slides__body { display: flex; flex: 1 1 auto; min-height: 0; background: var(--color-surface-muted); }
-.dm-film { width: 200px; flex: none; padding: 16px; display: flex; flex-direction: column; gap: 12px; background: var(--color-surface); border-right: 1px solid var(--color-border); }
-.dm .dm-film__item { display: flex; gap: 6px; padding: 0; border: 0; background: none; cursor: pointer; font: inherit; font-size: 11px; color: var(--color-text-muted); }
-.dm-film__item .dm-slide { flex: 1 1 auto; outline: 2px solid transparent; }
-.dm-film__item[aria-current="true"] .dm-slide { outline-color: ${CHROME.slides}; }
-.dm-slides__stage { flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 24px; }
-.dm-slides__stage > .dm-slide { width: 780px; box-shadow: 0 2px 8px color-mix(in oklab, var(--b-ink) 12%, transparent); }
-.dm-slides__hint { margin: 0; font-size: 13px; color: var(--color-text-muted); }
-.dm-edit { outline: 1px dashed transparent; outline-offset: 0.4cqw; cursor: text; -webkit-user-select: text; user-select: text; }
-.dm-edit:hover, .dm-edit:focus, .dm-edit--active { outline-color: ${CHROME.select}; }
-.dm-edit:focus { outline-style: solid; }
-.dm-edit--active::after { content: ""; display: inline-block; width: 0.35cqw; height: 0.9em; margin-left: 0.3cqw; vertical-align: -0.08em; background: currentColor; }
-@media (prefers-reduced-motion: no-preference) {
-  .dm-edit--active::after { animation: dm-caret 1s steps(1, end) infinite; }
-  @keyframes dm-caret { 50% { opacity: 0; } }
-}
-
 /* Calque posé sur la démo pendant la lecture automatique. Le script remplace
    sans cesse les éléments sous le pointeur, et Chrome perd la molette quand
    l'élément qu'il défilait disparaît en plein geste : la page se figeait. Le
@@ -239,10 +194,6 @@ ${PLUGIN_STYLES_CSS}
 .dm-s__line { display: block; height: 0.9cqw; margin-bottom: 1cqw; background: color-mix(in oklab, var(--dm-forest) 22%, transparent); }
 .dm-s__big { position: absolute; left: 7cqw; top: 5cqw; margin: 0; font-size: 21cqw; font-weight: 700; line-height: 1; letter-spacing: -0.04em; }
 .dm-s__cap { position: absolute; left: 7cqw; top: 40cqw; margin: 0; max-width: 50cqw; font-size: 2.8cqw; line-height: 1.25; opacity: 0.9; }
-.dm-s__ph {
-  position: absolute; display: flex; align-items: center; padding: 0 1.5cqw;
-  outline: 0.25cqw dashed currentColor; outline-offset: -0.25cqw; opacity: 0.6; font-size: 2.6cqw;
-}
 `;
 
 /** Collines de la slide de couverture. */
@@ -332,7 +283,6 @@ export const HERO_DEMO_HTML = `
         </footer>
       </div>
     </section>
-    <div data-demo-slides></div>
     <div class="dm-cursor" data-demo-cursor aria-hidden="true" hidden>
       <svg viewBox="0 0 24 24"><path d="M4 2 L4 20 L9 15.5 L12.5 22 L15.5 20.6 L12.2 14.2 L19 14 Z" fill="var(--b-ink)" stroke="var(--b-white)" stroke-width="1.5" stroke-linejoin="round"/></svg>
     </div>
@@ -353,11 +303,9 @@ var actions = q('[data-demo-actions]');
 var fontsHost = q('[data-demo-fonts]');
 var titleInput = q('[data-demo-title]');
 var srStatus = q('[data-demo-status]');
-var slidesHost = q('[data-demo-slides]');
 var cursor = q('[data-demo-cursor]');
 var shield = q('[data-demo-shield]');
 var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-var REVEAL_MS = reduceMotion ? 700 : 2600;
 
 /* Frames du fichier Figma, et les calques que le mode Templates en liste.
    suggest : le rôle que « Suggest roles » proposerait. */
@@ -397,30 +345,20 @@ function esc(text) {
 }
 
 /* ---------- Slides du faux deck ---------- */
-function slideHtml(i, opts) {
-  opts = opts || {};
+function slideHtml(i) {
   var f = FRAMES[i];
-  var edit = opts.editable ? ' dm-edit" contenteditable="true" spellcheck="false" data-demo-edit="' : '';
   var html = '';
-  if (opts.layout) {
-    var label = { title: 'Click to add title', subtitle: 'Click to add subtitle', body: 'Click to add text' };
-    var boxes = { cover: [['title', 6, 7, 62, 12], ['subtitle', 6, 24.5, 40, 4]], pillars: [['title', 6, 7, 72, 8], ['body', 6, 21, 88, 24]], stats: [['title', 6, 4, 50, 23], ['body', 6, 39, 52, 10]] };
-    html = boxes[f.kind].map(function (r) {
-      return '<span class="dm-s__ph" style="left:' + r[1] + 'cqw;top:' + r[2] + 'cqw;width:' + r[3] + 'cqw;height:' + r[4] + 'cqw">' + label[r[0]] + '</span>';
-    }).join('') + (f.kind === 'cover' ? HILLS : '');
-    return '<span class="dm-slide dm-slide--' + f.kind + '">' + html + '</span>';
-  }
   if (f.kind === 'cover') {
-    html = '<span class="dm-s__title' + edit + '">Built for the long run.</span>' +
+    html = '<span class="dm-s__title">Built for the long run.</span>' +
       '<span class="dm-s__sub">Annual report &middot; Trailworn Inc.</span>' + HILLS;
   } else if (f.kind === 'pillars') {
     var col = function (n, h) {
       return '<span><span class="dm-s__num">' + n + '</span><span class="dm-s__head">' + h + '</span><span class="dm-s__line"></span><span class="dm-s__line" style="width:80%"></span><span class="dm-s__line" style="width:60%"></span></span>';
     };
-    html = '<span class="dm-s__title' + edit + '">Three pillars, one promise</span>' +
+    html = '<span class="dm-s__title">Three pillars, one promise</span>' +
       '<span class="dm-s__cols">' + col('01', 'Craft') + col('02', 'Speed') + col('03', 'Care') + '</span>';
   } else {
-    html = '<span class="dm-s__big' + edit + '">87%</span>' +
+    html = '<span class="dm-s__big">87%</span>' +
       '<span class="dm-s__cap">of our clients keep every deck editable after the handoff.</span>';
   }
   return '<span class="dm-slide dm-slide--' + f.kind + '">' + html + '</span>';
@@ -434,8 +372,7 @@ function freshState() {
   return {
     mode: 'deck', selected: [], rails: { deck: [], template: [] }, active: { deck: -1, template: -1 },
     titles: { deck: '', template: '' }, names: {}, roles: roles, colorRoles: { forest: 'DARK1', paper: 'LIGHT1' },
-    font: 'Arial', exp: null, done: { deck: false, template: false }, opened: { deck: false, template: false },
-    slides: null, slideIndex: 0, run: st ? st.run + 1 : 1
+    font: 'Arial', run: st ? st.run + 1 : 1
   };
 }
 function layoutName(i) { return st.names[i] != null ? st.names[i] : FRAMES[i].name; }
@@ -473,7 +410,6 @@ function renderTabs() {
     var on = t.getAttribute('data-mode') === st.mode;
     t.setAttribute('aria-selected', String(on));
     t.classList.toggle('is-active', on);
-    t.disabled = Boolean(st.exp);
   });
   titleInput.placeholder = deck ? 'Decker export' : 'Figma template';
   if (document.activeElement !== titleInput) titleInput.value = st.titles[st.mode];
@@ -488,21 +424,11 @@ function renderActions() {
   var deck = st.mode === 'deck';
   var n = addable();
   var where = deck ? 'the deck' : 'the template';
-  var html = '<button type="button" class="f2s-btn f2s-btn--secondary f2s-tabular" data-act="add" data-key="add"' + (st.exp || n === 0 ? ' disabled' : '') +
+  var html = '<button type="button" class="f2s-btn f2s-btn--secondary f2s-tabular" data-act="add" data-key="add"' + (n === 0 ? ' disabled' : '') +
     ' title="' + (n > 0 ? 'Add the selected frames to ' + where + ', in the order you selected them.' : 'Select frames on the Figma canvas to add them to ' + where + '.') + '">' +
     (n === 0 ? 'Add frames' : 'Add ' + n + ' frame' + (n === 1 ? '' : 's')) + '</button>';
-  html += '<button type="button" class="f2s-btn f2s-btn--secondary" data-act="prepare" data-key="prepare"' + (st.exp || (!st.selected.length && !curRail().length) ? ' disabled' : '') + '>Prepare for Slides</button>';
-  if (st.exp && st.exp.mode === st.mode) {
-    var verb = st.exp.cancel ? 'Canceling' : deck ? 'Exporting' : 'Creating';
-    html += '<button type="button" class="f2s-btn f2s-btn--ghost" data-act="cancel" data-key="cancel"' + (st.exp.cancel ? ' disabled' : '') + '>Cancel</button>' +
-      '<span class="f2s-btn f2s-btn--primary f2s-btn--busy f2s-tabular"><span class="f2s-btn-loading"><span class="f2s-spinner" aria-hidden="true"></span>' +
-      verb + (st.exp.cancel ? '' : ' ' + (st.exp.index + 1) + '/' + st.exp.total) + '</span></span>';
-  } else if (st.done[st.mode] && !st.opened[st.mode]) {
-    html += '<button type="button" class="f2s-btn f2s-btn--primary f2s-btn--icon-end" data-act="open" data-key="open">Open in Slides' + ARROW + '</button>';
-  } else {
-    var label = deck ? (st.done.deck ? 'Export again' : 'Export') : st.done.template ? 'Create again' : 'Create template';
-    html += '<button type="button" class="f2s-btn f2s-btn--primary" data-act="export" data-key="export"' + (st.exp || !curRail().length ? ' disabled' : '') + '>' + label + '</button>';
-  }
+  html += '<button type="button" class="f2s-btn f2s-btn--secondary" data-act="prepare" data-key="prepare"' + (!st.selected.length && !curRail().length ? ' disabled' : '') + '>Prepare for Slides</button>';
+  html += '<button type="button" class="f2s-btn f2s-btn--primary" data-act="export" data-key="export"' + (!curRail().length ? ' disabled' : '') + '>' + (deck ? 'Export' : 'Create template') + '</button>';
   keepFocus(function () { actions.innerHTML = html; });
 }
 
@@ -575,29 +501,19 @@ function commitFont(font) {
 function railHtml() {
   var deck = st.mode === 'deck';
   var r = curRail();
-  var lit = st.exp && st.exp.mode === st.mode ? st.exp.rail[st.exp.index] : st.active[st.mode];
+  var lit = st.active[st.mode];
   return r.map(function (i, pos) {
     var name = deck ? FRAMES[i].name : layoutName(i);
     var noun = deck ? 'slide' : 'layout';
     return '<div class="f2s-sidebar-item" data-item="' + i + '">' +
-      '<button type="button" class="f2s-frame-preview' + (lit === i ? ' is-active' : '') + (st.exp && lit === i ? ' is-exporting' : '') + '" data-pick="' + i + '" data-key="pick-' + i + '" aria-label="' + esc(name) + '" aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown">' +
+      '<button type="button" class="f2s-frame-preview' + (lit === i ? ' is-active' : '') + '" data-pick="' + i + '" data-key="pick-' + i + '" aria-label="' + esc(name) + '" aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown">' +
       slideHtml(i) + (!deck && pos === 0 && r.length >= 2 ? '<span class="f2s-frame-tag f2s-frame-tag--master">Master</span>' : '') + '</button>' +
       '<div class="f2s-frame-info"><span class="f2s-frame-index">' + (pos + 1) + '.</span>' +
       (deck ? '<span class="f2s-frame-name" title="' + esc(name) + '">' + esc(name) + '</span>'
-        : '<input type="text" class="f2s-frame-name-input" value="' + esc(name) + '" title="' + esc(name) + '" aria-label="Layout name" data-rename="' + i + '" data-key="rename-' + i + '"' + (st.exp ? ' readonly' : '') + '>') +
-      '<div class="f2s-frame-controls"><button type="button" class="f2s-icon-btn" data-remove="' + i + '" data-key="remove-' + i + '"' + (st.exp ? ' disabled' : '') +
+        : '<input type="text" class="f2s-frame-name-input" value="' + esc(name) + '" title="' + esc(name) + '" aria-label="Layout name" data-rename="' + i + '" data-key="rename-' + i + '">') +
+      '<div class="f2s-frame-controls"><button type="button" class="f2s-icon-btn" data-remove="' + i + '" data-key="remove-' + i + '"' +
       ' title="Remove ' + noun + ' ' + (pos + 1) + '" aria-label="Remove ' + noun + ' ' + (pos + 1) + '">&#10005;</button></div></div></div>';
   }).join('');
-}
-
-function retroHtml(i) {
-  var e = st.exp;
-  return '<div class="f2s-retro"><div class="f2s-retro-titlebar"><span class="f2s-retro-title">Exporting - ' + esc(st.mode === 'deck' ? FRAMES[i].name : layoutName(i)) + '</span>' +
-    '<span class="f2s-retro-window-buttons" aria-hidden="true"><i>_</i><i>&#9633;</i><i>&#10005;</i></span></div>' +
-    '<div class="f2s-retro-screen"><div class="dm-retro-slide">' + slideHtml(i) + '</div><div class="f2s-retro-scanlines" aria-hidden="true"></div>' +
-    '<div class="f2s-retro-beam dm-retro-beam" aria-hidden="true"></div></div>' +
-    '<div class="f2s-retro-status"><span class="f2s-retro-status-text">Generating slide ' + (e.index + 1) + ' of ' + e.total + '<span class="f2s-retro-ellipsis">...</span></span>' +
-    '<div class="f2s-retro-bar"><div class="f2s-retro-bar-fill dm-retro-fill" style="--f2s-retro-progress:' + (e.index / e.total) + '"></div></div></div></div>';
 }
 
 function elementList(els) {
@@ -607,7 +523,7 @@ function elementList(els) {
     var name = (role ? '[[' + role + ']] ' : '') + el.name;
     return '<li class="f2s-log-entry"><button type="button" class="f2s-log-entry-clickarea" data-el="' + el.id + '" data-key="el-' + el.id + '" title="' + esc(name) + '">' +
       '<span class="f2s-log-entry-text"><strong class="f2s-log-entry-name">' + esc(name) + '</strong></span></button>' +
-      '<select class="f2s-font-dropdown f2s-log-entry-role" data-role="' + el.id + '" data-key="role-' + el.id + '" title="Assign this layer to a Slides template placeholder role" aria-label="Placeholder role for ' + esc(el.name) + '"' + (st.exp ? ' disabled' : '') + '>' +
+      '<select class="f2s-font-dropdown f2s-log-entry-role" data-role="' + el.id + '" data-key="role-' + el.id + '" title="Assign this layer to a Slides template placeholder role" aria-label="Placeholder role for ' + esc(el.name) + '">' +
       '<option value="">No role</option>' + tags.map(function (t) {
         return '<option value="' + t + '"' + (t === role ? ' selected' : '') + '>[[' + t + ']]</option>';
       }).join('') + '</select></li>';
@@ -630,7 +546,6 @@ function colorSuggestions() {
 function mainHtml() {
   var deck = st.mode === 'deck';
   var r = curRail();
-  var exporting = st.exp && st.exp.mode === st.mode;
   if (!r.length) {
     return '<div class="f2s-demo" role="img" aria-label="Select frames on the Figma canvas, click Add, then ' + (deck ? 'Export to create the presentation' : 'Create template to build it') + ' in Google Slides.">' +
       '<div class="f2s-demo-canvas"></div><div class="f2s-demo-frame f2s-demo-frame--1"></div><div class="f2s-demo-frame f2s-demo-frame--2"></div><div class="f2s-demo-frame f2s-demo-frame--3"></div>' +
@@ -638,18 +553,18 @@ function mainHtml() {
       '<div class="f2s-demo-btn f2s-demo-btn--primary">' + (deck ? 'Export' : 'Create template') + '</div>' +
       '<svg class="f2s-demo-cursor" viewBox="0 0 16 20" width="16" height="20"><path d="M1 1 L1 16 L5 12.5 L8 19 L10.5 18 L7.5 11.5 L12.5 11.5 Z"/></svg></div>';
   }
-  var i = exporting ? st.exp.rail[st.exp.index] : st.active[st.mode];
+  var i = st.active[st.mode];
   if (deck) {
     return '<div class="f2s-deck-column">' +
-      (exporting ? '<div class="f2s-canvas-preview f2s-canvas-preview--retro">' + retroHtml(i) + '</div>' : '<div class="f2s-canvas-preview">' + slideHtml(i) + '</div>') +
+      '<div class="f2s-canvas-preview">' + slideHtml(i) + '</div>' +
       '<div class="f2s-logs"><div class="f2s-logs-header"><h3 class="f2s-tmpl-heading">Content</h3><span class="f2s-toolbar-muted f2s-tabular">' + FRAMES[i].native + ' native &middot; 0 rasterized</span></div>' +
       '<p class="f2s-toolbar-muted">No issues detected on this frame.</p></div></div>';
   }
   var tagged = FRAMES[i].els.filter(function (el) { return st.roles[el.id]; });
   var untagged = FRAMES[i].els.filter(function (el) { return !st.roles[el.id]; });
-  var canSuggest = roleSuggestions(i).length > 0 && !st.exp;
+  var canSuggest = roleSuggestions(i).length > 0;
   return '<div class="f2s-tmpl-report">' +
-    (exporting ? '<div class="f2s-canvas-preview f2s-canvas-preview--retro f2s-tmpl-preview">' + retroHtml(i) + '</div>' : '<div class="f2s-canvas-preview f2s-tmpl-preview">' + slideHtml(i) + '</div>') +
+    '<div class="f2s-canvas-preview f2s-tmpl-preview">' + slideHtml(i) + '</div>' +
     '<div class="f2s-tmpl-panel"><section class="f2s-tmpl-section"><div class="f2s-section-head"><h3 class="f2s-tmpl-heading">Composition</h3>' +
     '<button type="button" class="f2s-btn f2s-btn--ghost" data-act="suggest-roles" data-key="suggest-roles"' + (canSuggest ? '' : ' disabled') +
     ' title="' + (canSuggest ? 'Tag the title, subtitle and body of this layout from the size and length of its texts.' : 'Nothing left to suggest in this layout: its title, subtitle and body are set, or no other text fits them.') + '">Suggest roles</button></div>' +
@@ -709,13 +624,6 @@ function renderBody() {
     aside.hidden = deck;
     aside.innerHTML = deck ? '' : asideHtml();
   });
-  var fill = main.querySelector('.dm-retro-fill');
-  if (fill) {
-    var to = (st.exp.index + 1) / st.exp.total;
-    fill.style.setProperty('--dm-step', REVEAL_MS + 'ms');
-    /* Deux frames : la valeur de départ est peinte avant la cible. */
-    requestAnimationFrame(function () { requestAnimationFrame(function () { fill.style.setProperty('--f2s-retro-progress', String(to)); }); });
-  }
 }
 
 function renderAll() {
@@ -724,7 +632,6 @@ function renderAll() {
   renderActions();
   renderFonts();
   renderBody();
-  renderSlides();
 }
 
 /* ---------- Toast (Toast de StatusIcon.tsx) ---------- */
@@ -740,32 +647,6 @@ function showToast(message, tone) {
     '<span class="f2s-toast-timer" style="animation-duration:' + Math.max(3000, message.length * 60) + 'ms" aria-hidden="true"></span>';
   el.querySelector('.f2s-toast-timer').addEventListener('animationend', function () { el.remove(); });
   body.appendChild(el);
-}
-
-/* ---------- Fenêtre Slides ---------- */
-function renderSlides() {
-  if (!st.slides) {
-    slidesHost.innerHTML = '';
-    return;
-  }
-  var layout = st.slides === 'template';
-  var r = st.rails[st.slides];
-  var idx = Math.min(st.slideIndex, r.length - 1);
-  var title = st.titles[st.slides] || (layout ? 'Figma template' : 'Decker export');
-  keepFocus(function () {
-    slidesHost.innerHTML = '<section class="dm-plugin dm-slides" aria-label="The exported presentation in Google Slides">' +
-      '<div class="dm-slides__bar">' + LIGHTS + '<span class="dm-slides__doc" aria-hidden="true"></span><div>' +
-      '<div class="dm-slides__title">' + esc(title) + '</div>' +
-      '<div class="dm-slides__menu" aria-hidden="true"><span>File</span><span>Edit</span><span>View</span><span>Insert</span><span>Slide</span></div></div>' +
-      '<button type="button" class="f2s-btn f2s-btn--secondary dm-slides__close" data-act="close-slides" data-key="close-slides">Back to Figma</button></div>' +
-      '<div class="dm-slides__body"><div class="dm-film">' +
-      r.map(function (i, pos) {
-        return '<button type="button" class="dm-film__item" data-film="' + pos + '" data-key="film-' + pos + '" aria-label="Slide ' + (pos + 1) + '" aria-current="' + (pos === idx) + '"><span>' + (pos + 1) + '</span>' + slideHtml(i, { layout: layout }) + '</button>';
-      }).join('') +
-      '</div><div class="dm-slides__stage">' + slideHtml(r[idx], { layout: layout, editable: !layout }) +
-      '<p class="dm-slides__hint">' + (layout ? 'Theme colors, fonts, and layouts with real placeholders, ready to reuse.' : 'Real Slides objects: click the title and type.') + '</p>' +
-      '</div></div></section>';
-  });
 }
 
 /* ---------- Réordonnancement du rail (useRailReorder du plugin) ---------- */
@@ -810,14 +691,13 @@ function moveInRail(from, to) {
   var r = curRail();
   var id = r.splice(from, 1)[0];
   r.splice(to, 0, id);
-  st.done[st.mode] = false;
   srStatus.textContent = (st.mode === 'deck' ? FRAMES[id].name : layoutName(id)) + ', position ' + (to + 1) + ' of ' + r.length;
   renderActions();
   renderBody();
 }
 rail.addEventListener('pointerdown', function (e) {
   var t = e.target.closest('[data-pick]');
-  if (!t || st.exp || e.button !== 0 || e.pointerType === 'touch') return;
+  if (!t || e.button !== 0 || e.pointerType === 'touch') return;
   press = { id: Number(t.getAttribute('data-pick')), y: e.clientY, pointer: e.pointerId, moved: false };
   t.setPointerCapture(e.pointerId);
 });
@@ -852,7 +732,7 @@ function toggleFrame(i) {
 }
 
 function setMode(mode) {
-  if (st.exp || st.mode === mode) return;
+  if (st.mode === mode) return;
   st.mode = mode;
   renderTabs();
   renderActions();
@@ -866,8 +746,7 @@ function act(name) {
     var fresh = st.selected.filter(function (i) { return curRail().indexOf(i) === -1; });
     fresh.forEach(function (i) { curRail().push(i); });
     if (st.active[st.mode] < 0 && curRail().length) st.active[st.mode] = curRail()[0];
-    st.done[st.mode] = false;
-    st.selected = [];
+      st.selected = [];
     renderCanvas();
     renderActions();
     renderFonts();
@@ -875,22 +754,7 @@ function act(name) {
   } else if (name === 'prepare') {
     showToast('In Figma, Prepare for Slides duplicates each ' + (deck ? 'frame' : 'layout') + ' and reformats the copy for Slides.', 'info');
   } else if (name === 'export') {
-    runExport();
-  } else if (name === 'cancel') {
-    if (st.exp) st.exp.cancel = true;
-    renderActions();
-  } else if (name === 'open') {
-    st.opened[st.mode] = true;
-    st.slides = st.mode;
-    st.slideIndex = 0;
-    renderActions();
-    renderSlides();
-  } else if (name === 'close-slides') {
-    var a = document.activeElement;
-    var hadFocus = a && a.getAttribute && a.getAttribute('data-key') === 'close-slides';
-    st.slides = null;
-    renderSlides();
-    if (hadFocus) { var b = actions.querySelector('.f2s-btn--primary'); if (b) b.focus(); }
+    showToast((deck ? 'Export' : 'Create template') + ' runs in the real plugin. Try it on Figma.', 'info');
   } else if (name === 'settings') {
     showToast('In the plugin, Settings switches the skin and your Google account.', 'info');
   } else if (name === 'suggest-roles') {
@@ -906,47 +770,6 @@ function act(name) {
   }
 }
 
-/* Export : la vraie séquence du plugin (aperçu rétro slide par slide,
-   « Exporting 2/3 », Cancel, puis « Open in Slides »). Elle a son propre
-   minuteur : le visiteur qui prend la main en plein export la voit finir. */
-function runExport() {
-  if (st.exp || !curRail().length) return;
-  var mode = st.mode;
-  var rail0 = curRail().slice();
-  var token = {};
-  st.exp = { mode: mode, rail: rail0, index: 0, total: rail0.length, token: token };
-  if (st.slides) { st.slides = null; renderSlides(); }
-  var step = function () {
-    if (!st.exp || st.exp.token !== token) return;
-    srStatus.textContent = 'Generating slide ' + (st.exp.index + 1) + ' of ' + st.exp.total;
-    renderTabs();
-    renderActions();
-    renderBody();
-    window.setTimeout(function () {
-      if (!st.exp || st.exp.token !== token) return;
-      var e = st.exp;
-      var made = e.index + 1;
-      if (e.cancel || made >= e.total) {
-        st.exp = null;
-        srStatus.textContent = '';
-        renderTabs(); renderActions(); renderBody();
-        if (e.cancel && made < e.total) {
-          showToast('Canceled. ' + made + ' of ' + e.total + (mode === 'deck' ? ' slides' : ' layouts') + ' stay in Google Slides.', 'info');
-          return;
-        }
-        st.done[mode] = true;
-        st.opened[mode] = false;
-        renderActions();
-        showToast(mode === 'template' ? 'Template created in Google Slides.' : e.total + (e.total === 1 ? ' slide' : ' slides') + ' exported.', 'success');
-        return;
-      }
-      e.index = made;
-      step();
-    }, REVEAL_MS + 200);
-  };
-  step();
-}
-
 demo.addEventListener('click', function (e) {
   if (e.target === canvas) { st.selected = []; renderCanvas(); renderActions(); return; }
   var t = e.target.closest('button');
@@ -955,22 +778,18 @@ demo.addEventListener('click', function (e) {
   else if (t.hasAttribute('data-file')) setMode(t.getAttribute('data-file'));
   else if (t.hasAttribute('data-mode')) setMode(t.getAttribute('data-mode'));
   else if (t.hasAttribute('data-pick')) {
-    if (suppressClick || st.exp) return;
+    if (suppressClick) return;
     st.active[st.mode] = Number(t.getAttribute('data-pick'));
     renderBody();
   } else if (t.hasAttribute('data-remove')) {
     var id = Number(t.getAttribute('data-remove'));
     st.rails[st.mode] = curRail().filter(function (i) { return i !== id; });
     if (st.active[st.mode] === id) st.active[st.mode] = curRail().length ? curRail()[0] : -1;
-    st.done[st.mode] = false;
-    renderActions(); renderFonts(); renderBody();
+      renderActions(); renderFonts(); renderBody();
   } else if (t.hasAttribute('data-el')) {
     var elId = t.getAttribute('data-el');
     st.selected = FRAMES.map(function (f, i) { return f.els.some(function (el) { return el.id === elId; }) ? i : -1; }).filter(function (i) { return i > -1; });
     renderCanvas(); renderActions();
-  } else if (t.hasAttribute('data-film')) {
-    st.slideIndex = Number(t.getAttribute('data-film'));
-    renderSlides();
   } else if (t.hasAttribute('data-toast-close')) {
     t.closest('.f2s-toast').remove();
   } else if (t.hasAttribute('data-act')) act(t.getAttribute('data-act'));
@@ -1041,14 +860,14 @@ demo.addEventListener('keydown', function (e) {
     }
     return;
   }
-  /* Entrée dans un titre ou un nom de layout : pas de saut de ligne, on valide. */
-  if (e.key === 'Enter' && t.hasAttribute && (t.hasAttribute('data-demo-edit') || t.hasAttribute('data-rename'))) {
+  /* Entrée dans un nom de layout : on valide. */
+  if (e.key === 'Enter' && t.hasAttribute && t.hasAttribute('data-rename')) {
     e.preventDefault();
     t.blur();
     return;
   }
   /* Alt + flèches sur une vignette : le réordonnancement au clavier du plugin. */
-  if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown') && t.hasAttribute && t.hasAttribute('data-pick') && !st.exp) {
+  if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown') && t.hasAttribute && t.hasAttribute('data-pick')) {
     e.preventDefault();
     var from = curRail().indexOf(Number(t.getAttribute('data-pick')));
     var to = from + (e.key === 'ArrowUp' ? -1 : 1);
@@ -1081,16 +900,6 @@ function wait(ms, run) {
     window.setTimeout(tick, 100);
   });
 }
-function waitFor(test, run) {
-  return new Promise(function (resolve, reject) {
-    var check = function () {
-      if (run !== st.run) { reject(new Error('cancelled')); return; }
-      if (test()) resolve(); else window.setTimeout(check, 100);
-    };
-    check();
-  });
-}
-
 function pointAt(el) {
   var s = scale();
   var r = el.getBoundingClientRect();
@@ -1160,19 +969,8 @@ function script(run) {
     .then(function () { return click('[data-act="add"]', run); })
     .then(function () { return wait(400, run); })
     .then(function () { return dragThumb(2, 1, run); })
-    .then(function () { return click('[data-act="export"]', run); })
-    .then(function () { return waitFor(function () { return !st.exp && st.done.deck; }, run); })
-    .then(function () { return wait(700, run); })
-    .then(function () { return click('[data-act="open"]', run); })
-    .then(function () { return wait(500, run); })
-    .then(function () { return moveTo('[data-demo-edit]', run); })
-    .then(function () {
-      var edit = demo.querySelector('[data-demo-edit]');
-      if (edit) edit.classList.add('dm-edit--active');
-      return wait(2400, run);
-    })
-    .then(function () { return click('[data-act="close-slides"]', run); })
-    .then(function () { return wait(400, run); })
+    .then(function () { return click('[data-pick="2"]', run); })
+    .then(function () { return wait(900, run); })
     .then(function () { return click('[data-file="template"]', run); })
     .then(function () { return click('[data-frame="0"]', run); })
     .then(function () { return click('[data-frame="1"]', run); })
@@ -1212,8 +1010,6 @@ function takeOver() {
   if (!playing) return;
   st.run += 1;
   if (drag) dragEnd();
-  var edit = demo.querySelector('.dm-edit--active');
-  if (edit) edit.classList.remove('dm-edit--active');
   setPlaying(false);
 }
 /* Clic (souris ou doigt) sur le calque : un défilement tactile ne déclenche
@@ -1222,7 +1018,7 @@ shield.addEventListener('click', function (e) {
   takeOver();
   demo.classList.add('is-engaged');
   var el = document.elementFromPoint(e.clientX, e.clientY);
-  var target = el && el.closest('button, a, input, select, [data-demo-edit]');
+  var target = el && el.closest('button, a, input, select');
   if (!target || !demo.contains(target)) return;
   if (target.tagName === 'BUTTON' || target.tagName === 'A') target.click(); else target.focus();
 });
@@ -1255,9 +1051,7 @@ if (reduceMotion) {
 export const HERO_DEMO_JS = `(function () {
 var HILLS = ${JSON.stringify(HILLS)};
 var DECK = ${JSON.stringify(DECK)};
-var ARROW = ${JSON.stringify(ICONS.arrow(12))};
 var CLOSE = ${JSON.stringify(ICONS.close)};
 var STATUS = ${JSON.stringify(STATUS_ICONS)};
-var LIGHTS = ${JSON.stringify(LIGHTS)};
 ${DEMO_JS}
 })();`;

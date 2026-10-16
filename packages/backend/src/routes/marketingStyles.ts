@@ -140,7 +140,7 @@ a { color: inherit; }
   .cta:hover { background-color: var(--b-accent-hover); }
   .secondary:hover { background-color: var(--b-ink); color: var(--b-white); }
   .nav-link:hover { color: var(--b-ink); }
-  .header__nav .nav-link:hover { color: var(--b-text-muted); }
+  .header__nav .nav-link:hover { color: var(--b-gray-600); }
   .carousel__btn:hover:not(:disabled) { background-color: var(--b-gray-200); }
 }
 
