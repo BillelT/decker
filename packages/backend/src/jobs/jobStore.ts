@@ -1,4 +1,5 @@
 import type { IRDocument } from '@figma-to-slides/shared';
+import type { TemplateLayoutContext } from '../mapper/index.js';
 import { getRedis } from '../kv.js';
 
 export type BatchStatus = 'pending' | 'applied' | 'failed';
@@ -24,6 +25,8 @@ export interface JobRecord {
    * thème (`mapper/theme.ts`) si celui-ci doit être rejoué.
    */
   masterObjectId?: string;
+  /** Mode template : layouts natifs et layout choisi par frame, pour qu'une reprise réécrive les mêmes. */
+  templateLayouts?: TemplateLayoutContext;
   batches: BatchState[];
   createdAt: number;
   updatedAt: number;

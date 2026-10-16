@@ -8,10 +8,18 @@ import { mapLine } from './lines.js';
 import { mapPlaceholderAltText } from './placeholder.js';
 import { mapThemeBatch } from './theme.js';
 import type { RequestBatch, SlidesRequest } from './slidesRequests.js';
+import { mapSlideOntoLayout, type LayoutAssignment, type NativeLayout } from './templateLayouts.js';
 
 export * from './slidesRequests.js';
 export { computeScale, roundForSerialization } from './transform.js';
 export { mapThemeBatch, THEME_BATCH_SOURCE_ID } from './theme.js';
+export { planTemplateLayouts, type LayoutAssignment, type NativeLayout } from './templateLayouts.js';
+
+/** Mode template : layouts natifs de la présentation et layout choisi pour chaque frame (voir templateLayouts.ts). */
+export interface TemplateLayoutContext {
+  layouts: NativeLayout[];
+  plan: Record<string, LayoutAssignment>;
+}
 
 const MAX_REQUESTS_PER_BATCH = 300;
 
@@ -38,8 +46,18 @@ export function mapDocumentToBatches(
   resolveAssetUrl: AssetUrlResolver,
   calibration: CalibrationData,
   masterObjectId?: string,
+  templateLayouts?: TemplateLayoutContext,
 ): RequestBatch[] {
-  const slideBatches = [...doc.slides].sort((a, b) => a.order - b.order).map((slide) => mapSlide(slide, doc, resolveAssetUrl, calibration));
+  const layoutById = new Map(templateLayouts?.layouts.map((l) => [l.objectId, l]));
+  const slideBatches = [...doc.slides]
+    .sort((a, b) => a.order - b.order)
+    .map((slide) => {
+      const assignment = templateLayouts?.plan[slide.sourceNodeId];
+      const layout = assignment && layoutById.get(assignment.layoutId);
+      return assignment && layout
+        ? mapSlideOntoLayout(slide, doc, assignment, layout, resolveAssetUrl, calibration)
+        : mapSlide(slide, doc, resolveAssetUrl, calibration);
+    });
   if (doc.theme && masterObjectId) {
     return [mapThemeBatch(doc.theme, masterObjectId), ...slideBatches];
   }

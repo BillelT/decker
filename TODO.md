@@ -208,6 +208,14 @@ les suivants) :
    entre ce fond et le contenu : un élément récurrent posé sur le Master
    doit donc rester visible. À confirmer dans un vrai Slides avant
    d'écrire l'UI « On every slide » (étape 2).
+   **Validé le 2026-10-15** (fond de page natif OK dans Slides).
+   **Spike layouts natifs, 2026-10-16** (`mapper/templateLayouts.ts`) :
+   chaque frame du template est écrite sur un layout prédéfini de la
+   présentation, ses `[[title]]`/`[[subtitle]]`/`[[body]]` deviennent les
+   vrais placeholders du layout (déplacés et restylés), le reste devient
+   le décor du layout, la slide est créée depuis ce layout, et les layouts
+   inutilisés sont supprimés. Le Master n'est plus vidé (risque d'emporter
+   les placeholders des layouts, qui en héritent). À valider dans Slides.
 4. ~~**Slide de style guide optionnelle.**~~ — abandonné (2026-08-03) :
    l'idée initiale (checkbox à l'export générant une slide swatches/rôles/
    échantillon typo en 1ère position) servait surtout de preuve visuelle de

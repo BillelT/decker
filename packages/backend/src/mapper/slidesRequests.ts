@@ -98,6 +98,20 @@ export interface UpdateLinePropertiesRequest {
 export interface CreateSlideRequest {
   objectId: string;
   insertionIndex?: number;
+  /** Mode template : slide créée depuis un layout du thème (templateLayouts.ts). */
+  slideLayoutReference?: { layoutId: string };
+  placeholderIdMappings?: { layoutPlaceholderObjectId: string; objectId: string }[];
+}
+
+export interface UpdatePageElementTransformRequest {
+  objectId: string;
+  applyMode: 'ABSOLUTE' | 'RELATIVE';
+  transform: AffineTransform;
+}
+
+export interface DeleteTextRequest {
+  objectId: string;
+  textRange: TextRange;
 }
 
 export interface TextRange {
@@ -241,6 +255,8 @@ export type SlidesRequest =
   | { updatePageElementsZOrder: UpdatePageElementsZOrderRequest }
   | { updatePageElementAltText: UpdatePageElementAltTextRequest }
   | { updatePageProperties: UpdatePagePropertiesRequest }
+  | { updatePageElementTransform: UpdatePageElementTransformRequest }
+  | { deleteText: DeleteTextRequest }
   | { deleteObject: DeleteObjectRequest };
 
 /** Un lot indivisible : toutes les requêtes d'une slide (spec §5.4). */

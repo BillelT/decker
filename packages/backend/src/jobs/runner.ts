@@ -1,6 +1,14 @@
 import type { CalibrationData, IRDocument } from '@figma-to-slides/shared';
-import { chunkBatchesForApi, mapDocumentToBatches, THEME_BATCH_SOURCE_ID, type AssetUrlResolver, type RequestBatch } from '../mapper/index.js';
-import { applyBatch, clearMasterAndLayoutElements, createPresentation } from '../slides/client.js';
+import {
+  chunkBatchesForApi,
+  mapDocumentToBatches,
+  planTemplateLayouts,
+  THEME_BATCH_SOURCE_ID,
+  type AssetUrlResolver,
+  type RequestBatch,
+  type TemplateLayoutContext,
+} from '../mapper/index.js';
+import { applyBatch, createPresentation } from '../slides/client.js';
 import { clearJobCancel, getJob, isJobCancelRequested, pendingBatchIds, updateBatchStatus, updateJob, type JobRecord } from './jobStore.js';
 
 /**
@@ -72,28 +80,26 @@ export async function runExportJob(
     let presentationId = doc.targetPresentationId;
     let defaultSlideObjectId: string | undefined;
     let masterObjectId: string | undefined;
-    let masterAndLayoutElementIds: string[] = [];
+    let templateLayouts: TemplateLayoutContext | undefined;
+    const isTemplate = doc.kind === 'template' || !!doc.theme;
 
     if (!presentationId) {
       const created = await createPresentation(accessToken, doc.presentationTitle, doc.slideSize);
       presentationId = created.presentationId;
       defaultSlideObjectId = created.firstSlideObjectId;
       masterObjectId = created.masterObjectId;
-      masterAndLayoutElementIds = created.masterAndLayoutElementIds;
+      // Mode template : chaque frame est écrite sur un layout natif, ses
+      // rôles sur les vrais placeholders (mapper/templateLayouts.ts). Le
+      // plan est persisté avec le job pour qu'une reprise réécrive les
+      // mêmes layouts.
+      if (isTemplate) templateLayouts = { layouts: created.layouts, plan: planTemplateLayouts(doc.slides, created.layouts) };
       // Persisté sur le job (pas seulement gardé en variable locale) : sans
       // ça, `retryExportJob` n'a aucun moyen de reconstruire le lot thème
       // via `mapDocumentToBatches` en cas de reprise (audit 2026-08).
-      await updateJob(job.id, { presentationId, presentationUrl: presentationUrl(presentationId), masterObjectId });
+      await updateJob(job.id, { presentationId, presentationUrl: presentationUrl(presentationId), masterObjectId, templateLayouts });
     }
 
-    // Mode template : on vide le contenu par défaut du Master et des
-    // layouts avant d'écrire quoi que ce soit, palette ou pas. `doc.theme`
-    // reste accepté comme marqueur pour un plugin pas encore mis à jour.
-    if ((doc.kind === 'template' || doc.theme) && presentationId && masterAndLayoutElementIds.length > 0) {
-      await clearMasterAndLayoutElements(accessToken, presentationId, masterAndLayoutElementIds);
-    }
-
-    const batches = mapDocumentToBatches(doc, resolveAssetUrl, calibration, masterObjectId);
+    const batches = mapDocumentToBatches(doc, resolveAssetUrl, calibration, masterObjectId, templateLayouts);
     // Spec §5.4 : une slide = un lot indivisible ; on applique lot par lot
     // (chunkBatchesForApi ne serait utile que si l'API supportait la fusion
     // de plusieurs slides dans un seul batchUpdate sans risque partiel —
@@ -120,6 +126,19 @@ export async function runExportJob(
         sourceSlideId: '__default__',
         requests: [{ deleteObject: { objectId: defaultSlideObjectId } }],
       }).catch(() => undefined);
+    }
+
+    // Mode template : les layouts natifs qui n'ont reçu aucune frame sont
+    // retirés du thème, pour que "Nouvelle diapositive" ne propose que ceux
+    // du template. "Vide" reste si une frame a gardé l'ancien chemin (ses
+    // slides en dépendent). Un échec ici n'abîme rien : le layout reste.
+    if (templateLayouts && !canceled) {
+      const used = new Set(Object.values(templateLayouts.plan).map((a) => a.layoutId));
+      const keepBlank = doc.slides.some((slide) => !templateLayouts!.plan[slide.sourceNodeId]);
+      for (const layout of templateLayouts.layouts) {
+        if (used.has(layout.objectId) || (keepBlank && layout.name === 'BLANK')) continue;
+        await applyBatch(accessToken, presentationId, { sourceSlideId: '__layout__', requests: [{ deleteObject: { objectId: layout.objectId } }] }).catch(() => undefined);
+      }
     }
 
     if (canceled) {
@@ -174,7 +193,7 @@ export async function retryExportJob(
     // soit reconstruit ici — sans lui, `mapDocumentToBatches` l'omet
     // silencieusement et un lot thème `failed`/`pending` ne serait jamais
     // rejoué (audit 2026-08).
-    const batches = mapDocumentToBatches(doc, resolveAssetUrl, calibration, job.masterObjectId).filter((b) => pendingIdSet.has(b.sourceSlideId));
+    const batches = mapDocumentToBatches(doc, resolveAssetUrl, calibration, job.masterObjectId, job.templateLayouts).filter((b) => pendingIdSet.has(b.sourceSlideId));
     const frameNameBySlideId = new Map(doc.slides.map((s) => [s.sourceNodeId, s.frameName]));
     frameNameBySlideId.set(THEME_BATCH_SOURCE_ID, 'Theme (Master colors)');
     const { failedSlideNames, canceled } = await applyBatches(job.id, presentationId, batches, accessToken, frameNameBySlideId);

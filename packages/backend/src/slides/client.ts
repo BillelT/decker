@@ -1,4 +1,5 @@
 import type { RequestBatch, SlidesRequest } from '../mapper/index.js';
+import type { NativeLayout } from '../mapper/templateLayouts.js';
 
 const API_BASE = 'https://slides.googleapis.com/v1';
 const RETRYABLE_STATUS = new Set([429, 500, 503]);
@@ -64,11 +65,20 @@ async function callApi<T>(accessToken: string, path: string, init: RequestInit =
   }, (status) => RETRYABLE_STATUS.has(status));
 }
 
+/** Taille de repli d'un placeholder sans taille déclarée (1 pouce, en EMU) : n'arrive pas en pratique. */
+const EMU_DEFAULT = 914400;
+
 export async function createPresentation(
   accessToken: string,
   title: string,
   pageSizePt?: { widthPt: number; heightPt: number },
-): Promise<{ presentationId: string; firstSlideObjectId: string; masterObjectId: string; masterAndLayoutElementIds: string[] }> {
+): Promise<{
+  presentationId: string;
+  firstSlideObjectId: string;
+  masterObjectId: string;
+  masterAndLayoutElementIds: string[];
+  layouts: NativeLayout[];
+}> {
   // Le pageSize (comme le ratio d'aspect de la présentation entière) ne se
   // règle qu'à la création — la Slides API n'a aucune requête batchUpdate
   // pour le modifier après coup. Sans ça, une frame Figma qui n'est pas en
@@ -84,7 +94,16 @@ export async function createPresentation(
   // (masters/layouts inclus, pas juste les slides) — pas besoin d'un
   // second appel `getPresentation` pour récupérer l'id du Master (audit
   // 2026-08, mode template : voir `mapper/theme.ts`).
-  type PageWithElements = { objectId: string; pageElements?: { objectId: string }[] };
+  type PageWithElements = {
+    objectId: string;
+    layoutProperties?: { name?: string };
+    pageElements?: {
+      objectId: string;
+      size?: { width?: { magnitude?: number }; height?: { magnitude?: number } };
+      transform?: { translateX?: number };
+      shape?: { placeholder?: { type?: string; index?: number }; text?: { textElements?: { endIndex?: number }[] } };
+    }[];
+  };
   const body = await callApi<{
     presentationId: string;
     slides: { objectId: string }[];
@@ -99,11 +118,36 @@ export async function createPresentation(
   // modifier le style du titre du thème", "Premier niveau"…), à vider en
   // mode template (voir `clearMasterAndLayoutElements`).
   const masterAndLayoutElementIds = [...body.masters, ...(body.layouts ?? [])].flatMap((page) => (page.pageElements ?? []).map((el) => el.objectId));
+  // Layouts natifs et leurs placeholders (tailles en EMU, unité par
+  // défaut de la ressource) : le mode template écrit ses frames dessus
+  // (mapper/templateLayouts.ts).
+  const layouts: NativeLayout[] = (body.layouts ?? []).map((page) => ({
+    objectId: page.objectId,
+    name: page.layoutProperties?.name ?? '',
+    placeholders: (page.pageElements ?? [])
+      .filter((el) => el.shape?.placeholder?.type)
+      .map((el) => {
+        const textElements = el.shape?.text?.textElements ?? [];
+        const end = textElements.length > 0 ? (textElements[textElements.length - 1].endIndex ?? 0) : 0;
+        return {
+          objectId: el.objectId,
+          type: el.shape!.placeholder!.type!,
+          index: el.shape!.placeholder!.index ?? 0,
+          widthEmu: el.size?.width?.magnitude ?? EMU_DEFAULT,
+          heightEmu: el.size?.height?.magnitude ?? EMU_DEFAULT,
+          translateXEmu: el.transform?.translateX ?? 0,
+          // Le dernier caractère d'un texte Slides est toujours le saut de
+          // ligne final, qui ne se supprime pas.
+          textLength: Math.max(0, end - 1),
+        };
+      }),
+  }));
   return {
     presentationId: body.presentationId,
     firstSlideObjectId: body.slides[0].objectId,
     masterObjectId: body.masters[0].objectId,
     masterAndLayoutElementIds,
+    layouts,
   };
 }
 

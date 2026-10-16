@@ -15,7 +15,7 @@ vi.mock('../slides/client.js', () => ({
   clearMasterAndLayoutElements: vi.fn().mockResolvedValue(undefined),
 }));
 
-import { applyBatch, clearMasterAndLayoutElements, createPresentation } from '../slides/client.js';
+import { applyBatch, createPresentation } from '../slides/client.js';
 
 const mockedCreatePresentation = vi.mocked(createPresentation);
 const mockedApplyBatch = vi.mocked(applyBatch);
@@ -44,7 +44,7 @@ describe('runExportJob / retryExportJob', () => {
   });
 
   it('marks the job done when every batch succeeds, and deletes the default slide', async () => {
-    mockedCreatePresentation.mockResolvedValue({ presentationId: 'pres-1', firstSlideObjectId: 'default-slide', masterObjectId: 'master-0', masterAndLayoutElementIds: [] });
+    mockedCreatePresentation.mockResolvedValue({ presentationId: 'pres-1', firstSlideObjectId: 'default-slide', masterObjectId: 'master-0', masterAndLayoutElementIds: [], layouts: [] });
     mockedApplyBatch.mockResolvedValue({});
 
     const doc = buildDoc(['slideA', 'slideB']);
@@ -69,7 +69,7 @@ describe('runExportJob / retryExportJob', () => {
   });
 
   it('keeps the presentation and marks only the failing slide, without touching the others', async () => {
-    mockedCreatePresentation.mockResolvedValue({ presentationId: 'pres-2', firstSlideObjectId: 'default-slide', masterObjectId: 'master-0', masterAndLayoutElementIds: [] });
+    mockedCreatePresentation.mockResolvedValue({ presentationId: 'pres-2', firstSlideObjectId: 'default-slide', masterObjectId: 'master-0', masterAndLayoutElementIds: [], layouts: [] });
     mockedApplyBatch.mockImplementation(async (_token, _presId, batch) => {
       if (batch.sourceSlideId === 'slideB') throw new Error('Slides API 400 on batchUpdate — bad request');
       return {};
@@ -95,7 +95,7 @@ describe('runExportJob / retryExportJob', () => {
   });
 
   it('retryExportJob only replays the still-failing batch, and leaves already-applied slides untouched', async () => {
-    mockedCreatePresentation.mockResolvedValue({ presentationId: 'pres-3', firstSlideObjectId: 'default-slide', masterObjectId: 'master-0', masterAndLayoutElementIds: [] });
+    mockedCreatePresentation.mockResolvedValue({ presentationId: 'pres-3', firstSlideObjectId: 'default-slide', masterObjectId: 'master-0', masterAndLayoutElementIds: [], layouts: [] });
     mockedApplyBatch.mockImplementation(async (_token, _presId, batch) => {
       if (batch.sourceSlideId === 'slideB') throw new Error('Slides API 500 — transient');
       return {};
@@ -143,7 +143,7 @@ describe('runExportJob / retryExportJob', () => {
     };
     const doc: IRDocument = { ...buildDoc(['slideA']), theme: THEME };
 
-    mockedCreatePresentation.mockResolvedValue({ presentationId: 'pres-theme', firstSlideObjectId: 'default-slide', masterObjectId: 'master-1', masterAndLayoutElementIds: ['ph-1', 'ph-2'] });
+    mockedCreatePresentation.mockResolvedValue({ presentationId: 'pres-theme', firstSlideObjectId: 'default-slide', masterObjectId: 'master-1', masterAndLayoutElementIds: ['ph-1', 'ph-2'], layouts: [] });
     mockedApplyBatch.mockImplementation(async (_token, _presId, batch) => {
       if (batch.sourceSlideId === THEME_BATCH_SOURCE_ID) throw new Error('Slides API 500 — transient');
       return {};
@@ -157,7 +157,6 @@ describe('runExportJob / retryExportJob', () => {
 
     await runExportJob(job, doc, 'token', () => '', UNCALIBRATED_DEFAULTS);
 
-    expect(vi.mocked(clearMasterAndLayoutElements)).toHaveBeenCalledWith('token', 'pres-theme', ['ph-1', 'ph-2']);
 
     const failedJob = await getJob('theme-retry');
     expect(failedJob?.status).toBe('failed');
@@ -184,7 +183,7 @@ describe('runExportJob / retryExportJob', () => {
   });
 
   it('stops before the next slide when the plugin cancels, keeps the written slides and drops the blank default slide', async () => {
-    mockedCreatePresentation.mockResolvedValue({ presentationId: 'pres-cancel', firstSlideObjectId: 'default-slide', masterObjectId: 'master-0', masterAndLayoutElementIds: [] });
+    mockedCreatePresentation.mockResolvedValue({ presentationId: 'pres-cancel', firstSlideObjectId: 'default-slide', masterObjectId: 'master-0', masterAndLayoutElementIds: [], layouts: [] });
     mockedApplyBatch.mockImplementation(async (_token, _presId, batch) => {
       // L'utilisateur clique « Cancel » pendant l'écriture de la première slide.
       if (batch.sourceSlideId === 'slideA') await requestJobCancel('run-canceled');
@@ -227,7 +226,7 @@ describe('runExportJob / retryExportJob', () => {
   });
 
   it('retryExportJob starts over without the cancel request of a previous run', async () => {
-    mockedCreatePresentation.mockResolvedValue({ presentationId: 'pres-cancel-retry', firstSlideObjectId: 'default-slide', masterObjectId: 'master-0', masterAndLayoutElementIds: [] });
+    mockedCreatePresentation.mockResolvedValue({ presentationId: 'pres-cancel-retry', firstSlideObjectId: 'default-slide', masterObjectId: 'master-0', masterAndLayoutElementIds: [], layouts: [] });
     mockedApplyBatch.mockImplementation(async (_token, _presId, batch) => {
       if (batch.sourceSlideId === 'slideA') await requestJobCancel('cancel-then-retry');
       return {};
