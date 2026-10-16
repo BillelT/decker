@@ -775,9 +775,10 @@ function act(name) {
 }
 
 /* Export renvoie au vrai plugin : une traînée de pixels orange balaie le CTA
-   du header de gauche à droite pour le désigner. En mouvement réduit, les
+   du header de gauche à droite pour le désigner. Clairsemée et rapide (environ
+   600 ms en tout) : un signal, pas un spectacle. En mouvement réduit, les
    pixels apparaissent et s'effacent ensemble, sans balayage. */
-var TRAIL_TONES = ['var(--b-accent-hover)', 'var(--b-accent-red)', 'color-mix(in oklab, var(--b-accent) 35%, var(--b-white))', 'color-mix(in oklab, var(--b-accent-red) 60%, var(--b-ink))'];
+var TRAIL_TONES = ['var(--b-accent-hover)', 'var(--b-accent-red)', 'color-mix(in oklab, var(--b-accent-hover) 50%, var(--b-white))'];
 function ctaTrail() {
   var cta = document.querySelector('.header .cta');
   if (!cta || !cta.animate) return;
@@ -792,14 +793,14 @@ function ctaTrail() {
   var longest = 0;
   for (var c = 0; c < cols; c++) {
     for (var r = 0; r < rows; r++) {
-      if (Math.random() < 0.1) continue;
+      if (Math.random() < 0.4) continue;
       var px = document.createElement('i');
       px.style.cssText = 'left:' + c * size + 'px;top:' + r * size + 'px;width:' + size + 'px;height:' + size + 'px;background:' + TRAIL_TONES[Math.floor(Math.random() * TRAIL_TONES.length)];
       layer.appendChild(px);
-      var delay = reduceMotion ? 0 : c * 40 + Math.random() * 120;
-      var duration = reduceMotion ? 900 : 380 + Math.random() * 260;
+      var delay = reduceMotion ? 0 : c * 16 + Math.random() * 60;
+      var duration = reduceMotion ? 400 : 180 + Math.random() * 100;
       longest = Math.max(longest, delay + duration);
-      px.animate([{ opacity: 0 }, { opacity: 1, offset: 0.25 }, { opacity: 1, offset: 0.6 }, { opacity: 0 }], { duration: duration, delay: delay, easing: reduceMotion ? 'ease-out' : 'steps(3, end)', fill: 'both' });
+      px.animate([{ opacity: 0 }, { opacity: 1 }, { opacity: 0 }], { duration: duration, delay: delay, easing: reduceMotion ? 'ease-out' : 'steps(3, end)', fill: 'both' });
     }
   }
   cta.appendChild(layer);

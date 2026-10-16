@@ -44,8 +44,8 @@ ${DESIGN_TOKENS_CSS}
   /* Biseau "hybride" (mêmes tokens que packages/plugin/src/styles.modern.css)
      appliqué aux boutons ; le reste de la marque (palette, layout, typo) est inchangé. */
   --hyb-hi: rgba(255, 255, 255, 0.9);
-  --hyb-lo: rgba(18, 15, 13, 0.22);
-  --hyb-lo-strong: rgba(18, 15, 13, 0.4);
+  --hyb-lo: rgba(18, 15, 13, 0.18);
+  --hyb-lo-strong: rgba(18, 15, 13, 0.43);
   --hyb-out: inset -1px -1px var(--hyb-lo), inset 1px 1px var(--hyb-hi), inset -2px -2px var(--hyb-lo-strong),
     inset 2px 2px var(--hyb-hi);
   --hyb-pressed: inset -1px -1px var(--hyb-hi), inset 1px 1px var(--hyb-lo-strong), inset -2px -2px var(--hyb-hi),
@@ -161,6 +161,8 @@ a { color: inherit; }
   touch-action: manipulation;
 }
 .nav-link[aria-current="page"] { color: var(--b-ink); }
+/* Footer : liens en gris 600 au repos, encre au survol (règle générique). */
+.footer .nav-link { color: var(--b-gray-600); }
 .text-link {
   color: var(--b-ink); font: inherit; text-decoration: underline;
 }
