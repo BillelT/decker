@@ -463,24 +463,28 @@ a { color: inherit; }
 main:focus { outline: none; }
 
 /* Entrée du hero, une seule fois au chargement (première impression, tier
-   "plaisir"). Blocs sémantiques échelonnés de 100 ms : opacity + flou 4px +
-   translateY(12px), 300 ms ease-out. Jamais bloquant : le contenu reste
-   cliquable et visible sans JS. */
+   "plaisir"). Blocs sémantiques échelonnés : opacity + flou 4px +
+   translateY(12px), ease-out (rules/ui/motion-implementation.md). La règle
+   pose 300 ms et 100 ms d'écart pour une entrée d'interface ; le marketing
+   peut aller plus long (motion-decisions.md), et une grande surface paraît
+   plus lourde qu'une petite : la durée grandit donc avec le bloc, du titre
+   (500 ms) à la démo (800 ms), avec 150 ms d'écart. Jamais bloquant : le
+   contenu reste cliquable et visible sans JS. */
 @media (prefers-reduced-motion: no-preference) {
   @keyframes hero-enter {
     from { opacity: 0; filter: blur(4px); transform: translateY(12px); }
     to { opacity: 1; filter: blur(0); transform: none; }
   }
   .hero > * {
-    animation: hero-enter 300ms var(--b-ease-out) both;
+    animation: hero-enter 500ms var(--b-ease-out) both;
   }
-  .hero > :nth-child(2) { animation-delay: 100ms; }
-  .hero > :nth-child(3) { animation-delay: 200ms; }
+  .hero > :nth-child(2) { animation-delay: 150ms; }
+  .hero > :nth-child(3) { animation-duration: 800ms; animation-delay: 300ms; }
 }
 /* Mouvement réduit : fondu seul, plus de glissement ni de flou. */
 @media (prefers-reduced-motion: reduce) {
   @keyframes hero-fade { from { opacity: 0; } to { opacity: 1; } }
-  .hero > * { animation: hero-fade 300ms var(--b-ease-out) both; }
+  .hero > * { animation: hero-fade 500ms var(--b-ease-out) both; }
 }
 
 @media (prefers-reduced-motion: reduce) {
