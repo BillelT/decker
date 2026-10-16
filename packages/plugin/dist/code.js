@@ -2261,10 +2261,11 @@
     const colorRoles = msg.colorRoles ?? {};
     const allColors = aggregateColorSwatches(slides.map((s) => summarizeColors(s.elements, { background: s.background, frameSize: s.frameSize })));
     const theme = buildTemplateTheme(colorRoles, allColors);
+    const masterSlideId = slides.length >= 2 ? slides[0].sourceNodeId : void 0;
     for (const slide of slides) {
       slide.elements = applyThemeRolesToElements(slide.elements, colorRoles);
       slide.background = applyThemeRoleToBackground(slide.background, colorRoles);
-      slide.elements = applyPlaceholderText(slide.elements);
+      if (slide.sourceNodeId !== masterSlideId) slide.elements = applyPlaceholderText(slide.elements);
     }
     const doc = {
       version: 1,
@@ -2273,6 +2274,7 @@
       slides,
       options: { mode: "new-presentation", rasterScale: 2, includeUnderlay: false, underlayOpacity: 0.3, strictMode: true },
       kind: "template",
+      masterSlideId,
       theme
     };
     postExportPayload(doc, assets);

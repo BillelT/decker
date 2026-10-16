@@ -8,7 +8,7 @@ import { mapLine } from './lines.js';
 import { mapPlaceholderAltText } from './placeholder.js';
 import { mapThemeBatch } from './theme.js';
 import type { RequestBatch, SlidesRequest } from './slidesRequests.js';
-import { mapSlideOntoLayout, type LayoutAssignment, type NativeLayout } from './templateLayouts.js';
+import { mapMasterBatch, mapSlideOntoLayout, type LayoutAssignment, type NativeLayout } from './templateLayouts.js';
 
 export * from './slidesRequests.js';
 export { computeScale, roundForSerialization } from './transform.js';
@@ -19,6 +19,8 @@ export { planTemplateLayouts, type LayoutAssignment, type NativeLayout } from '.
 export interface TemplateLayoutContext {
   layouts: NativeLayout[];
   plan: Record<string, LayoutAssignment>;
+  /** Corps par défaut du Master (9 niveaux de puces), à retirer une fois les layouts écrits. */
+  masterPlaceholderIds?: string[];
 }
 
 const MAX_REQUESTS_PER_BATCH = 300;
@@ -52,6 +54,9 @@ export function mapDocumentToBatches(
   const slideBatches = [...doc.slides]
     .sort((a, b) => a.order - b.order)
     .map((slide) => {
+      if (templateLayouts && masterObjectId && slide.sourceNodeId === doc.masterSlideId) {
+        return mapMasterBatch(slide, doc, masterObjectId, resolveAssetUrl, calibration);
+      }
       const assignment = templateLayouts?.plan[slide.sourceNodeId];
       const layout = assignment && layoutById.get(assignment.layoutId);
       return assignment && layout

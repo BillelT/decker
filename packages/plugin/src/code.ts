@@ -1400,13 +1400,18 @@ async function handleTemplateCreateRequest(
   const colorRoles = msg.colorRoles ?? {};
   const allColors = aggregateColorSwatches(slides.map((s) => summarizeColors(s.elements, { background: s.background, frameSize: s.frameSize })));
   const theme = buildTemplateTheme(colorRoles, allColors);
+  // Comme dans Slides, le premier layout du rail est le Master dès qu'il y
+  // en a au moins deux : écrit sur la page Master, dont tout hérite, sans
+  // créer de slide (backend mapper/templateLayouts.ts::mapMasterBatch).
+  const masterSlideId = slides.length >= 2 ? slides[0].sourceNodeId : undefined;
   for (const slide of slides) {
     slide.elements = applyThemeRolesToElements(slide.elements, colorRoles);
     slide.background = applyThemeRoleToBackground(slide.background, colorRoles);
     // Le texte réel d'un calque tagué [[role]] cède la place à un
     // indicateur lisible ([Title], [Body text]…) — seulement pour un
     // template, jamais un deck ponctuel (TODO.md § Mode template, point 6).
-    slide.elements = applyPlaceholderText(slide.elements);
+    // Le Master garde ses vrais textes : c'est du décor répété partout.
+    if (slide.sourceNodeId !== masterSlideId) slide.elements = applyPlaceholderText(slide.elements);
   }
 
   const doc: IRDocument = {
@@ -1416,6 +1421,7 @@ async function handleTemplateCreateRequest(
     slides,
     options: { mode: 'new-presentation', rasterScale: 2, includeUnderlay: false, underlayOpacity: 0.3, strictMode: true },
     kind: 'template',
+    masterSlideId,
     theme,
   };
 

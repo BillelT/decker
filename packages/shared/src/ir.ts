@@ -19,6 +19,13 @@ export interface IRDocument {
    */
   kind?: 'deck' | 'template';
   /**
+   * Mode template : `sourceNodeId` de la frame Master (la première du rail,
+   * dès 2 layouts). Écrite sur la page Master de la présentation, dont
+   * tous les layouts et toutes les slides héritent ; elle ne crée pas de
+   * slide.
+   */
+  masterSlideId?: string;
+  /**
    * Palette à écrire sur la page Master (mode template — audit 2026-08,
    * voir LIMITATIONS.md § Création de template). Les 12 rôles DOIVENT
    * tous être fournis si présent : l'API Slides exige les 12

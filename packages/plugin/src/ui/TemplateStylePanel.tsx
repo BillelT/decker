@@ -4,9 +4,11 @@ import { suggestColorRoles } from '../serialize/templateColorRoles.js';
 import { colorKey } from '../serialize/templateSummary.js';
 import { THEME_ROLE_LABELS, VISIBLE_THEME_ROLES } from '../serialize/templateTheme.js';
 import { FontCombobox } from './FontCombobox.js';
-import type { TemplateColorSwatch, TemplateFontUsage } from './types.js';
+import { selectSourceNodes, type TemplateColorSwatch, type TemplateElement, type TemplateFontUsage } from './types.js';
 
 export interface TemplateStylePanelProps {
+  /** Premier layout du rail, écrit sur le Master Slides (absent sous 2 layouts). */
+  master?: { name: string; elements: TemplateElement[] };
   colors: TemplateColorSwatch[];
   fonts: TemplateFontUsage[];
   /** Choix manuel de police (bandeau "Fonts") — voir logEntryFlag.ts pour le même besoin côté Logs. */
@@ -40,7 +42,7 @@ function colorLabel(c: TemplateColorSwatch): string {
  */
 const SUGGESTION_PLURALS = new Intl.PluralRules('en');
 
-export function TemplateStylePanel({ colors, fonts, fontOverrides, setFontOverrides, colorRoles, setColorRoles, onNotice }: TemplateStylePanelProps) {
+export function TemplateStylePanel({ master, colors, fonts, fontOverrides, setFontOverrides, colorRoles, setColorRoles, onNotice }: TemplateStylePanelProps) {
   const assignedKeyByRole = new Map<ThemeColorRole, string>();
   for (const [key, role] of Object.entries(colorRoles)) assignedKeyByRole.set(role, key);
   const sortedColors = [...colors].sort((a, b) => b.usageCount - a.usageCount);
@@ -96,6 +98,28 @@ export function TemplateStylePanel({ colors, fonts, fontOverrides, setFontOverri
 
   return (
     <div className="f2s-style-panel">
+      {/* Ce que le Master propage : tout ce qui est posé sur le premier
+          layout apparaît sur chaque layout et chaque slide une fois dans
+          Slides (backend mapper/templateLayouts.ts::mapMasterBatch). */}
+      <section className="f2s-tmpl-section">
+        <h3 className="f2s-tmpl-heading f2s-style-heading">Master content</h3>
+        {!master ? (
+          <p className="f2s-toolbar-muted">The first layout becomes the master once you add a second one. What it holds appears on every slide.</p>
+        ) : master.elements.length === 0 ? (
+          <p className="f2s-toolbar-muted">"{master.name}" is the master. Add a logo or a footer to it to show them on every slide.</p>
+        ) : (
+          <ul className="f2s-style-list">
+            {master.elements.map((el) => (
+              <li key={el.id}>
+                <button type="button" className="f2s-tmpl-chip" title={`Select "${el.name}" in Figma`} onClick={() => selectSourceNodes([el.sourceNodeId])}>
+                  <span className="f2s-tmpl-chip-label">{el.name}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
       <section className="f2s-tmpl-section">
         <div className="f2s-section-head">
           <h3 className="f2s-tmpl-heading f2s-style-heading">Colors</h3>

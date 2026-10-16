@@ -216,6 +216,16 @@ les suivants) :
    le décor du layout, la slide est créée depuis ce layout, et les layouts
    inutilisés sont supprimés. Le Master n'est plus vidé (risque d'emporter
    les placeholders des layouts, qui en héritent). À valider dans Slides.
+   **Ajusté le 2026-10-16** après test : Google refuse toute écriture de
+   texte dans un placeholder de layout ou de Master (style seul permis).
+   Le corps natif affiche alors ses 9 niveaux de puces d'exemple : seuls
+   `[[title]]` et `[[subtitle]]` prennent un placeholder natif, `[[body]]`
+   et les autres rôles deviennent des zones de texte sur la SLIDE (un
+   élément de layout est figé sur les slides). Le Master est désormais la
+   première frame du rail dès 2 layouts (tag « Master », section « Master
+   content » dans l'aside) : fond et éléments écrits sur la page Master,
+   pas de slide ; son corps par défaut est supprimé en fin d'export. Les
+   noms de layouts ne sont pas modifiables par l'API.
 4. ~~**Slide de style guide optionnelle.**~~ — abandonné (2026-08-03) :
    l'idée initiale (checkbox à l'export générant une slide swatches/rôles/
    échantillon typo en 1ère position) servait surtout de preuve visuelle de

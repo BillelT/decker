@@ -1296,6 +1296,27 @@ a.f2s-btn {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Tag "Master" du premier layout du rail (mode Template), en haut à
+   gauche : le coin haut droit appartient au badge d'échec d'export. Fond
+   accent à 80 % (calculé depuis --b-accent, pas de token dédié). */
+.f2s-frame-tag {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.f2s-frame-tag--master {
+  background: color-mix(in srgb, var(--b-accent) 80%, transparent);
+  color: var(--b-ink);
+}
+
 .f2s-frame-badge--error {
   background: var(--color-error);
   color: var(--color-on-error);
@@ -5122,7 +5143,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     return c3.variableName ?? c3.hex;
   }
   var SUGGESTION_PLURALS = new Intl.PluralRules("en");
-  function TemplateStylePanel({ colors, fonts, fontOverrides, setFontOverrides, colorRoles, setColorRoles, onNotice }) {
+  function TemplateStylePanel({ master, colors, fonts, fontOverrides, setFontOverrides, colorRoles, setColorRoles, onNotice }) {
     const assignedKeyByRole = /* @__PURE__ */ new Map();
     for (const [key, role] of Object.entries(colorRoles)) assignedKeyByRole.set(role, key);
     const sortedColors = [...colors].sort((a3, b2) => b2.usageCount - a3.usageCount);
@@ -5159,6 +5180,14 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
       onNotice(`${suggestedCount} ${SUGGESTION_PLURALS.select(suggestedCount) === "one" ? "role" : "roles"} suggested. Change any of them below.`);
     }
     return /* @__PURE__ */ u3("div", { className: "f2s-style-panel", children: [
+      /* @__PURE__ */ u3("section", { className: "f2s-tmpl-section", children: [
+        /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading f2s-style-heading", children: "Master content" }),
+        !master ? /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: "The first layout becomes the master once you add a second one. What it holds appears on every slide." }) : master.elements.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: [
+          '"',
+          master.name,
+          '" is the master. Add a logo or a footer to it to show them on every slide.'
+        ] }) : /* @__PURE__ */ u3("ul", { className: "f2s-style-list", children: master.elements.map((el) => /* @__PURE__ */ u3("li", { children: /* @__PURE__ */ u3("button", { type: "button", className: "f2s-tmpl-chip", title: `Select "${el.name}" in Figma`, onClick: () => selectSourceNodes([el.sourceNodeId]), children: /* @__PURE__ */ u3("span", { className: "f2s-tmpl-chip-label", children: el.name }) }) }, el.id)) })
+      ] }),
       /* @__PURE__ */ u3("section", { className: "f2s-tmpl-section", children: [
         /* @__PURE__ */ u3("div", { className: "f2s-section-head", children: [
           /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading f2s-style-heading", children: "Colors" }),
@@ -5388,9 +5417,11 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     onPacedCursorChange
   }) {
     const { itemRefs, itemState, registerItem, onThumbPointerDown, onThumbKeyDown, announcement } = useRailReorder(order, setOrder, locked);
+    const masterLayout = order.length >= 2 ? layouts[order[0]] : void 0;
     const styleAside = /* @__PURE__ */ u3(
       TemplateStylePanel,
       {
+        master: masterLayout ? { name: masterLayout.name, elements: masterLayout.elements } : void 0,
         colors,
         fonts,
         fontOverrides,
@@ -5479,6 +5510,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
               title: failure ? `Export failed: ${failure}` : layout.blocking ? "This layout has issues to fix. Open it to see the details." : void 0,
               children: [
                 layout.previewDataUrl && /* @__PURE__ */ u3("img", { src: layout.previewDataUrl, alt: layout.name, draggable: false }),
+                index === 0 && order.length >= 2 && /* @__PURE__ */ u3("span", { className: "f2s-frame-tag f2s-frame-tag--master", children: "Master" }),
                 layout.blocking && toFix > 0 ? /* @__PURE__ */ u3("span", { className: "f2s-frame-badge f2s-frame-badge--error f2s-tabular", children: [
                   toFix,
                   " to fix"

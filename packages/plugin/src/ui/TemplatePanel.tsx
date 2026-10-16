@@ -214,8 +214,10 @@ export function TemplatePanel({
 
   // L'aside reste affiché même sans layout : il marque le mode template, et
   // ses sections vides disent ce qu'elles montreront.
+  const masterLayout = order.length >= 2 ? layouts[order[0]] : undefined;
   const styleAside = (
     <TemplateStylePanel
+      master={masterLayout ? { name: masterLayout.name, elements: masterLayout.elements } : undefined}
       colors={colors}
       fonts={fonts}
       fontOverrides={fontOverrides}
@@ -370,6 +372,9 @@ export function TemplatePanel({
                 }
               >
                 {layout.previewDataUrl && <img src={layout.previewDataUrl} alt={layout.name} draggable={false} />}
+                {/* Comme dans Slides : le premier layout est le Master dès
+                    qu'il y en a deux. Il suit le rail (suppression, drag). */}
+                {index === 0 && order.length >= 2 && <span className="f2s-frame-tag f2s-frame-tag--master">Master</span>}
                 {layout.blocking && toFix > 0 ? (
                   <span className="f2s-frame-badge f2s-frame-badge--error f2s-tabular">{toFix} to fix</span>
                 ) : (

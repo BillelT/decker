@@ -87,7 +87,7 @@ describe('createPresentation', () => {
 
     const result = await createPresentation('token', 'My deck');
 
-    expect(result).toEqual({ presentationId: 'p1', firstSlideObjectId: 's1', masterObjectId: 'm1', masterAndLayoutElementIds: [], layouts: [] });
+    expect(result).toEqual({ presentationId: 'p1', firstSlideObjectId: 's1', masterObjectId: 'm1', masterAndLayoutElementIds: [], masterPlaceholderIds: [], layouts: [] });
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 

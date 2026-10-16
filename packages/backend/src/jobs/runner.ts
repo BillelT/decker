@@ -92,7 +92,13 @@ export async function runExportJob(
       // rôles sur les vrais placeholders (mapper/templateLayouts.ts). Le
       // plan est persisté avec le job pour qu'une reprise réécrive les
       // mêmes layouts.
-      if (isTemplate) templateLayouts = { layouts: created.layouts, plan: planTemplateLayouts(doc.slides, created.layouts) };
+      if (isTemplate) {
+        templateLayouts = {
+          layouts: created.layouts,
+          plan: planTemplateLayouts(doc.slides, created.layouts, doc.masterSlideId),
+          masterPlaceholderIds: created.masterPlaceholderIds,
+        };
+      }
       // Persisté sur le job (pas seulement gardé en variable locale) : sans
       // ça, `retryExportJob` n'a aucun moyen de reconstruire le lot thème
       // via `mapDocumentToBatches` en cas de reprise (audit 2026-08).
@@ -138,6 +144,11 @@ export async function runExportJob(
       for (const layout of templateLayouts.layouts) {
         if (used.has(layout.objectId) || (keepBlank && layout.name === 'BLANK')) continue;
         await applyBatch(accessToken, presentationId, { sourceSlideId: '__layout__', requests: [{ deleteObject: { objectId: layout.objectId } }] }).catch(() => undefined);
+      }
+      // Puis le corps par défaut du Master (9 niveaux de puces) : plus aucun
+      // layout restant ne l'utilise. Un échec ici ne gêne rien.
+      for (const objectId of templateLayouts.masterPlaceholderIds ?? []) {
+        await applyBatch(accessToken, presentationId, { sourceSlideId: '__master__', requests: [{ deleteObject: { objectId } }] }).catch(() => undefined);
       }
     }
 

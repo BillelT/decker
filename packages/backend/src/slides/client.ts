@@ -77,6 +77,7 @@ export async function createPresentation(
   firstSlideObjectId: string;
   masterObjectId: string;
   masterAndLayoutElementIds: string[];
+  masterPlaceholderIds: string[];
   layouts: NativeLayout[];
 }> {
   // Le pageSize (comme le ratio d'aspect de la présentation entière) ne se
@@ -147,6 +148,9 @@ export async function createPresentation(
     firstSlideObjectId: body.slides[0].objectId,
     masterObjectId: body.masters[0].objectId,
     masterAndLayoutElementIds,
+    // Seul le corps (9 niveaux de puces) : le titre du Master est le parent
+    // des titres des layouts, le supprimer risquerait de les emporter.
+    masterPlaceholderIds: body.masters.flatMap((page) => (page.pageElements ?? []).filter((el) => el.shape?.placeholder?.type === 'BODY').map((el) => el.objectId)),
     layouts,
   };
 }
