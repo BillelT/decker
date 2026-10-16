@@ -4050,6 +4050,13 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     return `${subject} couldn't be created. Retry shortly.`;
   }
   function describeSlideFailure(raw, noun) {
+    const advice = slideFailureAdvice(raw, noun);
+    const reason = /batchUpdate: ([\s\S]+)$/.exec(raw)?.[1]?.trim();
+    if (!reason) return advice;
+    const short = reason.length > 300 ? `${reason.slice(0, 300)}\u2026` : reason;
+    return `${advice} Google Slides said: "${short}"`;
+  }
+  function slideFailureAdvice(raw, noun) {
     const status = Number(/Slides API (\d{3})/.exec(raw)?.[1] ?? NaN);
     if (status === 400 && /image/i.test(raw)) {
       return `Google Slides rejected an image on this ${noun}. Simplify it in Figma, then retry.`;
@@ -6766,6 +6773,12 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
       if (exportSource === "template") showTemplateSelectionNotice(text, "success");
       else showSelectionNotice(text, "success");
     }, [successVisible]);
+    const errorVisible = exportState === "error" && Boolean(exportError) && (previewSettled || exportSource !== mode);
+    h2(() => {
+      if (!errorVisible || !exportError) return;
+      if (exportSource === "template") showTemplateSelectionNotice(exportError, "error");
+      else showSelectionNotice(exportError, "error");
+    }, [errorVisible, exportError]);
     const busyFromOtherMode = exporting && exportSource !== void 0 && exportSource !== mode;
     const busyTitle = exportSource === "deck" ? "A deck export is still running. Wait for it to finish." : "A template creation is still running. Wait for it to finish.";
     const concludedExport = exportState === "done" || exportState === "error" || exportState === "canceled";
@@ -6822,6 +6835,16 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
           ] }) })
         ] });
       }
+      if (resultCurrent && exportState === "error" && retryable) {
+        const noun = isDeck ? "slide" : "layout";
+        return /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--primary f2s-tabular", disabled: retrying, onClick: handleRetryFailedSlides, children: [
+          "Retry ",
+          failedCount,
+          " failed ",
+          noun,
+          failedCount === 1 ? "" : "s"
+        ] });
+      }
       if (resultCurrent && resultUrl && exportState !== "canceled" && !resultOpened) {
         return /* @__PURE__ */ u3(
           "a",
@@ -6871,16 +6894,6 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     }
     function renderExportStatus() {
       if (!resultCurrent) return null;
-      const noun = mode === "template" ? "layout" : "slide";
-      if (exportState === "error" && exportError) {
-        return /* @__PURE__ */ u3(S, { children: [
-          /* @__PURE__ */ u3("p", { className: "f2s-footer-status f2s-footer-status--error", role: "alert", title: exportError, children: [
-            /* @__PURE__ */ u3(StatusIcon, { tone: "error" }),
-            /* @__PURE__ */ u3("span", { className: "f2s-footer-status-text", children: exportError })
-          ] }),
-          retryable && /* @__PURE__ */ u3("button", { type: "button", className: "f2s-btn f2s-btn--secondary f2s-btn--footer", disabled: retrying, onClick: handleRetryFailedSlides, children: retrying ? "Retrying\u2026" : `Retry ${failedCount} failed ${noun}${failedCount === 1 ? "" : "s"}` })
-        ] });
-      }
       if (exportState === "canceled" && previewSettled) {
         return /* @__PURE__ */ u3(S, { children: [
           /* @__PURE__ */ u3("p", { className: "f2s-footer-status f2s-footer-status--info", role: "status", children: [

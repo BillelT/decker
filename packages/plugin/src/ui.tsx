@@ -1421,6 +1421,17 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [successVisible]);
 
+  // Un échec s'annonce comme un succès : une notification dans le panneau
+  // du mode qui a exporté (plus de ligne d'erreur persistante dans le
+  // footer). La reprise passe par le bouton principal.
+  const errorVisible = exportState === 'error' && Boolean(exportError) && (previewSettled || exportSource !== mode);
+  useEffect(() => {
+    if (!errorVisible || !exportError) return;
+    if (exportSource === 'template') showTemplateSelectionNotice(exportError, 'error');
+    else showSelectionNotice(exportError, 'error');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [errorVisible, exportError]);
+
   // Le pipeline d'export (assets bufferisés, polling) est partagé : un seul
   // export à la fois, mais le mode qui n'a PAS lancé l'export en cours
   // explique pourquoi son bouton attend au lieu d'être grisé sans raison.
@@ -1476,6 +1487,7 @@ function App() {
    * Bouton principal du header, qui suit l'étape du mode courant :
    * - sans session Google : la connexion ;
    * - pendant l'export : la progression (« Exporting 2/4 »), et « Cancel » à côté ;
+   * - échec partiel, panneau inchangé depuis : « Retry N failed » ;
    * - export terminé, panneau inchangé depuis : « Open in Slides » ;
    * - sinon : « Export » (« Export again » si une présentation existe déjà).
    * L'ajout de frames reste un bouton à part (`renderAddAction`), toujours
@@ -1529,6 +1541,19 @@ function App() {
             </span>
           </span>
         </>
+      );
+    }
+
+    // Échec partiel : la suite logique est de reprendre les slides en
+    // échec, pas d'ouvrir une présentation incomplète. La reprise ne
+    // rejoue que celles-là (backend jobs/runner.ts `retryExportJob`).
+    if (resultCurrent && exportState === 'error' && retryable) {
+      const noun = isDeck ? 'slide' : 'layout';
+      return (
+        <button type="button" className="f2s-btn f2s-btn--primary f2s-tabular" disabled={retrying} onClick={handleRetryFailedSlides}>
+          Retry {failedCount} failed {noun}
+          {failedCount === 1 ? '' : 's'}
+        </button>
       );
     }
 
@@ -1606,8 +1631,9 @@ function App() {
 
   /**
    * Statut du dernier export de ce mode, dans le footer, avec l'action qui
-   * en découle juste à côté : « Retry » après un échec, le lien vers ce qui
-   * a été créé après une annulation. Rien après un succès : le toast le dit,
+   * en découle juste à côté : le lien vers ce qui a été créé après une
+   * annulation. Un échec passe par une notification et le bouton principal
+   * (« Retry N failed »). Rien après un succès : le toast le dit,
    * et le bouton principal (« Open in Slides », puis « Export again » une
    * fois ouvert) porte la suite. Masqué
    * dès que le panneau a changé depuis l'export : il ne décrirait plus ce
@@ -1615,26 +1641,6 @@ function App() {
    */
   function renderExportStatus() {
     if (!resultCurrent) return null;
-    const noun = mode === 'template' ? 'layout' : 'slide';
-    if (exportState === 'error' && exportError) {
-      return (
-        <>
-          <p className="f2s-footer-status f2s-footer-status--error" role="alert" title={exportError}>
-            <StatusIcon tone="error" />
-            <span className="f2s-footer-status-text">{exportError}</span>
-          </p>
-          {/* Reprise ciblée (backend jobs/runner.ts `retryExportJob`) : ne
-              rejoue QUE les slides encore en échec, jamais tout le deck : la
-              présentation déjà créée (et les slides déjà réussies) reste
-              intacte pendant l'attente. */}
-          {retryable && (
-            <button type="button" className="f2s-btn f2s-btn--secondary f2s-btn--footer" disabled={retrying} onClick={handleRetryFailedSlides}>
-              {retrying ? 'Retrying…' : `Retry ${failedCount} failed ${noun}${failedCount === 1 ? '' : 's'}`}
-            </button>
-          )}
-        </>
-      );
-    }
     if (exportState === 'canceled' && previewSettled) {
       return (
         <>

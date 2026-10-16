@@ -47,6 +47,16 @@ export function describeJobFailure(noun: 'slide' | 'layout'): string {
  * code reconnaissable retombe sur le conseil général.
  */
 export function describeSlideFailure(raw: string, noun: 'slide' | 'layout'): string {
+  const advice = slideFailureAdvice(raw, noun);
+  // La raison exacte donnée par Google ("Invalid requests[3].createShape:
+  // …"), sans quoi un refus ne se diagnostique pas sans les logs serveur.
+  const reason = /batchUpdate: ([\s\S]+)$/.exec(raw)?.[1]?.trim();
+  if (!reason) return advice;
+  const short = reason.length > 300 ? `${reason.slice(0, 300)}…` : reason;
+  return `${advice} Google Slides said: "${short}"`;
+}
+
+function slideFailureAdvice(raw: string, noun: 'slide' | 'layout'): string {
   const status = Number(/Slides API (\d{3})/.exec(raw)?.[1] ?? NaN);
   if (status === 400 && /image/i.test(raw)) {
     return `Google Slides rejected an image on this ${noun}. Simplify it in Figma, then retry.`;

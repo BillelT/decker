@@ -32,6 +32,13 @@ describe('describeNetworkFailure', () => {
 });
 
 describe('describeSlideFailure', () => {
+  it("quotes Google's exact reason after the advice", () => {
+    const raw = 'Slide "intro": Slides API 400 on /presentations/abc:batchUpdate: Invalid requests[4].createShape: The page is not a slide.';
+    expect(describeSlideFailure(raw, 'layout')).toBe(
+      'Google Slides rejected an element on this layout. Retry, or simplify it in Figma. Google Slides said: "Invalid requests[4].createShape: The page is not a slide."',
+    );
+  });
+
   it('traduit une image refusée par Google', () => {
     const raw = 'Slides API 400 on /presentations/abc:batchUpdate: Invalid requests[3].createImage: The provided image is too large.';
     expect(describeSlideFailure(raw, 'slide')).toMatch(/^Google Slides rejected an image on this slide/);
