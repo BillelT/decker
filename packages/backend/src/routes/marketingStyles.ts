@@ -485,8 +485,9 @@ main:focus { outline: none; }
    "plaisir"). Version lente assumée (16 octobre), d'après Interfere et
    Linear : opacity + flou 6px + translateY(16px), ease-out. Le titre entre
    ligne par ligne (120 ms d'écart, lignes posées par HERO_TITLE_LINES_JS),
-   puis l'accroche et le CTA, chacun en 900 ms ; la démo, la plus grande
-   surface, en 1,6 s. Le flou dépasse les 4px de
+   puis l'accroche et le CTA, puis la démo. La durée suit la taille du bloc :
+   1,2 s pour le titre, 800 ms pour l'accroche et le CTA, 1,7 s pour la
+   démo, la plus grande surface. Le flou dépasse les 4px de
    rules/ui/motion-implementation.md, le marketing peut dépasser les durées
    de l'interface (motion-decisions.md). Jamais bloquant : le contenu reste
    cliquable, et visible sans JS (le titre entre alors d'un bloc). */
@@ -499,10 +500,11 @@ main:focus { outline: none; }
     animation: hero-enter 900ms var(--b-ease-out) both;
   }
   .hero > .hero__title--lines { animation: none; }
-  .hero__line { display: block; animation: hero-enter 900ms var(--b-ease-out) both; animation-delay: calc(var(--line) * 120ms); }
+  .hero__line { display: block; animation: hero-enter 1200ms var(--b-ease-out) both; animation-delay: calc(var(--line) * 120ms); }
   .hero__title--settled .hero__line { animation: none; }
-  .hero > .hero__row { animation-delay: 200ms; }
-  .hero > .hero__demo { animation-duration: 1600ms; animation-delay: 320ms; }
+  .hero > .hero__title { animation-duration: 1200ms; }
+  .hero > .hero__row { animation-duration: 800ms; animation-delay: 200ms; }
+  .hero > .hero__demo { animation-duration: 1700ms; animation-delay: 320ms; }
 }
 /* Mouvement réduit : fondu seul, plus de glissement ni de flou. */
 @media (prefers-reduced-motion: reduce) {
