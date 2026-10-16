@@ -78,6 +78,7 @@
   --b-text-lg: 18px;
   --b-text-xl: 20px;
   --b-text-3xl: 36px;
+  --b-text-5xl: 48px;
   --b-text-6xl: 72px;
 
   --b-font-regular: 400;
@@ -1721,6 +1722,25 @@ a.f2s-btn {
    droite. */
 .f2s-tmpl-preview img {
   margin-inline: auto;
+}
+
+/* Fenêtre "Exporting" du mode Template : le cadre de l'aperçu prend toute
+   la largeur, mais la fenêtre doit épouser l'image. Sans ça, une image
+   plafonnée en hauteur laissait le turquoise du bureau 95 sur la droite,
+   comme si la frame avait un autre ratio. La fenêtre se centre et le
+   canvas est plafonné comme en Deck (65 % de la hauteur du canvas). */
+.f2s-canvas--template {
+  container-type: size;
+}
+
+.f2s-tmpl-preview.f2s-canvas-preview--retro {
+  display: flex;
+  justify-content: center;
+  max-height: none;
+}
+
+.f2s-tmpl-preview .f2s-retro-canvas {
+  max-height: 65cqh;
 }
 
 .f2s-tmpl-panel {
@@ -5298,9 +5318,11 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
   }
   function suggestPlaceholderRoles(elements) {
     const present = new Set(elements.map((el) => el.role).filter(Boolean));
-    const free = elements.filter((el) => el.kind === "text" && !el.role && !!el.text && el.text.chars > 0);
-    if (free.length === 0) return [];
-    const suggestions = [];
+    const candidates = elements.filter((el) => el.kind === "text" && !el.role && !!el.text && el.text.chars > 0);
+    if (candidates.length === 0) return [];
+    const suggestions = candidates.filter((el) => el.text.stat).map((el) => ({ sourceNodeId: el.sourceNodeId, tag: "custom" }));
+    const free = candidates.filter((el) => !el.text.stat);
+    if (free.length === 0) return suggestions;
     const take = (el, tag) => {
       if (!el || present.has(ROLE_OF_TAG[tag])) return;
       suggestions.push({ sourceNodeId: el.sourceNodeId, tag });
@@ -5315,7 +5337,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     const longest = [...free].sort((a3, b2) => b2.text.chars - a3.text.chars)[0];
     if (longest && (longest.text.chars >= BODY_MIN_CHARS || longest.text.paragraphs > 1)) take(longest, "body");
     const subtitle = free.filter((el) => el.text.chars <= SUBTITLE_MAX_CHARS).sort(biggestFirst)[0];
-    const others = elements.filter((el) => el.kind === "text" && el.text && el !== subtitle && !titleIds.has(el.sourceNodeId));
+    const others = elements.filter((el) => el.kind === "text" && el.text && !el.text.stat && el !== subtitle && !titleIds.has(el.sourceNodeId));
     if (subtitle && others.every((el) => subtitle.text.fontSizePx > el.text.fontSizePx)) take(subtitle, "subtitle");
     return suggestions;
   }

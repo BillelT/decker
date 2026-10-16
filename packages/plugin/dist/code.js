@@ -1165,6 +1165,10 @@
   function emptyUsage() {
     return { frame: 0, text: 0, link: 0, background: 0, fill: 0, stroke: 0 };
   }
+  function isStatText(content) {
+    const text = content.trim();
+    return text.length > 0 && text.length <= 10 && /^[+\-~≈<>]?\s?[$€£¥]?\s?\d[\d\s.,]*\s?(%|[kKMB]|bn|x|×|\+|pts?)?$/.test(text);
+  }
   function toHex(color) {
     const channel = (v) => Math.round(Math.min(1, Math.max(0, v)) * 255).toString(16).padStart(2, "0").toUpperCase();
     return `#${channel(color.r)}${channel(color.g)}${channel(color.b)}`;
@@ -1237,7 +1241,8 @@
             fontSizePx: el.runs.reduce((max, run) => Math.max(max, run.fontSizePx), 0),
             chars: el.content.trim().length,
             paragraphs: Math.max(1, el.content.split("\n").filter((line) => line.trim()).length),
-            y: el.rect.y
+            y: el.rect.y,
+            stat: isStatText(el.content)
           }
         } : {}
       });

@@ -4,6 +4,8 @@ import type { TextStats } from './templateSummary.js';
 /**
  * "Suggest roles" de la section Composition (mode template) : propose un
  * rôle de placeholder aux textes du layout affiché, d'après leur forme.
+ * 0. `custom` : chaque chiffre clé ("87%", "120k"), qui n'est ni un titre
+ *    ni un corps (voir `isStatText`) ;
  * 1. `title` : le texte écrit le plus gros (à taille égale, le plus haut) ;
  * 2. `body` : le texte le plus long parmi les autres, s'il a l'allure d'un
  *    paragraphe (`BODY_MIN_CHARS` caractères ou plusieurs lignes) ;
@@ -26,13 +28,13 @@ export interface SuggestableElement {
 
 export interface PlaceholderSuggestion {
   sourceNodeId: string;
-  tag: 'title' | 'subtitle' | 'body';
+  tag: 'title' | 'subtitle' | 'body' | 'custom';
 }
 
 const BODY_MIN_CHARS = 80;
 const SUBTITLE_MAX_CHARS = 140;
 
-const ROLE_OF_TAG: Record<PlaceholderSuggestion['tag'], PlaceholderRole> = { title: 'TITLE', subtitle: 'SUBTITLE', body: 'BODY' };
+const ROLE_OF_TAG: Record<Exclude<PlaceholderSuggestion['tag'], 'custom'>, PlaceholderRole> = { title: 'TITLE', subtitle: 'SUBTITLE', body: 'BODY' };
 
 type Candidate = SuggestableElement & { text: TextStats };
 
@@ -42,11 +44,14 @@ function biggestFirst(a: Candidate, b: Candidate): number {
 
 export function suggestPlaceholderRoles(elements: SuggestableElement[]): PlaceholderSuggestion[] {
   const present = new Set(elements.map((el) => el.role).filter(Boolean));
-  const free: Candidate[] = elements.filter((el): el is Candidate => el.kind === 'text' && !el.role && !!el.text && el.text.chars > 0);
-  if (free.length === 0) return [];
+  const candidates: Candidate[] = elements.filter((el): el is Candidate => el.kind === 'text' && !el.role && !!el.text && el.text.chars > 0);
+  if (candidates.length === 0) return [];
 
-  const suggestions: PlaceholderSuggestion[] = [];
-  const take = (el: Candidate | undefined, tag: PlaceholderSuggestion['tag']) => {
+  const suggestions: PlaceholderSuggestion[] = candidates.filter((el) => el.text.stat).map((el) => ({ sourceNodeId: el.sourceNodeId, tag: 'custom' }));
+  const free = candidates.filter((el) => !el.text.stat);
+  if (free.length === 0) return suggestions;
+
+  const take = (el: Candidate | undefined, tag: Exclude<PlaceholderSuggestion['tag'], 'custom'>) => {
     if (!el || present.has(ROLE_OF_TAG[tag])) return;
     suggestions.push({ sourceNodeId: el.sourceNodeId, tag });
     free.splice(free.indexOf(el), 1);
@@ -63,7 +68,7 @@ export function suggestPlaceholderRoles(elements: SuggestableElement[]): Placeho
   if (longest && (longest.text.chars >= BODY_MIN_CHARS || longest.text.paragraphs > 1)) take(longest, 'body');
 
   const subtitle = free.filter((el) => el.text.chars <= SUBTITLE_MAX_CHARS).sort(biggestFirst)[0];
-  const others = elements.filter((el) => el.kind === 'text' && el.text && el !== subtitle && !titleIds.has(el.sourceNodeId));
+  const others = elements.filter((el) => el.kind === 'text' && el.text && !el.text.stat && el !== subtitle && !titleIds.has(el.sourceNodeId));
   if (subtitle && others.every((el) => subtitle.text.fontSizePx > el.text!.fontSizePx)) take(subtitle, 'subtitle');
 
   return suggestions;

@@ -84,6 +84,19 @@ export interface TextStats {
   paragraphs: number;
   /** Haut du calque dans la frame : départage deux textes de même taille. */
   y: number;
+  /** Chiffre clé affiché en grand ("87%", "120k", "$4.2M") : voir `isStatText`. */
+  stat: boolean;
+}
+
+/**
+ * Un chiffre clé ("87%", "120k", "$4.2M", "+35", "3x") : court, fait d'un
+ * nombre et d'au plus une unité. Ni un titre ni un paragraphe : "Suggest
+ * roles" le tague `[[custom]]`, sinon il prendrait le placeholder titre
+ * natif, dont l'invite de 50 caractères déborderait à cette taille.
+ */
+export function isStatText(content: string): boolean {
+  const text = content.trim();
+  return text.length > 0 && text.length <= 10 && /^[+\-~≈<>]?\s?[$€£¥]?\s?\d[\d\s.,]*\s?(%|[kKMB]|bn|x|×|\+|pts?)?$/.test(text);
 }
 
 export function toHex(color: IRColor): string {
@@ -214,6 +227,7 @@ export function summarizeTaggableElements(elements: IRElement[]): TemplateElemen
               chars: el.content.trim().length,
               paragraphs: Math.max(1, el.content.split('\n').filter((line) => line.trim()).length),
               y: el.rect.y,
+              stat: isStatText(el.content),
             },
           }
         : {}),

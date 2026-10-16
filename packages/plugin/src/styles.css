@@ -1577,6 +1577,25 @@ a.f2s-btn {
   margin-inline: auto;
 }
 
+/* Fenêtre "Exporting" du mode Template : le cadre de l'aperçu prend toute
+   la largeur, mais la fenêtre doit épouser l'image. Sans ça, une image
+   plafonnée en hauteur laissait le turquoise du bureau 95 sur la droite,
+   comme si la frame avait un autre ratio. La fenêtre se centre et le
+   canvas est plafonné comme en Deck (65 % de la hauteur du canvas). */
+.f2s-canvas--template {
+  container-type: size;
+}
+
+.f2s-tmpl-preview.f2s-canvas-preview--retro {
+  display: flex;
+  justify-content: center;
+  max-height: none;
+}
+
+.f2s-tmpl-preview .f2s-retro-canvas {
+  max-height: 65cqh;
+}
+
 .f2s-tmpl-panel {
   display: flex;
   flex-direction: column;

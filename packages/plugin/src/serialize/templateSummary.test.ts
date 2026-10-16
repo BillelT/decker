@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { IRElement, IRShape, IRText } from '@figma-to-slides/shared';
-import { aggregateColorSwatches, aggregateFontUsages, summarizeColors, summarizeFonts, summarizeTaggableElements } from './templateSummary.js';
+import { aggregateColorSwatches, aggregateFontUsages, isStatText, summarizeColors, summarizeFonts, summarizeTaggableElements } from './templateSummary.js';
 
 function baseShape(overrides: Partial<IRShape> = {}): IRShape {
   return {
@@ -146,6 +146,13 @@ describe('aggregateFontUsages', () => {
 });
 
 
+describe('isStatText', () => {
+  it('recognizes key figures, not titles', () => {
+    for (const t of ['87%', '120k', '$4.2M', '+35', '3x', '1 200', '96 %', '€12bn']) expect(isStatText(t)).toBe(true);
+    for (const t of ['Built for the long run.', 'Q3 2026 review', '2026 roadmap', '']) expect(isStatText(t)).toBe(false);
+  });
+});
+
 describe('summarizeTaggableElements', () => {
   it('lists every taggable layer, not just the tagged ones', () => {
     const elements: IRElement[] = [
@@ -153,7 +160,7 @@ describe('summarizeTaggableElements', () => {
       baseShape({ id: 'b', sourceNodeId: 'nb', sourceNodeName: 'Photo slot', placeholder: { role: 'IMAGE', label: 'Image' } }),
     ];
     expect(summarizeTaggableElements(elements)).toEqual([
-      { id: 'a', sourceNodeId: 'na', name: 'Heading', kind: 'text', role: undefined, label: undefined, text: { fontSizePx: 0, chars: 5, paragraphs: 1, y: 0 } },
+      { id: 'a', sourceNodeId: 'na', name: 'Heading', kind: 'text', role: undefined, label: undefined, text: { fontSizePx: 0, chars: 5, paragraphs: 1, y: 0, stat: false } },
       { id: 'b', sourceNodeId: 'nb', name: 'Photo slot', kind: 'shape', role: 'IMAGE', label: 'Image' },
     ]);
   });
