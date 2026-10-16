@@ -755,6 +755,7 @@ function act(name) {
     showToast('In Figma, Prepare for Slides duplicates each ' + (deck ? 'frame' : 'layout') + ' and reformats the copy for Slides.', 'info');
   } else if (name === 'export') {
     showToast((deck ? 'Export' : 'Create template') + ' runs in the real plugin. Try it on Figma.', 'info');
+    ctaTrail();
   } else if (name === 'settings') {
     showToast('In the plugin, Settings switches the skin and your Google account.', 'info');
   } else if (name === 'suggest-roles') {
@@ -768,6 +769,38 @@ function act(name) {
     renderBody();
     showToast(colors.length + (colors.length === 1 ? ' role' : ' roles') + ' suggested. Change any of them below.', 'info');
   }
+}
+
+/* Export renvoie au vrai plugin : une traînée de pixels orange balaie le CTA
+   du header de gauche à droite pour le désigner. En mouvement réduit, les
+   pixels apparaissent et s'effacent ensemble, sans balayage. */
+var TRAIL_TONES = ['var(--b-accent-hover)', 'var(--b-accent-red)', 'color-mix(in oklab, var(--b-accent) 55%, var(--b-white))'];
+function ctaTrail() {
+  var cta = document.querySelector('.header .cta');
+  if (!cta || !cta.animate) return;
+  var old = cta.querySelector('.cta-trail');
+  if (old) old.remove();
+  var layer = document.createElement('span');
+  layer.className = 'cta-trail';
+  layer.setAttribute('aria-hidden', 'true');
+  var size = 6;
+  var cols = Math.ceil(cta.offsetWidth / size);
+  var rows = Math.ceil(cta.offsetHeight / size);
+  var longest = 0;
+  for (var c = 0; c < cols; c++) {
+    for (var r = 0; r < rows; r++) {
+      if (Math.random() < 0.25) continue;
+      var px = document.createElement('i');
+      px.style.cssText = 'left:' + c * size + 'px;top:' + r * size + 'px;width:' + size + 'px;height:' + size + 'px;background:' + TRAIL_TONES[Math.floor(Math.random() * TRAIL_TONES.length)];
+      layer.appendChild(px);
+      var delay = reduceMotion ? 0 : c * 30 + Math.random() * 90;
+      var duration = reduceMotion ? 600 : 220 + Math.random() * 160;
+      longest = Math.max(longest, delay + duration);
+      px.animate([{ opacity: 0 }, { opacity: 1 }, { opacity: 0 }], { duration: duration, delay: delay, easing: reduceMotion ? 'ease-out' : 'steps(3, end)', fill: 'both' });
+    }
+  }
+  cta.appendChild(layer);
+  window.setTimeout(function () { layer.remove(); }, longest + 50);
 }
 
 demo.addEventListener('click', function (e) {

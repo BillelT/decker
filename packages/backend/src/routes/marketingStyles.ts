@@ -121,18 +121,25 @@ a { color: inherit; }
   gap: var(--b-space-16); padding: var(--b-space-6) var(--b-space-12); border: 0;
   border-radius: 0; color: var(--b-ink); font-size: var(--b-text-base);
   font-weight: var(--b-font-bold); background-color: var(--b-accent);
-  box-shadow: var(--hyb-out);
 }
-.cta:active { box-shadow: var(--hyb-pressed); }
 /* Secondaire de la DA : contour à l'encre, fond encre au survol. L'orange
-   reste au seul CTA (un bouton orange par vue). */
+   reste au seul CTA (un bouton orange par vue). Pas d'ombre sur un bouton
+   (règle de la DA), ni ici ni sur le CTA. Correction optique : un contour
+   sombre paraît plus grand qu'un aplat de même taille, et il ajoutait en
+   plus 1px de chaque côté. Le padding retire ce pixel, puis un second sur
+   l'axe horizontal, où l'écart se voyait le plus. */
 .secondary {
-  gap: var(--b-space-16); padding: var(--b-space-6) var(--b-space-12); border: 1px solid var(--b-ink);
+  gap: var(--b-space-16); border: 1px solid var(--b-ink);
+  padding: calc(var(--b-space-6) - 1px) calc(var(--b-space-12) - 2px);
   border-radius: 0; color: var(--b-ink); font-size: var(--b-text-base);
   font-weight: var(--b-font-bold); background-color: transparent;
-  box-shadow: var(--hyb-out);
 }
-.secondary:active { box-shadow: var(--hyb-pressed); }
+/* Traînée de pixels sur le CTA du header, lancée par Export dans la démo du
+   hero : elle montre où se trouve le vrai plugin. Les pixels sont posés par
+   le script ; le calque passe sous le libellé, au-dessus du fond. */
+.cta { position: relative; isolation: isolate; }
+.cta-trail { position: absolute; inset: 0; z-index: -1; overflow: clip; pointer-events: none; }
+.cta-trail i { position: absolute; opacity: 0; }
 
 /* Survol : seulement avec une vraie souris, sinon il colle après un tap sur
    écran tactile (le retour tactile passe par :active). */
