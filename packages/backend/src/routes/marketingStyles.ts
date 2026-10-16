@@ -463,23 +463,24 @@ a { color: inherit; }
 main:focus { outline: none; }
 
 /* Entrée du hero, une seule fois au chargement (première impression, tier
-   "plaisir"). Blocs sémantiques échelonnés : opacity + flou 4px +
-   translateY(12px), ease-out (rules/ui/motion-implementation.md). La règle
-   pose 300 ms et 100 ms d'écart pour une entrée d'interface ; le marketing
-   peut aller plus long (motion-decisions.md), et une grande surface paraît
-   plus lourde qu'une petite : la durée grandit donc avec le bloc, du titre
-   (500 ms) à la démo (800 ms), avec 150 ms d'écart. Jamais bloquant : le
-   contenu reste cliquable et visible sans JS. */
+   "plaisir"). Blocs sémantiques : opacity + flou 4px + translateY(12px),
+   ease-out (rules/ui/motion-implementation.md). Timing calé sur les
+   références du 16 octobre (Interfere, Linear), mesurées image par image :
+   des blocs qui partent presque ensemble, 80 ms d'écart seulement, mais
+   chacun lent, 600 à 700 ms, et la démo, plus grande, encore un peu plus
+   (900 ms). Le marketing peut dépasser les 300 ms de l'interface
+   (motion-decisions.md). Jamais bloquant : le contenu reste cliquable et
+   visible sans JS. */
 @media (prefers-reduced-motion: no-preference) {
   @keyframes hero-enter {
     from { opacity: 0; filter: blur(4px); transform: translateY(12px); }
     to { opacity: 1; filter: blur(0); transform: none; }
   }
   .hero > * {
-    animation: hero-enter 500ms var(--b-ease-out) both;
+    animation: hero-enter 650ms var(--b-ease-out) both;
   }
-  .hero > :nth-child(2) { animation-delay: 150ms; }
-  .hero > :nth-child(3) { animation-duration: 800ms; animation-delay: 300ms; }
+  .hero > :nth-child(2) { animation-delay: 80ms; }
+  .hero > :nth-child(3) { animation-duration: 900ms; animation-delay: 160ms; }
 }
 /* Mouvement réduit : fondu seul, plus de glissement ni de flou. */
 @media (prefers-reduced-motion: reduce) {
@@ -521,10 +522,6 @@ main:focus { outline: none; }
    peine) pour que les descriptions gardent des lignes pleines. */
 @media (max-width: 600px) {
   .carousel__item { flex-basis: calc((100% + var(--b-gutter-vw) - 20px) / 1.08); }
-  /* Ecrites pour deux lignes de 400px, les descriptions passent a trois
-     lignes sur un telephone : balance les repartit a parts egales plutot que
-     de laisser deux ou trois mots seuls sur la derniere. */
-  .carousel__item .card__desc { text-wrap: balance; }
 }
 
 @media (max-width: 720px) {
