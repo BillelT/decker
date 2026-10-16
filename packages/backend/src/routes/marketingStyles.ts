@@ -464,24 +464,23 @@ a { color: inherit; }
 main:focus { outline: none; }
 
 /* Entrée du hero, une seule fois au chargement (première impression, tier
-   "plaisir"). Blocs sémantiques : opacity + flou 4px + translateY(12px),
-   ease-out (rules/ui/motion-implementation.md). Timing calé sur les
-   références du 16 octobre (Interfere, Linear), mesurées image par image :
-   des blocs qui partent presque ensemble, 80 ms d'écart seulement, mais
-   chacun lent, 600 à 700 ms, et la démo, plus grande, encore un peu plus
-   (900 ms). Le marketing peut dépasser les 300 ms de l'interface
-   (motion-decisions.md). Jamais bloquant : le contenu reste cliquable et
-   visible sans JS. */
+   "plaisir"). Version lente assumée, à l'essai (16 octobre), pour se
+   rapprocher d'Interfere et de Linear : blocs qui se chevauchent (120 ms
+   d'écart), chacun en 1 s, la démo en 1,4 s, et un flou de départ plus
+   marqué (10px au lieu des 4px de rules/ui/motion-implementation.md) avec
+   un glissement de 16px. Le marketing peut dépasser les durées de
+   l'interface (motion-decisions.md). Jamais bloquant : le contenu reste
+   cliquable et visible sans JS. */
 @media (prefers-reduced-motion: no-preference) {
   @keyframes hero-enter {
-    from { opacity: 0; filter: blur(4px); transform: translateY(12px); }
+    from { opacity: 0; filter: blur(10px); transform: translateY(16px); }
     to { opacity: 1; filter: blur(0); transform: none; }
   }
   .hero > * {
-    animation: hero-enter 650ms var(--b-ease-out) both;
+    animation: hero-enter 1000ms var(--b-ease-out) both;
   }
-  .hero > :nth-child(2) { animation-delay: 80ms; }
-  .hero > :nth-child(3) { animation-duration: 900ms; animation-delay: 160ms; }
+  .hero > :nth-child(2) { animation-delay: 120ms; }
+  .hero > :nth-child(3) { animation-duration: 1400ms; animation-delay: 240ms; }
 }
 /* Mouvement réduit : fondu seul, plus de glissement ni de flou. */
 @media (prefers-reduced-motion: reduce) {
