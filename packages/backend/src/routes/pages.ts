@@ -342,7 +342,7 @@ pagesRouter.get('/', (_req, res) => {
           <div class="card__body">
             <p class="card__eyebrow">Pricing</p>
             <h3 class="card__title">100% free</h3>
-            <p class="card__desc">No paywall, no subscription, no trial. Free to use, today and tomorrow.</p>
+            <p class="card__desc">No paywall, no subscription, no trial, no export limit. Decker is free to use, today and every day after.</p>
           </div>
         </li>
         <li class="carousel__item card">
@@ -350,7 +350,7 @@ pagesRouter.get('/', (_req, res) => {
           <div class="card__body">
             <p class="card__eyebrow">Full deck</p>
             <h3 class="card__title">Export a whole file</h3>
-            <p class="card__desc">Send a Figma file to Slides frame by frame, as one real deck, not one slide at a time.</p>
+            <p class="card__desc">Send a whole Figma file to Slides frame by frame, as one real deck you can present, not one slide at a time.</p>
           </div>
         </li>
         <li class="carousel__item card">
@@ -358,7 +358,7 @@ pagesRouter.get('/', (_req, res) => {
           <div class="card__body">
             <p class="card__eyebrow">Templates</p>
             <h3 class="card__title">Export a template</h3>
-            <p class="card__desc">Turn your frames into a reusable Slides template: theme colors, fonts, layouts, and real placeholders.</p>
+            <p class="card__desc">Turn your frames into a Slides template you can reuse, with theme colors, fonts, layouts, and real placeholders.</p>
           </div>
         </li>
         <li class="carousel__item card">
@@ -366,7 +366,7 @@ pagesRouter.get('/', (_req, res) => {
           <div class="card__body">
             <p class="card__eyebrow">Control</p>
             <h3 class="card__title">Pick what you export</h3>
-            <p class="card__desc">Choose exactly which frames to send, right from inside Figma, before you sign in.</p>
+            <p class="card__desc">Choose exactly which frames to send and in which order, right from inside Figma, before you even sign in.</p>
           </div>
         </li>
         <li class="carousel__item card">
@@ -374,7 +374,7 @@ pagesRouter.get('/', (_req, res) => {
           <div class="card__body">
             <p class="card__eyebrow">Fidelity</p>
             <h3 class="card__title">Real Slides objects</h3>
-            <p class="card__desc">Text, shapes, colors, and typography are recreated as native, editable objects instead of a flattened screenshot.</p>
+            <p class="card__desc">Text, shapes, colors, and fonts come back as native objects you can edit, never as a flattened screenshot.</p>
           </div>
         </li>
         <li class="carousel__item card">
@@ -382,7 +382,7 @@ pagesRouter.get('/', (_req, res) => {
           <div class="card__body">
             <p class="card__eyebrow">Privacy</p>
             <h3 class="card__title">Private by default</h3>
-            <p class="card__desc">Nothing is stored beyond what’s needed to run the export. No tracking, no analytics.</p>
+            <p class="card__desc">Nothing is stored beyond what’s needed to run the export. No tracking, no analytics, no data ever resold.</p>
           </div>
         </li>
         </ul>
@@ -406,7 +406,7 @@ pagesRouter.get('/', (_req, res) => {
           <div class="card__body">
             <p class="card__eyebrow">Step 1</p>
             <h3 class="card__title">Pick your frames</h3>
-            <p class="card__desc">From inside Figma, select the frames you want to export.</p>
+            <p class="card__desc">From inside Figma, select the frames you want to export, then add them to the plugin in your order.</p>
           </div>
         </li>
         <li class="card">
@@ -414,7 +414,7 @@ pagesRouter.get('/', (_req, res) => {
           <div class="card__body">
             <p class="card__eyebrow">Step 2</p>
             <h3 class="card__title">Matched, pixel for pixel</h3>
-            <p class="card__desc">Every layer, font, and color is mapped precisely into native Slides objects.</p>
+            <p class="card__desc">Every layer, font, and color becomes a native Slides object, so each one matches pixel for pixel.</p>
           </div>
         </li>
         <li class="card">
@@ -422,7 +422,7 @@ pagesRouter.get('/', (_req, res) => {
           <div class="card__body">
             <p class="card__eyebrow">Step 3</p>
             <h3 class="card__title">Get your deck</h3>
-            <p class="card__desc">Decker creates the presentation directly in your own Google Drive, ready to edit.</p>
+            <p class="card__desc">Decker creates the presentation right in your own Google Drive, ready for you to edit and present.</p>
           </div>
         </li>
       </ol>

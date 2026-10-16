@@ -142,7 +142,7 @@ export const FEATURE_FREE_HTML = scene(
   480,
   'Decker priced at $0 forever, with unlimited exports, decks and templates, and every feature included',
   `<div class="fs-price">
-    <div class="fs-price__head">${DECKER_ICON}<span class="fs-price__name">Decker</span><span class="fs-price__tag">Figma plugin</span></div>
+    <div class="fs-price__head">${DECKER_ICON}<span class="fs-price__name">Decker</span></div>
     <p class="fs-price__amount"><span>$0</span><span class="fs-price__per">forever</span></p>
     <ul class="fs-price__list">
       <li>${CHECK}Unlimited exports</li>
@@ -304,7 +304,6 @@ export const FEATURE_SCENES_CSS = `
 .fs-price__head { display: flex; align-items: center; gap: 8px; }
 .fs-price__head svg { width: 18px; height: 18px; display: block; }
 .fs-price__name { font-size: var(--b-text-base); font-weight: var(--b-font-bold); }
-.fs-price__tag { margin-left: auto; font-size: var(--b-text-sm); color: var(--b-text-muted); }
 .fs-price__amount { display: flex; align-items: baseline; gap: 8px; margin: 0; font-size: 48px; font-weight: var(--b-font-bold); letter-spacing: -0.02em; line-height: 1; font-variant-numeric: tabular-nums; }
 .fs-price__per { font-size: var(--b-text-sm); font-weight: var(--b-font-medium); letter-spacing: 0; color: var(--b-text-muted); }
 .fs-price__list { display: grid; gap: 6px; margin: 0; padding: 14px 0 0; list-style: none; border-top: 1px solid var(--hyb-lo); box-shadow: inset 0 1px var(--hyb-hi); font-size: var(--b-text-sm); font-weight: var(--b-font-medium); }

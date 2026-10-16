@@ -372,11 +372,13 @@ a { color: inherit; }
 
    D'ou V = 100% + une gouttiere, et pour n cards pleines plus une moitie :
    n x w + n x gouttiere-de-piste + w / 2 = V, soit w = (V - n x 20px) / (n + 0,5).
-   Deux cards et demie sur grand ecran (environ 530px de large, a la maniere
-   des cards de Dock en 560 x 460) : les visuels respirent. Les paliers en
+   Sur grand ecran, la card a une largeur fixe de 448px (a la maniere des
+   cards de Dock en 560 x 460) : sa colonne de texte fait alors 400px, la
+   largeur pour laquelle les descriptions sont ecrites, deux lignes pleines
+   et equilibrees. La suivante depasse toujours a droite. Les paliers en
    dessous reprennent la formule avec n = 1. */
 .carousel__item {
-  flex: 0 0 calc((100% + var(--b-gutter-vw) - 40px) / 2.5);
+  flex: 0 0 448px;
   scroll-snap-align: start;
 }
 .carousel__controls { display: flex; justify-content: flex-end; gap: var(--b-space-8); padding-top: var(--b-space-48); }
