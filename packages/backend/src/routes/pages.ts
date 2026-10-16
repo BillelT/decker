@@ -284,7 +284,7 @@ function footer(): string {
       <div class="footer__brand-row">
         <button type="button" class="footer__egg" data-egg aria-labelledby="footer-egg-tip">
           ${FOOTER_EGG_MARK}
-          <span class="footer__egg-tip" id="footer-egg-tip">Click to get spammed like it’s 2003</span>
+          <span class="footer__egg-tip" id="footer-egg-tip">Get spammed like it’s 2003</span>
         </button>
       </div>
       <p class="footer__meta">&copy; 2026 Decker<br>

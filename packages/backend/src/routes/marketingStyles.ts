@@ -418,7 +418,7 @@ a { color: inherit; }
 .footer__egg:focus-visible { outline: var(--b-focus-outline); outline-offset: var(--b-focus-offset); }
 .footer__egg-tip {
   position: absolute; bottom: calc(100% + var(--b-space-8)); inset-inline-start: 0;
-  padding: var(--b-space-4) var(--b-space-8); white-space: nowrap; pointer-events: none;
+  padding: var(--b-space-4) var(--b-space-6); white-space: nowrap; pointer-events: none;
   background: var(--b-ink); color: var(--b-white);
   font-size: var(--b-text-xs); font-weight: var(--b-font-medium); line-height: var(--b-leading-tight);
   opacity: 0; transform: translateY(4px);
@@ -429,14 +429,15 @@ a { color: inherit; }
   .footer__egg:hover .footer__egg-tip { opacity: 1; transform: none; }
 }
 /* Au survol, les trois cartes du logo se ferment de l'avant vers l'arrière,
-   puis se rouvrent de l'arrière vers l'avant, en boucle : des fenêtres qui
-   reviennent sans fin, le principe du jeu. Bascule sèche (steps), comme une
-   fenêtre des années 2000 qui s'ouvre d'un coup. Rien en mouvement réduit. */
+   puis se rouvrent de l'arrière vers l'avant, en boucle rapide : des fenêtres
+   qui popent en rafale, comme un spam de pop-ups (le principe du jeu).
+   Six images de 100 ms en bascule sèche (steps), sous le plafond UI de
+   300 ms par changement. Rien en mouvement réduit. */
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  @keyframes egg-front { 0% { opacity: 1; } 10% { opacity: 0; } 70% { opacity: 1; } }
-  @keyframes egg-mid { 0% { opacity: 1; } 20% { opacity: 0; } 60% { opacity: 1; } }
-  @keyframes egg-back { 0% { opacity: 1; } 30% { opacity: 0; } 50% { opacity: 1; } }
-  .footer__egg:hover .egg-card { animation: 1.6s steps(1, end) infinite; }
+  @keyframes egg-front { 0% { opacity: 1; } 16.667%, 100% { opacity: 0; } }
+  @keyframes egg-mid { 0% { opacity: 1; } 33.333% { opacity: 0; } 83.333%, 100% { opacity: 1; } }
+  @keyframes egg-back { 0% { opacity: 1; } 50% { opacity: 0; } 66.667%, 100% { opacity: 1; } }
+  .footer__egg:hover .egg-card { animation: 0.6s steps(1, end) infinite; }
   .footer__egg:hover .egg-card--front { animation-name: egg-front; }
   .footer__egg:hover .egg-card--mid { animation-name: egg-mid; }
   .footer__egg:hover .egg-card--back { animation-name: egg-back; }
