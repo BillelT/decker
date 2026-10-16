@@ -181,7 +181,7 @@ function shell(opts: {
 ${opts.styles ? `<style>${opts.styles}</style>\n` : ''}</head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
-${header()}
+${header(opts.path)}
 <main id="main" tabindex="-1">
 ${opts.main}
 </main>
@@ -289,14 +289,18 @@ ${opts.script ? `<script>${opts.script}</script>` : ''}
 </html>`;
 }
 
-function header(): string {
+function header(path: string): string {
+  // Sur l'accueil, le logo n'est pas un lien : il pointerait vers la page
+  // déjà ouverte. Il le redevient sur les autres pages.
+  const brandTag = path === '/' ? 'span' : 'a';
+  const brandHref = path === '/' ? '' : ' href="/"';
   return `<header class="header">
   <div class="header__inner">
     <div class="header__lead">
-      <a class="header__brand" href="/">
+      <${brandTag} class="header__brand"${brandHref}>
         <svg class="header__brand-mark" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${brandMarkInline()}</svg>
         <span class="header__brand-name">Decker</span>
-      </a>
+      </${brandTag}>
     </div>
     <nav class="header__nav" aria-label="Page sections">
       <a class="nav-link" href="/#what-decker-does">What it does</a>
