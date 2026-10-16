@@ -33,8 +33,13 @@ const DECK = {
 
 export const HERO_DEMO_CSS = `
 /* ---------- Démo interactive du hero ---------- */
+/* overflow: clip partout, jamais hidden : un bloc en hidden reste un
+   conteneur de défilement, et avec le overscroll-behavior: contain que la DA
+   pose sur tout élément, la molette se perdait dessus au lieu de faire défiler
+   la page (même bug que le rail du plugin et le carrousel). */
+.dm, .dm * { overscroll-behavior: auto; }
 .dm {
-  position: relative; width: 100%; aspect-ratio: 1200 / 680; overflow: hidden;
+  position: relative; width: 100%; aspect-ratio: 1200 / 680; overflow: clip;
   border: 1px solid var(--b-border); background: var(--b-surface-muted);
   --dm-forest: ${DECK.forest}; --dm-sand: ${DECK.sand}; --dm-clay: ${DECK.clay};
   --dm-rust: ${DECK.rust}; --dm-paper: ${DECK.paper};
@@ -60,7 +65,7 @@ export const HERO_DEMO_CSS = `
 
 /* Canvas et frames */
 .dm-canvas {
-  position: absolute; inset: 40px 0 0; overflow: hidden;
+  position: absolute; inset: 40px 0 0; overflow: clip;
   background-color: var(--b-surface-muted);
   background-image: radial-gradient(var(--b-gray-200) 1px, transparent 1px);
   background-size: 20px 20px;
@@ -113,7 +118,7 @@ export const HERO_DEMO_CSS = `
 .dm-btn:active:not(:disabled) { box-shadow: var(--hyb-pressed); }
 
 .dm-body { position: relative; display: flex; flex: 1 1 auto; min-height: 0; }
-.dm-rail { width: 156px; flex: none; padding: 10px; border-right: 1px solid var(--b-border); overflow: hidden; }
+.dm-rail { width: 156px; flex: none; padding: 10px; border-right: 1px solid var(--b-border); overflow: clip; }
 .dm-rail__empty { margin: 8px 0 0; font-size: 11px; line-height: var(--b-leading-normal); color: var(--b-text-faint); }
 .dm-thumb { margin-bottom: 12px; }
 .dm-thumb__pick { display: block; width: 100%; padding: 0; border: 0; background: none; cursor: pointer; }
@@ -193,6 +198,14 @@ export const HERO_DEMO_CSS = `
   @keyframes dm-caret { 50% { opacity: 0; } }
 }
 
+/* Calque posé sur la démo pendant la lecture automatique. Le script remplace
+   sans cesse les éléments sous le pointeur, et Chrome perd la molette quand
+   l'élément qu'il défilait disparaît en plein geste : la page se figeait. Le
+   calque, lui, ne bouge jamais, donc la molette passe à la page. Un clic
+   dessus rend la main au visiteur et est transmis à ce qu'il visait. */
+.dm-shield { position: absolute; inset: 0; z-index: 6; cursor: pointer; }
+.dm-shield[hidden] { display: none; }
+
 /* Curseur de la lecture automatique */
 .dm-cursor {
   position: absolute; left: 0; top: 0; z-index: 5; width: 22px; height: 22px; pointer-events: none;
@@ -204,7 +217,7 @@ export const HERO_DEMO_CSS = `
 
 /* ---------- Slides du faux deck (unités de conteneur : nettes à toutes les tailles) ---------- */
 .dm-slide {
-  position: relative; display: block; width: 100%; aspect-ratio: 16 / 9; overflow: hidden;
+  position: relative; display: block; width: 100%; aspect-ratio: 16 / 9; overflow: clip;
   container-type: inline-size; font-family: var(--b-font-sans); text-align: left;
 }
 .dm-slide--cover { background: var(--dm-forest); color: var(--dm-paper); }
@@ -245,6 +258,7 @@ const HILLS = `<svg class="dm-s__hills" viewBox="0 0 400 120" preserveAspectRati
 
 export const HERO_DEMO_HTML = `
 <div class="dm" data-demo role="region" aria-label="Interactive demo of Decker in Figma">
+  <div class="dm-shield" data-demo-shield hidden></div>
   <div class="dm-stage" data-demo-stage>
     <div class="dm-figbar" aria-hidden="true">
       <span class="dm-figbar__icon"></span>
@@ -306,6 +320,7 @@ var aside = q('[data-demo-aside]');
 var toast = q('[data-demo-toast]');
 var slidesHost = q('[data-demo-slides]');
 var cursor = q('[data-demo-cursor]');
+var shield = q('[data-demo-shield]');
 var nameEl = q('[data-demo-name]');
 var toggle = document.querySelector('[data-demo-toggle]');
 var toggleLabel = document.querySelector('[data-demo-toggle-label]');
@@ -601,6 +616,7 @@ function setToggle(state) {
   toggle.querySelector('[data-icon="pause"]').toggleAttribute('hidden', !playing);
   toggle.querySelector('[data-icon="play"]').toggleAttribute('hidden', playing);
   toggleLabel.textContent = playing ? 'Pause demo' : state === 'paused' ? 'Play demo' : 'Replay demo';
+  shield.hidden = state === 'off';
 }
 
 /* Attente qui ne compte que le temps où la démo joue et se voit : elle se
@@ -711,7 +727,15 @@ function takeOver() {
   setToggle('off');
   renderMain();
 }
-demo.addEventListener('pointerdown', takeOver);
+/* Clic (souris ou doigt) sur le calque : un défilement tactile ne déclenche
+   pas de click, donc faire défiler la page par-dessus la démo ne l'arrête pas. */
+shield.addEventListener('click', function (e) {
+  takeOver();
+  var el = document.elementFromPoint(e.clientX, e.clientY);
+  var target = el && el.closest('button, [data-demo-edit]');
+  if (!target || !demo.contains(target)) return;
+  if (target.tagName === 'BUTTON') target.click(); else target.focus();
+});
 demo.addEventListener('keydown', takeOver);
 
 toggle.addEventListener('click', function () {

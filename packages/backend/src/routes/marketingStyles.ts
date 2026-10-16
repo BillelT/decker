@@ -199,24 +199,27 @@ a { color: inherit; }
 .header__actions { display: flex; align-items: center; justify-content: flex-end; gap: var(--b-space-20); flex: 1 1 0; }
 
 /* ---------- Hero (b-hero) ---------- */
-/* Composition à la Linear : le titre sur toute la largeur, l'accroche et le
-   CTA sur une ligne en dessous (accroche à gauche, CTA à droite), puis la
-   démo interactive en grand. */
+/* Composition à la Linear : le titre sur deux lignes, l'accroche dessous à
+   8px, le CTA à droite sur la ligne de l'accroche, puis la démo en grand. */
 .hero {
-  display: flex; flex-direction: column; gap: var(--b-space-24);
+  display: flex; flex-direction: column; gap: var(--b-space-8);
   width: var(--b-container-width); max-width: var(--b-container);
-  margin-inline: auto; padding-block: var(--b-space-64);
+  margin-inline: auto; /* 128px en haut : la DA s'arrête à --b-space-96, d'où le double de 64. */
+  padding-block: calc(var(--b-space-64) * 2) var(--b-space-64);
 }
 .hero__title {
-  max-width: 14ch; margin: 0; font-size: var(--b-text-6xl); font-weight: var(--b-font-bold);
+  max-width: 22ch; margin: 0; font-size: var(--b-text-6xl); font-weight: var(--b-font-bold);
   line-height: var(--b-leading-none); letter-spacing: var(--b-tracking-tighter); color: var(--b-ink);
   text-wrap: balance;
 }
-.hero__row { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--b-space-32); }
-.hero__lede { max-width: 560px; margin: 0; font-size: var(--b-text-xl); line-height: var(--b-leading-relaxed); color: var(--b-text-muted); text-wrap: balance; }
+.hero__row {
+  display: flex; align-items: flex-end; justify-content: space-between; gap: var(--b-space-32);
+  margin-bottom: var(--b-space-32);
+}
+.hero__lede { max-width: 560px; margin: 0; font-size: var(--b-text-base); line-height: var(--b-leading-relaxed); color: var(--b-text-muted); text-wrap: balance; }
 .hero__actions { display: flex; align-items: center; gap: var(--b-space-16); flex: none; }
 .hero__actions .btn { padding: var(--b-space-12) var(--b-space-16); }
-.hero__demo { width: 100%; margin-top: var(--b-space-32); }
+.hero__demo { width: 100%; }
 
 /* ---------- Content sections (prose, pas un composant Billel, besoin propre à cette page) ---------- */
 .section {
@@ -496,6 +499,7 @@ main:focus { outline: none; }
 
 @media (max-width: 720px) {
   .hero__title { font-size: var(--b-text-5xl); }
+  .hero { padding-top: var(--b-space-64); }
   .hero__row { flex-direction: column; align-items: flex-start; gap: var(--b-space-24); }
   /* Le brand, la nav et les boutons ne tiennent plus sur une seule ligne : au
      lieu de laisser les boutons se compresser (leur texte passait alors sur

@@ -75,7 +75,7 @@ export const DESIGN_TOKENS_CSS = `
   --b-text-xl: 20px;
   --b-text-3xl: 36px;
   --b-text-5xl: 48px;
-  --b-text-6xl: 72px;
+  --b-text-6xl: 58px;
 
   --b-font-regular: 400;
   --b-font-medium: 500;
