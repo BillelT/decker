@@ -428,16 +428,17 @@ a { color: inherit; }
 @media (hover: hover) and (pointer: fine) {
   .footer__egg:hover .footer__egg-tip { opacity: 1; transform: none; }
 }
-/* Au survol, les trois cartes du logo se ferment de l'avant vers l'arrière,
-   puis se rouvrent de l'arrière vers l'avant, en boucle rapide : des fenêtres
-   qui popent en rafale, comme un spam de pop-ups (le principe du jeu).
-   Six images de 100 ms en bascule sèche (steps), sous le plafond UI de
-   300 ms par changement. Rien en mouvement réduit. */
+/* Au survol, un seul tour de spam : les trois cartes du logo se ferment de
+   l'avant vers l'arrière, puis se rouvrent de l'arrière vers l'avant, en
+   bascules sèches (steps), comme des pop-ups. Les six bascules sont placées
+   sur cubic-bezier(0.3, 0.4, 0.7, 0.8) sur 360 ms : ça accroche fort au
+   début (47 ms entre deux bascules) et se pose vers la fin (79 ms).
+   Rejoué à chaque nouveau survol. Rien en mouvement réduit. */
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  @keyframes egg-front { 0% { opacity: 1; } 16.667%, 100% { opacity: 0; } }
-  @keyframes egg-mid { 0% { opacity: 1; } 33.333% { opacity: 0; } 83.333%, 100% { opacity: 1; } }
-  @keyframes egg-back { 0% { opacity: 1; } 50% { opacity: 0; } 66.667%, 100% { opacity: 1; } }
-  .footer__egg:hover .egg-card { animation: 0.6s steps(1, end) infinite; }
+  @keyframes egg-front { 0% { opacity: 1; } 13% { opacity: 0; } 100% { opacity: 1; } }
+  @keyframes egg-mid { 0% { opacity: 1; } 27% { opacity: 0; } 78%, 100% { opacity: 1; } }
+  @keyframes egg-back { 0% { opacity: 1; } 43% { opacity: 0; } 59%, 100% { opacity: 1; } }
+  .footer__egg:hover .egg-card { animation: 0.36s steps(1, end) 1; }
   .footer__egg:hover .egg-card--front { animation-name: egg-front; }
   .footer__egg:hover .egg-card--mid { animation-name: egg-mid; }
   .footer__egg:hover .egg-card--back { animation-name: egg-back; }
