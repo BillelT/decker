@@ -465,28 +465,33 @@ a { color: inherit; }
 main:focus { outline: none; }
 
 /* Entrée du hero, une seule fois au chargement (première impression, tier
-   "plaisir"). Version lente assumée, à l'essai (16 octobre), pour se
-   rapprocher d'Interfere et de Linear : blocs qui se chevauchent (120 ms
-   d'écart), chacun en 1 s, la démo en 1,4 s, et un flou de départ plus
-   marqué (10px au lieu des 4px de rules/ui/motion-implementation.md) avec
-   un glissement de 16px. Le marketing peut dépasser les durées de
-   l'interface (motion-decisions.md). Jamais bloquant : le contenu reste
-   cliquable et visible sans JS. */
+   "plaisir"). Version lente assumée (16 octobre), d'après Interfere et
+   Linear : opacity + flou 6px + translateY(16px), ease-out. Le titre entre
+   ligne par ligne (120 ms d'écart, lignes posées par HERO_TITLE_LINES_JS),
+   puis l'accroche et le CTA, chacun en 900 ms ; la démo, la plus grande
+   surface, en 1,6 s. Le flou dépasse les 4px de
+   rules/ui/motion-implementation.md, le marketing peut dépasser les durées
+   de l'interface (motion-decisions.md). Jamais bloquant : le contenu reste
+   cliquable, et visible sans JS (le titre entre alors d'un bloc). */
 @media (prefers-reduced-motion: no-preference) {
   @keyframes hero-enter {
-    from { opacity: 0; filter: blur(10px); transform: translateY(16px); }
+    from { opacity: 0; filter: blur(6px); transform: translateY(16px); }
     to { opacity: 1; filter: blur(0); transform: none; }
   }
   .hero > * {
-    animation: hero-enter 1000ms var(--b-ease-out) both;
+    animation: hero-enter 900ms var(--b-ease-out) both;
   }
-  .hero > :nth-child(2) { animation-delay: 120ms; }
-  .hero > :nth-child(3) { animation-duration: 1400ms; animation-delay: 240ms; }
+  .hero > .hero__title--lines { animation: none; }
+  .hero__line { display: block; animation: hero-enter 900ms var(--b-ease-out) both; animation-delay: calc(var(--line) * 120ms); }
+  .hero__title--settled .hero__line { animation: none; }
+  .hero > .hero__row { animation-delay: 200ms; }
+  .hero > .hero__demo { animation-duration: 1600ms; animation-delay: 320ms; }
 }
 /* Mouvement réduit : fondu seul, plus de glissement ni de flou. */
 @media (prefers-reduced-motion: reduce) {
   @keyframes hero-fade { from { opacity: 0; } to { opacity: 1; } }
   .hero > * { animation: hero-fade 500ms var(--b-ease-out) both; }
+  .hero__line { display: block; }
 }
 
 @media (prefers-reduced-motion: reduce) {

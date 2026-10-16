@@ -19,6 +19,41 @@ import {
   STEP_PICK_FRAMES_HTML,
 } from './featureScenes.js';
 
+/**
+ * Découpe le titre du hero en lignes, pour que l'entrée les anime l'une après
+ * l'autre (marketingStyles.ts, .hero__line). Posé juste après le <h1>, il
+ * tourne avant le premier affichage : on mesure où le navigateur coupe le
+ * titre, puis chaque ligne devient un bloc. Les coupures dépendent de la
+ * largeur : on refait la découpe si elle change, sans rejouer l'entrée.
+ * Sans JS, le titre entre d'un bloc.
+ */
+const HERO_TITLE_LINES_JS = `(function () {
+  var h = document.currentScript.previousElementSibling;
+  var text = h.textContent;
+  var split = function () {
+    h.textContent = text;
+    var words = text.split(' ');
+    h.innerHTML = words.map(function (w) { return '<span>' + w + '</span>'; }).join(' ');
+    var lines = [];
+    var top = null;
+    Array.prototype.forEach.call(h.children, function (s, i) {
+      var t = s.offsetTop;
+      if (t !== top) { lines.push([]); top = t; }
+      lines[lines.length - 1].push(words[i]);
+    });
+    h.innerHTML = lines.map(function (l, i) { return '<span class="hero__line" style="--line:' + i + '">' + l.join(' ') + '</span>'; }).join('');
+    h.classList.add('hero__title--lines');
+  };
+  split();
+  var width = h.clientWidth;
+  window.addEventListener('resize', function () {
+    if (h.clientWidth === width) return;
+    width = h.clientWidth;
+    h.classList.add('hero__title--settled');
+    split();
+  });
+})();`;
+
 export const pagesRouter = Router();
 
 const LAST_UPDATED = 'September 1, 2026';
@@ -319,6 +354,7 @@ pagesRouter.get('/', (_req, res) => {
   const main = `
     <section class="hero">
       <h1 class="hero__title">Export editable, pixel perfect decks and templates</h1>
+      <script>${HERO_TITLE_LINES_JS}</script>
       <div class="hero__row">
         <p class="hero__lede">Design in the comfort of Figma, then share with your clients on Google Slides.</p>
         <div class="hero__actions">
