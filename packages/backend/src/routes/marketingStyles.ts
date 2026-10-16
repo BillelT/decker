@@ -428,17 +428,34 @@ a { color: inherit; }
 @media (hover: hover) and (pointer: fine) {
   .footer__egg:hover .footer__egg-tip { opacity: 1; transform: none; }
 }
-/* Au survol, un seul tour de spam : les trois cartes du logo se ferment de
-   l'avant vers l'arrière, puis se rouvrent de l'arrière vers l'avant, en
-   bascules sèches (steps), comme des pop-ups. Les six bascules sont placées
-   sur cubic-bezier(0.3, 0.4, 0.7, 0.8) sur 360 ms : ça accroche fort au
-   début (47 ms entre deux bascules) et se pose vers la fin (79 ms).
-   Rejoué à chaque nouveau survol. Rien en mouvement réduit. */
+/* Au survol, un seul tour de spam : la carte avant puis celle du milieu
+   disparaissent d'un coup, la carte du fond (toujours visible, pour qu'il
+   n'y ait jamais de vide) encaisse un à-coup, puis le milieu et l'avant
+   repopent. Moments placés sur cubic-bezier(0.3, 0.4, 0.7, 0.8) sur 360 ms :
+   ça accroche fort au début et se pose vers la fin. Chaque réapparition suit
+   le conseil Interfere pour un changement d'icône : opacité + léger flou +
+   scale étiré, en --b-ease-out (départ sec, fin posée). Rejoué à chaque
+   nouveau survol. Rien en mouvement réduit. */
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  @keyframes egg-front { 0% { opacity: 1; } 13% { opacity: 0; } 100% { opacity: 1; } }
-  @keyframes egg-mid { 0% { opacity: 1; } 27% { opacity: 0; } 78%, 100% { opacity: 1; } }
-  @keyframes egg-back { 0% { opacity: 1; } 43% { opacity: 0; } 59%, 100% { opacity: 1; } }
-  .footer__egg:hover .egg-card { animation: 0.36s steps(1, end) 1; }
+  @keyframes egg-front {
+    0% { opacity: 1; animation-timing-function: steps(1, end); }
+    13% { opacity: 0; animation-timing-function: steps(1, end); }
+    78% { opacity: 0; transform: scale(0.92, 0.84); filter: blur(1px); animation-timing-function: var(--b-ease-out); }
+    100% { opacity: 1; transform: none; filter: none; }
+  }
+  @keyframes egg-mid {
+    0% { opacity: 1; animation-timing-function: steps(1, end); }
+    27% { opacity: 0; animation-timing-function: steps(1, end); }
+    59% { opacity: 0; transform: scale(0.92, 0.84); filter: blur(1px); animation-timing-function: var(--b-ease-out); }
+    78%, 100% { opacity: 1; transform: none; filter: none; }
+  }
+  @keyframes egg-back {
+    0% { animation-timing-function: steps(1, end); }
+    43% { transform: scale(1.04, 0.92); filter: blur(1px); animation-timing-function: var(--b-ease-out); }
+    59%, 100% { transform: none; filter: none; }
+  }
+  .footer__egg .egg-card { transform-box: fill-box; transform-origin: center; }
+  .footer__egg:hover .egg-card { animation: 0.36s 1; }
   .footer__egg:hover .egg-card--front { animation-name: egg-front; }
   .footer__egg:hover .egg-card--mid { animation-name: egg-mid; }
   .footer__egg:hover .egg-card--back { animation-name: egg-back; }

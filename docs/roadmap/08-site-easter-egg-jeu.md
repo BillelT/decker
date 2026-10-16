@@ -15,7 +15,7 @@ L'écran se remplit de fausses pop-ups façon années 2000 : des decks qui s'ouv
 ## Déclenchement
 
 - Toujours volontaire, jamais au chargement de la page.
-- **Le logo du footer** (décidé le 16 octobre). C'est un vrai bouton. Au survol, ses trois cartes se ferment puis se rouvrent une fois, comme un tour de spam de pop-ups (six bascules en 360 ms, rapides au début puis qui se posent), avec l’infobulle « Get spammed like it’s 2003 ». Pas d'animation en mouvement réduit.
+- **Le logo du footer** (décidé le 16 octobre). C'est un vrai bouton. Au survol, ses trois cartes se ferment puis se rouvrent une fois, comme un tour de spam de pop-ups (360 ms, rapide au début puis qui se pose ; la carte du fond reste toujours visible, chaque réapparition en opacité + léger flou + scale étiré), avec l’infobulle « Get spammed like it’s 2003 ». Pas d'animation en mouvement réduit.
 
 ## Déroulé d'une partie
 
