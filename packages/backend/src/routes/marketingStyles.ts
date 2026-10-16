@@ -421,12 +421,13 @@ a { color: inherit; }
   padding: var(--b-space-4) var(--b-space-6); white-space: nowrap; pointer-events: none;
   background: var(--b-ink); color: var(--b-white);
   font-size: var(--b-text-xs); font-weight: var(--b-font-medium); line-height: var(--b-leading-tight);
-  opacity: 0; transform: translateY(4px);
-  transition: opacity var(--b-duration) var(--b-ease-out), transform var(--b-duration) var(--b-ease-out);
+  opacity: 0;
 }
-.footer__egg:focus-visible .footer__egg-tip { opacity: 1; transform: none; }
+/* Infobulle instantanée, sans transition : le logo s'anime déjà au survol,
+   un fondu en plus ferait trop d'effets à la fois. */
+.footer__egg:focus-visible .footer__egg-tip { opacity: 1; }
 @media (hover: hover) and (pointer: fine) {
-  .footer__egg:hover .footer__egg-tip { opacity: 1; transform: none; }
+  .footer__egg:hover .footer__egg-tip { opacity: 1; }
 }
 /* Au survol, un seul tour de spam : la carte avant puis celle du milieu
    disparaissent d'un coup, la carte du fond (toujours visible, pour qu'il
