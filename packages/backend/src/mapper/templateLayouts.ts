@@ -1,4 +1,4 @@
-import type { CalibrationData, IRDocument, IRElement, IRSlide, IRText } from '@figma-to-slides/shared';
+import type { CalibrationData, IRDocument, IRElement, IRSlide } from '@figma-to-slides/shared';
 import { toSolidFill } from './colors.js';
 import { mapImage } from './images.js';
 import { mapLine } from './lines.js';
@@ -39,7 +39,7 @@ export interface LayoutPlaceholder {
   widthEmu: number;
   heightEmu: number;
   translateXEmu: number;
-  /** Nombre de caractères déjà présents (texte d'invite du layout), à vider avant d'écrire. */
+  /** Nombre de caractères du texte d'invite du layout (informatif : il ne peut pas être modifié par l'API). */
   textLength: number;
 }
 
@@ -136,11 +136,17 @@ export function planTemplateLayouts(slides: IRSlide[], layouts: NativeLayout[]):
  * Les requêtes de `mapText` visent une zone de texte qu'elles créent ; ici
  * le placeholder existe déjà. La création devient une transform absolue
  * (la taille d'un élément existant ne se change que par l'échelle de sa
- * transform), le texte d'invite est vidé, et tout le reste (style, texte,
- * paragraphes) est redirigé vers le placeholder.
+ * transform), et seul le STYLE est redirigé vers le placeholder : Google
+ * refuse toute écriture de texte dans un placeholder de layout ou de
+ * Master ("The operation is not allowed on the placeholder shape on a
+ * layout or master", vu le 16 octobre sur `deleteText`). Le style du
+ * premier run et du premier paragraphe s'applique donc à tout le
+ * placeholder (`ALL`), sans indices de texte.
  */
-function textOntoPlaceholder(requests: SlidesRequest[], text: IRText, slot: LayoutPlaceholder): SlidesRequest[] {
+function textOntoPlaceholder(requests: SlidesRequest[], slot: LayoutPlaceholder): SlidesRequest[] {
   const out: SlidesRequest[] = [];
+  let textStyled = false;
+  let paragraphStyled = false;
   for (const req of requests) {
     if ('createShape' in req) {
       const { size, transform } = req.createShape.elementProperties;
@@ -156,10 +162,16 @@ function textOntoPlaceholder(requests: SlidesRequest[], text: IRText, slot: Layo
         unit: 'PT',
       };
       out.push({ updatePageElementTransform: { objectId: slot.objectId, applyMode: 'ABSOLUTE', transform: absolute } });
-      if (slot.textLength > 0) out.push({ deleteText: { objectId: slot.objectId, textRange: { type: 'ALL' } } });
-      continue;
+    } else if ('updateShapeProperties' in req) {
+      out.push({ updateShapeProperties: { ...req.updateShapeProperties, objectId: slot.objectId } });
+    } else if ('updateTextStyle' in req && !textStyled) {
+      textStyled = true;
+      out.push({ updateTextStyle: { ...req.updateTextStyle, objectId: slot.objectId, textRange: { type: 'ALL' } } });
+    } else if ('updateParagraphStyle' in req && !paragraphStyled) {
+      paragraphStyled = true;
+      out.push({ updateParagraphStyle: { ...req.updateParagraphStyle, objectId: slot.objectId, textRange: { type: 'ALL' } } });
     }
-    out.push(JSON.parse(JSON.stringify(req).split(`"${text.id}"`).join(`"${slot.objectId}"`)) as SlidesRequest);
+    // insertText, puces et runs suivants : pas d'équivalent sans écrire de texte.
   }
   return out;
 }
@@ -191,7 +203,7 @@ export function mapSlideOntoLayout(
     const slotId = assignment.placeholderByElementId[el.id];
     const slot = slotId ? slotById.get(slotId) : undefined;
     if (slot && el.kind === 'text') {
-      requests.push(...textOntoPlaceholder(mapText(el, layoutId, scale, offsetXPt, offsetYPt, calibration), el, slot));
+      requests.push(...textOntoPlaceholder(mapText(el, layoutId, scale, offsetXPt, offsetYPt, calibration), slot));
       // Le placeholder existait avant tout le reste : sans ça, une carte
       // ou un aplat créé ensuite passerait par-dessus le titre.
       requests.push({ updatePageElementsZOrder: { pageElementObjectIds: [slot.objectId], operation: 'BRING_TO_FRONT' } });

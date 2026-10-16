@@ -88,8 +88,11 @@ describe('mapDocumentToBatches with template layouts', () => {
     expect(r.some((q) => q.createShape?.objectId === 'c')).toBe(false);
     const transform = r.find((q) => q.updatePageElementTransform?.objectId === 'b1');
     expect(transform.updatePageElementTransform.applyMode).toBe('ABSOLUTE');
-    expect(r.find((q) => q.deleteText)?.deleteText).toEqual({ objectId: 'b1', textRange: { type: 'ALL' } });
-    expect(r.find((q) => q.insertText?.objectId === 'b1')?.insertText.text).toBe('[c]');
+    // Google refuse toute écriture de texte dans un placeholder de layout.
+    expect(r.some((q) => q.deleteText || q.insertText?.objectId === 'b1')).toBe(false);
+    const style = r.find((q) => q.updateTextStyle?.objectId === 'b1')?.updateTextStyle;
+    expect(style.textRange).toEqual({ type: 'ALL' });
+    expect(style.style.fontSize).toEqual({ magnitude: 32, unit: 'PT' });
     expect(r.some((q) => q.deleteObject?.objectId === 'b3')).toBe(true);
     expect(r[r.length - 1]).toEqual({
       createSlide: {
