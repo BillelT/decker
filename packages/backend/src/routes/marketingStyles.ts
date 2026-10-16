@@ -151,6 +151,7 @@ a { color: inherit; }
   .secondary:hover { background-color: var(--b-ink); color: var(--b-white); }
   .nav-link:hover { color: var(--b-ink); }
   .header__nav .nav-link:hover { color: var(--b-gray-600); }
+  .footer .nav-link:hover { color: var(--b-ink); }
   .carousel__btn:hover:not(:disabled) { background-color: var(--b-gray-200); }
 }
 
@@ -161,7 +162,7 @@ a { color: inherit; }
   touch-action: manipulation;
 }
 .nav-link[aria-current="page"] { color: var(--b-ink); }
-/* Footer : liens en gris 600 au repos, encre au survol (règle générique). */
+/* Footer : liens en gris 600 au repos, encre au survol (l'inverse du header). */
 .footer .nav-link { color: var(--b-gray-600); }
 .text-link {
   color: var(--b-ink); font: inherit; text-decoration: underline;

@@ -774,13 +774,13 @@ function act(name) {
   }
 }
 
-/* Export renvoie au vrai plugin : une traînée de pixels orange balaie le CTA
-   du header de gauche à droite pour le désigner. Clairsemée et rapide (environ
+/* Export et Create template renvoient au vrai plugin : une traînée de pixels
+   orange balaie le CTA du hero, juste au-dessus de la démo, pour le désigner. Clairsemée et rapide (environ
    600 ms en tout) : un signal, pas un spectacle. En mouvement réduit, les
    pixels apparaissent et s'effacent ensemble, sans balayage. */
 var TRAIL_TONES = ['var(--b-accent-hover)', 'var(--b-accent-red)', 'color-mix(in oklab, var(--b-accent-hover) 50%, var(--b-white))'];
 function ctaTrail() {
-  var cta = document.querySelector('.header .cta');
+  var cta = document.querySelector('.hero__actions .cta');
   if (!cta || !cta.animate) return;
   var old = cta.querySelector('.cta-trail');
   if (old) old.remove();
