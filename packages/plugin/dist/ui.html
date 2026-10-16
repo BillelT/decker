@@ -1172,7 +1172,11 @@ a.f2s-btn {
   font-size: 12px;
   color: var(--color-text-muted);
   white-space: nowrap;
-  overflow: hidden;
+  /* `clip` et non `hidden` : `hidden` fait de l'élément un conteneur de scroll
+     qui avale la molette dans Figma desktop (Chromium 150), si bien que le
+     rail ne défilait plus tant que le pointeur survolait le nom. `clip`
+     rogne pareil, mais ne crée aucun conteneur de scroll. */
+  overflow: clip;
   text-overflow: ellipsis;
 }
 
@@ -1248,7 +1252,9 @@ a.f2s-btn {
   aspect-ratio: 16 / 9;
   width: 100%;
   display: block;
-  overflow: hidden;
+  /* `clip` et non `hidden` : voir `.f2s-frame-name`. Un `overflow: hidden`
+     sur la vignette bloquait le défilement du rail à la molette. */
+  overflow: clip;
   cursor: pointer;
   padding: 0;
   /* `pan-y` et non `none` : `none` coupait le défilement du rail dès que
