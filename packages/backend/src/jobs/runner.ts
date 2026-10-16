@@ -97,6 +97,7 @@ export async function runExportJob(
           layouts: created.layouts,
           plan: planTemplateLayouts(doc.slides, created.layouts, doc.masterSlideId),
           masterPlaceholderIds: created.masterPlaceholderIds,
+          masterTitle: created.masterTitle,
         };
       }
       // Persisté sur le job (pas seulement gardé en variable locale) : sans
@@ -137,10 +138,11 @@ export async function runExportJob(
     // Mode template : les layouts natifs qui n'ont reçu aucune frame sont
     // retirés du thème, pour que "Nouvelle diapositive" ne propose que ceux
     // du template. "Vide" reste si une frame a gardé l'ancien chemin (ses
-    // slides en dépendent). Un échec ici n'abîme rien : le layout reste.
+    // slides en dépendent) ; la frame Master, écrite sur le Master, n'en a
+    // pas besoin. Un échec ici n'abîme rien : le layout reste.
     if (templateLayouts && !canceled) {
       const used = new Set(Object.values(templateLayouts.plan).map((a) => a.layoutId));
-      const keepBlank = doc.slides.some((slide) => !templateLayouts!.plan[slide.sourceNodeId]);
+      const keepBlank = doc.slides.some((slide) => slide.sourceNodeId !== doc.masterSlideId && !templateLayouts!.plan[slide.sourceNodeId]);
       for (const layout of templateLayouts.layouts) {
         if (used.has(layout.objectId) || (keepBlank && layout.name === 'BLANK')) continue;
         await applyBatch(accessToken, presentationId, { sourceSlideId: '__layout__', requests: [{ deleteObject: { objectId: layout.objectId } }] }).catch(() => undefined);

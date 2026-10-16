@@ -39,6 +39,13 @@ describe('mapShape', () => {
     });
   });
 
+  it('forces an empty background when Figma has no fill, instead of the theme Accent 1', () => {
+    const reqs = mapShape(baseShape({ stroke: { color: { r: 0, g: 0, b: 0, a: 1 }, weightPt: 1, dash: 'SOLID' } as IRShape['stroke'] }), 'page1', 1, 0, 0);
+    const update = reqs.find((r) => 'updateShapeProperties' in r) as any;
+    expect(update.updateShapeProperties.shapeProperties.shapeBackgroundFill).toEqual({ propertyState: 'NOT_RENDERED' });
+    expect(update.updateShapeProperties.fields).toContain('shapeBackgroundFill.propertyState');
+  });
+
   it('maps fill color with combined alpha', () => {
     const shape = baseShape({ fill: { type: 'SOLID', color: { r: 1, g: 0, b: 0, a: 0.5 } }, opacity: 0.5 });
     const reqs = mapShape(shape, 'page1', 1, 0, 0);

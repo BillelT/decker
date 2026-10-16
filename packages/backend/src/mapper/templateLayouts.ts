@@ -263,11 +263,44 @@ function mapElement(
   }
 }
 
+/** Hors de la slide, en haut à gauche : là où le titre caché du Master ne se voit pas dans "Modifier le thème". */
+const HIDDEN_TITLE_OFFSET_PT = -200;
+
+/**
+ * Le titre par défaut du Master ne se supprime pas (il emporterait les
+ * titres des layouts, qui en héritent) : quand la frame Master n'a pas de
+ * `[[title]]`, il est réduit à 1 pt et sorti de la slide. Les titres des
+ * layouts ont leur propre position et leur propre style : rien ne change
+ * pour eux.
+ */
+function hideMasterTitle(slot: LayoutPlaceholder): SlidesRequest[] {
+  const target = EMU_PER_PT;
+  return [
+    {
+      updatePageElementTransform: {
+        objectId: slot.objectId,
+        applyMode: 'ABSOLUTE',
+        transform: {
+          scaleX: roundForSerialization(target / slot.widthEmu),
+          shearY: 0,
+          shearX: 0,
+          scaleY: roundForSerialization(target / slot.heightEmu),
+          translateX: HIDDEN_TITLE_OFFSET_PT,
+          translateY: HIDDEN_TITLE_OFFSET_PT,
+          unit: 'PT',
+        },
+      },
+    },
+    { updateTextStyle: { objectId: slot.objectId, textRange: { type: 'ALL' }, style: { fontSize: { magnitude: 1, unit: 'PT' } }, fields: 'fontSize' } },
+  ];
+}
+
 /**
  * Frame Master (la première du rail) : son fond et tous ses éléments sont
  * écrits sur la page Master. Slides les peint sur chaque layout et chaque
  * slide, entre le fond de la page et son contenu ; aucune slide n'est
- * créée pour elle.
+ * créée pour elle. Son `[[title]]` prend le titre par défaut du Master
+ * (le style dont partent les titres), sinon ce titre est caché.
  */
 export function mapMasterBatch(
   slide: IRSlide,
@@ -275,6 +308,7 @@ export function mapMasterBatch(
   masterObjectId: string,
   resolveAssetUrl: (assetKey: string) => string,
   calibration: CalibrationData,
+  masterTitle?: LayoutPlaceholder,
 ): RequestBatch {
   const { scale, offsetXPt, offsetYPt } = computeScale(slide.frameSize, doc.slideSize);
   const requests: SlidesRequest[] = [];
@@ -287,6 +321,15 @@ export function mapMasterBatch(
       },
     });
   }
-  for (const el of slide.elements) requests.push(...mapElement(el, masterObjectId, scale, offsetXPt, offsetYPt, resolveAssetUrl, calibration));
+  const title = masterTitle ? slide.elements.find((el) => nativeRole(el) === 'TITLE') : undefined;
+  for (const el of slide.elements) {
+    if (el === title && el.kind === 'text') {
+      requests.push(...textOntoPlaceholder(mapText(el, masterObjectId, scale, offsetXPt, offsetYPt, calibration), masterTitle!));
+      requests.push({ updatePageElementsZOrder: { pageElementObjectIds: [masterTitle!.objectId], operation: 'BRING_TO_FRONT' } });
+      continue;
+    }
+    requests.push(...mapElement(el, masterObjectId, scale, offsetXPt, offsetYPt, resolveAssetUrl, calibration));
+  }
+  if (masterTitle && !title) requests.push(...hideMasterTitle(masterTitle));
   return { sourceSlideId: slide.sourceNodeId, requests };
 }

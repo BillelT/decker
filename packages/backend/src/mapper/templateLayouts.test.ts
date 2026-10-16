@@ -113,4 +113,28 @@ describe('mapDocumentToBatches with template layouts', () => {
     expect(r.find((q) => q.createShape).createShape.elementProperties.pageObjectId).toBe('master-1');
     expect(r.some((q) => q.createSlide)).toBe(false);
   });
+
+  it('hides the default Master title off the slide when the master frame has no title', () => {
+    const master = slide('m', [text('logo', undefined)], 0);
+    const d = doc([master], 'm');
+    const [masterBatch] = mapDocumentToBatches(d, () => '', UNCALIBRATED_DEFAULTS, 'master-1', { layouts: LAYOUTS, plan: {}, masterTitle: slot('mt', 'TITLE') });
+    const r = masterBatch.requests as any[];
+    const move = r.find((q) => q.updatePageElementTransform);
+    expect(move.updatePageElementTransform.objectId).toBe('mt');
+    expect(move.updatePageElementTransform.transform.translateX).toBeLessThan(0);
+    expect(r.find((q) => q.updateTextStyle?.objectId === 'mt').updateTextStyle).toMatchObject({ style: { fontSize: { magnitude: 1 } } });
+    expect(r.some((q) => q.deleteObject)).toBe(false);
+  });
+
+  it('puts the master frame title on the default Master title instead of a text box', () => {
+    const master = slide('m', [text('t', 'TITLE')], 0);
+    const d = doc([master], 'm');
+    const [masterBatch] = mapDocumentToBatches(d, () => '', UNCALIBRATED_DEFAULTS, 'master-1', { layouts: LAYOUTS, plan: {}, masterTitle: slot('mt', 'TITLE') });
+    const r = masterBatch.requests as any[];
+    expect(r.some((q) => q.createShape)).toBe(false);
+    const move = r.find((q) => q.updatePageElementTransform).updatePageElementTransform;
+    expect(move.objectId).toBe('mt');
+    expect(move.transform.translateX).toBeGreaterThanOrEqual(0);
+    expect(r.find((q) => q.updateTextStyle).updateTextStyle.objectId).toBe('mt');
+  });
 });

@@ -1,5 +1,5 @@
 import type { RequestBatch, SlidesRequest } from '../mapper/index.js';
-import type { NativeLayout } from '../mapper/templateLayouts.js';
+import type { LayoutPlaceholder, NativeLayout } from '../mapper/templateLayouts.js';
 
 const API_BASE = 'https://slides.googleapis.com/v1';
 const RETRYABLE_STATUS = new Set([429, 500, 503]);
@@ -78,6 +78,7 @@ export async function createPresentation(
   masterObjectId: string;
   masterAndLayoutElementIds: string[];
   masterPlaceholderIds: string[];
+  masterTitle?: LayoutPlaceholder;
   layouts: NativeLayout[];
 }> {
   // Le pageSize (comme le ratio d'aspect de la présentation entière) ne se
@@ -122,35 +123,38 @@ export async function createPresentation(
   // Layouts natifs et leurs placeholders (tailles en EMU, unité par
   // défaut de la ressource) : le mode template écrit ses frames dessus
   // (mapper/templateLayouts.ts).
+  const toPlaceholder = (el: NonNullable<PageWithElements['pageElements']>[number]): LayoutPlaceholder => {
+    const textElements = el.shape?.text?.textElements ?? [];
+    const end = textElements.length > 0 ? (textElements[textElements.length - 1].endIndex ?? 0) : 0;
+    return {
+      objectId: el.objectId,
+      type: el.shape!.placeholder!.type!,
+      index: el.shape!.placeholder!.index ?? 0,
+      widthEmu: el.size?.width?.magnitude ?? EMU_DEFAULT,
+      heightEmu: el.size?.height?.magnitude ?? EMU_DEFAULT,
+      translateXEmu: el.transform?.translateX ?? 0,
+      // Le dernier caractère d'un texte Slides est toujours le saut de
+      // ligne final, qui ne se supprime pas.
+      textLength: Math.max(0, end - 1),
+    };
+  };
   const layouts: NativeLayout[] = (body.layouts ?? []).map((page) => ({
     objectId: page.objectId,
     name: page.layoutProperties?.name ?? '',
-    placeholders: (page.pageElements ?? [])
-      .filter((el) => el.shape?.placeholder?.type)
-      .map((el) => {
-        const textElements = el.shape?.text?.textElements ?? [];
-        const end = textElements.length > 0 ? (textElements[textElements.length - 1].endIndex ?? 0) : 0;
-        return {
-          objectId: el.objectId,
-          type: el.shape!.placeholder!.type!,
-          index: el.shape!.placeholder!.index ?? 0,
-          widthEmu: el.size?.width?.magnitude ?? EMU_DEFAULT,
-          heightEmu: el.size?.height?.magnitude ?? EMU_DEFAULT,
-          translateXEmu: el.transform?.translateX ?? 0,
-          // Le dernier caractère d'un texte Slides est toujours le saut de
-          // ligne final, qui ne se supprime pas.
-          textLength: Math.max(0, end - 1),
-        };
-      }),
+    placeholders: (page.pageElements ?? []).filter((el) => el.shape?.placeholder?.type).map(toPlaceholder),
   }));
+  const masterTitleElement = (body.masters[0]?.pageElements ?? []).find((el) => el.shape?.placeholder?.type === 'TITLE');
   return {
     presentationId: body.presentationId,
     firstSlideObjectId: body.slides[0].objectId,
     masterObjectId: body.masters[0].objectId,
     masterAndLayoutElementIds,
+    // Le titre du Master ne se supprime pas : Google emporte avec lui les
+    // titres vides qui en héritent, ceux des layouts compris. Il est
+    // restylé ou caché à la place (mapper/templateLayouts.ts).
+    masterTitle: masterTitleElement ? toPlaceholder(masterTitleElement) : undefined,
     // Le corps (9 niveaux de puces) et le numéro de slide ("#" en bas à
-    // droite, absent des frames Figma). Pas le titre : il est le parent
-    // des titres des layouts, le supprimer risquerait de les emporter.
+    // droite, absent des frames Figma).
     masterPlaceholderIds: body.masters.flatMap((page) =>
       (page.pageElements ?? []).filter((el) => ['BODY', 'SLIDE_NUMBER'].includes(el.shape?.placeholder?.type ?? '')).map((el) => el.objectId),
     ),

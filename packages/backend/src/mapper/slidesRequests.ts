@@ -183,7 +183,7 @@ export interface Outline {
 }
 
 export interface ShapeProperties {
-  shapeBackgroundFill?: { solidFill: SolidFill };
+  shapeBackgroundFill?: { solidFill: SolidFill } | { propertyState: 'NOT_RENDERED' };
   outline?: Outline;
   contentAlignment?: 'TOP' | 'MIDDLE' | 'BOTTOM';
   autofit?: { autofitType: 'NONE' | 'AUTOFIT_TYPE_UNSPECIFIED' };

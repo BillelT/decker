@@ -42,6 +42,12 @@ export function mapShape(
     const alpha = combinedAlpha(shape.fill.color.a, shape.opacity);
     shapeProperties.shapeBackgroundFill = { solidFill: { ...toSolidFill(shape.fill.color), alpha } };
     fields.push('shapeBackgroundFill.solidFill');
+  } else {
+    // Même piège côté fond : sans ça, Slides remplit la forme avec l'Accent
+    // 1 du thème sur un layout ou le Master (vu le 16 octobre : cercles et
+    // hexagones d'icônes pleins en mode template).
+    shapeProperties.shapeBackgroundFill = { propertyState: 'NOT_RENDERED' };
+    fields.push('shapeBackgroundFill.propertyState');
   }
 
   if (shape.stroke) {
