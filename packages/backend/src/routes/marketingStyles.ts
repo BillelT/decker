@@ -34,6 +34,10 @@ ${DESIGN_TOKENS_CSS}
      aussi bien un calcul en % qu'un calcul en vw, et se relève d'une seule
      ligne sur petit écran (voir le palier juste après le :root). */
   --b-container: 1280px;
+  /* Ancres du header : 15px, hors échelle de la DA (14 puis 16). À 14px, la
+     nav paraissait trop petite à côté des boutons. À intégrer à la DA si le
+     palier sert ailleurs. */
+  --site-text-nav: 15px;
   --b-side: 2.5;
   --b-container-width: calc(100% - var(--b-side) * 2%);
 
@@ -93,6 +97,11 @@ body {
   font-family: var(--b-font-sans);
   color: var(--b-text);
   background: var(--b-surface);
+  /* Encoche de l'iPhone en paysage : viewport-fit=cover étend la page sous
+     l'encoche, ce retrait y ramène le contenu. Le fond de body couvre ce
+     padding, donc rien ne change à l'œil ; env() vaut 0 partout ailleurs. */
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 a { color: inherit; }
 
@@ -171,7 +180,11 @@ a { color: inherit; }
 }
 /* Ancres du header seules : encre par defaut (plus de contraste qu'un
    .nav-link générique), et on éclaircit au survol plutôt que l'inverse. */
-.header__nav .nav-link { color: var(--b-ink); }
+.header__nav .nav-link {
+  color: var(--b-ink); font-size: var(--site-text-nav);
+  /* Zone cliquable portée à ~42px de haut sans bouger la mise en page. */
+  padding-block: var(--b-space-12); margin-block: calc(var(--b-space-12) * -1);
+}
 .header__nav .nav-link[aria-current="page"] { color: var(--b-text-muted); }
 .header__brand {
   display: inline-flex; align-items: center; gap: var(--b-space-8); color: var(--b-ink);
@@ -179,6 +192,9 @@ a { color: inherit; }
   text-decoration: none;
 }
 .header__brand-mark { width: 24px; height: 24px; flex: 0 0 auto; display: block; }
+.header__brand:focus-visible {
+  outline: var(--b-focus-outline); outline-offset: var(--b-focus-offset); border-radius: 0;
+}
 .header__actions { display: flex; align-items: center; justify-content: flex-end; gap: var(--b-space-20); flex: 1 1 0; }
 
 /* ---------- Hero (b-hero) ---------- */
@@ -318,6 +334,11 @@ a { color: inherit; }
 .carousel__track--grabbable { cursor: grab; }
 .carousel__track--dragging { scroll-snap-type: none; scroll-behavior: auto; cursor: grabbing; user-select: none; }
 .carousel__track::-webkit-scrollbar { display: none; }
+/* La piste court jusqu'aux bords de l'écran : l'anneau passe à l'intérieur,
+   sinon ses côtés sortiraient de la page. */
+.carousel__track:focus-visible {
+  outline: var(--b-focus-outline); outline-offset: calc(var(--b-focus-offset) * -2); border-radius: 0;
+}
 /* La card suivante doit toujours dépasser : c'est le seul signal qu'il y a
    une suite, et un lisere de quelques pixels ne se lit pas comme tel : il
    passe pour un bord mal coupe. La largeur vise donc une demi-card visible,
@@ -366,12 +387,47 @@ a { color: inherit; }
 }
 .footer__inner {
   width: var(--b-container-width); max-width: var(--b-container); margin-inline: auto;
-  padding-block: var(--b-space-48);
+  padding-block: var(--b-space-48) calc(var(--b-space-48) + env(safe-area-inset-bottom));
 }
 .footer__top { display: flex; justify-content: space-between; gap: var(--b-space-48); margin-bottom: var(--b-space-64); flex-wrap: wrap; }
 .footer__brand { display: flex; flex-direction: column; align-items: flex-start; gap: var(--b-space-16); }
 .footer__brand-row { display: flex; align-items: center; gap: var(--b-space-12); }
 .footer__brand-mark { width: 24px; height: 24px; flex: 0 0 auto; display: block; }
+
+/* Logo du footer = déclencheur de l'easter egg (easterEgg.ts). Un vrai
+   bouton, cible étendue à 44px par un pseudo-élément. */
+.footer__egg {
+  position: relative; display: block; padding: 0; border: 0; border-radius: 0;
+  background: none; color: inherit; font: inherit; cursor: pointer;
+  touch-action: manipulation; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+}
+.footer__egg::before { content: ""; position: absolute; inset: -10px; }
+.footer__egg:focus-visible { outline: var(--b-focus-outline); outline-offset: var(--b-focus-offset); }
+.footer__egg-tip {
+  position: absolute; bottom: calc(100% + var(--b-space-8)); inset-inline-start: 0;
+  padding: var(--b-space-4) var(--b-space-8); white-space: nowrap; pointer-events: none;
+  background: var(--b-ink); color: var(--b-white);
+  font-size: var(--b-text-xs); font-weight: var(--b-font-medium); line-height: var(--b-leading-tight);
+  opacity: 0; transform: translateY(4px);
+  transition: opacity var(--b-duration) var(--b-ease-out), transform var(--b-duration) var(--b-ease-out);
+}
+.footer__egg:focus-visible .footer__egg-tip { opacity: 1; transform: none; }
+@media (hover: hover) and (pointer: fine) {
+  .footer__egg:hover .footer__egg-tip { opacity: 1; transform: none; }
+}
+/* Au survol, les trois cartes du logo se ferment de l'avant vers l'arrière,
+   puis se rouvrent de l'arrière vers l'avant, en boucle : des fenêtres qui
+   reviennent sans fin, le principe du jeu. Bascule sèche (steps), comme une
+   fenêtre des années 2000 qui s'ouvre d'un coup. Rien en mouvement réduit. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  @keyframes egg-front { 0% { opacity: 1; } 10% { opacity: 0; } 70% { opacity: 1; } }
+  @keyframes egg-mid { 0% { opacity: 1; } 20% { opacity: 0; } 60% { opacity: 1; } }
+  @keyframes egg-back { 0% { opacity: 1; } 30% { opacity: 0; } 50% { opacity: 1; } }
+  .footer__egg:hover .egg-card { animation: 1.6s steps(1, end) infinite; }
+  .footer__egg:hover .egg-card--front { animation-name: egg-front; }
+  .footer__egg:hover .egg-card--mid { animation-name: egg-mid; }
+  .footer__egg:hover .egg-card--back { animation-name: egg-back; }
+}
 .footer__meta { margin: 0; font-size: var(--b-text-xs); line-height: var(--b-leading-relaxed); color: var(--b-text-muted); text-wrap: pretty; }
 .footer__cols { display: flex; gap: var(--b-space-64); flex-wrap: wrap; }
 .footer__col { display: flex; flex-direction: column; gap: var(--b-space-12); }
@@ -478,7 +534,7 @@ main:focus { outline: none; }
 @media (max-width: 560px) {
   .header__inner { gap: var(--b-space-16); }
   .header__nav { gap: var(--b-space-12); flex-wrap: wrap; }
-  .header__nav .nav-link { font-size: 13px; }
+  .header__nav .nav-link { font-size: var(--b-text-sm); }
 }
 @media (max-width: 400px) {
   .header__nav { gap: var(--b-space-8); }

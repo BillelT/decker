@@ -1,6 +1,6 @@
 # Easter egg du footer : « Pop-up Panic »
 
-Titre de travail. Un mini-jeu caché dans le footer du site.
+Pas de nom : c'est une intégration, pas un produit (décidé le 16 octobre). Un mini-jeu caché dans le footer du site, inspiré du jeu de Luc sur smoo.link (le logo en vaisseau d'Asteroids). Chez nous, le logo est une pile de fenêtres : le jeu en découle.
 
 ## L'idée
 
@@ -15,8 +15,7 @@ L'écran se remplit de fausses pop-ups façon années 2000 : des decks qui s'ouv
 ## Déclenchement
 
 - Toujours volontaire, jamais au chargement de la page.
-- Une petite icône `decker.exe` dans le footer, à côté de la note de bas de page. Variante plus cachée : triple clic sur le logo du footer.
-- Bonus possible : le Konami code.
+- **Le logo du footer** (décidé le 16 octobre). C'est un vrai bouton. Au survol, ses trois cartes se ferment puis se rouvrent en boucle, comme des fenêtres qui reviennent sans fin, avec l'infobulle « Click to get spammed like it’s 2003 ». Pas d'animation en mouvement réduit.
 
 ## Déroulé d'une partie
 
@@ -78,15 +77,15 @@ Humour léger, rien de trompeur en dehors du jeu : aucune vraie URL, aucun vrai 
 
 ## Étapes
 
-- [ ] Prototype jouable derrière le déclencheur : trois types de pop-ups, 60 s, score.
-- [ ] Textes des pop-ups et écrans de fin.
-- [ ] Boss `SCREENSHOT.EXE` et bonus « Decker Antivirus ».
-- [ ] Passe accessibilité : clavier, mouvement réduit, pause.
-- [ ] Version mobile.
-- [ ] Meilleur score local et partage en texte.
+- [x] Prototype jouable derrière le déclencheur : trois types de pop-ups, 60 s, score.
+- [x] Textes des pop-ups et écrans de fin.
+- [x] Boss `SCREENSHOT.EXE` et bonus « Decker Antivirus ».
+- [x] Passe accessibilité : clavier, mouvement réduit, pause.
+- [x] Version mobile.
+- [x] Meilleur score local et partage en texte.
+
+Fait le 16 octobre : `packages/backend/src/routes/easterEgg.ts`, servi en `/easter-egg.js` et chargé au premier clic. Échap met en pause, Échap sur la pause (ou sur un écran de fin) quitte. Le reste de la page passe en `inert` pendant la partie.
 
 ## Questions ouvertes
 
-- Déclencheur visible mais discret (icône `decker.exe`), ou totalement caché (triple clic) ?
-- Nom définitif du jeu.
 - Le même easter egg dans le plugin, en skin Win95 ?

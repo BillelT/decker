@@ -129,6 +129,7 @@ function renderWin95Page(content: PageContent): string {
   html, body { margin: 0; height: 100%; }
   body {
     min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -222,7 +223,7 @@ function renderModernPage(content: PageContent): string {
   :root {
     color-scheme: light;
     /* Exception (arbitrage G) : la DA n'a pas encore de couleur d'erreur. */
-    --f2s-error: #e00000;
+    --color-error: #e00000;
     --hyb-hi: rgba(255, 255, 255, 0.9);
     --hyb-lo: rgba(18, 15, 13, 0.22);
     --hyb-lo-strong: rgba(18, 15, 13, 0.4);
@@ -233,6 +234,7 @@ function renderModernPage(content: PageContent): string {
   body {
     margin: 0;
     min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -259,7 +261,7 @@ function renderModernPage(content: PageContent): string {
   .status-icon--success { color: var(--b-ink); }
   .status-icon--success circle { fill: var(--b-accent); }
   .status-icon--error { color: var(--b-white); }
-  .status-icon--error circle { fill: var(--f2s-error); }
+  .status-icon--error circle { fill: var(--color-error); }
   h1 { margin: 0 0 var(--b-space-12); font-size: var(--b-text-xl); font-weight: var(--b-font-bold); line-height: var(--b-leading-tight); text-wrap: balance; }
   p.body { margin: 0 0 var(--b-space-32); color: var(--b-text-muted); font-size: var(--b-text-base); line-height: var(--b-leading-relaxed); text-wrap: balance; }
   .btn {
@@ -277,6 +279,11 @@ function renderModernPage(content: PageContent): string {
   .credit a { display: inline-flex; opacity: 0.6; }
   .credit a:hover { opacity: 1; }
   .credit svg { width: 24px; height: 24px; display: block; }
+  /* Mobile : la carte garde sa forme, avec des marges resserrées. */
+  @media (max-width: 480px) {
+    body { padding: var(--b-space-16); }
+    .card { padding: var(--b-space-32) var(--b-space-20); }
+  }
 </style>
 </head>
 <body>
@@ -308,7 +315,7 @@ function renderSuccessPage(skin: UiSkin): string {
   return renderPage(skin, {
     title: 'Decker: Signed in',
     accent: 'success',
-    heading: "You're signed in",
+    heading: "You’re signed in",
     body: 'You can close this tab and go back to Figma. Decker will pick this up automatically.',
   });
 }

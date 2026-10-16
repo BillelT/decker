@@ -4,6 +4,7 @@ import { MARKETING_CSS } from './marketingStyles.js';
 import { OG_IMAGE_PNG_BASE64 } from '../og/ogImageData.js';
 import { OG_IMAGE } from '../og/variants.js';
 import { DEMO_VIDEO_WEBM_BASE64 } from './demoVideoData.js';
+import { EASTER_EGG_VERSION, easterEggScript } from './easterEgg.js';
 import {
   FEATURE_FREE_SVG,
   FEATURE_FULL_DECK_SVG,
@@ -63,6 +64,27 @@ const DEMO_VIDEO_FILE = 'how-it-works-demo.webm';
 /** rel des liens sortants (convention b-signature du DS Billel) : mon domaine → noopener ; tiers → noopener noreferrer. */
 const REL_OWN = 'noopener';
 const REL_THIRD_PARTY = 'noopener noreferrer';
+
+/**
+ * Logo du footer, déclencheur de l'easter egg (voir easterEgg.ts) : le même
+ * dessin que DECKER_MARK_SVG, mais découpé en trois groupes, une carte par
+ * groupe, pour que l'animation de survol les ferme et les rouvre comme des
+ * fenêtres en boucle. À garder aligné sur DECKER_MARK_SVG (brand.ts).
+ */
+const FOOTER_EGG_MARK = `<svg class="footer__brand-mark" viewBox="0 0 32 32" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+<g class="egg-card egg-card--back"><rect x="3" y="15" width="20" height="14" fill="#7a3b12" stroke="#1a0d02" stroke-width="1"/></g>
+<g class="egg-card egg-card--mid"><rect x="6" y="10" width="20" height="14" fill="#c1651c" stroke="#1a0d02" stroke-width="1"/></g>
+<g class="egg-card egg-card--front">
+<rect x="9" y="5" width="20" height="14" fill="#ffb238" stroke="#1a0d02" stroke-width="1"/>
+<rect x="9" y="5" width="20" height="1" fill="#fff4d6"/>
+<rect x="9" y="5" width="1" height="14" fill="#fff4d6"/>
+<rect x="10.5" y="6.5" width="17" height="3.2" fill="#1a0d02"/>
+<rect x="10.5" y="12" width="17" height="2" fill="#fff4d6"/>
+<rect x="10.5" y="15" width="11" height="2" fill="#fff4d6"/>
+<path d="M26 5 L29 5 L29 8 Z" fill="#1a0d02"/>
+<path d="M26 5 L28 5 L28 7 Z" fill="#fff4d6"/>
+</g>
+</svg>`;
 
 const brandMarkInline = (): string => DECKER_MARK_SVG.replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '');
 
@@ -140,6 +162,22 @@ ${footer()}
   var demoVideos = document.querySelectorAll('.demo-video');
   if (demoVideos.length && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     demoVideos.forEach(function (video) { video.play().catch(function () {}); });
+  }
+
+  // Easter egg du footer : le jeu n'est chargé qu'au premier clic sur le logo.
+  var egg = document.querySelector('[data-egg]');
+  if (egg) {
+    var eggLoading = false;
+    egg.addEventListener('click', function () {
+      if (window.DeckerEgg) { window.DeckerEgg.open(egg); return; }
+      if (eggLoading) return;
+      eggLoading = true;
+      var script = document.createElement('script');
+      script.src = '/easter-egg.js?v=${EASTER_EGG_VERSION}';
+      script.onload = function () { if (window.DeckerEgg) window.DeckerEgg.open(egg); };
+      script.onerror = function () { eggLoading = false; };
+      document.head.appendChild(script);
+    });
   }
 
   // Carrousel de cards. La piste défile déjà nativement (tactile, trackpad,
@@ -246,7 +284,10 @@ function footer(): string {
   <div class="footer__top">
     <div class="footer__brand">
       <div class="footer__brand-row">
-        <svg class="footer__brand-mark" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${brandMarkInline()}</svg>
+        <button type="button" class="footer__egg" data-egg aria-labelledby="footer-egg-tip">
+          ${FOOTER_EGG_MARK}
+          <span class="footer__egg-tip" id="footer-egg-tip">Click to get spammed like it’s 2003</span>
+        </button>
       </div>
       <p class="footer__meta">&copy; 2026 Decker<br>
         Made by <a class="text-link" href="${FOLIO_URL}" target="_blank" rel="${REL_OWN}">Billel</a>
@@ -266,7 +307,7 @@ function footer(): string {
     </div>
   </div>
   <div class="footer__bottom">
-    <p class="footer__note">Decker doesn't set cookies or collect personal data beyond what's needed to run an export.</p>
+    <p class="footer__note">Decker doesn’t set cookies or collect personal data beyond what’s needed to run an export.</p>
     <nav class="footer__legal" aria-label="Legal">
       <a class="nav-link" href="/privacy">Privacy Policy</a>
       <a class="nav-link" href="/terms">Terms of Use</a>
@@ -285,7 +326,7 @@ pagesRouter.get('/', (_req, res) => {
         <div class="hero__actions">
           <a class="btn cta" href="${PLUGIN_URL}" target="_blank" rel="${REL_THIRD_PARTY}">Try it on Figma</a>
         </div>
-        <p class="hero__note">Free to use. Sign in with Google only when you're ready to export.</p>
+        <p class="hero__note">Free to use. Sign in with Google only when you’re ready to export.</p>
       </div>
       <div class="hero__demo">
         <video class="demo-video" loop muted playsinline aria-label="Screen recording of Decker exporting a Figma deck to Google Slides">
@@ -322,7 +363,7 @@ pagesRouter.get('/', (_req, res) => {
           <div class="card__body">
             <p class="card__eyebrow">Templates</p>
             <h3 class="card__title">Export a template</h3>
-            <p class="card__desc">Turn a single frame into a ready-to-reuse Slides template, theme and layout included.</p>
+            <p class="card__desc">Turn your frames into a reusable Slides template: theme colors, fonts, layouts, and real placeholders.</p>
           </div>
         </li>
         <li class="carousel__item card">
@@ -346,7 +387,7 @@ pagesRouter.get('/', (_req, res) => {
           <div class="card__body">
             <p class="card__eyebrow">Privacy</p>
             <h3 class="card__title">Private by default</h3>
-            <p class="card__desc">Nothing is stored beyond what's needed to run the export. No tracking, no analytics.</p>
+            <p class="card__desc">Nothing is stored beyond what’s needed to run the export. No tracking, no analytics.</p>
           </div>
         </li>
         </ul>
@@ -416,7 +457,7 @@ pagesRouter.get('/', (_req, res) => {
         <li class="card card--compact">
           <div class="card__body">
             <h3 class="card__title">Nothing kept after the export</h3>
-            <p class="card__desc">No data is stored beyond what's needed to run that export. No tracking, no analytics, no resale.</p>
+            <p class="card__desc">No data is stored beyond what’s needed to run that export. No tracking, no analytics, no resale.</p>
           </div>
           <p class="card__note"><a class="text-link" href="${SITE_URL}/privacy">Read the Privacy Policy</a></p>
         </li>
@@ -450,24 +491,24 @@ pagesRouter.get('/privacy', (_req, res) => {
           <li><strong>Email address</strong>: used only to display, inside the plugin, which Google account is currently connected.</li>
         </ul>
 
-        <h2 class="section__title">What Decker doesn't do</h2>
+        <h2 class="section__title">What Decker doesn’t do</h2>
         <p>Decker does not collect any data for analytics, advertising, or resale purposes. Decker does not sell or transfer Google user data to third parties, and does not use Google user data to train or improve AI/ML models, whether generalized or personalized. No third party has access to your data. The only processing performed is the strict technical minimum described below, needed to run the export you request.</p>
 
         <h2 class="section__title">How Decker protects your data</h2>
         <ul>
-          <li><strong>Encryption in transit</strong>: every connection between the plugin, Decker's backend, and Google's APIs is made over HTTPS/TLS. Decker never transmits your credentials or tokens over an unencrypted channel.</li>
-          <li><strong>Encryption at rest</strong>: your Google refresh token is never stored in plain text. It's encrypted with AES-256-GCM before being written to storage, using a secret key that only Decker's backend holds.</li>
+          <li><strong>Encryption in transit</strong>: every connection between the plugin, Decker’s backend, and Google’s APIs is made over HTTPS/TLS. Decker never transmits your credentials or tokens over an unencrypted channel.</li>
+          <li><strong>Encryption at rest</strong>: your Google refresh token is never stored in plain text. It’s encrypted with AES-256-GCM before being written to storage, using a secret key that only Decker’s backend holds.</li>
           <li><strong>No standing access to your files</strong>: Decker only touches the Google Slides presentation it creates for you (via the <code>drive.file</code> scope). It cannot browse, read, or modify any other file in your Drive.</li>
-          <li><strong>Signed, time-limited URLs</strong>: images generated during an export are served through short-lived signed URLs (see retention below) so that they can't be accessed after their purpose is served.</li>
-          <li><strong>Access control</strong>: only Decker's backend service can decrypt your refresh token or access exported assets; there is no admin dashboard or bulk export of user data.</li>
+          <li><strong>Signed, time-limited URLs</strong>: images generated during an export are served through short-lived signed URLs (see retention below) so that they can’t be accessed after their purpose is served.</li>
+          <li><strong>Access control</strong>: only Decker’s backend service can decrypt your refresh token or access exported assets; there is no admin dashboard or bulk export of user data.</li>
         </ul>
 
         <h2 class="section__title">Data retention and deletion</h2>
         <ul>
-          <li><strong>Google refresh token and account email</strong>: kept encrypted for up to 90 days of inactivity so you don't have to sign in again for every export, and deleted immediately when you sign out of the plugin or disconnect Decker from <a class="text-link" href="https://myaccount.google.com/permissions" target="_blank" rel="${REL_THIRD_PARTY}">myaccount.google.com/permissions</a>. An inactive session expires and is deleted automatically after 90 days.</li>
+          <li><strong>Google refresh token and account email</strong>: kept encrypted for up to 90 days of inactivity so you don’t have to sign in again for every export, and deleted immediately when you sign out of the plugin or disconnect Decker from <a class="text-link" href="https://myaccount.google.com/permissions" target="_blank" rel="${REL_THIRD_PARTY}">myaccount.google.com/permissions</a>. An inactive session expires and is deleted automatically after 90 days.</li>
           <li><strong>Exported images</strong>: hosted only for the duration of the export and automatically deleted within at most 1 hour of being generated, whether or not the export succeeds.</li>
           <li><strong>Export job status</strong> (progress/result of a single export): automatically deleted after 24 hours.</li>
-          <li><strong>Sign-in state</strong> (temporary OAuth data used only while you're completing the Google sign-in flow): automatically deleted after 10 minutes.</li>
+          <li><strong>Sign-in state</strong> (temporary OAuth data used only while you’re completing the Google sign-in flow): automatically deleted after 10 minutes.</li>
           <li>You can request deletion of any data Decker holds about you at any time, in addition to disconnecting Decker from your Google account. See Contact below.</li>
         </ul>
 
@@ -493,7 +534,7 @@ pagesRouter.get('/terms', (_req, res) => {
       <section class="section">
         <h1 class="section__title section__title--page">Terms of Use</h1>
         <p class="meta">Last updated: ${LAST_UPDATED}</p>
-        <p>Decker is a free plugin, provided "as is" without warranty of any kind, built as a personal project. You remain solely responsible for the content you export through the plugin.</p>
+        <p>Decker is a free plugin, provided “as is” without warranty of any kind, built as a personal project. You remain solely responsible for the content you export through the plugin.</p>
         <p>Using the plugin requires using your Google account via the OAuth authentication described in the <a class="text-link" href="${SITE_URL}/privacy">Privacy Policy</a>.</p>
         <p>Decker is free. If the plugin saves you time, a donation via <a class="text-link" href="${COFFEE_URL}" target="_blank" rel="${REL_THIRD_PARTY}">Buy me a coffee</a> is appreciated but never required.</p>
         <p>For any question, contact <a class="text-link" href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a>.</p>
@@ -531,6 +572,15 @@ pagesRouter.get(`/${DEMO_VIDEO_FILE}`, (_req, res) => {
     .type('webm')
     .set('Cache-Control', 'public, max-age=31536000, immutable')
     .send(Buffer.from(DEMO_VIDEO_WEBM_BASE64, 'base64'));
+});
+
+/** Jeu de l'easter egg, chargé au clic. Versionné comme la vidéo : cache d'un an. */
+const EASTER_EGG_JS = easterEggScript(PLUGIN_URL);
+pagesRouter.get('/easter-egg.js', (_req, res) => {
+  res
+    .type('application/javascript')
+    .set('Cache-Control', 'public, max-age=31536000, immutable')
+    .send(EASTER_EGG_JS);
 });
 
 pagesRouter.get('/robots.txt', (_req, res) => {
