@@ -1544,10 +1544,12 @@ a.f2s-btn {
   min-width: 0;
 }
 
+/* `overflow: clip` et non `hidden` sur ces trois textes tronqués : voir
+   `.f2s-frame-name` (un `hidden` avale la molette dans Figma desktop). */
 .f2s-log-entry-name {
   flex: 1 1 auto;
   min-width: 0;
-  overflow: hidden;
+  overflow: clip;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1555,7 +1557,7 @@ a.f2s-btn {
 .f2s-log-entry-message {
   flex: 0 1 auto;
   max-width: 60%;
-  overflow: hidden;
+  overflow: clip;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1620,7 +1622,7 @@ a.f2s-btn {
   flex: 0 0 auto;
   min-width: 0;
   max-width: 70%;
-  overflow: hidden;
+  overflow: clip;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 12px;
