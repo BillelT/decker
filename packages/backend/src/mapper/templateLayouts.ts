@@ -1,4 +1,4 @@
-import type { CalibrationData, IRDocument, IRElement, IRSlide } from '@figma-to-slides/shared';
+import type { CalibrationData, IRDocument, IRElement, IRSlide, IRText } from '@figma-to-slides/shared';
 import { toSolidFill } from './colors.js';
 import { mapImage } from './images.js';
 import { mapLine } from './lines.js';
@@ -176,6 +176,39 @@ function textOntoPlaceholder(requests: SlidesRequest[], slot: LayoutPlaceholder)
   return out;
 }
 
+/**
+ * Un texte Figma en largeur auto (hug) colle pile à son contenu. Sur un
+ * placeholder, Slides affiche à la place son invite ("Cliquez ici pour
+ * modifier le style du titre du thème"), bien plus longue, qui se coupait
+ * mot à mot dans une boîte taillée pour "87%". Slides ne sait pas élargir
+ * une zone de texte d'après son contenu (et l'API ne règle que l'autofit
+ * NONE) : la boîte prend donc d'emblée toute la largeur disponible, en
+ * gardant le bord d'alignement du texte et des marges symétriques. Le
+ * texte lui-même ne bouge pas.
+ */
+export function widenForPrompt(el: IRText, frameWidth: number): IRText {
+  if (!el.tightFit || el.rotation !== 0) return el;
+  const { x, w } = el.rect;
+  const left = x;
+  const right = frameWidth - x - w;
+  if (left < 0 || right < 0) return el;
+  const align = el.paragraphs[0]?.align ?? 'START';
+  let nx = x;
+  let nw = w;
+  if (align === 'CENTER') {
+    const margin = Math.min(left, right);
+    nx = margin;
+    nw = frameWidth - 2 * margin;
+  } else if (align === 'END') {
+    nx = right;
+    nw = x + w - right;
+  } else {
+    nw = frameWidth - 2 * left;
+  }
+  if (nw <= w) return el;
+  return { ...el, tightFit: false, rect: { ...el.rect, x: nx, w: nw } };
+}
+
 export function mapSlideOntoLayout(
   slide: IRSlide,
   doc: IRDocument,
@@ -207,7 +240,7 @@ export function mapSlideOntoLayout(
     const slotId = assignment.placeholderByElementId[el.id];
     const slot = slotId ? slotById.get(slotId) : undefined;
     if (slot && el.kind === 'text') {
-      requests.push(...textOntoPlaceholder(mapText(el, layoutId, scale, offsetXPt, offsetYPt, calibration), slot));
+      requests.push(...textOntoPlaceholder(mapText(widenForPrompt(el, slide.frameSize.width), layoutId, scale, offsetXPt, offsetYPt, calibration), slot));
       // Le placeholder existait avant tout le reste : sans ça, une carte
       // ou un aplat créé ensuite passerait par-dessus le titre.
       requests.push({ updatePageElementsZOrder: { pageElementObjectIds: [slot.objectId], operation: 'BRING_TO_FRONT' } });
@@ -324,7 +357,7 @@ export function mapMasterBatch(
   const title = masterTitle ? slide.elements.find((el) => nativeRole(el) === 'TITLE') : undefined;
   for (const el of slide.elements) {
     if (el === title && el.kind === 'text') {
-      requests.push(...textOntoPlaceholder(mapText(el, masterObjectId, scale, offsetXPt, offsetYPt, calibration), masterTitle!));
+      requests.push(...textOntoPlaceholder(mapText(widenForPrompt(el, slide.frameSize.width), masterObjectId, scale, offsetXPt, offsetYPt, calibration), masterTitle!));
       requests.push({ updatePageElementsZOrder: { pageElementObjectIds: [masterTitle!.objectId], operation: 'BRING_TO_FRONT' } });
       continue;
     }

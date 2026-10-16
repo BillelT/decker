@@ -33,6 +33,12 @@ function baseShape(overrides: Partial<IRShape> = {}): IRShape {
 }
 
 describe('applyPlaceholderText', () => {
+  it('keeps the real text of a custom placeholder (a big "87%" would overflow as "[Custom placeholder]")', () => {
+    const elements: IRElement[] = [baseText({ content: '87%', placeholder: { role: 'CUSTOM', label: 'Custom placeholder' } })];
+    const [result] = applyPlaceholderText(elements) as IRText[];
+    expect(result.content).toBe('87%');
+  });
+
   it('replaces the real content of a tagged text element with a readable [Label] indicator', () => {
     const elements: IRElement[] = [baseText({ placeholder: { role: 'TITLE', label: 'Title' } })];
     const [result] = applyPlaceholderText(elements) as IRText[];

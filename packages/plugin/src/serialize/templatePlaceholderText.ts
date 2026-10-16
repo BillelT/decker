@@ -18,6 +18,10 @@ import type { IRElement, IRParagraph, IRText, IRTextRun } from '@figma-to-slides
 export function applyPlaceholderText(elements: IRElement[]): IRElement[] {
   return elements.map((el): IRElement => {
     if (el.kind !== 'text' || !el.placeholder) return el;
+    // Un `[[custom]]` garde son vrai texte : c'est souvent un chiffre clé
+    // ("87%") écrit très gros, où "[Custom placeholder]" déborderait de la
+    // slide, et son exemple dit mieux quoi y mettre que son libellé.
+    if (el.placeholder.role === 'CUSTOM') return el;
     const text = el as IRText;
     const placeholder = text.placeholder!;
     const content = `[${placeholder.label}]`;

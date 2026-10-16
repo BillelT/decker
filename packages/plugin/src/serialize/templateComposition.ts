@@ -42,16 +42,6 @@ function nameOf(el: IRElement): string {
   return el.sourceNodeName ?? el.placeholder?.label ?? el.kind;
 }
 
-/**
- * Clé de regroupement pour la détection de doublons. Deux `[[custom:…]]`
- * ne sont ambigus entre eux que s'ils portent le MÊME libellé : c'est le
- * libellé, pas le rôle générique CUSTOM, qui identifie un placeholder
- * personnalisé.
- */
-function duplicateKey(role: PlaceholderRole, label: string): string {
-  return role === 'CUSTOM' ? `CUSTOM:${label.toLowerCase()}` : role;
-}
-
 function isVisualKind(kind: IRElement['kind']): boolean {
   return kind === 'image' || kind === 'shape';
 }
@@ -81,17 +71,19 @@ export function collectCompositionWarnings(layout: CompositionInput): IRWarning[
   // Doublons : un layout qui porte deux `[[title]]` ne dit pas lequel EST le
   // titre. Signalé sur CHAQUE occurrence plutôt que sur les suivantes
   // seulement : le créateur doit pouvoir cliquer les deux pour arbitrer.
-  const byKey = new Map<string, IRElement[]>();
+  const byKey = new Map<PlaceholderRole, IRElement[]>();
   for (const el of tagged) {
-    const key = duplicateKey(el.placeholder!.role, el.placeholder!.label);
+    // Plusieurs `[[custom]]` sur un layout sont normaux (chiffres clés,
+    // mentions) : chacun devient sa propre zone de texte, rien d'ambigu.
+    if (el.placeholder!.role === 'CUSTOM') continue;
+    const key = el.placeholder!.role;
     const group = byKey.get(key);
     if (group) group.push(el);
     else byKey.set(key, [el]);
   }
   for (const group of byKey.values()) {
     if (group.length < 2) continue;
-    const { role, label } = group[0].placeholder!;
-    const tag = role === 'CUSTOM' ? `[[custom:${label}]]` : `[[${ROLE_LABELS[role]}]]`;
+    const tag = `[[${ROLE_LABELS[group[0].placeholder!.role]}]]`;
     for (const el of group) {
       warnings.push({
         code: 'PLACEHOLDER_ROLE_DUPLICATE',

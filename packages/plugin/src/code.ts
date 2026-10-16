@@ -568,7 +568,13 @@ async function handlePrepareForSlides(
  */
 function nodesHoldingTextOrPlaceholder(frame: ExportableNode): Set<string> {
   const ids = new Set<string>();
-  const holders = frame.findAll((n) => n.type === 'TEXT' || parsePlaceholderTag(n.name) !== undefined);
+  // Un `[[image]]` ou un `[[logo]]` sans texte dedans peut partir en image :
+  // c'est ce qu'il sera de toute façon dans Slides.
+  const holders = frame.findAll((n) => {
+    if (n.type === 'TEXT') return true;
+    const tag = parsePlaceholderTag(n.name);
+    return tag !== undefined && tag.role !== 'IMAGE' && tag.role !== 'LOGO';
+  });
   for (const holder of holders) {
     let current: BaseNode | null = holder;
     while (current && !ids.has(current.id)) {

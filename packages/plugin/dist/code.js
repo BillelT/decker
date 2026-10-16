@@ -1284,9 +1284,6 @@
   function nameOf(el) {
     return el.sourceNodeName ?? el.placeholder?.label ?? el.kind;
   }
-  function duplicateKey(role, label) {
-    return role === "CUSTOM" ? `CUSTOM:${label.toLowerCase()}` : role;
-  }
   function isVisualKind(kind) {
     return kind === "image" || kind === "shape";
   }
@@ -1304,15 +1301,15 @@
     }
     const byKey = /* @__PURE__ */ new Map();
     for (const el of tagged) {
-      const key = duplicateKey(el.placeholder.role, el.placeholder.label);
+      if (el.placeholder.role === "CUSTOM") continue;
+      const key = el.placeholder.role;
       const group = byKey.get(key);
       if (group) group.push(el);
       else byKey.set(key, [el]);
     }
     for (const group of byKey.values()) {
       if (group.length < 2) continue;
-      const { role, label } = group[0].placeholder;
-      const tag = role === "CUSTOM" ? `[[custom:${label}]]` : `[[${ROLE_LABELS[role]}]]`;
+      const tag = `[[${ROLE_LABELS[group[0].placeholder.role]}]]`;
       for (const el of group) {
         warnings.push({
           code: "PLACEHOLDER_ROLE_DUPLICATE",
@@ -1427,6 +1424,7 @@
   function applyPlaceholderText(elements) {
     return elements.map((el) => {
       if (el.kind !== "text" || !el.placeholder) return el;
+      if (el.placeholder.role === "CUSTOM") return el;
       const text = el;
       const placeholder = text.placeholder;
       const content = `[${placeholder.label}]`;
@@ -1770,7 +1768,11 @@
   }
   function nodesHoldingTextOrPlaceholder(frame) {
     const ids = /* @__PURE__ */ new Set();
-    const holders = frame.findAll((n) => n.type === "TEXT" || parsePlaceholderTag(n.name) !== void 0);
+    const holders = frame.findAll((n) => {
+      if (n.type === "TEXT") return true;
+      const tag = parsePlaceholderTag(n.name);
+      return tag !== void 0 && tag.role !== "IMAGE" && tag.role !== "LOGO";
+    });
     for (const holder of holders) {
       let current = holder;
       while (current && !ids.has(current.id)) {

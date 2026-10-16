@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { IRDocument, IRElement, IRSlide, IRText } from '@figma-to-slides/shared';
 import { UNCALIBRATED_DEFAULTS } from '@figma-to-slides/shared';
 import { mapDocumentToBatches } from './index.js';
-import { planTemplateLayouts, type LayoutPlaceholder, type NativeLayout } from './templateLayouts.js';
+import { planTemplateLayouts, widenForPrompt, type LayoutPlaceholder, type NativeLayout } from './templateLayouts.js';
 
 const EMU = 12700;
 
@@ -136,5 +136,37 @@ describe('mapDocumentToBatches with template layouts', () => {
     expect(move.objectId).toBe('mt');
     expect(move.transform.translateX).toBeGreaterThanOrEqual(0);
     expect(r.find((q) => q.updateTextStyle).updateTextStyle.objectId).toBe('mt');
+  });
+});
+
+describe('widenForPrompt', () => {
+  const hug = (x: number, w: number, align: 'START' | 'CENTER' | 'END'): IRText => ({
+    ...text('t', 'TITLE'),
+    rect: { x, y: 10, w, h: 40 },
+    tightFit: true,
+    paragraphs: [{ start: 0, end: 3, align }],
+  });
+
+  it('keeps the left edge of a left-aligned hug text and mirrors its margin on the right', () => {
+    expect(widenForPrompt(hug(40, 100, 'START'), 720).rect).toMatchObject({ x: 40, w: 640 });
+  });
+
+  it('keeps a right-aligned text on its right edge', () => {
+    const r = widenForPrompt(hug(500, 180, 'END'), 720).rect;
+    expect(r.x + r.w).toBe(680);
+    expect(r.x).toBe(40);
+  });
+
+  it('widens a centered text around its center with the smaller margin', () => {
+    expect(widenForPrompt(hug(300, 120, 'CENTER'), 720).rect).toMatchObject({ x: 300, w: 120 });
+    expect(widenForPrompt(hug(310, 100, 'CENTER'), 720).rect).toMatchObject({ x: 310, w: 100 });
+    expect(widenForPrompt(hug(200, 100, 'CENTER'), 720).rect).toMatchObject({ x: 200, w: 320 });
+  });
+
+  it('leaves fixed-width and rotated texts alone', () => {
+    const fixed = { ...hug(40, 100, 'START'), tightFit: false };
+    expect(widenForPrompt(fixed, 720)).toBe(fixed);
+    const rotated = { ...hug(40, 100, 'START'), rotation: 90 };
+    expect(widenForPrompt(rotated, 720)).toBe(rotated);
   });
 });

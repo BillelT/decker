@@ -108,14 +108,12 @@ describe('collectCompositionWarnings', () => {
     expect(warnings.filter((w) => w.code === 'PLACEHOLDER_ROLE_DUPLICATE')).toEqual([]);
   });
 
-  it('flags two custom placeholders that share the same label, case-insensitively', () => {
+  it('never flags custom placeholders as duplicates, even with the same label (several key figures on one layout)', () => {
     const warnings = run([
-      text({ placeholder: { role: 'CUSTOM', label: 'Footnote' } }),
-      text({ placeholder: { role: 'CUSTOM', label: 'footnote' } }),
+      text({ placeholder: { role: 'CUSTOM', label: 'Custom placeholder' } }),
+      text({ placeholder: { role: 'CUSTOM', label: 'Custom placeholder' } }),
     ]);
-    const duplicates = warnings.filter((w) => w.code === 'PLACEHOLDER_ROLE_DUPLICATE');
-    expect(duplicates).toHaveLength(2);
-    expect(duplicates[0].message).toContain('[[custom:Footnote]]');
+    expect(warnings.filter((w) => w.code === 'PLACEHOLDER_ROLE_DUPLICATE')).toEqual([]);
   });
 
   it('flags a text role posted on a layer that is not text', () => {
