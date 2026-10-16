@@ -3,7 +3,7 @@ import { DECKER_FAVICON, DECKER_MARK_SVG, escapeHtml } from './brand.js';
 import { MARKETING_CSS } from './marketingStyles.js';
 import { OG_IMAGE_PNG_BASE64 } from '../og/ogImageData.js';
 import { OG_IMAGE } from '../og/variants.js';
-import { DEMO_VIDEO_WEBM_BASE64 } from './demoVideoData.js';
+import { HERO_DEMO_HTML, HERO_DEMO_JS } from './heroDemo.js';
 import { EASTER_EGG_VERSION, easterEggScript } from './easterEgg.js';
 import {
   FEATURE_FREE_SVG,
@@ -57,10 +57,6 @@ const OG_IMAGE_HEIGHT = 630;
  */
 const OG_IMAGE_URL = `${SITE_URL}/${OG_IMAGE.file}?v=${OG_IMAGE_VERSION}`;
 
-/** Même logique de version que OG_IMAGE_VERSION : incrémenter à chaque nouvel export du fichier pour casser le cache d'un an. */
-const DEMO_VIDEO_VERSION = '1';
-const DEMO_VIDEO_FILE = 'how-it-works-demo.webm';
-
 /** rel des liens sortants (convention b-signature du DS Billel) : mon domaine → noopener ; tiers → noopener noreferrer. */
 const REL_OWN = 'noopener';
 const REL_THIRD_PARTY = 'noopener noreferrer';
@@ -100,6 +96,8 @@ function shell(opts: {
   path: string;
   jsonLdType: 'WebSite' | 'WebPage';
   main: string;
+  /** Script propre à la page, posé après le script commun. */
+  script?: string;
 }): string {
   const canonical = `${SITE_URL}${opts.path}`;
   const jsonLd = {
@@ -158,11 +156,6 @@ ${footer()}
   };
   onScroll();
   document.addEventListener('scroll', onScroll, { passive: true });
-
-  var demoVideos = document.querySelectorAll('.demo-video');
-  if (demoVideos.length && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    demoVideos.forEach(function (video) { video.play().catch(function () {}); });
-  }
 
   // Easter egg du footer : le jeu n'est chargé qu'au premier clic sur le logo.
   var egg = document.querySelector('[data-egg]');
@@ -252,6 +245,7 @@ ${footer()}
   });
 })();
 </script>
+${opts.script ? `<script>${opts.script}</script>` : ''}
 </body>
 </html>`;
 }
@@ -320,18 +314,15 @@ function footer(): string {
 pagesRouter.get('/', (_req, res) => {
   const main = `
     <section class="hero">
-      <div class="hero__content">
-        <h1 class="hero__title">Editable &amp; pixel perfect export</h1>
+      <h1 class="hero__title">Editable &amp; pixel perfect export</h1>
+      <div class="hero__row">
         <p class="hero__lede">Export a Figma design straight to Google Slides, with layout, styles, and theme preserved.</p>
         <div class="hero__actions">
           <a class="btn cta" href="${PLUGIN_URL}" target="_blank" rel="${REL_THIRD_PARTY}">Try it on Figma</a>
         </div>
-        <p class="hero__note">Free to use. Sign in with Google only when you’re ready to export.</p>
       </div>
       <div class="hero__demo">
-        <video class="demo-video" loop muted playsinline aria-label="Screen recording of Decker exporting a Figma deck to Google Slides">
-          <source src="/${DEMO_VIDEO_FILE}?v=${DEMO_VIDEO_VERSION}" type="video/webm" />
-        </video>
+        ${HERO_DEMO_HTML}
       </div>
     </section>
 
@@ -471,6 +462,7 @@ pagesRouter.get('/', (_req, res) => {
       path: '/',
       jsonLdType: 'WebSite',
       main,
+      script: HERO_DEMO_JS,
     }),
   );
 });
@@ -564,14 +556,6 @@ pagesRouter.get(`/${OG_IMAGE.file}`, (_req, res) => {
     .type('png')
     .set('Cache-Control', 'public, max-age=31536000, immutable')
     .send(Buffer.from(OG_IMAGE_PNG_BASE64, 'base64'));
-});
-
-/** Même raison que la route og:image ci-dessus : pas de dossier statique devant, servi par la fonction. */
-pagesRouter.get(`/${DEMO_VIDEO_FILE}`, (_req, res) => {
-  res
-    .type('webm')
-    .set('Cache-Control', 'public, max-age=31536000, immutable')
-    .send(Buffer.from(DEMO_VIDEO_WEBM_BASE64, 'base64'));
 });
 
 /** Jeu de l'easter egg, chargé au clic. Versionné comme la vidéo : cache d'un an. */

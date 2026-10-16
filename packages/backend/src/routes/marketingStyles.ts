@@ -1,5 +1,6 @@
 import { DESIGN_TOKENS_CSS } from '../generated/designTokens.js';
 import { CABINET_GROTESK_BASE64 } from './fontData.js';
+import { HERO_DEMO_CSS } from './heroDemo.js';
 
 /**
  * DA "Billel" (design system perso, repo billel-skill), archétype b-marketing :
@@ -198,29 +199,24 @@ a { color: inherit; }
 .header__actions { display: flex; align-items: center; justify-content: flex-end; gap: var(--b-space-20); flex: 1 1 0; }
 
 /* ---------- Hero (b-hero) ---------- */
-/* Deux colonnes : titre/CTA à gauche, démo à droite (au lieu du bloc centré
-   d'origine) : la colonne texte est plafonnée pour rester lisible, la
-   colonne démo prend le reste de la largeur. */
+/* Composition à la Linear : le titre sur toute la largeur, l'accroche et le
+   CTA sur une ligne en dessous (accroche à gauche, CTA à droite), puis la
+   démo interactive en grand. */
 .hero {
-  display: grid; grid-template-columns: minmax(0, 460px) 1fr; align-items: center;
-  gap: var(--b-space-64); width: var(--b-container-width); max-width: var(--b-container);
+  display: flex; flex-direction: column; gap: var(--b-space-24);
+  width: var(--b-container-width); max-width: var(--b-container);
   margin-inline: auto; padding-block: var(--b-space-64);
 }
-.hero__content { display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: var(--b-space-20); }
 .hero__title {
-  margin: 0; font-size: var(--b-text-6xl); font-weight: var(--b-font-bold);
+  max-width: 14ch; margin: 0; font-size: var(--b-text-6xl); font-weight: var(--b-font-bold);
   line-height: var(--b-leading-none); letter-spacing: var(--b-tracking-tighter); color: var(--b-ink);
   text-wrap: balance;
 }
-.hero__lede { margin: 0; font-size: var(--b-text-xl); line-height: var(--b-leading-relaxed); color: var(--b-text-muted); text-wrap: balance; }
-.hero__actions { display: flex; align-items: center; justify-content: flex-start; gap: var(--b-space-16); margin-top: var(--b-space-16); }
+.hero__row { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--b-space-32); }
+.hero__lede { max-width: 560px; margin: 0; font-size: var(--b-text-xl); line-height: var(--b-leading-relaxed); color: var(--b-text-muted); text-wrap: balance; }
+.hero__actions { display: flex; align-items: center; gap: var(--b-space-16); flex: none; }
 .hero__actions .btn { padding: var(--b-space-12) var(--b-space-16); }
-.hero__note { margin: 0; font-size: var(--b-text-sm); font-weight: var(--b-font-medium); color: var(--b-text-faint); text-wrap: balance; }
-.hero__demo { width: 100%; }
-/* 16/9 plutôt que le 960x460 natif de la vidéo (how-it-works-demo.webm) :
-   la démo gagne en hauteur, au prix d'un recadrage latéral par
-   object-fit: cover, la vidéo étant plus large que 16/9. */
-.hero__demo .demo-video { width: 100%; aspect-ratio: 16 / 9; }
+.hero__demo { width: 100%; margin-top: var(--b-space-32); }
 
 /* ---------- Content sections (prose, pas un composant Billel, besoin propre à cette page) ---------- */
 .section {
@@ -321,7 +317,12 @@ a { color: inherit; }
 .carousel__track {
   display: flex; gap: var(--b-space-20); margin: var(--b-space-32) 0 0; list-style: none;
   padding: 0 var(--b-gutter); scroll-padding-inline: var(--b-gutter);
-  overflow-x: auto; overscroll-behavior-x: contain;
+  /* overflow-x: auto seul passe aussi l'axe vertical en auto, et la DA pose
+     overscroll-behavior: contain sur tout élément : la piste devenait un
+     conteneur vertical qui avalait la molette sans la rendre à la page (même
+     bug que le rail du plugin). L'axe vertical est donc fermé, et seul l'axe
+     horizontal garde le contain. */
+  overflow-x: auto; overflow-y: hidden; overscroll-behavior: contain auto;
   scroll-snap-type: x mandatory; scroll-behavior: smooth;
   scrollbar-width: none;
 }
@@ -374,12 +375,7 @@ a { color: inherit; }
 .section__cta { display: flex; justify-content: flex-end; margin-top: var(--b-space-32); }
 .section__cta .btn { padding: var(--b-space-12) var(--b-space-16); }
 
-/* ---------- Demo video (illustration "how it works") ---------- */
-.demo-video {
-  display: block; width: 100%; height: 100%; min-height: 220px;
-  object-fit: cover; border-radius: 0;
-  border: 1px solid var(--b-border); background: var(--b-surface-muted);
-}
+${HERO_DEMO_CSS}
 
 /* ---------- Footer (b-footer, compo marketing) ---------- */
 .footer {
@@ -458,18 +454,16 @@ main:focus { outline: none; }
     from { opacity: 0; filter: blur(4px); transform: translateY(12px); }
     to { opacity: 1; filter: blur(0); transform: none; }
   }
-  .hero__content > *, .hero__demo {
+  .hero > * {
     animation: hero-enter 300ms var(--b-ease-out) both;
   }
-  .hero__content > :nth-child(2) { animation-delay: 100ms; }
-  .hero__content > :nth-child(3) { animation-delay: 200ms; }
-  .hero__content > :nth-child(4) { animation-delay: 300ms; }
-  .hero__demo { animation-delay: 200ms; }
+  .hero > :nth-child(2) { animation-delay: 100ms; }
+  .hero > :nth-child(3) { animation-delay: 200ms; }
 }
 /* Mouvement réduit : fondu seul, plus de glissement ni de flou. */
 @media (prefers-reduced-motion: reduce) {
   @keyframes hero-fade { from { opacity: 0; } to { opacity: 1; } }
-  .hero__content > *, .hero__demo { animation: hero-fade 300ms var(--b-ease-out) both; }
+  .hero > * { animation: hero-fade 300ms var(--b-ease-out) both; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -479,9 +473,6 @@ main:focus { outline: none; }
 
 @media (max-width: 960px) {
   .card-grid { grid-template-columns: repeat(2, 1fr); }
-  .hero { grid-template-columns: 1fr; gap: var(--b-space-32); }
-  .hero__content { align-items: center; text-align: center; }
-  .hero__actions { justify-content: center; }
 }
 
 /* Paliers du carrousel. Ils ne suivent pas ceux de la mise en page : ce qui
@@ -504,7 +495,8 @@ main:focus { outline: none; }
 }
 
 @media (max-width: 720px) {
-  .hero__title { font-size: 48px; }
+  .hero__title { font-size: var(--b-text-5xl); }
+  .hero__row { flex-direction: column; align-items: flex-start; gap: var(--b-space-24); }
   /* Le brand, la nav et les boutons ne tiennent plus sur une seule ligne : au
      lieu de laisser les boutons se compresser (leur texte passait alors sur
      deux lignes), seule la ligne d'actions passe dessous. Les ancres restent
