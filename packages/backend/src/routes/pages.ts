@@ -402,8 +402,8 @@ pagesRouter.get('/', (_req, res) => {
           ${FEATURE_SUGGEST_HTML}
           <div class="card__body">
             <p class="card__eyebrow">Templates</p>
-            <h3 class="card__title">Roles, suggested for you</h3>
-            <p class="card__desc">Decker reads each layout and suggests its title, body, and theme colors. Change any role in one click.</p>
+            <h3 class="card__title">Suggested placeholders and colors</h3>
+            <p class="card__desc">Decker reads each layout and suggests its placeholders and theme colors. Change any of them in one click.</p>
           </div>
         </li>
         <li class="carousel__item card">

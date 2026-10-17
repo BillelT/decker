@@ -322,11 +322,14 @@ export const FEATURE_SCENES_CSS = `
 /* Deck et Templates : un zoom sur le haut du plugin (scene a 800px de large,
    fenetre de la meme largeur, donc echelle x1.2). Le bas, vide ou presque,
    sort du cadre : ce qui compte, c'est de voir la difference de layout. */
-.fs-pwin--deck, .fs-pwin--tmpl { left: 0; top: -40px; width: 800px; height: 611px; box-shadow: none; }
+.fs-pwin--deck, .fs-pwin--tmpl { left: 0; top: -40px; width: 800px; height: 726px; box-shadow: none; }
 /* Le champ Name fait deborder la barre d'actions a cette largeur : il sort du
    cadre, les boutons restent entiers. */
 .fs-pwin--deck .f2s-topbar-title-group, .fs-pwin--tmpl .f2s-topbar-title-group { display: none; }
-.fs-pwin--suggest { left: -200px; top: -110px; width: 960px; height: 700px; }
+.fs-pwin--suggest { left: -200px; top: -110px; width: 960px; height: 726px; }
+/* Le focus est sur ce que Suggest roles remplit : Composition et Colors.
+   Master content sort pour que Colors remonte a hauteur de Composition. */
+.fs-pwin--suggest .f2s-style-panel > .f2s-tmpl-section:first-child { display: none; }
 .fs-pwin--fonts { left: 30px; top: 40px; width: 960px; height: 640px; }
 .fs .f2s-canvas-preview .dm-slide, .fs .f2s-retro-screen .dm-slide { width: 100%; }
 .fs-toast { animation: none; }
