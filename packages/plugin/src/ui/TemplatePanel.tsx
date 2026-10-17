@@ -335,6 +335,13 @@ export function TemplatePanel({
     const count = placeholderSuggestions.length;
     onNotice(`${count} ${SUGGESTION_PLURALS.select(count) === 'one' ? 'role' : 'roles'} suggested. Change any of them in Composition.`);
   }
+  // Retire d'un coup tous les rôles du layout affiché (tags Figma compris),
+  // pour repartir de zéro après un Suggest roles qui ne convient pas.
+  function clearPlaceholderRoles() {
+    for (const el of rows.tagged) setPlaceholderRole(el.sourceNodeId, '');
+    const count = rows.tagged.length;
+    onNotice(`${count} ${SUGGESTION_PLURALS.select(count) === 'one' ? 'role' : 'roles'} cleared.`);
+  }
 
   if (order.length === 0) {
     return (
@@ -502,21 +509,32 @@ export function TemplatePanel({
                         longueur des textes de CE layout, sans toucher à un
                         calque qui a déjà un rôle (templatePlaceholderRoles.ts).
                         Chaque rôle posé reste modifiable dans sa ligne. */}
-                    <button
-                      type="button"
-                      className="f2s-btn f2s-btn--ghost"
-                      disabled={locked || placeholderSuggestions.length === 0}
-                      title={
-                        previewingMaster
-                          ? 'Tag a Master text yourself to make it editable on every slide. Untagged layers stay fixed on every slide.'
-                          : placeholderSuggestions.length === 0
-                          ? 'Nothing left to suggest in this layout: its title, subtitle and body are set, or no other text fits them.'
-                          : 'Tag the title, subtitles, bodies and images of this layout from the size and length of its texts.'
-                      }
-                      onClick={applyPlaceholderSuggestions}
-                    >
-                      Suggest roles
-                    </button>
+                    <div className="f2s-section-actions">
+                      <button
+                        type="button"
+                        className="f2s-btn f2s-btn--ghost"
+                        disabled={locked || rows.tagged.length === 0}
+                        title="Remove the role of every layer in this layout."
+                        onClick={clearPlaceholderRoles}
+                      >
+                        Clear roles
+                      </button>
+                      <button
+                        type="button"
+                        className="f2s-btn f2s-btn--ghost"
+                        disabled={locked || placeholderSuggestions.length === 0}
+                        title={
+                          previewingMaster
+                            ? 'Tag a Master text yourself to make it editable on every slide. Untagged layers stay fixed on every slide.'
+                            : placeholderSuggestions.length === 0
+                            ? 'Nothing left to suggest in this layout: its title, subtitle and body are set, or no other text fits them.'
+                            : 'Tag the title, subtitles, bodies and images of this layout from the size and length of its texts.'
+                        }
+                        onClick={applyPlaceholderSuggestions}
+                      >
+                        Suggest roles
+                      </button>
+                    </div>
                   </div>
                   {rows.tagged.length === 0 ? (
                     <p className="f2s-toolbar-muted">No placeholder yet. Pick a role for a layer in Content.</p>

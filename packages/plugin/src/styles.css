@@ -1704,6 +1704,12 @@ a.f2s-btn {
   min-height: 24px;
 }
 
+/* Clear roles et Suggest roles, côte à côte à droite du titre de section. */
+.f2s-section-actions {
+  display: flex;
+  gap: 8px;
+}
+
 /* Police de remplacement dans Slides, sous le nom de la police d'origine :
    même sélecteur que le bandeau "Fonts", aligné sur le texte de la ligne. */
 .f2s-style-font-replace {

@@ -1851,6 +1851,12 @@ a.f2s-btn {
   min-height: 24px;
 }
 
+/* Clear roles et Suggest roles, côte à côte à droite du titre de section. */
+.f2s-section-actions {
+  display: flex;
+  gap: 8px;
+}
+
 /* Police de remplacement dans Slides, sous le nom de la police d'origine :
    même sélecteur que le bandeau "Fonts", aligné sur le texte de la ligne. */
 .f2s-style-font-replace {
@@ -5505,6 +5511,11 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
       const count = placeholderSuggestions.length;
       onNotice(`${count} ${SUGGESTION_PLURALS2.select(count) === "one" ? "role" : "roles"} suggested. Change any of them in Composition.`);
     }
+    function clearPlaceholderRoles() {
+      for (const el of rows.tagged) setPlaceholderRole(el.sourceNodeId, "");
+      const count = rows.tagged.length;
+      onNotice(`${count} ${SUGGESTION_PLURALS2.select(count) === "one" ? "role" : "roles"} cleared.`);
+    }
     if (order.length === 0) {
       return /* @__PURE__ */ u3("div", { className: "f2s-body", children: [
         notice && /* @__PURE__ */ u3(Toast, { notice, onDismiss: onDismissNotice }, notice.id),
@@ -5624,17 +5635,30 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
             /* @__PURE__ */ u3("section", { className: "f2s-tmpl-section", children: [
               /* @__PURE__ */ u3("div", { className: "f2s-section-head", children: [
                 /* @__PURE__ */ u3("h3", { className: "f2s-tmpl-heading", children: "Composition" }),
-                /* @__PURE__ */ u3(
-                  "button",
-                  {
-                    type: "button",
-                    className: "f2s-btn f2s-btn--ghost",
-                    disabled: locked || placeholderSuggestions.length === 0,
-                    title: previewingMaster ? "Tag a Master text yourself to make it editable on every slide. Untagged layers stay fixed on every slide." : placeholderSuggestions.length === 0 ? "Nothing left to suggest in this layout: its title, subtitle and body are set, or no other text fits them." : "Tag the title, subtitles, bodies and images of this layout from the size and length of its texts.",
-                    onClick: applyPlaceholderSuggestions,
-                    children: "Suggest roles"
-                  }
-                )
+                /* @__PURE__ */ u3("div", { className: "f2s-section-actions", children: [
+                  /* @__PURE__ */ u3(
+                    "button",
+                    {
+                      type: "button",
+                      className: "f2s-btn f2s-btn--ghost",
+                      disabled: locked || rows.tagged.length === 0,
+                      title: "Remove the role of every layer in this layout.",
+                      onClick: clearPlaceholderRoles,
+                      children: "Clear roles"
+                    }
+                  ),
+                  /* @__PURE__ */ u3(
+                    "button",
+                    {
+                      type: "button",
+                      className: "f2s-btn f2s-btn--ghost",
+                      disabled: locked || placeholderSuggestions.length === 0,
+                      title: previewingMaster ? "Tag a Master text yourself to make it editable on every slide. Untagged layers stay fixed on every slide." : placeholderSuggestions.length === 0 ? "Nothing left to suggest in this layout: its title, subtitle and body are set, or no other text fits them." : "Tag the title, subtitles, bodies and images of this layout from the size and length of its texts.",
+                      onClick: applyPlaceholderSuggestions,
+                      children: "Suggest roles"
+                    }
+                  )
+                ] })
               ] }),
               rows.tagged.length === 0 ? /* @__PURE__ */ u3("p", { className: "f2s-toolbar-muted", children: "No placeholder yet. Pick a role for a layer in Content." }) : /* @__PURE__ */ u3(TemplateElementList, { elements: rows.tagged, noteByNode, conflicts: rows.conflicts }),
               unattachedComposition.length > 0 && /* @__PURE__ */ u3(TemplateLogList, { warnings: unattachedComposition, fontOverrides, wrap: true })
