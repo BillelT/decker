@@ -19,7 +19,7 @@ Pas de nom produit : c'est une intégration. Notre jeu des pop-ups façon virus 
 ## Déroulé d'une partie
 
 1. **Démarrage.** Direct, dès l'arrivée sur la page : pas d'écran « Start ». La première pop-up arrive au bout d'environ 1 s.
-2. **La vague.** Les pop-ups apparaissent à un rythme qui accélère (une toutes les 2.4 s au début, une toutes les 0.45 s à la fin ; plus lent sur un petit écran).
+2. **La vague.** Rythme façon Tetris : 3 s de calme pour que le joueur comprenne (une seule pop-up), puis la vitesse normale (une toutes les 1.3 s), qui monte d'un palier toutes les 6 s, 15 % plus vite à chaque fois, jusqu'à une toutes les 0.38 s. Plus lent sur un petit écran.
 3. **Fermer.** Clic sur la croix, ou au clavier (Tab puis Entrée).
 4. **La jauge.** « Deck integrity » remonte doucement avec peu de pop-ups ouvertes et fond d'autant plus vite qu'elles s'empilent.
 5. **Défaite.** La jauge tombe à zéro : dialogue `SCREENSHOT.EXE` « Your deck was flattened into a screenshot. », temps tenu, score et meilleur score, « Quit » et « Try again ».

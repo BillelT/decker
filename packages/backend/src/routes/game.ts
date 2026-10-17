@@ -627,9 +627,15 @@ function spawnRandom(fromAd) {
 }
 
 /* ---------- Boucle ---------- */
+/* Rythme façon Tetris : 3 s de calme pour que le joueur comprenne (une
+   seule pop-up), puis la vitesse normale, une pop-up toutes les 1.3 s, qui
+   monte d'un palier toutes les 6 s (15 % plus vite à chaque fois) jusqu'à
+   une toutes les 0.38 s. */
+var CALM = 3000;
 function spawnInterval() {
-  var t = Math.min(1, s.elapsed / DURATION);
-  var ms = 2400 - (2400 - 450) * t;
+  if (s.elapsed < CALM) return CALM - s.elapsed;
+  var level = Math.floor((s.elapsed - CALM) / 6000);
+  var ms = Math.max(380, 1300 * Math.pow(0.85, level));
   if (isSmall()) ms *= 1.5;
   if (reduceMotion) ms *= 1.3;
   return ms;
