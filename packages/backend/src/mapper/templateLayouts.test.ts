@@ -118,6 +118,8 @@ describe('mapDocumentToBatches with template layouts', () => {
     // Puces retirées sur la slide seulement : Google le refuse sur un layout.
     expect(r.filter((q) => q.deleteParagraphBullets).map((q) => q.deleteParagraphBullets.objectId)).toEqual(['b2_s']);
     expect(r.find((q) => q.deleteObject).deleteObject.objectId).toBe('b3');
+    // Un placeholder prédéfini peut avoir un fond : la zone de texte Figma, jamais.
+    expect(r.find((q) => q.updateShapeProperties?.objectId === 'b1').updateShapeProperties.shapeProperties.shapeBackgroundFill).toEqual({ propertyState: 'NOT_RENDERED' });
     expect(r[slideIdx].createSlide).toEqual({
       objectId: 'f2s_page_content',
       slideLayoutReference: { layoutId: 'L_body' },
@@ -164,7 +166,7 @@ describe('mapDocumentToBatches with template layouts', () => {
     const r = masterBatch.requests as any[];
     const move = r.find((q) => q.updatePageElementTransform);
     expect(move.updatePageElementTransform.objectId).toBe('mt');
-    expect(move.updatePageElementTransform.transform.translateX).toBeLessThan(0);
+    expect(move.updatePageElementTransform.transform.translateY).toBeLessThan(0);
     expect(r.find((q) => q.updateTextStyle?.objectId === 'mt').updateTextStyle).toMatchObject({ style: { fontSize: { magnitude: 1 } } });
     expect(r.some((q) => q.deleteObject)).toBe(false);
   });
@@ -177,7 +179,7 @@ describe('mapDocumentToBatches with template layouts', () => {
     const [masterBatch, layoutBatch] = mapDocumentToBatches(d, () => '', UNCALIBRATED_DEFAULTS, 'master-1', { layouts: LAYOUTS, plan, masterTitle: slot('mt', 'TITLE') });
     const m = masterBatch.requests as any[];
     expect(m.filter((q) => q.createShape).map((q) => q.createShape.objectId)).toEqual(['legal']);
-    expect(m.find((q) => q.updatePageElementTransform).updatePageElementTransform.transform.translateX).toBeLessThan(0);
+    expect(m.find((q) => q.updatePageElementTransform).updatePageElementTransform.transform.translateY).toBeLessThan(0);
     const l = layoutBatch.requests as any[];
     expect(l.some((q) => q.insertText?.text === '[eyebrow]')).toBe(true);
   });

@@ -245,7 +245,17 @@ function textOntoPlaceholder(requests: SlidesRequest[], slot: LayoutPlaceholder)
       };
       out.push({ updatePageElementTransform: { objectId: slot.objectId, applyMode: 'ABSOLUTE', transform: absolute } });
     } else if ('updateShapeProperties' in req) {
-      out.push({ updateShapeProperties: { ...req.updateShapeProperties, objectId: slot.objectId } });
+      // Certains placeholders prédéfinis ont un fond (17 octobre : un
+      // grand aplat gris derrière le titre de la slide orange) : la zone de
+      // texte Figma n'en a jamais.
+      const { shapeProperties, fields } = req.updateShapeProperties;
+      out.push({
+        updateShapeProperties: {
+          objectId: slot.objectId,
+          shapeProperties: { ...shapeProperties, shapeBackgroundFill: { propertyState: 'NOT_RENDERED' } },
+          fields: `${fields},shapeBackgroundFill.propertyState`,
+        },
+      });
     } else if ('updateTextStyle' in req && !textStyled) {
       textStyled = true;
       out.push({ updateTextStyle: { ...req.updateTextStyle, objectId: slot.objectId, textRange: { type: 'ALL' } } });
@@ -444,30 +454,31 @@ function mapElement(
   }
 }
 
-/** Hors de la slide, en haut à gauche : là où les placeholders cachés du Master ne se voient pas dans "Modifier le thème". */
-const HIDDEN_PLACEHOLDER_OFFSET_PT = -200;
+/** Écart entre la slide et un placeholder caché du Master, au-dessus d'elle. */
+const HIDDEN_PLACEHOLDER_GAP_PT = 100;
 
 /**
  * Le titre et le corps par défaut du Master ne se suppriment pas : les
  * placeholders des layouts en héritent, et les supprimer leur fait perdre
- * leur style (17 octobre, sous-titres repassés en noir). Ils sont réduits
- * à 1 pt et sortis de la slide. Les placeholders des layouts ont leur
- * propre position et leur propre style : rien ne change pour eux.
+ * leur style (17 octobre, sous-titres repassés en noir). Ils gardent leur
+ * taille (réduits à 1 pt de large, les 9 niveaux du corps s'écrivaient une
+ * lettre par ligne), passent en texte de 1 pt et sortent au-dessus de la
+ * slide. Les placeholders des layouts ont leur propre position et leur
+ * propre style : rien ne change pour eux.
  */
 function hidePlaceholder(slot: LayoutPlaceholder): SlidesRequest[] {
-  const target = EMU_PER_PT;
   return [
     {
       updatePageElementTransform: {
         objectId: slot.objectId,
         applyMode: 'ABSOLUTE',
         transform: {
-          scaleX: roundForSerialization(target / slot.widthEmu),
+          scaleX: 1,
           shearY: 0,
           shearX: 0,
-          scaleY: roundForSerialization(target / slot.heightEmu),
-          translateX: HIDDEN_PLACEHOLDER_OFFSET_PT,
-          translateY: HIDDEN_PLACEHOLDER_OFFSET_PT,
+          scaleY: 1,
+          translateX: 0,
+          translateY: roundForSerialization(-(slot.heightEmu / EMU_PER_PT) - HIDDEN_PLACEHOLDER_GAP_PT),
           unit: 'PT',
         },
       },
