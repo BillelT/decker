@@ -23,8 +23,9 @@ import type { AffineTransform, RequestBatch, SlidesRequest } from './slidesReque
  *   type s'il en reste, sinon la copie d'un placeholder du même type,
  *   déplacée, redimensionnée et restylée pour tomber pile sur le texte
  *   Figma. Plusieurs titres, sous-titres ou corps par layout vont donc bien ;
- * - un sous-titre sans placeholder de sous-titre dans le layout prend un
- *   placeholder de corps (sans puces) ;
+ * - un sous-titre, un corps ou un texte libre prend de préférence un
+ *   placeholder de sous-titre (copié au besoin) : le corps natif a des
+ *   puces que Google interdit de retirer sur un layout ;
  * - le reste (fond, formes, images, logos, textes sans rôle) est posé sur
  *   le layout comme décor : Slides n'a pas de placeholder d'image (il n'en
  *   existe que dans un PowerPoint importé), une image reste donc dans le
@@ -73,10 +74,17 @@ export interface LayoutAssignment {
 type NativeRole = 'TITLE' | 'SUBTITLE' | 'BODY';
 
 /** Types de placeholder acceptés par rôle, par ordre de préférence. */
+/**
+ * Un corps ou un texte libre préfère un placeholder de SOUS-TITRE : le corps
+ * natif porte des puces que Google interdit de retirer sur un layout
+ * (`deleteParagraphBullets` refusé le 17 octobre, comme toute écriture de
+ * texte), et chaque nouvelle slide les hériterait. Le corps ne sert que
+ * dans un layout sans sous-titre.
+ */
 const ACCEPTED_TYPES: Record<NativeRole, string[]> = {
   TITLE: ['TITLE', 'CENTERED_TITLE'],
   SUBTITLE: ['SUBTITLE', 'BODY'],
-  BODY: ['BODY'],
+  BODY: ['SUBTITLE', 'BODY'],
 };
 
 const ROLE_ORDER: NativeRole[] = ['TITLE', 'SUBTITLE', 'BODY'];
@@ -98,7 +106,7 @@ interface Match {
   placeholderByElementId: Record<string, string>;
   duplicates: { sourceId: string; objectId: string }[];
   matched: number;
-  /** Rôles servis par leur type préféré (un sous-titre dans un SUBTITLE plutôt qu'un BODY). */
+  /** Textes servis sans placeholder de corps, donc sans puces. */
   exact: number;
   unused: string[];
 }
@@ -116,21 +124,25 @@ function matchPlaceholders(slide: IRSlide, layout: NativeLayout): Match {
   let exact = 0;
   for (const role of ROLE_ORDER) {
     for (const el of slide.elements.filter((e) => nativeRole(e) === role)) {
+      // Le type compte plus que la place libre : mieux vaut copier un
+      // sous-titre que remplir un corps à puces resté libre.
       const types = ACCEPTED_TYPES[role];
-      const slot = types.map((t) => free.find((p) => p.type === t)).find(Boolean);
-      if (slot) {
-        free.splice(free.indexOf(slot), 1);
-        placeholderByElementId[el.id] = slot.objectId;
-      } else {
-        const source = types.map((t) => layout.placeholders.find((p) => p.type === t)).find(Boolean);
+      for (const type of types) {
+        const slot = free.find((p) => p.type === type);
+        const source = slot ?? layout.placeholders.find((p) => p.type === type);
         if (!source) continue;
-        const objectId = duplicateId(el.id);
-        duplicates.push({ sourceId: source.objectId, objectId });
-        placeholderByElementId[el.id] = objectId;
+        if (slot) {
+          free.splice(free.indexOf(slot), 1);
+          placeholderByElementId[el.id] = slot.objectId;
+        } else {
+          const objectId = duplicateId(el.id);
+          duplicates.push({ sourceId: source.objectId, objectId });
+          placeholderByElementId[el.id] = objectId;
+        }
+        matched += 1;
+        if (type !== 'BODY') exact += 1;
+        break;
       }
-      matched += 1;
-      const used = slot ?? layout.placeholders.find((p) => p.objectId === duplicates[duplicates.length - 1].sourceId)!;
-      if (used.type === types[0] || (role === 'TITLE' && used.type === 'CENTERED_TITLE')) exact += 1;
     }
   }
   return { placeholderByElementId, duplicates, matched, exact, unused: free.map((p) => p.objectId) };
@@ -138,7 +150,7 @@ function matchPlaceholders(slide: IRSlide, layout: NativeLayout): Match {
 
 /**
  * Choisit un layout distinct par frame : celui qui sert le plus de textes à
- * rôle, puis le plus de rôles dans leur type exact, puis celui qui a le
+ * rôle, puis le plus de textes sans puces, puis celui qui a le
  * moins de placeholders en trop. Les frames qui demandent le plus passent
  * d'abord (seuls deux layouts prédéfinis ont un sous-titre). La frame
  * Master n'en prend aucun : elle est écrite sur le Master (`mapMasterBatch`).
@@ -288,16 +300,15 @@ export function mapSlideOntoLayout(
   // Slides n'ayant pas de placeholder d'image). Un texte à rôle sans
   // placeholder (layout sans titre ni corps) va sur la slide.
   const onSlide: IRElement[] = [];
-  const filled: { slotId: string; content: string }[] = [];
+  const filled: { slotId: string; content: string; bulleted: boolean }[] = [];
   const placed: string[] = [];
   for (const el of slide.elements) {
     const slotId = assignment.placeholderByElementId[el.id];
     const slot = slotId ? slotById.get(slotId) : undefined;
     if (slot && el.kind === 'text') {
       requests.push(...textOntoPlaceholder(mapText(widenForPrompt(el, slide.frameSize.width), layoutId, scale, offsetXPt, offsetYPt, calibration), slot));
-      if (slot.type === 'BODY') requests.push({ deleteParagraphBullets: { objectId: slot.objectId, textRange: { type: 'ALL' } } });
       placed.push(slot.objectId);
-      filled.push({ slotId: slot.objectId, content: el.content });
+      filled.push({ slotId: slot.objectId, content: el.content, bulleted: slot.type === 'BODY' });
       continue;
     }
     if (el.placeholder && el.kind === 'text') {
@@ -329,8 +340,11 @@ export function mapSlideOntoLayout(
   // La slide d'exemple montre le texte d'exemple, pas l'invite de Google
   // ("Cliquez ici pour ajouter un titre") : écrire dans un placeholder de
   // SLIDE est permis, le style vient du layout.
-  for (const { slotId, content } of filled) {
-    if (content.length > 0) requests.push({ insertText: { objectId: slideIdOf(slotId), text: content, insertionIndex: 0 } });
+  // Les puces d'un corps, elles, ne se retirent que sur la slide.
+  for (const { slotId, content, bulleted } of filled) {
+    if (content.length === 0) continue;
+    requests.push({ insertText: { objectId: slideIdOf(slotId), text: content, insertionIndex: 0 } });
+    if (bulleted) requests.push({ deleteParagraphBullets: { objectId: slideIdOf(slotId), textRange: { type: 'ALL' } } });
   }
 
   for (const el of onSlide) {

@@ -230,9 +230,11 @@ les suivants) :
    n'est pas du templating ») : chaque texte à rôle (titre, sous-titre,
    corps, texte `[[custom]]`) devient un placeholder du layout, en
    dupliquant un placeholder du même type quand il en faut plusieurs
-   (`duplicateObject`, à valider) ; un sous-titre sans placeholder de
-   sous-titre prend un corps, puces retirées (`deleteParagraphBullets`, à
-   valider). Images et logos vont dans le layout en décor : Slides n'a pas
+   (`duplicateObject`, passé la validation de Google). Google refuse
+   `deleteParagraphBullets` sur un layout : tout texte prend donc de
+   préférence un placeholder de sous-titre (sans puces), copié au besoin ;
+   le corps ne sert que dans un layout sans sous-titre, et ses puces ne
+   sont retirées que sur la slide d'exemple. Images et logos vont dans le layout en décor : Slides n'a pas
    de placeholder d'image hors PowerPoint importé. La slide d'exemple est
    remplie avec le texte d'exemple. Les tags du Master sont ignorés (un
    placeholder du Master ne s'affiche sur aucune slide) et son titre par

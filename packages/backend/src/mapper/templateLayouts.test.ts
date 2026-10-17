@@ -50,15 +50,22 @@ function doc(slides: IRSlide[], masterSlideId?: string): IRDocument {
 }
 
 describe('planTemplateLayouts', () => {
-  it('gives the subtitle layout to the frame that needs it, and the leanest title layout to the other', () => {
+  it('prefers a subtitle placeholder for any text, the native body bullets cannot be removed on a layout', () => {
     const plan = planTemplateLayouts(
       [slide('content', [text('c', 'TITLE'), text('d', 'BODY')], 0), slide('cover', [text('a', 'TITLE'), text('b', 'SUBTITLE')], 1)],
       LAYOUTS,
     );
-    expect(plan.cover.layoutName).toBe('TITLE');
-    expect(plan.cover.placeholderByElementId).toEqual({ a: 't1', b: 't2' });
-    expect(plan.content.layoutName).toBe('TITLE_AND_BODY');
-    expect(plan.content.placeholderByElementId).toEqual({ c: 'b1', d: 'b2' });
+    expect(plan.content.layoutName).toBe('TITLE');
+    expect(plan.content.placeholderByElementId).toEqual({ c: 't1', d: 't2' });
+    expect(plan.cover.layoutName).toBe('TITLE_AND_BODY');
+    expect(plan.cover.placeholderByElementId).toEqual({ a: 'b1', b: 'b2' });
+  });
+
+  it('copies the subtitle placeholder rather than filling a free bulleted body', () => {
+    const layout: NativeLayout = { objectId: 'L_desc', name: 'SECTION_TITLE_AND_DESCRIPTION', placeholders: [slot('x1', 'TITLE'), slot('x2', 'SUBTITLE'), slot('x3', 'BODY')] };
+    const plan = planTemplateLayouts([slide('s', [text('k1', 'SUBTITLE'), text('k2', 'BODY')])], [layout]);
+    expect(plan.s.placeholderByElementId).toEqual({ k1: 'x2', k2: 'f2s_ph_k2' });
+    expect(plan.s.unusedPlaceholderIds).toEqual(['x1', 'x3']);
   });
 
   it('copies a placeholder when a layout needs more of a type than it has (three cards with a subtitle each)', () => {
@@ -97,7 +104,7 @@ describe('mapDocumentToBatches with template layouts', () => {
     const s = slide('content', [text('deco', undefined), text('c', 'TITLE'), text('d', 'BODY'), logo]);
     s.background = { type: 'SOLID', color: { r: 1, g: 1, b: 1, a: 1 } };
     const d = doc([s]);
-    const plan = planTemplateLayouts(d.slides, LAYOUTS);
+    const plan = planTemplateLayouts(d.slides, [LAYOUTS[1]]);
     const [batch] = mapDocumentToBatches(d, () => '', UNCALIBRATED_DEFAULTS, 'master', { layouts: LAYOUTS, plan });
     const r = batch.requests as any[];
     const slideIdx = r.findIndex((q) => q.createSlide);
@@ -108,7 +115,8 @@ describe('mapDocumentToBatches with template layouts', () => {
     expect(r.filter((q) => q.updatePageElementTransform).map((q) => q.updatePageElementTransform.objectId)).toEqual(['b1', 'b2']);
     // Google refuse toute écriture de texte dans un placeholder de layout.
     expect(r.some((q) => q.deleteText || ['b1', 'b2'].includes(q.insertText?.objectId))).toBe(false);
-    expect(r.find((q) => q.deleteParagraphBullets).deleteParagraphBullets.objectId).toBe('b2');
+    // Puces retirées sur la slide seulement : Google le refuse sur un layout.
+    expect(r.filter((q) => q.deleteParagraphBullets).map((q) => q.deleteParagraphBullets.objectId)).toEqual(['b2_s']);
     expect(r.find((q) => q.deleteObject).deleteObject.objectId).toBe('b3');
     expect(r[slideIdx].createSlide).toEqual({
       objectId: 'f2s_page_content',
@@ -118,7 +126,7 @@ describe('mapDocumentToBatches with template layouts', () => {
         { layoutPlaceholderObjectId: 'b2', objectId: 'b2_s' },
       ],
     });
-    const inserts = r.filter((q) => q.insertText && r.indexOf(q) > slideIdx).map((q) => q.insertText);
+    const inserts = r.filter((q, i) => q.insertText && i > slideIdx).map((q) => q.insertText);
     expect(inserts).toEqual([
       { objectId: 'b1_s', text: '[c]', insertionIndex: 0 },
       { objectId: 'b2_s', text: '[d]', insertionIndex: 0 },
