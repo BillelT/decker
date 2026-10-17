@@ -163,7 +163,7 @@ const colorsSection = (suggest: string) =>
 const TYPO_SECTION = `<section class="f2s-tmpl-section"><h3 class="f2s-tmpl-heading f2s-style-heading">Typography</h3><ul class="f2s-style-list"><li class="f2s-style-row"><div class="f2s-style-row-main"><span class="f2s-style-font-swatch">Aa</span><span class="f2s-style-font-info"><span class="f2s-tmpl-font-family">Arial</span><span class="f2s-toolbar-muted">400, 700</span></span></div><div class="f2s-style-font-replace"><span class="f2s-font-arrow">&rarr;</span><div class="f2s-font-combobox"><input type="text" class="f2s-font-combobox-input" size="10" value="Arial"><span class="f2s-font-combobox-arrow"></span></div></div></li></ul></section>`;
 export const FEATURE_TEMPLATE_HTML = scene(
   'template',
-  800,
+  740,
   'The Decker plugin in Templates mode: the Cover layout tagged Master, a layout whose title and body are tagged as placeholders, and the detected colors mapped to theme roles',
   pluginApp('fs-pwin--tmpl', {
     mode: 'template',
@@ -319,13 +319,17 @@ export const FEATURE_SCENES_CSS = `
 /* Arrivé aux cards, on sait que c'est un plugin Figma : la barre de Figma
    et le pied du plugin sortent du cadre, l'interface du mode remplit la card. */
 .fs .f2s-footer { display: none; }
-/* Deck et Templates : un zoom sur le haut du plugin (scene a 800px de large,
-   fenetre de la meme largeur, donc echelle x1.2). Le bas, vide ou presque,
-   sort du cadre : ce qui compte, c'est de voir la difference de layout. */
-.fs-pwin--deck, .fs-pwin--tmpl { left: 0; top: -40px; width: 800px; height: 726px; box-shadow: none; }
+/* Deck : un zoom sur le haut du plugin (scene a 800px de large, fenetre de la
+   meme largeur, donc echelle x1.2). Le bas, vide ou presque, sort du cadre. */
+.fs-pwin--deck { left: 0; top: -40px; width: 800px; height: 726px; box-shadow: none; }
+/* Templates : vrai zoom (x1.3) sur la fenetre a sa taille reelle, sans la
+   re-agencer. Le cadre garde le rail avec le tag Master, le layout et
+   Composition ; Colors et le reste de la colonne de droite sortent a droite
+   (la card suivante les montre). */
+.fs-pwin--tmpl { left: 0; top: -40px; width: 960px; height: 726px; box-shadow: none; }
 /* Le champ Name fait deborder la barre d'actions a cette largeur : il sort du
    cadre, les boutons restent entiers. */
-.fs-pwin--deck .f2s-topbar-title-group, .fs-pwin--tmpl .f2s-topbar-title-group { display: none; }
+.fs-pwin--deck .f2s-topbar-title-group { display: none; }
 .fs-pwin--suggest { left: -200px; top: -110px; width: 960px; height: 726px; }
 /* Le focus est sur ce que Suggest roles remplit : Composition et Colors.
    Master content sort pour que Colors remonte a hauteur de Composition. */
