@@ -50,7 +50,7 @@ function TemplateElementList({
   elements: TemplateElement[];
   noteByNode: Map<string, { flag: 'rasterized' | 'visual-diff'; text: string; tooltip: string }>;
   conflicts?: Map<string, string[]>;
-  /** Frame Master : pas de rôle à choisir, chaque ligne dit si le calque sera modifiable sur les slides ou fixe. */
+  /** Frame Master : pas de rôle à choisir, tout y reste en contenu commun (backend mapper/templateLayouts.ts::mapMasterBatch). */
   master?: boolean;
 }) {
   return (
@@ -79,14 +79,7 @@ function TemplateElementList({
               </span>
               {note && <span className={`f2s-log-entry-flag f2s-log-entry-flag--${note.flag}`}>{note.text}</span>}
             </button>
-            {master ? (
-              <span
-                className={`f2s-log-entry-flag f2s-log-entry-flag--${isEditableOnSlides(el) ? 'visual-diff' : 'rasterized'}`}
-                title={isEditableOnSlides(el) ? undefined : 'Google Slides has no image placeholder: images and shapes stay the same on every slide.'}
-              >
-                {isEditableOnSlides(el) ? 'Editable on slides' : 'Fixed'}
-              </span>
-            ) : (
+            {master ? null : (
               <select
                 className="f2s-font-dropdown f2s-log-entry-role"
                 value={roleTag ?? ''}
@@ -108,11 +101,6 @@ function TemplateElementList({
       })}
     </ul>
   );
-}
-
-/** Sur le Master, chaque texte devient un placeholder de chaque layout ; images et formes restent fixes (backend mapper/templateLayouts.ts::withMasterPlaceholders). */
-function isEditableOnSlides(el: TemplateElement): boolean {
-  return el.kind === 'text' && !!el.text && el.text.chars > 0;
 }
 
 /**
@@ -329,8 +317,8 @@ export function TemplatePanel({
   const rows = splitCompositionRows(previewedLayout?.elements ?? [], compositionWarnings);
   const unattachedComposition = rows.unattached.filter((w) => w.code !== 'LAYOUT_WITHOUT_PLACEHOLDER');
 
-  // Sur le Master, rien à suggérer : chaque texte devient automatiquement un
-  // placeholder de chaque layout (backend mapper/templateLayouts.ts::withMasterPlaceholders).
+  // Sur le Master, rien à suggérer : tout son contenu reste sur le Master,
+  // commun à chaque slide (backend mapper/templateLayouts.ts::mapMasterBatch).
   const previewingMaster = order.length >= 2 && previewedLayout?.id === order[0];
   const placeholderSuggestions = previewingMaster ? [] : suggestPlaceholderRoles(previewedLayout?.elements ?? []);
   function applyPlaceholderSuggestions() {
@@ -491,10 +479,10 @@ export function TemplatePanel({
             <div className="f2s-tmpl-panel">
               {previewingMaster ? (
                 // Master : rien à taguer (décision du 17 octobre), le
-                // partage est automatique, voir isEditableOnSlides.
+                // contenu reste sur le Master, commun à chaque slide.
                 <section className="f2s-tmpl-section">
                   <h3 className="f2s-tmpl-heading">Master content</h3>
-                  <p className="f2s-toolbar-muted">Master texts become placeholders in every layout, so they stay editable on each slide.</p>
+                  <p className="f2s-toolbar-muted">The Master is shared by every layout: edit or move its content on the Master in Slides and every slide follows.</p>
                   {previewedLayout.elements.length > 0 && <TemplateElementList elements={previewedLayout.elements} noteByNode={noteByNode} master />}
                 </section>
               ) : (

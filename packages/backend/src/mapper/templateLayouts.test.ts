@@ -172,18 +172,15 @@ describe('mapDocumentToBatches with template layouts', () => {
     expect(r.some((q) => q.deleteObject)).toBe(false);
   });
 
-  it('copies every master text into every layout as a placeholder, and keeps shapes on the Master', () => {
-    const logo: IRElement = { kind: 'shape', id: 'logo', sourceNodeId: 'n_logo', rect: { x: 600, y: 10, w: 40, h: 40 }, rotation: 0, opacity: 1, shapeType: 'ELLIPSE' };
-    const master = slide('m', [text('eyebrow', undefined), logo], 0);
+  it('keeps every master text on the Master, tagged or not, so editing or moving it there changes every slide', () => {
+    const master = slide('m', [text('eyebrow', 'SUBTITLE'), text('legal', undefined)], 0);
     const d = doc([master, slide('l', [text('t', 'TITLE')], 1)], 'm');
     const plan = planTemplateLayouts(d.slides, LAYOUTS, 'm');
-    expect(Object.keys(plan.l.placeholderByElementId)).toEqual(['t', 'eyebrow_l']);
-    const [masterBatch, layoutBatch] = mapDocumentToBatches(d, () => '', UNCALIBRATED_DEFAULTS, 'master-1', { layouts: LAYOUTS, plan, masterTitle: slot('mt', 'TITLE') });
+    expect(Object.keys(plan.l.placeholderByElementId)).toEqual(['t']);
+    const [masterBatch] = mapDocumentToBatches(d, () => '', UNCALIBRATED_DEFAULTS, 'master-1', { layouts: LAYOUTS, plan, masterTitle: slot('mt', 'TITLE') });
     const m = masterBatch.requests as any[];
-    expect(m.filter((q) => q.createShape).map((q) => q.createShape.objectId)).toEqual(['logo']);
+    expect(m.filter((q) => q.createShape).map((q) => q.createShape.objectId)).toEqual(['eyebrow', 'legal']);
     expect(m.find((q) => q.updatePageElementTransform).updatePageElementTransform.transform.translateY).toBeLessThan(0);
-    const l = layoutBatch.requests as any[];
-    expect(l.some((q) => q.insertText?.text === '[eyebrow]')).toBe(true);
   });
 });
 

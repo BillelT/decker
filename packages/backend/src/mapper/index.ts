@@ -8,7 +8,7 @@ import { mapLine } from './lines.js';
 import { mapPlaceholderAltText } from './placeholder.js';
 import { mapThemeBatch } from './theme.js';
 import type { RequestBatch, SlidesRequest } from './slidesRequests.js';
-import { mapMasterBatch, mapSlideOntoLayout, withMasterPlaceholders, type LayoutAssignment, type LayoutPlaceholder, type NativeLayout } from './templateLayouts.js';
+import { mapMasterBatch, mapSlideOntoLayout, type LayoutAssignment, type LayoutPlaceholder, type NativeLayout } from './templateLayouts.js';
 
 export * from './slidesRequests.js';
 export { computeScale, roundForSerialization } from './transform.js';
@@ -54,9 +54,7 @@ export function mapDocumentToBatches(
   templateLayouts?: TemplateLayoutContext,
 ): RequestBatch[] {
   const layoutById = new Map(templateLayouts?.layouts.map((l) => [l.objectId, l]));
-  // Mêmes slides que celles du plan (planTemplateLayouts) : textes tagués du Master recopiés dans chaque layout.
-  const slides = templateLayouts ? withMasterPlaceholders(doc.slides, doc.masterSlideId) : doc.slides;
-  const slideBatches = [...slides]
+  const slideBatches = [...doc.slides]
     .sort((a, b) => a.order - b.order)
     .map((slide) => {
       if (templateLayouts && masterObjectId && slide.sourceNodeId === doc.masterSlideId) {

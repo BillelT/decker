@@ -149,37 +149,6 @@ function matchPlaceholders(slide: IRSlide, layout: NativeLayout): Match {
 }
 
 /**
- * Les textes du Master (surtitre, sujet, date) doivent rester modifiables
- * sur chaque slide. Or un élément du Master est figé sur les slides, et un
- * placeholder du Master ne s'affiche sur aucune : Slides s'en sert
- * seulement comme modèle des placeholders des layouts. Chaque texte est
- * donc recopié dans chaque layout, où il devient un placeholder comme les
- * autres (même position, même style), et retiré du Master. C'est
- * automatique, sans tag, pour tous les textes (décision du 17 octobre) ;
- * images et formes restent sur le Master en décor commun (Slides n'a pas
- * de placeholder d'image).
- */
-export function withMasterPlaceholders(slides: IRSlide[], masterSlideId?: string): IRSlide[] {
-  const master = slides.find((s) => s.sourceNodeId === masterSlideId);
-  if (!master) return slides;
-  const shared = master.elements.filter((el): el is IRText => el.kind === 'text' && el.content.trim().length > 0);
-  if (shared.length === 0) return slides;
-  return slides.map((s) => {
-    if (s === master) return { ...s, elements: s.elements.filter((el) => !shared.includes(el as IRText)) };
-    const k = s.frameSize.width / master.frameSize.width;
-    const copies = shared.map((el): IRText => ({
-      ...el,
-      id: `${el.id}_${s.sourceNodeId}`.replace(/[^a-zA-Z0-9_-]/g, '_'),
-      rect: { x: el.rect.x * k, y: el.rect.y * k, w: el.rect.w * k, h: el.rect.h * k },
-      runs: el.runs.map((run) => ({ ...run, fontSizePx: run.fontSizePx * k })),
-      // Un texte libre : il prend un placeholder de sous-titre, sans puces.
-      placeholder: { role: 'CUSTOM', label: el.content.trim().slice(0, 40) },
-    }));
-    return { ...s, elements: [...copies, ...s.elements] };
-  });
-}
-
-/**
  * Choisit un layout distinct par frame : celui qui sert le plus de textes à
  * rôle, puis le plus de textes sans puces, puis celui qui a le
  * moins de placeholders en trop. Les frames qui demandent le plus passent
@@ -189,7 +158,6 @@ export function withMasterPlaceholders(slides: IRSlide[], masterSlideId?: string
 export function planTemplateLayouts(slides: IRSlide[], layouts: NativeLayout[], masterSlideId?: string): Record<string, LayoutAssignment> {
   const plan: Record<string, LayoutAssignment> = {};
   const free = [...layouts];
-  slides = withMasterPlaceholders(slides, masterSlideId);
   const demand = (s: IRSlide) => s.elements.filter((el) => nativeRole(el)).length;
   const ordered = slides.filter((s) => s.sourceNodeId !== masterSlideId).sort((a, b) => demand(b) - demand(a) || a.order - b.order);
 
@@ -495,12 +463,12 @@ function hidePlaceholder(slot: LayoutPlaceholder): SlidesRequest[] {
  * Frame Master (la première du rail) : son fond et tous ses éléments sont
  * écrits sur la page Master, comme décor. Slides les peint sur chaque
  * layout et chaque slide, entre le fond de la page et son contenu ; aucune
- * slide n'est créée pour elle. Ses textes n'y sont plus : ils sont
- * recopiés en placeholders dans chaque layout
- * (`withMasterPlaceholders`),
- * car un placeholder du Master ne s'affiche sur aucune slide (17 octobre,
- * un `[[title]]` posé sur un surtitre disparaissait). Son titre et son
- * corps par défaut sont toujours cachés.
+ * slide n'est créée pour elle. Tout y reste, textes compris, même tagués :
+ * modifié ou déplacé sur le Master dans Slides, il change sur chaque slide
+ * (choix du 17 octobre, plutôt qu'une copie modifiable par slide mais
+ * détachée du Master). Un placeholder du Master, lui, ne s'affiche sur
+ * aucune slide (17 octobre, un `[[title]]` posé sur un surtitre
+ * disparaissait) : son titre et son corps par défaut sont toujours cachés.
  */
 export function mapMasterBatch(
   slide: IRSlide,
