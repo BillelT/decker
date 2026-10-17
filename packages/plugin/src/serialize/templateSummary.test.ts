@@ -160,7 +160,7 @@ describe('summarizeTaggableElements', () => {
       baseShape({ id: 'b', sourceNodeId: 'nb', sourceNodeName: 'Photo slot', placeholder: { role: 'IMAGE', label: 'Image' } }),
     ];
     expect(summarizeTaggableElements(elements)).toEqual([
-      { id: 'a', sourceNodeId: 'na', name: 'Heading', kind: 'text', role: undefined, label: undefined, text: { fontSizePx: 0, chars: 5, paragraphs: 1, y: 0, stat: false, fixed: false } },
+      { id: 'a', sourceNodeId: 'na', name: 'Heading', kind: 'text', role: undefined, label: undefined, text: { fontSizePx: 0, chars: 5, paragraphs: 1, y: 0, stat: false } },
       { id: 'b', sourceNodeId: 'nb', name: 'Photo slot', kind: 'shape', role: 'IMAGE', label: 'Image' },
     ]);
   });

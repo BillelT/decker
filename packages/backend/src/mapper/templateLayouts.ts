@@ -1,4 +1,4 @@
-import { isFixedMasterText, type CalibrationData, type IRDocument, type IRElement, type IRSlide, type IRText } from '@figma-to-slides/shared';
+import type { CalibrationData, IRDocument, IRElement, IRSlide, IRText } from '@figma-to-slides/shared';
 import { toSolidFill } from './colors.js';
 import { mapImage } from './images.js';
 import { mapLine } from './lines.js';
@@ -155,14 +155,14 @@ function matchPlaceholders(slide: IRSlide, layout: NativeLayout): Match {
  * seulement comme modèle des placeholders des layouts. Chaque texte est
  * donc recopié dans chaque layout, où il devient un placeholder comme les
  * autres (même position, même style), et retiré du Master. C'est
- * automatique, sans tag (décision du 17 octobre) : seules les mentions
- * légales (`isFixedMasterText`) restent sur le Master en décor commun,
- * avec le logo, les images et les formes.
+ * automatique, sans tag, pour tous les textes (décision du 17 octobre) ;
+ * images et formes restent sur le Master en décor commun (Slides n'a pas
+ * de placeholder d'image).
  */
 export function withMasterPlaceholders(slides: IRSlide[], masterSlideId?: string): IRSlide[] {
   const master = slides.find((s) => s.sourceNodeId === masterSlideId);
   if (!master) return slides;
-  const shared = master.elements.filter((el): el is IRText => el.kind === 'text' && el.content.trim().length > 0 && !isFixedMasterText(el.content));
+  const shared = master.elements.filter((el): el is IRText => el.kind === 'text' && el.content.trim().length > 0);
   if (shared.length === 0) return slides;
   return slides.map((s) => {
     if (s === master) return { ...s, elements: s.elements.filter((el) => !shared.includes(el as IRText)) };
@@ -495,8 +495,8 @@ function hidePlaceholder(slot: LayoutPlaceholder): SlidesRequest[] {
  * Frame Master (la première du rail) : son fond et tous ses éléments sont
  * écrits sur la page Master, comme décor. Slides les peint sur chaque
  * layout et chaque slide, entre le fond de la page et son contenu ; aucune
- * slide n'est créée pour elle. Ses textes (hors mentions légales) n'y sont
- * plus : ils sont recopiés en placeholders dans chaque layout
+ * slide n'est créée pour elle. Ses textes n'y sont plus : ils sont
+ * recopiés en placeholders dans chaque layout
  * (`withMasterPlaceholders`),
  * car un placeholder du Master ne s'affiche sur aucune slide (17 octobre,
  * un `[[title]]` posé sur un surtitre disparaissait). Son titre et son

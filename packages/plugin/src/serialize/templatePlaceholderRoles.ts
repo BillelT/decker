@@ -67,5 +67,5 @@ export function suggestPlaceholderRoles(elements: SuggestableElement[]): Placeho
     else if (el.text.fontSizePx > bodySize && el.text.chars <= SUBTITLE_MAX_CHARS) suggestions.push({ sourceNodeId: el.sourceNodeId, tag: 'subtitle' });
     else if (el.text.chars >= BODY_MIN_CHARS || el.text.paragraphs > 1) suggestions.push({ sourceNodeId: el.sourceNodeId, tag: 'body' });
   }
-  return suggestions;
+  return [...suggestions, ...images];
 }

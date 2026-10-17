@@ -80,7 +80,10 @@ function TemplateElementList({
               {note && <span className={`f2s-log-entry-flag f2s-log-entry-flag--${note.flag}`}>{note.text}</span>}
             </button>
             {master ? (
-              <span className={`f2s-log-entry-flag f2s-log-entry-flag--${isEditableOnSlides(el) ? 'visual-diff' : 'rasterized'}`}>
+              <span
+                className={`f2s-log-entry-flag f2s-log-entry-flag--${isEditableOnSlides(el) ? 'visual-diff' : 'rasterized'}`}
+                title={isEditableOnSlides(el) ? undefined : 'Google Slides has no image placeholder: images and shapes stay the same on every slide.'}
+              >
                 {isEditableOnSlides(el) ? 'Editable on slides' : 'Fixed'}
               </span>
             ) : (
@@ -107,9 +110,9 @@ function TemplateElementList({
   );
 }
 
-/** Sur le Master, un texte devient un placeholder de chaque layout, sauf une mention légale (backend mapper/templateLayouts.ts::withMasterPlaceholders). */
+/** Sur le Master, chaque texte devient un placeholder de chaque layout ; images et formes restent fixes (backend mapper/templateLayouts.ts::withMasterPlaceholders). */
 function isEditableOnSlides(el: TemplateElement): boolean {
-  return el.kind === 'text' && !!el.text && el.text.chars > 0 && !el.text.fixed;
+  return el.kind === 'text' && !!el.text && el.text.chars > 0;
 }
 
 /**
@@ -491,10 +494,7 @@ export function TemplatePanel({
                 // partage est automatique, voir isEditableOnSlides.
                 <section className="f2s-tmpl-section">
                   <h3 className="f2s-tmpl-heading">Master content</h3>
-                  <p className="f2s-toolbar-muted">
-                    Automatic on the Master: every text becomes editable on each slide, at the same place and in the same style. Legal mentions (©,
-                    copyright), logos, images and shapes stay fixed on every slide.
-                  </p>
+                  <p className="f2s-toolbar-muted">Master texts become placeholders in every layout, so they stay editable on each slide.</p>
                   {previewedLayout.elements.length > 0 && <TemplateElementList elements={previewedLayout.elements} noteByNode={noteByNode} master />}
                 </section>
               ) : (
