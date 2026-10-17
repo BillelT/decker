@@ -20,11 +20,12 @@ Pas de nom produit : c'est une intégration. Notre jeu des pop-ups façon virus 
 ## Déroulé d'une partie
 
 1. **Démarrage.** Direct, dès l'arrivée sur la page : pas d'écran « Start ».
-2. **Les vagues.** Une vague lâche quelques pop-ups (0.26 à 0.62 s d'écart), puis on respire : la vague suivante part 0.9 s après que le bureau est vide, ou au plus tard après une attente qui raccourcit (6.5 s au début, 2 s à la fin). Les vagues grossissent, de 2 ou 3 pop-ups jusqu'à 8. Plus lent sur un petit écran. Simulé : qui ferme une pop-up par seconde gagne, qui en ferme une toutes les 1.5 s perd presque toujours (sans compter le boss ni les pièges). (Essais du 17 octobre : un flux continu, même irrégulier, laissait toujours au moins une pop-up ouverte, et la partie devenait impossible à gagner quand la cadence montait.)
+2. **Les vagues.** Une vague lâche quelques pop-ups (0.24 à 0.56 s d'écart), puis on respire : la vague suivante part 0.9 s après que le bureau est vide, ou au plus tard après une attente qui raccourcit (6 s au début, 1.8 s à la fin). Les vagues grossissent, de 2 ou 3 pop-ups jusqu'à 9. Plus lent sur un petit écran. Simulé (200 parties, sans le boss ni les pièges) : qui ferme une pop-up toutes les 1.1 s gagne toujours, toutes les 1.3 s une fois sur sept, toutes les 1.5 s jamais. Un peu durci le 17 octobre (avant : 1.3 s gagnait presque toujours). (Essais du 17 octobre : un flux continu, même irrégulier, laissait toujours au moins une pop-up ouverte, et la partie devenait impossible à gagner quand la cadence montait.)
 3. **Fermer.** Clic sur la croix, ou au clavier (Tab puis Entrée).
 4. **La jauge.** « Deck integrity » remonte doucement avec peu de pop-ups ouvertes et fond d'autant plus vite qu'elles s'empilent.
-5. **Défaite.** La jauge tombe à zéro : dialogue `SCREENSHOT.EXE` « Your deck was flattened into a screenshot. », temps tenu, score et meilleur score, « Quit » et « Try again ».
-6. **Victoire.** 60 s tenues : « Deck saved. 100% editable. », score, meilleur score, partage en texte à copier, « Play again » et « Try Decker on Figma ».
+5. **Défaite.** La jauge tombe à zéro : dialogue `SCREENSHOT.EXE` « Your deck was flattened into a screenshot. », temps tenu, score et meilleur score, « Quit », « Share my score » et « Try again ».
+6. **Victoire.** 60 s tenues : « Deck saved. 100% editable. », score, meilleur score, « Share my score », « Play again » et « Try Decker on Figma ».
+7. **Partage.** « Share my score », gagné ou perdu, ouvre dans un nouvel onglet un post X pré-rempli (lien d'intention `x.com/intent/tweet`) avec le score et le lien de `/game`. Défaite : « SCREENSHOT.EXE flattened my deck after 41 s. Score: 1,715. Can you beat it? » ; victoire : « I saved my deck from 42 pop-ups. Score: 2,310. Can you beat it? ». La page `/game` a sa carte de partage (titre « Decker 95 », image OG du site), elle reste non indexée.
 
 ## Les pop-ups
 
@@ -35,12 +36,12 @@ Pas de nom produit : c'est une intégration. Notre jeu des pop-ups façon virus 
 | Fausse alerte | « Warning: 99+ gradients detected. Rasterize now? » | « Keep editable » ferme ; « Rasterize » fait perdre de l'intégrité |
 | Deck têtu | `Untitled_presentation (1).pptx`, « You can’t close me. Probably. » | Croix normale |
 | Confirmation | « Are you sure you want to close this deck? » | Une seule fenêtre : « Yes, close it » ou la croix. (Elle ouvrait la suivante en cascade, retiré le 17 octobre : fermer une pop-up n'en ouvre jamais une autre.) |
-| Boss | `SCREENSHOT.EXE`, « Flattening your deck... 12% » à 32 s | Dix clics sur « Stop » avant 100 % |
+| Boss | `SCREENSHOT.EXE`, « Flattening your deck... 12% » à 32 s, consigne en gras « Spam-click Stop! 10 clicks to go. » qui décompte | Dix clics sur « Stop (10 left) » avant 100 %. Toujours au premier plan : les pop-ups suivantes cachaient sa consigne |
 | Bonus | « Decker Antivirus » | Ferme toutes les pop-ups d'un coup, sauf le boss |
 
 **Placement.** En pile décalée, comme les cartes du logo Decker : chaque nouvelle pop-up se pose 40 px à droite et 48 px plus haut que la précédente, la plus récente devant, les anciennes qui dépassent en bas à gauche. Quand la pile sort du bureau, une nouvelle démarre ailleurs, dans la moitié basse. Jamais un coin à moins de 24 px du coin d'une autre : deux fenêtres identiques posées pile l'une sur l'autre n'en laissaient voir qu'une.
 
-**Tailles.** Trois tailles pour varier : grande (80 % de la largeur du bureau), moyenne (50 %), petite (15 %), avec des minimums lisibles (260 px et 170 px). Un grand deck montre trois slides, les autres une seule. Decks au hasard dans les trois tailles ; pub en moyenne ou grande ; alerte et antivirus en moyenne ; confirmation et deck têtu en petite ou moyenne ; boss en grande.
+**Tailles.** Trois tailles pour varier : grande (80 % de la largeur du bureau), moyenne (50 %), petite (15 %), avec des minimums lisibles (260 px et 170 px). Un grand deck montre trois slides, les autres une seule. Decks au hasard dans les trois tailles ; pub en moyenne ou grande ; alerte et antivirus en moyenne ; confirmation et deck têtu en petite ou moyenne ; boss en grande. Hauteurs variées aussi : six fois sur dix, une pop-up est étirée à 35, 50 ou 65 % de la hauteur du bureau (boutons en bas), le boss garde la sienne.
 
 **Esquive.** Quand la souris arrive sur une croix, la pop-up a 3 % de chance de faire un petit saut (16 à 40 px), pas loin de sa place. Rien au tactile ni au clavier.
 
@@ -82,7 +83,7 @@ Dérogation à la DA (le son y est réservé à l'archétype outil), demandée p
 - Clavier complet : Tab parcourt les pop-ups, Entrée ou Espace ferme, focus visible ; une fenêtre qui prend le focus passe au premier plan.
 - Lecteur d'écran : région `role="status"` qui annonce sobrement le nombre de pop-ups ouvertes, la pause, le boss et la fin ; chaque pop-up a un nom ; jauge en `role="progressbar"`.
 - Mobile : bureau plus haut que large, pop-ups moins fréquentes, croix et boutons d'au moins 44 px .
-- Rien ne sort de la page : pas de `window.open`, pas d'`alert()`, pas de vraie fenêtre. Page non indexée (`noindex`, absente du sitemap).
+- Rien ne sort de la page sans un clic du joueur : pas de `window.open`, pas d'`alert()`, pas de vraie fenêtre ; seuls les liens « Share my score » et « Try Decker on Figma » ouvrent un nouvel onglet. Page non indexée (`noindex`, absente du sitemap).
 
 ## Technique
 

@@ -595,7 +595,7 @@ pagesRouter.get(`/${OG_IMAGE.file}`, (_req, res) => {
 });
 
 /** Easter egg du footer : page à part, hors sitemap et non indexée (voir game.ts). */
-const GAME_HTML = gamePage({ pluginUrl: PLUGIN_URL });
+const GAME_HTML = gamePage({ pluginUrl: PLUGIN_URL, pageUrl: `${SITE_URL}/game`, ogImageUrl: OG_IMAGE_URL, ogImageAlt: OG_IMAGE.alt });
 pagesRouter.get('/game', (_req, res) => {
   res.type('html').send(GAME_HTML);
 });

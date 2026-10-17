@@ -19,7 +19,7 @@
  * TypeScript passent par `JSON.stringify` en tête du script.
  */
 import { DESIGN_TOKENS_CSS } from '../generated/designTokens.js';
-import { DECKER_FAVICON, DECKER_MARK_SVG } from './brand.js';
+import { DECKER_FAVICON, DECKER_MARK_SVG, escapeHtml } from './brand.js';
 import { PIXELIFY_SANS_BASE64 } from './gameFontData.js';
 
 const GAME_CSS = String.raw`
@@ -173,7 +173,12 @@ body {
 /* Trois tailles pour varier : grande (80 % du bureau), moyenne (50 %),
    petite (15 %). Des minimums gardent texte et boutons lisibles ; sur un
    petit bureau, 56px de marge laissent la place au décalage de la pile. */
-.pop { position: absolute; box-sizing: border-box; max-width: calc(100% - 56px); box-shadow: var(--w95-out), var(--w95-drop); }
+.pop {
+  position: absolute; box-sizing: border-box; display: flex; flex-direction: column;
+  max-width: calc(100% - 56px); box-shadow: var(--w95-out), var(--w95-drop);
+}
+/* Le corps prend la hauteur donnée en plus (voir addWin) : boutons en bas. */
+.pop__body { flex: 1 1 auto; }
 .pop--l { width: 80%; }
 .pop--m { width: max(50%, 260px); }
 .pop--s { width: max(15%, 170px); }
@@ -194,7 +199,8 @@ body {
 .pop__icon { flex: none; width: 32px; height: 32px; display: block; }
 .pop__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--b-space-8); padding: 0 var(--b-space-16) var(--b-space-16); }
 .pop--modal .pop__actions { justify-content: center; }
-.pop__share { margin-top: var(--b-space-8); color: var(--b-gray-600); -webkit-user-select: text; user-select: text; }
+.pop__spam { font-size: 16px; font-weight: 700; }
+.pop__left { font-variant-numeric: tabular-nums; }
 .pop__pct { font-variant-numeric: tabular-nums; }
 
 .scores { display: flex; justify-content: center; gap: var(--b-space-48); margin: var(--b-space-12) 0 0; text-align: center; }
@@ -492,6 +498,7 @@ function makeWin(o) {
 /* Une seule fenêtre active à la fois, comme sous Windows : celle du dessus
    garde sa barre orange, les autres passent au gris. */
 function toFront(w) {
+  if (w._boss) return;
   if (Number(w.style.zIndex) !== zTop) w.style.zIndex = String(++zTop);
   markActive();
 }
@@ -564,9 +571,14 @@ function clampWin(w) {
   w.style.top = Math.max(0, y) + 'px';
 }
 
+/* Des hauteurs variées : six fois sur dix, la pop-up est étirée à 35, 50
+   ou 65 % de la hauteur du bureau. Le boss garde sa hauteur. */
 function addWin(w, near) {
   w.style.visibility = 'hidden';
   w.style.zIndex = String(++zTop);
+  if (!w._boss && Math.random() < 0.6) {
+    w.style.minHeight = Math.round(desk.clientHeight * pick([0.35, 0.5, 0.65])) + 'px';
+  }
   desk.appendChild(w);
   placeRandom(w, near);
   w.style.visibility = '';
@@ -729,12 +741,14 @@ function spawnBoss() {
   var w = makeWin({
     title: 'SCREENSHOT.EXE',
     size: 'l',
-    html: '<div class="pop__row">' + ICON_WARN + '<div><p class="pop__lead">Flattening your deck into one image…</p><p class="pop__pct">12%</p></div></div>' +
+    html: '<div class="pop__row">' + ICON_WARN + '<div><p class="pop__lead">Flattening your deck into one image… <span class="pop__pct">12%</span></p>' +
+      '<p class="pop__spam">Spam-click Stop! <span class="pop__left">10 clicks</span> to go.</p></div></div>' +
       '<div class="bar95 bar95--danger" aria-hidden="true"><div class="bar95__fill"></div></div>',
-    buttons: [{ label: 'Stop (10)', cta: true, ref: '_stop', onClick: function (p, btn) {
+    buttons: [{ label: 'Stop (10 left)', cta: true, ref: '_stop', onClick: function (p, btn) {
       left -= 1;
       if (left > 0) {
-        btn.textContent = 'Stop (' + left + ')';
+        btn.textContent = 'Stop (' + left + ' left)';
+        p.querySelector('.pop__left').textContent = left === 1 ? '1 click' : left + ' clicks';
         sfx.hit(left);
         return;
       }
@@ -753,8 +767,12 @@ function spawnBoss() {
   w._fill = w.querySelector('.bar95__fill');
   s.boss = w;
   addWin(w);
+  /* Le boss reste au premier plan : les pop-ups suivantes cachaient sa
+     consigne. Au-dessus de tout ce que toFront peut atteindre en une partie. */
+  w.style.zIndex = '100000';
+  markActive();
   sfx.alarm();
-  say('Boss: SCREENSHOT.EXE is flattening your deck. Press Stop ten times.');
+  say('Boss: SCREENSHOT.EXE is flattening your deck. Spam-click Stop, ten times.');
 }
 
 function spawnRandom(fromAd) {
@@ -771,13 +789,13 @@ function spawnRandom(fromAd) {
 /* ---------- Boucle ---------- */
 /* Rythme en vagues (17 octobre) : un flux continu laissait toujours au
    moins une pop-up ouverte, donc le bureau ne se vidait jamais et la
-   partie ne se gagnait pas. Une vague lâche quelques pop-ups à 0.26 à
-   0.62 s d'écart, puis on respire : la vague suivante part 0.9 s après que
+   partie ne se gagnait pas. Une vague lâche quelques pop-ups à 0.24 à
+   0.56 s d'écart, puis on respire : la vague suivante part 0.9 s après que
    le bureau est vide, ou au plus tard après une attente qui raccourcit
-   (6.5 s au début, 2 s à la fin). Les vagues grossissent : 2 ou 3 pop-ups
-   au début, jusqu'à 8. Simulé : qui ferme une pop-up par seconde gagne, qui
-   en ferme une toutes les 1.5 s perd presque toujours (sans compter le boss
-   ni les pièges). */
+   (6 s au début, 1.8 s à la fin). Les vagues grossissent : 2 ou 3 pop-ups
+   au début, jusqu'à 9. Simulé (200 parties, sans le boss ni les pièges) :
+   qui ferme une pop-up toutes les 1.1 s gagne toujours, toutes les 1.3 s
+   une fois sur sept, toutes les 1.5 s jamais. */
 function slow(ms) {
   if (isSmall()) ms *= 1.5;
   if (reduceMotion) ms *= 1.3;
@@ -786,9 +804,9 @@ function slow(ms) {
 function startWave() {
   var t = Math.min(1, s.elapsed / DURATION);
   s.waveNo += 1;
-  s.waveLeft = Math.min(8, 2 + Math.floor(s.waveNo / 2) + (Math.random() < 0.4 ? 1 : 0));
+  s.waveLeft = Math.min(9, 2 + Math.floor(s.waveNo / 2) + (Math.random() < 0.4 ? 1 : 0));
   s.untilSpawn = 0;
-  s.waitIn = slow(Math.max(2000, 6500 - 4500 * t));
+  s.waitIn = slow(Math.max(1800, 6000 - 4200 * t));
   s.breath = null;
 }
 function runWaves(dt) {
@@ -797,7 +815,7 @@ function runWaves(dt) {
     if (s.untilSpawn <= 0) {
       if (s.wins.length < 40) spawnRandom(false);
       s.waveLeft -= 1;
-      s.untilSpawn = slow(rand(260, 620));
+      s.untilSpawn = slow(rand(240, 560));
     }
     return;
   }
@@ -879,7 +897,8 @@ function scoresHtml(score, best) {
 
 function showModal(o) {
   var w = makeWin(Object.assign({ cls: 'pop--modal' }, o));
-  w.style.zIndex = String(++zTop);
+  /* Au-dessus du boss (100000). */
+  w.style.zIndex = '200000';
   w.classList.add('is-active');
   desk.appendChild(w);
   win.setAttribute('data-inactive', '');
@@ -963,6 +982,12 @@ function endRound() {
   return { score: score, best: Math.max(best, score), isBest: isBest };
 }
 
+/* Partage sur X, gagné ou perdu : un lien d'intention, ouvert dans un nouvel
+   onglet par le clic du joueur. */
+function shareUrl(text) {
+  return 'https://x.com/intent/tweet?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent(GAME_URL);
+}
+
 function lose() {
   s.phase = 'over';
   var r = endRound();
@@ -975,6 +1000,7 @@ function lose() {
       '<p>You held on for ' + held + ' s.' + (r.isBest ? ' New high score.' : '') + '</p></div></div>' + scoresHtml(r.score, r.best),
     buttons: [
       { label: 'Quit', href: '/', self: true },
+      { label: 'Share my score', href: shareUrl('SCREENSHOT.EXE flattened my deck after ' + held + ' s. Score: ' + fmtScore(r.score) + '. Can you beat it?') },
       { label: 'Try again', cta: true, onClick: play }
     ]
   });
@@ -987,21 +1013,12 @@ function victory() {
   var closed = s.closed;
   clearDesk();
   sfx.victory();
-  var share = 'I saved my deck from ' + closed + ' pop-ups on decker.billeltighidet.fr';
   showModal({
     title: 'Decker Security 2000',
     html: '<p class="pop__lead">Deck saved. 100% editable.</p>' +
-      '<p>' + closed + ' pop-ups closed.' + (r.isBest ? ' New high score.' : '') + '</p>' + scoresHtml(r.score, r.best) +
-      '<p class="pop__share">' + share + '</p>',
+      '<p>' + closed + ' pop-ups closed.' + (r.isBest ? ' New high score.' : '') + '</p>' + scoresHtml(r.score, r.best),
     buttons: [
-      { label: 'Copy score', onClick: function (_w, btn) {
-        var done = function () { btn.textContent = 'Copied'; say('Score copied.'); };
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(share).then(done, function () { btn.textContent = 'Select the text above'; });
-        } else {
-          btn.textContent = 'Select the text above';
-        }
-      } },
+      { label: 'Share my score', href: shareUrl('I saved my deck from ' + closed + ' pop-ups. Score: ' + fmtScore(r.score) + '. Can you beat it?') },
       { label: 'Play again', onClick: play },
       { label: 'Try Decker on Figma', cta: true, href: PLUGIN_URL }
     ],
@@ -1042,7 +1059,8 @@ const CHECK = `<svg viewBox="0 0 8 7" shape-rendering="crispEdges" aria-hidden="
 
 const MARK = DECKER_MARK_SVG.replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '');
 
-export function gamePage(opts: { pluginUrl: string }): string {
+export function gamePage(opts: { pluginUrl: string; pageUrl: string; ogImageUrl: string; ogImageAlt: string }): string {
+  const description = 'Close the pop-ups before SCREENSHOT.EXE flattens your deck.';
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -1052,6 +1070,16 @@ export function gamePage(opts: { pluginUrl: string }): string {
 <meta name="theme-color" content="#110f0e" />
 <meta name="robots" content="noindex" />
 <title>Decker 95</title>
+<meta name="description" content="${description}" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Decker" />
+<meta property="og:title" content="Decker 95" />
+<meta property="og:description" content="${description}" />
+<meta property="og:url" content="${opts.pageUrl}" />
+<meta property="og:image" content="${opts.ogImageUrl}" />
+<meta property="og:image:alt" content="${escapeHtml(opts.ogImageAlt)}" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:image" content="${opts.ogImageUrl}" />
 <link rel="icon" type="image/svg+xml" href="${DECKER_FAVICON}" />
 <style>
 @font-face {
@@ -1115,6 +1143,7 @@ ${GAME_CSS}
 (function () {
 'use strict';
 var PLUGIN_URL = ${JSON.stringify(opts.pluginUrl)};
+var GAME_URL = ${JSON.stringify(opts.pageUrl)};
 var ICON_X = ${JSON.stringify(ICON_CLOSE)};
 var ICON_WARN = ${JSON.stringify(ICON_WARN)};
 var ICON_ASK = ${JSON.stringify(ICON_ASK)};
