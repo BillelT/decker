@@ -506,11 +506,23 @@ main:focus { outline: none; }
    démo, la plus grande surface. Le flou dépasse les 4px de
    rules/ui/motion-implementation.md, le marketing peut dépasser les durées
    de l'interface (motion-decisions.md). Jamais bloquant : le contenu reste
-   cliquable, et visible sans JS (le titre entre alors d'un bloc). */
+   cliquable, et visible sans JS (le titre entre alors d'un bloc).
+   Le CTA entre sans flou (17 octobre) : sur son aplat orange, le flou
+   finissant (moins d'un pixel, arrondi à un pixel par le navigateur) faisait
+   baver une ligne orange au-dessus du bouton pendant les dernières images.
+   La rangée glisse et apparaît, seule l'accroche se défloute. */
 @media (prefers-reduced-motion: no-preference) {
   @keyframes hero-enter {
     from { opacity: 0; filter: blur(6px); transform: translateY(16px); }
     to { opacity: 1; filter: blur(0); transform: none; }
+  }
+  @keyframes hero-rise {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes hero-unblur {
+    from { filter: blur(6px); }
+    to { filter: blur(0); }
   }
   .hero > * {
     animation: hero-enter 900ms var(--b-ease-out) both;
@@ -519,7 +531,8 @@ main:focus { outline: none; }
   .hero__line { display: block; animation: hero-enter 1200ms var(--b-ease-out) both; animation-delay: calc(var(--line) * 120ms); }
   .hero__title--settled .hero__line { animation: none; }
   .hero > .hero__title { animation-duration: 1200ms; }
-  .hero > .hero__row { animation-duration: 800ms; animation-delay: 200ms; }
+  .hero > .hero__row { animation-name: hero-rise; animation-duration: 800ms; animation-delay: 200ms; }
+  .hero > .hero__row .hero__lede { animation: hero-unblur 800ms var(--b-ease-out) 200ms both; }
   .hero > .hero__demo { animation-duration: 1700ms; animation-delay: 320ms; }
 }
 /* Mouvement réduit : fondu seul, plus de glissement ni de flou. */
