@@ -24,14 +24,12 @@ import { PIXELIFY_SANS_BASE64 } from './gameFontData.js';
 
 const GAME_CSS = String.raw`
 :root {
-  /* Teintes secondaires de Decker : celles du logo (DECKER_MARK_SVG, brand.ts).
-     Le jeu les prend plutôt que l'orange de marque, trop présent partout
-     (17 octobre). Exception à la DA listée dans docs/roadmap/README.md, comme
-     la palette du skin Windows 95 du plugin. */
-  --logo-brown: #7a3b12;
-  --logo-clay: #c1651c;
-  --logo-amber: #ffb238;
-  --logo-cream: #fff4d6;
+  /* Orange de la DA en teintes secondaires plutôt qu'en aplat (17 octobre) :
+     le survol (--b-accent-hover) pour les barres de titre actives, la teinte
+     à 40 % posée sur blanc pour les boutons par défaut. L'orange plein ne
+     sert plus nulle part dans le jeu. */
+  --g-tint-40: linear-gradient(var(--b-accent-40), var(--b-accent-40)) var(--b-white);
+  --g-tint-20: linear-gradient(var(--b-accent-20), var(--b-accent-20)) var(--b-white);
   /* Les cinq tons du biseau Win95, pris dans la rampe de gris de la marque. */
   --w95-face: var(--b-gray-200);
   --w95-light: var(--b-gray-100);
@@ -79,12 +77,17 @@ body {
 .w95__bar {
   display: flex; align-items: center; gap: var(--b-space-6); min-height: 24px;
   padding: 2px 2px 2px var(--b-space-6);
-  /* Barre active pleine, comme le bleu marine de Windows 95, en brun du logo. */
-  background: var(--logo-brown); color: var(--logo-cream);
+  /* Barre active pleine, comme le bleu marine de Windows 95, au survol de
+     l'orange de la DA, titre à l'encre (7.5:1). */
+  background: var(--b-accent-hover); color: var(--b-ink);
 }
 /* Fenêtre inactive, comme sous Windows : la barre passe au gris, le titre
    reste lisible (blanc sur gris 600). */
 .w95[data-inactive] > .w95__bar, .pop:not(.is-active) > .w95__bar { background: var(--b-gray-600); color: var(--b-white); }
+/* La fenêtre Decker 95 est le cadre : barre à l'encre, l'orange reste aux
+   pop-ups actives. */
+.w95--frame > .w95__bar { background: var(--b-ink); color: var(--b-white); }
+.w95--frame[data-inactive] > .w95__bar { background: var(--b-gray-600); }
 .w95__icon { flex: none; width: 16px; height: 16px; display: block; }
 .w95__title {
   flex: 1 1 auto; min-width: 0; margin: 0; font: inherit; font-size: 14px; font-weight: 700; line-height: 1.2;
@@ -128,7 +131,7 @@ body {
 .meter { width: 160px; }
 .meter__fill, .bar95__fill {
   position: absolute; inset: 3px;
-  background: repeating-linear-gradient(90deg, var(--logo-clay) 0 8px, transparent 8px 10px);
+  background: repeating-linear-gradient(90deg, var(--b-accent-hover) 0 8px, transparent 8px 10px);
   clip-path: inset(0 100% 0 0);
 }
 /* L'alerte rouge est un graphisme d'état, doublé du pourcentage écrit à côté. */
@@ -138,10 +141,10 @@ body {
 .bar95 { margin-top: var(--b-space-12); }
 
 .w95__well { position: relative; margin-top: 3px; padding: 2px; box-shadow: var(--w95-in); background: var(--b-white); }
-/* Le bureau : un fond crème uni, les pop-ups font tout le décor. */
+/* Le bureau : un fond uni, les pop-ups font tout le décor. */
 .desk {
   position: relative; overflow: hidden; width: 640px; height: 400px;
-  background-color: var(--logo-cream);
+  background-color: var(--b-white);
   -webkit-user-select: none; user-select: none; touch-action: manipulation;
 }
 .g-noscript { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; font-size: 16px; color: var(--b-ink); }
@@ -164,13 +167,13 @@ body {
 }
 .btn95:active:not(:disabled) { box-shadow: var(--w95-pressed); transform: scale(0.97); }
 .btn95:disabled { color: var(--b-gray-500); cursor: default; }
-/* Bouton par défaut : le liseré noir de Windows, plein à l'ambre du logo. */
-.btn95--default { background: var(--logo-amber); box-shadow: 0 0 0 1px var(--b-ink), var(--w95-out); font-weight: 700; }
+/* Bouton par défaut : le liseré noir de Windows, sur la teinte à 40 %. */
+.btn95--default { background: var(--g-tint-40); box-shadow: 0 0 0 1px var(--b-ink), var(--w95-out); font-weight: 700; }
 .btn95--default:active:not(:disabled) { box-shadow: 0 0 0 1px var(--b-ink), var(--w95-pressed); }
 .btn95:focus-visible { outline: 2px dotted var(--b-ink); outline-offset: -6px; }
 @media (hover: hover) and (pointer: fine) {
   .btn95:hover:not(:disabled) { background: var(--w95-light); }
-  .btn95--default:hover:not(:disabled) { background: color-mix(in oklab, var(--logo-amber), var(--logo-cream) 45%); }
+  .btn95--default:hover:not(:disabled) { background: var(--g-tint-20); }
 }
 
 /* ---------- Pop-ups ---------- */
@@ -209,7 +212,7 @@ body {
 .slide__bg { fill: var(--b-gray-100); }
 .slide__ink { fill: var(--b-ink); }
 .slide__muted { fill: var(--b-gray-400); }
-.slide__accent { fill: var(--logo-clay); }
+.slide__accent { fill: var(--b-accent-40); }
 .icon__shape { fill: var(--b-accent-red); }
 .icon__mark { fill: var(--b-white); }
 .icon__line { fill: var(--b-ink); }
@@ -782,12 +785,26 @@ function spawnRandom(fromAd) {
 }
 
 /* ---------- Boucle ---------- */
-/* Rythme régulier : une pop-up toutes les 1.1 s au départ, l'écart se
-   resserre en ligne droite jusqu'à 0.55 s à la fin. Pas de palier ni
-   d'emballement : ça monte petit à petit. */
+/* Rythme : c'est la cadence (pop-ups par seconde) qui monte en ligne droite,
+   de 0.9 à 2 par seconde ; l'écart entre deux pop-ups, lui, ne baisse pas
+   en ligne droite, sinon la fin s'emballe d'un coup (17 octobre). Pour que
+   le début ne soit pas monotone : écarts irréguliers (de 0.55 à 1.45 fois
+   l'écart moyen), petites rafales de 2 ou 3 pop-ups rapprochées, plus
+   fréquentes au fil de la partie, suivies d'une courte accalmie. */
 function spawnInterval() {
   var t = Math.min(1, s.elapsed / DURATION);
-  var ms = 1100 - 550 * t;
+  var base = 1000 / (0.9 + 1.1 * t);
+  var ms;
+  if (s.burst > 0) {
+    s.burst -= 1;
+    ms = s.burst > 0 ? rand(160, 260) : base * 1.6;
+  } else if (Math.random() < 0.12 + 0.12 * t) {
+    s.burst = Math.random() < 0.5 ? 2 : 3;
+    ms = rand(160, 260);
+    s.burst -= 1;
+  } else {
+    ms = base * rand(0.55, 1.45);
+  }
   if (isSmall()) ms *= 1.5;
   if (reduceMotion) ms *= 1.3;
   return ms;
@@ -891,6 +908,7 @@ function play() {
   s.lastClose = -9999;
   s.beatIn = 0;
   s.untilSpawn = 400;
+  s.burst = 0;
   s.bossDone = false;
   s.last = performance.now();
   pauseBtn.disabled = false;
@@ -1058,7 +1076,7 @@ ${GAME_CSS}
         <p class="g-head__tag">Google Slides deck with Figma comfort</p>
       </div>
     </header>
-    <section class="w95" aria-labelledby="g-title" data-win>
+    <section class="w95 w95--frame" aria-labelledby="g-title" data-win>
       <div class="w95__bar">
         <svg class="w95__icon" viewBox="0 0 32 32" shape-rendering="crispEdges" aria-hidden="true">${MARK}</svg>
         <p class="w95__title" id="g-title">Decker 95</p>

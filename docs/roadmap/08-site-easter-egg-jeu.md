@@ -7,7 +7,7 @@ Pas de nom produit : c'est une intégration. Notre jeu des pop-ups façon virus 
 - **16 octobre, v1.** Le jeu des pop-ups en overlay sur la page du site.
 - **17 octobre, essai Asteroids.** Le flow de smoo.link avec un Asteroids pixel : le flow a plu, pas le jeu. On revient à nos fenêtres.
 - **17 octobre, v2 « Decker 95 ».** Le flow de smoo.link (page `/game`, fenêtre Win95 pixel) avec notre jeu des pop-ups dedans.
-- **17 octobre, bruitages, couleurs, tailles.** Sons 8-bit discrets, teintes du logo au lieu de l'orange de marque, trois tailles de fenêtres, rythme régulier.
+- **17 octobre, bruitages, couleurs, tailles.** Sons 8-bit discrets, trois tailles de fenêtres. Teintes secondaires de l'orange de la DA au lieu de l'aplat (un essai avec la palette du logo a été écarté), rythme varié dont la cadence monte en ligne droite.
 - **17 octobre, retouches.** Départ direct sans écran « Start » et plus lent au début, fond uni, fenêtres plus grandes empilées en léger décalage comme les cartes du logo, plus de croix fuyante systématique (3 % de chance d'un petit saut), plus de légende des touches ni de crédit de police, « Decker » et son accroche au-dessus de la fenêtre.
 
 ## Le flow
@@ -20,7 +20,7 @@ Pas de nom produit : c'est une intégration. Notre jeu des pop-ups façon virus 
 ## Déroulé d'une partie
 
 1. **Démarrage.** Direct, dès l'arrivée sur la page : pas d'écran « Start ».
-2. **La vague.** Rythme régulier : première pop-up à 0.4 s, puis une toutes les 1.1 s, un écart qui se resserre en ligne droite jusqu'à 0.55 s à la fin. Ni palier ni emballement : ça monte petit à petit. Plus lent sur un petit écran. (Essais du 17 octobre : un départ trop lent ennuyait, des paliers à +15 % s'emballaient trop vite.)
+2. **La vague.** C'est la cadence qui monte en ligne droite, de 0.9 à 2 pop-ups par seconde, pour que la fin ne s'emballe pas d'un coup. Pour que ce ne soit pas monotone : écarts irréguliers (de 0.55 à 1.45 fois l'écart moyen) et petites rafales de 2 ou 3 pop-ups rapprochées (de 12 % à 24 % de chance à chaque apparition au fil de la partie), suivies d'une courte accalmie. Première pop-up à 0.4 s. Plus lent sur un petit écran. Simulation : 10 à 14 pop-ups sur les 10 premières secondes, 18 à 20 sur les 10 dernières. (Essais du 17 octobre : un départ trop lent ennuyait, des paliers à +15 % s'emballaient, un écart qui baisse en ligne droite était monotone puis s'emballait.)
 3. **Fermer.** Clic sur la croix, ou au clavier (Tab puis Entrée).
 4. **La jauge.** « Deck integrity » remonte doucement avec peu de pop-ups ouvertes et fond d'autant plus vite qu'elles s'empilent.
 5. **Défaite.** La jauge tombe à zéro : dialogue `SCREENSHOT.EXE` « Your deck was flattened into a screenshot. », temps tenu, score et meilleur score, « Quit » et « Try again ».
@@ -49,7 +49,7 @@ Score : points par pop-up fermée, combo jusqu'à x5 quand on enchaîne à moins
 ## Dans notre DA, en pixel Win95
 
 - **Fenêtres en tokens** : face `--b-gray-200`, biseaux en `--b-white`, `--b-gray-100`, `--b-gray-500` et `--b-ink` (variables `--w95-*` de `game.ts`), ombre portée dure de 4 px.
-- **Teintes secondaires plutôt que l'orange de marque** (17 octobre) : la palette du logo (`--logo-*` de `game.ts`, valeurs de `DECKER_MARK_SVG`). Barre de titre active pleine en brun `#7a3b12`, titre en crème `#fff4d6` (7.8:1), comme le bleu marine de Windows 95 ; bureau crème ; bouton par défaut ambre `#ffb238` à l'encre (10.6:1) avec le liseré noir de Windows ; blocs de progression terre cuite `#c1651c` (3.9:1 sur leur fond). Exception à la DA, listée dans `docs/roadmap/README.md`.
+- **L'orange de la DA en teintes secondaires, jamais en aplat** (17 octobre) : barre de titre de la pop-up active pleine au survol `--b-accent-hover`, titre à l'encre (7.5:1), comme le bleu marine de Windows 95 ; bouton par défaut sur `--b-accent-40` posé sur blanc, à l'encre (11.7:1), avec le liseré noir de Windows, `--b-accent-20` au survol ; blocs de progression en `--b-accent-hover` (2.4:1 sur leur fond, doublés du pourcentage écrit à côté) ; aplats des mini-slides en `--b-accent-40`. La fenêtre Decker 95 est le cadre : barre à l'encre, titre blanc. Bureau `--b-white` uni. Tout vient des tokens.
 - **Une seule fenêtre active**, comme sous Windows : les autres pop-ups passent au gris 600, titre blanc. Pendant un dialogue, la fenêtre Decker 95 passe en inactive aussi.
 - `--b-accent-red` seulement pour le graphisme d'alerte (triangle, jauge basse, barre du boss).
 - Barres de progression en blocs, rognées (`clip-path`) plutôt qu'étirées. Icônes en pixels (`crispEdges`) : triangle d'alerte, bulle « ? », croix, coche.
