@@ -137,7 +137,7 @@ function googleSlides(o: { current: number; editing?: boolean }): string {
 const RETRO = `<div class="f2s-canvas-preview f2s-canvas-preview--retro"><div class="f2s-retro"><div class="f2s-retro-titlebar"><span class="f2s-retro-title">Exporting - Stats</span><span class="f2s-retro-window-buttons"><i>_</i><i>&#9633;</i><i>&#10005;</i></span></div><div class="f2s-retro-screen">${slide('stats')}<div class="f2s-retro-scanlines"></div></div><div class="f2s-retro-status"><span class="f2s-retro-status-text">Generating slide 3 of 12<span class="f2s-retro-ellipsis">...</span></span><div class="f2s-retro-bar"><div class="f2s-retro-bar-fill" style="--f2s-retro-progress:0.25"></div></div></div></div></div>`;
 export const FEATURE_FULL_DECK_HTML = scene(
   'deck',
-  960,
+  800,
   'The Decker plugin exporting a whole Figma file: twelve frames in its rail, slide 3 of 12 being generated',
   pluginApp('fs-pwin--deck', {
     mode: 'deck',
@@ -163,7 +163,7 @@ const colorsSection = (suggest: string) =>
 const TYPO_SECTION = `<section class="f2s-tmpl-section"><h3 class="f2s-tmpl-heading f2s-style-heading">Typography</h3><ul class="f2s-style-list"><li class="f2s-style-row"><div class="f2s-style-row-main"><span class="f2s-style-font-swatch">Aa</span><span class="f2s-style-font-info"><span class="f2s-tmpl-font-family">Arial</span><span class="f2s-toolbar-muted">400, 700</span></span></div><div class="f2s-style-font-replace"><span class="f2s-font-arrow">&rarr;</span><div class="f2s-font-combobox"><input type="text" class="f2s-font-combobox-input" size="10" value="Arial"><span class="f2s-font-combobox-arrow"></span></div></div></li></ul></section>`;
 export const FEATURE_TEMPLATE_HTML = scene(
   'template',
-  960,
+  800,
   'The Decker plugin in Templates mode: the Cover layout tagged Master, a layout whose title and body are tagged as placeholders, and the detected colors mapped to theme roles',
   pluginApp('fs-pwin--tmpl', {
     mode: 'template',
@@ -319,7 +319,13 @@ export const FEATURE_SCENES_CSS = `
 /* Arrivé aux cards, on sait que c'est un plugin Figma : la barre de Figma
    et le pied du plugin sortent du cadre, l'interface du mode remplit la card. */
 .fs .f2s-footer { display: none; }
-.fs-pwin--deck, .fs-pwin--tmpl { left: 0; top: -40px; width: 960px; height: 726px; box-shadow: none; }
+/* Deck et Templates : un zoom sur le haut du plugin (scene a 800px de large,
+   fenetre de la meme largeur, donc echelle x1.2). Le bas, vide ou presque,
+   sort du cadre : ce qui compte, c'est de voir la difference de layout. */
+.fs-pwin--deck, .fs-pwin--tmpl { left: 0; top: -40px; width: 800px; height: 611px; box-shadow: none; }
+/* Le champ Name fait deborder la barre d'actions a cette largeur : il sort du
+   cadre, les boutons restent entiers. */
+.fs-pwin--deck .f2s-topbar-title-group, .fs-pwin--tmpl .f2s-topbar-title-group { display: none; }
 .fs-pwin--suggest { left: -200px; top: -110px; width: 960px; height: 700px; }
 .fs-pwin--fonts { left: 30px; top: 40px; width: 960px; height: 640px; }
 .fs .f2s-canvas-preview .dm-slide, .fs .f2s-retro-screen .dm-slide { width: 100%; }
