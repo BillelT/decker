@@ -815,7 +815,7 @@ function ctaTrail() {
       var d = Math.hypot(x + size / 2 - cx, y + size / 2 - cy) / reach;
       px.animate(reduceMotion
         ? [{ opacity: 0 }, { opacity: 1, offset: 0.3 }, { opacity: 0 }]
-        : [{ opacity: 0, transform: 'none' }, { opacity: 1, transform: 'scale(1.4)', offset: 0.35 }, { opacity: 1, transform: 'scale(1.4)', offset: 0.55 }, { opacity: 0, transform: 'none' }],
+        : [{ opacity: 0, transform: 'none' }, { opacity: 1, transform: 'scale(1.6)', offset: 0.35 }, { opacity: 1, transform: 'scale(1.6)', offset: 0.55 }, { opacity: 0, transform: 'none' }],
         { duration: reduceMotion ? 600 : 480, delay: reduceMotion ? 0 : d * WAVE_MS, easing: easeOut, fill: 'backwards' });
     }
   }
