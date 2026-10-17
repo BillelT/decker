@@ -142,14 +142,13 @@ ${PLUGIN_STYLES_CSS}
 .dm-pwin__bar svg { width: 16px; height: 16px; display: block; }
 .dm-pwin__x { margin-left: auto; display: flex; padding: 8px; color: ${CHROME.barMuted}; }
 .dm .dm-pwin .dm-plugin { flex: 1 1 auto; min-height: 0; height: auto; }
-/* Les panneaux du plugin défilent, mais seulement une fois que le visiteur a
-   cliqué dans la démo : avant, la molette qui traverse la page passerait par
-   eux et s'y arrêterait au lieu de faire défiler la page. */
-.dm:not(.is-engaged) .dm-plugin .f2s-sidebar,
-.dm:not(.is-engaged) .dm-plugin .f2s-canvas,
-.dm:not(.is-engaged) .dm-plugin .f2s-style-aside { overflow: clip; }
 
 /* Ajustements du plugin propres à la démo */
+/* Place de la barre de défilement réservée d'avance (comme l'aside du
+   plugin) : la démo remplit ses panneaux en jouant, une barre qui
+   apparaîtrait en cours de route décalerait le contenu. */
+.dm .dm-plugin .f2s-sidebar,
+.dm .dm-plugin .f2s-canvas { scrollbar-gutter: stable; }
 /* La liste des polices est en position fixe dans le plugin : dans la scène
    mise à l'échelle, elle se cale sous son champ. */
 .dm .dm-plugin .f2s-font-combobox { position: relative; }
@@ -1063,11 +1062,23 @@ shield.addEventListener('click', function (e) {
   if (target.tagName === 'BUTTON' || target.tagName === 'A') target.click(); else target.focus();
 });
 demo.addEventListener('keydown', takeOver, true);
-/* Premier geste du visiteur dans la démo : les panneaux du plugin peuvent
-   défiler (voir .is-engaged dans le CSS). */
+/* Premier geste du visiteur dans la démo : la molette fait défiler les
+   panneaux du plugin (voir le gestionnaire wheel ci-dessous). */
 var engage = function () { demo.classList.add('is-engaged'); };
 demo.addEventListener('pointerdown', engage);
 demo.addEventListener('focusin', function () { if (!playing) engage(); });
+/* Avant ce premier geste, la molette qui traverse la page ne s'arrête pas
+   dans les panneaux du plugin : elle fait défiler la page. Les panneaux
+   gardent leur défilement (et leurs barres) dès le départ, sinon les barres
+   apparaîtraient au premier clic et décaleraient la mise en page. */
+var PANELS = '.f2s-sidebar, .f2s-canvas, .f2s-style-aside';
+demo.addEventListener('wheel', function (e) {
+  if (demo.classList.contains('is-engaged') || e.ctrlKey) return;
+  if (!e.target.closest || !e.target.closest(PANELS)) return;
+  e.preventDefault();
+  var unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerHeight : 1;
+  window.scrollBy(e.deltaX * unit, e.deltaY * unit);
+}, { passive: false });
 
 if ('IntersectionObserver' in window) {
   new IntersectionObserver(function (entries) {
