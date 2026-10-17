@@ -418,8 +418,8 @@ pagesRouter.get('/', (_req, res) => {
           ${FEATURE_FONTS_HTML}
           <div class="card__body">
             <p class="card__eyebrow">Fonts</p>
-            <h3 class="card__title">A Slides font for every font</h3>
-            <p class="card__desc">Fonts that Slides doesn’t have are listed upfront, and you pick the one that replaces them in the whole deck.</p>
+            <h3 class="card__title">Swap any font in one click</h3>
+            <p class="card__desc">Pick from the fonts of Google Slides, and swap any font in the whole deck, even one Slides already has.</p>
           </div>
         </li>
         <li class="carousel__item card">

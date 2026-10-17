@@ -136,7 +136,7 @@ function googleSlides(o: { current: number; editing?: boolean }): string {
 const RETRO = `<div class="f2s-canvas-preview f2s-canvas-preview--retro"><div class="f2s-retro"><div class="f2s-retro-titlebar"><span class="f2s-retro-title">Exporting - Stats</span><span class="f2s-retro-window-buttons"><i>_</i><i>&#9633;</i><i>&#10005;</i></span></div><div class="f2s-retro-screen">${slide('stats')}<div class="f2s-retro-scanlines"></div></div><div class="f2s-retro-status"><span class="f2s-retro-status-text">Generating slide 3 of 12<span class="f2s-retro-ellipsis">...</span></span><div class="f2s-retro-bar"><div class="f2s-retro-bar-fill" style="--f2s-retro-progress:0.25"></div></div></div></div></div>`;
 export const FEATURE_FULL_DECK_HTML = scene(
   'deck',
-  1000,
+  960,
   'The Decker plugin exporting a whole Figma file: twelve frames in its rail, slide 3 of 12 being generated',
   pluginApp('fs-pwin--deck', {
     mode: 'deck',
@@ -157,10 +157,12 @@ const plainRow = (name: string) =>
   `<li class="f2s-log-entry"><button type="button" class="f2s-log-entry-clickarea"><span class="f2s-log-entry-text"><strong class="f2s-log-entry-name">${name}</strong></span></button><select class="f2s-font-dropdown f2s-log-entry-role"><option>No role</option></select></li>`;
 const chip = (name: string) => `<li><button type="button" class="f2s-tmpl-chip"><span class="f2s-tmpl-chip-label">${name}</span></button></li>`;
 const MASTER_SECTION = `<section class="f2s-tmpl-section"><h3 class="f2s-tmpl-heading f2s-style-heading">Master content</h3><ul class="f2s-style-list">${chip('Logo')}${chip('Footer')}</ul></section>`;
+const colorsSection = (suggest: string) =>
+  `<section class="f2s-tmpl-section"><div class="f2s-section-head"><h3 class="f2s-tmpl-heading f2s-style-heading">Colors</h3>${suggest}</div><ul class="f2s-style-list">${colorRow(DECK.forest.toUpperCase(), 'Text &amp; background 1')}${colorRow(DECK.paper.toUpperCase(), 'Text &amp; background 2')}${colorRow(DECK.sand.toUpperCase(), 'Text &amp; background 4')}${colorRow(DECK.clay.toUpperCase(), 'Accent 1')}${colorRow(DECK.rust.toUpperCase(), 'Accent 2')}</ul></section>`;
 const TYPO_SECTION = `<section class="f2s-tmpl-section"><h3 class="f2s-tmpl-heading f2s-style-heading">Typography</h3><ul class="f2s-style-list"><li class="f2s-style-row"><div class="f2s-style-row-main"><span class="f2s-style-font-swatch">Aa</span><span class="f2s-style-font-info"><span class="f2s-tmpl-font-family">Arial</span><span class="f2s-toolbar-muted">400, 700</span></span></div><div class="f2s-style-font-replace"><span class="f2s-font-arrow">&rarr;</span><div class="f2s-font-combobox"><input type="text" class="f2s-font-combobox-input" size="10" value="Arial"><span class="f2s-font-combobox-arrow"></span></div></div></li></ul></section>`;
 export const FEATURE_TEMPLATE_HTML = scene(
   'template',
-  1000,
+  960,
   'The Decker plugin in Templates mode: the Cover layout tagged Master, a layout whose title and body are tagged as placeholders, and the detected colors mapped to theme roles',
   pluginApp('fs-pwin--tmpl', {
     mode: 'template',
@@ -169,8 +171,7 @@ export const FEATURE_TEMPLATE_HTML = scene(
     body: `<aside class="f2s-sidebar">${railItem(1, 'cover', 'Cover', { master: true, tmpl: true })}${railItem(2, 'pillars', 'Content', { active: true, tmpl: true })}${railItem(3, 'stats', 'Key figure', { tmpl: true })}</aside>
     <main class="f2s-canvas"><div class="f2s-tmpl-report"><div class="f2s-canvas-preview f2s-tmpl-preview">${slide('pillars', { tmpl: true })}</div>
     <div class="f2s-tmpl-panel"><section class="f2s-tmpl-section"><div class="f2s-section-head"><h3 class="f2s-tmpl-heading">Composition</h3>${btn('f2s-btn--ghost', 'Suggest roles', true)}</div><ul class="f2s-tmpl-list">${roleRow('title', 'Click to edit title')}${roleRow('body', 'Click to edit text')}</ul></section><section class="f2s-tmpl-section"><h3 class="f2s-tmpl-heading">Content</h3><ul class="f2s-tmpl-list">${plainRow('Craft')}${plainRow('Speed')}</ul></section></div></div></main>
-    <aside class="f2s-style-aside"><div class="f2s-style-panel">${MASTER_SECTION}<section class="f2s-tmpl-section"><div class="f2s-section-head"><h3 class="f2s-tmpl-heading f2s-style-heading">Colors</h3>${btn('f2s-btn--ghost', 'Suggest roles', true)}</div>
-    <ul class="f2s-style-list">${colorRow(DECK.forest.toUpperCase(), 'Text &amp; background 1')}${colorRow(DECK.paper.toUpperCase(), 'Text &amp; background 2')}${colorRow(DECK.sand.toUpperCase(), 'Text &amp; background 4')}${colorRow(DECK.clay.toUpperCase(), 'Accent 1')}${colorRow(DECK.rust.toUpperCase(), 'Accent 2')}</ul></section>${TYPO_SECTION}</div></aside>`,
+    <aside class="f2s-style-aside"><div class="f2s-style-panel">${MASTER_SECTION}${colorsSection(btn('f2s-btn--ghost', 'Suggest roles', true))}${TYPO_SECTION}</div></aside>`,
   }),
 );
 
@@ -179,8 +180,8 @@ const toast = (tone: 'success' | 'info', text: string) =>
   `<div class="f2s-toast f2s-toast--${tone} fs-toast"><svg class="f2s-status-icon f2s-status-icon--${tone}" width="16" height="16" viewBox="0 0 66 66" fill="none"><rect class="f2s-status-icon-disc" width="66" height="66" rx="33"/>${tone === 'success' ? '<path d="M20 34 L29 43 L46 24" stroke="currentColor" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none"/>' : '<path d="M33 31 L33 46 M33 20 L33 20.01" stroke="currentColor" stroke-width="9" stroke-linecap="round"/>'}</svg><span class="f2s-toast-text">${text}</span><span class="f2s-icon-btn f2s-toast-close">${ICONS.close}</span></div>`;
 
 /** Suggest roles : le clic qui vient de taguer le titre et le corps d'un
-    layout, cadré sur Composition et les couleurs (même fenêtre que la card
-    Templates, décalée pour masquer le rail). */
+    layout. Zoom sur Composition et sur la colonne de droite, où les
+    couleurs détectées ont leur propre Suggest roles. */
 export const FEATURE_SUGGEST_HTML = scene(
   'suggest',
   760,
@@ -192,40 +193,36 @@ export const FEATURE_SUGGEST_HTML = scene(
     body: `${toast('info', '2 roles suggested. Change any of them in Composition.')}<aside class="f2s-sidebar">${railItem(1, 'cover', 'Cover', { master: true, tmpl: true })}${railItem(2, 'pillars', 'Content', { active: true, tmpl: true })}</aside>
     <main class="f2s-canvas"><div class="f2s-tmpl-report"><div class="f2s-canvas-preview f2s-tmpl-preview">${slide('pillars', { tmpl: true })}</div>
     <div class="f2s-tmpl-panel"><section class="f2s-tmpl-section"><div class="f2s-section-head"><h3 class="f2s-tmpl-heading">Composition</h3>${btn('f2s-btn--ghost fs-pressed', 'Suggest roles')}</div><ul class="f2s-tmpl-list">${roleRow('title', 'Click to edit title')}${roleRow('body', 'Click to edit text')}</ul></section><section class="f2s-tmpl-section"><h3 class="f2s-tmpl-heading">Content</h3><ul class="f2s-tmpl-list">${plainRow('Craft')}${plainRow('Speed')}</ul></section></div></div></main>
-    <aside class="f2s-style-aside"><div class="f2s-style-panel">${MASTER_SECTION}</div></aside>`,
+    <aside class="f2s-style-aside"><div class="f2s-style-panel">${MASTER_SECTION}${colorsSection(btn('f2s-btn--ghost', 'Suggest roles'))}${TYPO_SECTION}</div></aside>`,
   }) + `<span class="fs-cursor-at fs-cursor-at--suggest">${CURSOR}</span>`,
 );
 
 /** Prepare for Slides : la frame d'origine, puis sa copie « [Slides Ready] »
-    posée à côté sur le canvas, déjà ramenée à ce que Slides sait rendre
-    (dégradé aplati, ombre retirée, interlettrage remis à zéro). */
+    posée à côté sur le canvas, déjà ramenée à ce que Slides sait rendre :
+    police remplacée par une police de Slides, dégradé aplati, ombre retirée,
+    interlettrage remis à zéro. Sous chaque frame, ce qui a changé. */
+const prepNotes = (items: string[]) => `<ul class="fs-prep__notes">${items.map((t) => `<li>${t}</li>`).join('')}</ul>`;
 export const FEATURE_PREPARE_HTML = scene(
   'prepare',
-  760,
-  'On the Figma canvas, a frame with a gradient, a shadow and letter spacing, next to its [Slides Ready] copy where Decker already flattened all three',
-  `<div class="fs-frame fs-prep fs-prep--orig"><span class="fs-frame__name">Stats</span>${slide('stats')}</div>
-  <div class="fs-frame fs-prep fs-prep--ready is-selected"><span class="fs-frame__name">[Slides Ready] Stats</span>${slide('stats')}</div>
-  <span class="fs-prep__arrow">${ICONS.arrow(28)}</span>` +
-    pluginApp('fs-pwin--prepare', {
-      mode: 'deck',
-      name: 'Trailworn deck',
-      actions: `${btn('f2s-btn--secondary', 'Add frames', true)}${btn('f2s-btn--secondary fs-pressed', 'Prepare for Slides')}${btn('f2s-btn--primary', 'Export')}`,
-      body: `${toast('success', 'Slides ready')}`,
-    }) +
-    `<span class="fs-cursor-at fs-cursor-at--prepare">${CURSOR}</span>`,
+  580,
+  'On the Figma canvas, a frame set in Cabinet Grotesk with a gradient and a shadow, next to its [Slides Ready] copy where Decker switched to Arial, flattened the gradient and removed the shadow',
+  `<div class="fs-frame fs-prep fs-prep--orig"><span class="fs-frame__name">Stats</span>${slide('stats')}${prepNotes(['Cabinet Grotesk', 'Gradient', 'Drop shadow'])}</div>
+  <div class="fs-frame fs-prep fs-prep--ready is-selected"><span class="fs-frame__name">[Slides Ready] Stats</span>${slide('stats')}${prepNotes(['Arial', 'Solid fill', 'No shadow'])}</div>
+  <span class="fs-prep__arrow">${ICONS.arrow(24)}</span>`,
 );
 
-/** Fonts : une police absente de Slides, et la liste de celles qui y sont,
-    ouverte dans la barre Fonts du plugin. */
-const FONT_LIST = ['Inter', 'Lato', 'Manrope', 'Montserrat', 'Poppins', 'Roboto'];
+/** Fonts : chaque police se remplace en un clic, dans la liste des polices
+    de Google Slides. Satoshi, absente de Slides, passe en Inter ; Arial, qui
+    y est déjà, peut aussi être échangée, ici contre Roboto. */
+const FONT_LIST = ['Arial', 'Inter', 'Lato', 'Montserrat', 'Poppins', 'Roboto', 'Verdana'];
 export const FEATURE_FONTS_HTML = scene(
   'fonts',
   520,
-  'The Fonts bar of the Decker plugin: Satoshi is not available in Google Slides, and the list of Slides fonts is open to pick Inter as its replacement',
+  'The Fonts bar of the Decker plugin: Satoshi is replaced by Inter, and the Google Slides font list is open to swap Arial for Roboto',
   `<div class="fs-pwin fs-pwin--fonts"><div class="dm-pwin__bar">${DECKER_ICON}<span>Decker</span><span class="dm-pwin__x">${ICONS.close}</span></div><div class="dm-plugin">
     <header class="f2s-topbar"><div class="f2s-topbar-left"><div class="f2s-tabs" role="tablist"><button type="button" class="f2s-tab is-active">Deck</button><button type="button" class="f2s-tab">Templates</button></div><div class="f2s-topbar-title-group"><label class="f2s-toolbar-label">Name:</label><input type="text" class="f2s-title-input" value="Trailworn deck"></div></div></header>
-    <div class="f2s-toolbar"><div class="f2s-toolbar-row"><div class="f2s-toolbar-group"><span class="f2s-toolbar-label">Fonts:</span><label class="f2s-font-select"><span class="f2s-font-original">Satoshi</span><span class="f2s-font-arrow">&rarr;</span><div class="f2s-font-combobox f2s-font-combobox--open"><input type="text" class="f2s-font-combobox-input" size="10" value="Inter"><span class="f2s-font-combobox-arrow"></span>
-    <ul class="f2s-font-combobox-list">${FONT_LIST.map((f, i) => `<li class="f2s-font-combobox-option${i === 0 ? ' f2s-font-combobox-option--active f2s-font-combobox-option--selected' : ''}">${f}</li>`).join('')}</ul></div></label></div></div></div>
+    <div class="f2s-toolbar"><div class="f2s-toolbar-row"><div class="f2s-toolbar-group"><span class="f2s-toolbar-label">Fonts:</span><label class="f2s-font-select"><span class="f2s-font-original">Satoshi</span><span class="f2s-font-arrow">&rarr;</span><div class="f2s-font-combobox"><input type="text" class="f2s-font-combobox-input" size="10" value="Inter"><span class="f2s-font-combobox-arrow"></span></div></label><label class="f2s-font-select"><span class="f2s-font-original">Arial</span><span class="f2s-font-arrow">&rarr;</span><div class="f2s-font-combobox f2s-font-combobox--open"><input type="text" class="f2s-font-combobox-input" size="10" value="Roboto"><span class="f2s-font-combobox-arrow"></span>
+    <ul class="f2s-font-combobox-list">${FONT_LIST.map((f) => `<li class="f2s-font-combobox-option${f === 'Roboto' ? ' f2s-font-combobox-option--active f2s-font-combobox-option--selected' : ''}">${f}</li>`).join('')}</ul></div></label></div></div></div>
     <div class="f2s-body"></div>
   </div></div>`,
 );
@@ -310,24 +307,28 @@ export const FEATURE_SCENES_CSS = `
    Figma) : mêmes proportions que dans Figma et que la démo du hero. Seul
    le cadrage change d'une card à l'autre. */
 .fs-pwin .dm-pwin__bar { height: 40px; }
-.fs-pwin--deck, .fs-pwin--tmpl { left: 20px; top: 37px; width: 960px; height: 640px; }
-.fs-pwin--suggest { left: -170px; top: -30px; width: 960px; height: 640px; }
-.fs-pwin--prepare { left: -180px; top: 330px; width: 960px; height: 640px; }
+/* Arrivé aux cards, on sait que c'est un plugin Figma : la barre de Figma
+   et le pied du plugin sortent du cadre, l'interface du mode remplit la card. */
+.fs .f2s-footer { display: none; }
+.fs-pwin--deck, .fs-pwin--tmpl { left: 0; top: -40px; width: 960px; height: 726px; box-shadow: none; }
+.fs-pwin--suggest { left: -200px; top: -110px; width: 960px; height: 700px; }
 .fs-pwin--fonts { left: 30px; top: 40px; width: 960px; height: 640px; }
 .fs .f2s-canvas-preview .dm-slide, .fs .f2s-retro-screen .dm-slide { width: 100%; }
 .fs-toast { animation: none; }
 .fs-pressed { box-shadow: var(--hyb-pressed); }
-.fs-cursor-at--suggest { left: 424px; top: 416px; }
-.fs-cursor-at--prepare { left: 606px; top: 400px; }
+.fs-cursor-at--suggest { left: 410px; top: 340px; }
 
 /* Prepare for Slides : la frame d'origine et sa copie prête pour Slides */
-.fs-prep { width: 300px; }
-.fs-prep--orig { left: 40px; top: 40px; }
-.fs-prep--ready { left: 420px; top: 40px; }
-.fs-prep--orig .dm-slide { background: linear-gradient(135deg, var(--dm-clay), var(--dm-rust)); box-shadow: 0 18px 30px rgba(0, 0, 0, 0.35); }
-.fs-prep--orig .dm-s__cap { letter-spacing: 0.18em; text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4); }
-.fs-prep__arrow { position: absolute; left: 356px; top: 120px; color: ${CHROME.label}; rotate: 45deg; }
+.fs-prep { width: 250px; }
+.fs-prep--orig { left: 28px; top: 88px; }
+.fs-prep--ready { left: 302px; top: 88px; }
+.fs-prep--orig .dm-slide { font-family: var(--b-font-sans); background: linear-gradient(135deg, var(--dm-clay), var(--dm-rust)); box-shadow: 0 18px 30px rgba(0, 0, 0, 0.35); }
+.fs-prep--orig .dm-s__cap { letter-spacing: 0.12em; }
+.fs-prep__arrow { position: absolute; left: 266px; top: 158px; color: ${CHROME.label}; rotate: 45deg; }
 .fs-prep__arrow svg { display: block; }
+.fs-prep__notes { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0 0; padding: 0; list-style: none; }
+.fs-prep__notes li { padding: 3px 8px; border-radius: var(--b-radius-2xs); background: var(--b-surface); font-size: 12px; font-weight: var(--b-font-medium); color: var(--b-ink); box-shadow: ${CHROME.shadow}; }
+.fs-prep--ready .fs-prep__notes li { background: ${CHROME.select}; color: ${CHROME.barText}; }
 
 /* Fonts : la liste des polices de Slides, ouverte sous son champ */
 /* La rangée de la barre Fonts défile en x dans le plugin, ce qui rognait la
