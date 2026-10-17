@@ -5,6 +5,8 @@ export interface FontComboboxProps {
   options: string[];
   onChange: (value: string) => void;
   ariaLabel?: string;
+  /** Export en cours : la police est déjà partie, la liste ne s'ouvre plus. */
+  disabled?: boolean;
 }
 
 /** Largeur de la boîte pilotée par l'attribut HTML `size` (en caractères) plutôt que par `width` : un `<input>`, contrairement à un `<select>`, ne se dimensionne pas seul sur son contenu. */
@@ -17,7 +19,7 @@ const MAX_SIZE = 26;
  * dans `AVAILABLE_SLIDES_FONTS`) tout en laissant taper pour filtrer la
  * liste, la police Slides étant plus longue à retrouver au clavier.
  */
-export function FontCombobox({ value, options, onChange, ariaLabel }: FontComboboxProps) {
+export function FontCombobox({ value, options, onChange, ariaLabel, disabled = false }: FontComboboxProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState(value);
   // Tant que l'utilisateur n'a pas tapé depuis l'ouverture, `query` vaut
@@ -129,9 +131,10 @@ export function FontCombobox({ value, options, onChange, ariaLabel }: FontCombob
 
   return (
     <div
-      className={`f2s-font-combobox${open ? ' f2s-font-combobox--open' : ''}`}
+      className={`f2s-font-combobox${open ? ' f2s-font-combobox--open' : ''}${disabled ? ' f2s-font-combobox--disabled' : ''}`}
       ref={rootRef}
       onMouseDown={(e) => {
+        if (disabled) return;
         // Clic sur la flèche ou le padding (pas l'input lui-même, qui gère
         // déjà son propre focus) : ouvre quand même, comme un `<select>`
         // qu'on peut ouvrir en cliquant n'importe où dans sa boîte.
@@ -147,6 +150,7 @@ export function FontCombobox({ value, options, onChange, ariaLabel }: FontCombob
         size={sizeAttr}
         value={displayText}
         aria-label={ariaLabel}
+        disabled={disabled}
         role="combobox"
         aria-expanded={open}
         aria-autocomplete="list"

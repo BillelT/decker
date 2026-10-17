@@ -269,7 +269,9 @@ button {
   cursor: pointer;
 }
 
-button:disabled {
+button:disabled,
+select:disabled,
+.f2s-font-combobox--disabled {
   cursor: default;
   opacity: 0.5;
 }
@@ -5008,7 +5010,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
   // src/ui/FontCombobox.tsx
   var MIN_SIZE = 10;
   var MAX_SIZE = 26;
-  function FontCombobox({ value, options, onChange, ariaLabel }) {
+  function FontCombobox({ value, options, onChange, ariaLabel, disabled = false }) {
     const [open, setOpen] = d2(false);
     const [query, setQuery] = d2(value);
     const [typed, setTyped] = d2(false);
@@ -5098,9 +5100,10 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     return /* @__PURE__ */ u3(
       "div",
       {
-        className: `f2s-font-combobox${open ? " f2s-font-combobox--open" : ""}`,
+        className: `f2s-font-combobox${open ? " f2s-font-combobox--open" : ""}${disabled ? " f2s-font-combobox--disabled" : ""}`,
         ref: rootRef,
         onMouseDown: (e3) => {
+          if (disabled) return;
           if (e3.target === inputRef.current) return;
           e3.preventDefault();
           inputRef.current?.focus();
@@ -5115,6 +5118,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
               size: sizeAttr,
               value: displayText,
               "aria-label": ariaLabel,
+              disabled,
               role: "combobox",
               "aria-expanded": open,
               "aria-autocomplete": "list",
@@ -5291,6 +5295,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
                   value: family,
                   options: AVAILABLE_SLIDES_FONTS,
                   ariaLabel: `Replacement font for "${key}"`,
+                  disabled: locked,
                   onChange: (value) => setFontOverrides((prev) => ({ ...prev, [key]: value }))
                 }
               )
@@ -7101,6 +7106,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
                   value: fontOverrides[s3.original] ?? s3.resolved,
                   options: AVAILABLE_SLIDES_FONTS,
                   ariaLabel: `Replacement font for "${s3.original}"`,
+                  disabled: exporting,
                   onChange: (value) => setFontOverrides((prev) => ({ ...prev, [s3.original]: value }))
                 }
               )

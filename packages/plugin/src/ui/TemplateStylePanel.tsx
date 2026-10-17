@@ -19,7 +19,7 @@ export interface TemplateStylePanelProps {
   setColorRoles: (updater: (prev: Record<string, ThemeColorRole>) => Record<string, ThemeColorRole>) => void;
   /** Information à afficher dans le toast du panneau (ex. un rôle repris à une autre couleur). */
   onNotice: (message: string) => void;
-  /** Export en cours : les rôles de couleur sont déjà partis, on ne les change plus. */
+  /** Export en cours : rôles de couleur et polices sont déjà partis, on ne les change plus. */
   locked?: boolean;
 }
 
@@ -216,6 +216,7 @@ export function TemplateStylePanel({ master, colors, fonts, fontOverrides, setFo
                       value={family}
                       options={AVAILABLE_SLIDES_FONTS}
                       ariaLabel={`Replacement font for "${key}"`}
+                      disabled={locked}
                       onChange={(value) => setFontOverrides((prev) => ({ ...prev, [key]: value }))}
                     />
                   </div>

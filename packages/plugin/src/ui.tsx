@@ -1780,6 +1780,7 @@ function App() {
                     value={fontOverrides[s.original] ?? s.resolved}
                     options={AVAILABLE_SLIDES_FONTS}
                     ariaLabel={`Replacement font for "${s.original}"`}
+                    disabled={exporting}
                     onChange={(value) => setFontOverrides((prev) => ({ ...prev, [s.original]: value }))}
                   />
                 </label>
