@@ -312,8 +312,9 @@ export function TemplatePanel({
   const rows = splitCompositionRows(previewedLayout?.elements ?? [], compositionWarnings);
   const unattachedComposition = rows.unattached.filter((w) => w.code !== 'LAYOUT_WITHOUT_PLACEHOLDER');
 
-  // Le Master est écrit en décor sur chaque slide, ses tags sont ignorés
-  // (mapper/templateLayouts.ts::mapMasterBatch) : rien à y suggérer.
+  // Sur le Master, un texte tagué devient un placeholder de CHAQUE layout
+  // (backend mapper/templateLayouts.ts::withMasterPlaceholders) : c'est au
+  // créateur de choisir lesquels, Suggest y mettrait un second titre partout.
   const previewingMaster = order.length >= 2 && previewedLayout?.id === order[0];
   const placeholderSuggestions = previewingMaster ? [] : suggestPlaceholderRoles(previewedLayout?.elements ?? []);
   function applyPlaceholderSuggestions() {
@@ -481,7 +482,7 @@ export function TemplatePanel({
                     disabled={locked || placeholderSuggestions.length === 0}
                     title={
                       previewingMaster
-                        ? 'The Master is drawn on every slide as is: its layers need no role.'
+                        ? 'Tag a Master text yourself to make it editable on every slide. Untagged layers stay fixed on every slide.'
                         : placeholderSuggestions.length === 0
                         ? 'Nothing left to suggest in this layout: its title, subtitle and body are set, or no other text fits them.'
                         : 'Tag the title, subtitle and body of this layout from the size and length of its texts.'

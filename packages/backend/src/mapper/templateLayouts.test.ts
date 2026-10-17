@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { IRDocument, IRElement, IRSlide, IRText } from '@figma-to-slides/shared';
+import type { IRDocument, IRElement, IRShape, IRSlide, IRText } from '@figma-to-slides/shared';
 import { UNCALIBRATED_DEFAULTS } from '@figma-to-slides/shared';
 import { mapDocumentToBatches } from './index.js';
-import { planTemplateLayouts, widenForPrompt, type LayoutPlaceholder, type NativeLayout } from './templateLayouts.js';
+import { absorbFullBleedBackground, planTemplateLayouts, widenForPrompt, type LayoutPlaceholder, type NativeLayout } from './templateLayouts.js';
 
 const EMU = 12700;
 
@@ -169,13 +169,17 @@ describe('mapDocumentToBatches with template layouts', () => {
     expect(r.some((q) => q.deleteObject)).toBe(false);
   });
 
-  it('ignores tags on the master frame: a tagged eyebrow stays a text on the Master, the default title stays hidden', () => {
-    const master = slide('m', [text('t', 'TITLE')], 0);
-    const d = doc([master], 'm');
-    const [masterBatch] = mapDocumentToBatches(d, () => '', UNCALIBRATED_DEFAULTS, 'master-1', { layouts: LAYOUTS, plan: {}, masterTitle: slot('mt', 'TITLE') });
-    const r = masterBatch.requests as any[];
-    expect(r.find((q) => q.createShape).createShape.objectId).toBe('t');
-    expect(r.find((q) => q.updatePageElementTransform).updatePageElementTransform.transform.translateX).toBeLessThan(0);
+  it('copies a tagged master text into every layout as a placeholder, and keeps the rest on the Master', () => {
+    const master = slide('m', [text('eyebrow', 'SUBTITLE'), text('legal', undefined)], 0);
+    const d = doc([master, slide('l', [text('t', 'TITLE')], 1)], 'm');
+    const plan = planTemplateLayouts(d.slides, LAYOUTS, 'm');
+    expect(Object.keys(plan.l.placeholderByElementId)).toEqual(['t', 'eyebrow_l']);
+    const [masterBatch, layoutBatch] = mapDocumentToBatches(d, () => '', UNCALIBRATED_DEFAULTS, 'master-1', { layouts: LAYOUTS, plan, masterTitle: slot('mt', 'TITLE') });
+    const m = masterBatch.requests as any[];
+    expect(m.filter((q) => q.createShape).map((q) => q.createShape.objectId)).toEqual(['legal']);
+    expect(m.find((q) => q.updatePageElementTransform).updatePageElementTransform.transform.translateX).toBeLessThan(0);
+    const l = layoutBatch.requests as any[];
+    expect(l.some((q) => q.insertText?.text === '[eyebrow]')).toBe(true);
   });
 });
 
@@ -197,10 +201,17 @@ describe('widenForPrompt', () => {
     expect(r.x).toBe(40);
   });
 
-  it('widens a centered text around its center with the smaller margin', () => {
+  it('widens a centered text around its own center, within the frame margin', () => {
     expect(widenForPrompt(hug(300, 120, 'CENTER'), 720).rect).toMatchObject({ x: 300, w: 120 });
-    expect(widenForPrompt(hug(310, 100, 'CENTER'), 720).rect).toMatchObject({ x: 310, w: 100 });
-    expect(widenForPrompt(hug(200, 100, 'CENTER'), 720).rect).toMatchObject({ x: 200, w: 320 });
+    const below = { ...hug(40, 50, 'START'), rect: { x: 40, y: 300, w: 50, h: 20 } };
+    const r = widenForPrompt(hug(200, 100, 'CENTER'), 720, [below]).rect;
+    expect(r).toMatchObject({ x: 40, w: 420 });
+  });
+
+  it('stops before the next card on the same row', () => {
+    const cards = [hug(40, 80, 'START'), hug(300, 80, 'START'), hug(560, 80, 'START')];
+    expect(widenForPrompt(cards[0], 720, cards).rect).toMatchObject({ x: 40, w: 244 });
+    expect(widenForPrompt(cards[2], 720, cards).rect).toMatchObject({ x: 560, w: 120 });
   });
 
   it('leaves fixed-width and rotated texts alone', () => {
@@ -208,5 +219,25 @@ describe('widenForPrompt', () => {
     expect(widenForPrompt(fixed, 720)).toBe(fixed);
     const rotated = { ...hug(40, 100, 'START'), rotation: 90 };
     expect(widenForPrompt(rotated, 720)).toBe(rotated);
+  });
+});
+
+describe('absorbFullBleedBackground', () => {
+  const rect = (x: number, w: number, extra: Partial<IRShape> = {}): IRShape => ({
+    kind: 'shape', id: `r${x}`, sourceNodeId: `n${x}`, rect: { x, y: 0, w, h: 405 }, rotation: 0, opacity: 1, shapeType: 'RECTANGLE',
+    fill: { type: 'SOLID', color: { r: 0.7, g: 0.3, b: 0.2, a: 1 } }, ...extra,
+  });
+
+  it('turns a bottom rectangle covering the frame into the page background', () => {
+    const s = slide('s', [rect(0, 720), text('t', 'TITLE')]);
+    const { background, elements } = absorbFullBleedBackground(s);
+    expect(background?.color.r).toBe(0.7);
+    expect(elements.map((e) => e.id)).toEqual(['t']);
+  });
+
+  it('keeps a half-width panel, a stroked frame or a translucent veil', () => {
+    for (const el of [rect(0, 360), rect(0, 720, { stroke: { color: { r: 0, g: 0, b: 0, a: 1 }, weightPt: 1, dash: 'SOLID' } }), rect(0, 720, { opacity: 0.5 })]) {
+      expect(absorbFullBleedBackground(slide('s', [el])).elements).toHaveLength(1);
+    }
   });
 });

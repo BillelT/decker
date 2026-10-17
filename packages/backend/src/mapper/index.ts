@@ -8,7 +8,7 @@ import { mapLine } from './lines.js';
 import { mapPlaceholderAltText } from './placeholder.js';
 import { mapThemeBatch } from './theme.js';
 import type { RequestBatch, SlidesRequest } from './slidesRequests.js';
-import { mapMasterBatch, mapSlideOntoLayout, type LayoutAssignment, type LayoutPlaceholder, type NativeLayout } from './templateLayouts.js';
+import { mapMasterBatch, mapSlideOntoLayout, withMasterPlaceholders, type LayoutAssignment, type LayoutPlaceholder, type NativeLayout } from './templateLayouts.js';
 
 export * from './slidesRequests.js';
 export { computeScale, roundForSerialization } from './transform.js';
@@ -19,10 +19,11 @@ export { planTemplateLayouts, type LayoutAssignment, type NativeLayout } from '.
 export interface TemplateLayoutContext {
   layouts: NativeLayout[];
   plan: Record<string, LayoutAssignment>;
-  /** Corps (9 niveaux de puces) et numéro de slide par défaut du Master, à retirer une fois les layouts écrits. */
+  /** Numéro de slide par défaut du Master, à retirer une fois les layouts écrits. */
   masterPlaceholderIds?: string[];
-  /** Titre par défaut du Master : il porte le `[[title]]` de la frame Master, ou il est caché. */
+  /** Titre et corps par défaut du Master : parents des placeholders des layouts, cachés plutôt que supprimés. */
   masterTitle?: LayoutPlaceholder;
+  masterBody?: LayoutPlaceholder;
 }
 
 const MAX_REQUESTS_PER_BATCH = 300;
@@ -53,11 +54,13 @@ export function mapDocumentToBatches(
   templateLayouts?: TemplateLayoutContext,
 ): RequestBatch[] {
   const layoutById = new Map(templateLayouts?.layouts.map((l) => [l.objectId, l]));
-  const slideBatches = [...doc.slides]
+  // Mêmes slides que celles du plan (planTemplateLayouts) : textes tagués du Master recopiés dans chaque layout.
+  const slides = templateLayouts ? withMasterPlaceholders(doc.slides, doc.masterSlideId) : doc.slides;
+  const slideBatches = [...slides]
     .sort((a, b) => a.order - b.order)
     .map((slide) => {
       if (templateLayouts && masterObjectId && slide.sourceNodeId === doc.masterSlideId) {
-        return mapMasterBatch(slide, doc, masterObjectId, resolveAssetUrl, calibration, templateLayouts.masterTitle);
+        return mapMasterBatch(slide, doc, masterObjectId, resolveAssetUrl, calibration, templateLayouts.masterTitle, templateLayouts.masterBody);
       }
       const assignment = templateLayouts?.plan[slide.sourceNodeId];
       const layout = assignment && layoutById.get(assignment.layoutId);

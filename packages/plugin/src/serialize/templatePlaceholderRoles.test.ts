@@ -27,21 +27,35 @@ describe('suggestPlaceholderRoles', () => {
     expect(suggestPlaceholderRoles(elements).map((s) => s.sourceNodeId)).toEqual(['title', 'body']);
   });
 
-  it('never touches a layer that already has a role, nor repeats a role already present', () => {
+  it('never touches a layer that already has a role, nor suggests a second title', () => {
     const elements = [text('tagged', 48, 20, 0, { role: 'TITLE' }), text('big', 40, 20, 100), text('small', 14, 20, 300)];
-    expect(suggestPlaceholderRoles(elements)).toEqual([{ sourceNodeId: 'big', tag: 'subtitle' }]);
+    expect(suggestPlaceholderRoles(elements)).toEqual([
+      { sourceNodeId: 'big', tag: 'subtitle' },
+      { sourceNodeId: 'small', tag: 'body' },
+    ]);
   });
 
   it('breaks a font size tie by position: the higher text is the title', () => {
     expect(suggestPlaceholderRoles([text('low', 32, 10, 300), text('high', 32, 10, 20)])[0]).toEqual({ sourceNodeId: 'high', tag: 'title' });
   });
 
-  it('tags a big key figure as custom, and takes the title among the other texts', () => {
-    const stat: SuggestableElement = { sourceNodeId: 'stat', kind: 'text', text: { fontSizePx: 240, chars: 3, paragraphs: 1, y: 100, stat: true } };
-    expect(suggestPlaceholderRoles([stat, text('label', 14, 12, 40), text('caption', 24, 60, 400)])).toEqual([
-      { sourceNodeId: 'stat', tag: 'custom' },
-      { sourceNodeId: 'caption', tag: 'title' },
-      { sourceNodeId: 'label', tag: 'subtitle' },
+  it('tags every card of a row: a subtitle and a body each', () => {
+    const elements = [
+      text('title', 48, 22, 40),
+      text('h1', 20, 7, 200), text('d1', 13, 55, 230),
+      text('h2', 20, 7, 200), text('d2', 13, 34, 230),
+      text('h3', 20, 6, 200), text('d3', 13, 44, 230),
+    ];
+    expect(suggestPlaceholderRoles(elements).map((s) => s.tag)).toEqual(['title', 'subtitle', 'body', 'subtitle', 'body', 'subtitle', 'body']);
+  });
+
+  it('makes a big key figure the title, and another one custom', () => {
+    const stat = (id: string, size: number): SuggestableElement => ({ sourceNodeId: id, kind: 'text', text: { fontSizePx: size, chars: 3, paragraphs: 1, y: 100, stat: true } });
+    expect(suggestPlaceholderRoles([stat('big', 240), text('line', 24, 60, 300), text('source', 14, 29, 400), stat('small', 64)])).toEqual([
+      { sourceNodeId: 'big', tag: 'title' },
+      { sourceNodeId: 'line', tag: 'body' },
+      { sourceNodeId: 'source', tag: 'body' },
+      { sourceNodeId: 'small', tag: 'custom' },
     ]);
   });
 

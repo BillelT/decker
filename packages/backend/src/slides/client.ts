@@ -79,6 +79,7 @@ export async function createPresentation(
   masterAndLayoutElementIds: string[];
   masterPlaceholderIds: string[];
   masterTitle?: LayoutPlaceholder;
+  masterBody?: LayoutPlaceholder;
   layouts: NativeLayout[];
 }> {
   // Le pageSize (comme le ratio d'aspect de la présentation entière) ne se
@@ -144,19 +145,21 @@ export async function createPresentation(
     placeholders: (page.pageElements ?? []).filter((el) => el.shape?.placeholder?.type).map(toPlaceholder),
   }));
   const masterTitleElement = (body.masters[0]?.pageElements ?? []).find((el) => el.shape?.placeholder?.type === 'TITLE');
+  const masterBodyElement = (body.masters[0]?.pageElements ?? []).find((el) => el.shape?.placeholder?.type === 'BODY');
   return {
     presentationId: body.presentationId,
     firstSlideObjectId: body.slides[0].objectId,
     masterObjectId: body.masters[0].objectId,
     masterAndLayoutElementIds,
-    // Le titre du Master ne se supprime pas : Google emporte avec lui les
-    // titres vides qui en héritent, ceux des layouts compris. Il est
-    // restylé ou caché à la place (mapper/templateLayouts.ts).
+    // Le titre et le corps du Master ne se suppriment pas : les titres,
+    // sous-titres et corps des layouts en héritent, et les supprimer leur
+    // fait perdre leur style (17 octobre : sous-titres repassés en noir).
+    // Ils sont cachés à la place (mapper/templateLayouts.ts).
     masterTitle: masterTitleElement ? toPlaceholder(masterTitleElement) : undefined,
-    // Le corps (9 niveaux de puces) et le numéro de slide ("#" en bas à
-    // droite, absent des frames Figma).
+    masterBody: masterBodyElement ? toPlaceholder(masterBodyElement) : undefined,
+    // Le numéro de slide ("#" en bas à droite, absent des frames Figma).
     masterPlaceholderIds: body.masters.flatMap((page) =>
-      (page.pageElements ?? []).filter((el) => ['BODY', 'SLIDE_NUMBER'].includes(el.shape?.placeholder?.type ?? '')).map((el) => el.objectId),
+      (page.pageElements ?? []).filter((el) => el.shape?.placeholder?.type === 'SLIDE_NUMBER').map((el) => el.objectId),
     ),
     layouts,
   };

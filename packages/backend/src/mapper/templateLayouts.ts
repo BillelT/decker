@@ -149,6 +149,33 @@ function matchPlaceholders(slide: IRSlide, layout: NativeLayout): Match {
 }
 
 /**
+ * Un texte tagué du Master (surtitre, mention, numéro) doit rester
+ * modifiable sur chaque slide. Or un élément du Master est figé sur les
+ * slides, et un placeholder du Master ne s'affiche sur aucune : Slides
+ * s'en sert seulement comme modèle des placeholders des layouts. Le texte
+ * est donc recopié dans chaque layout, où il devient un placeholder comme
+ * les autres (même position, même style), et retiré du Master. Le reste du
+ * Master (logo, mentions sans tag, formes) y reste en décor commun.
+ */
+export function withMasterPlaceholders(slides: IRSlide[], masterSlideId?: string): IRSlide[] {
+  const master = slides.find((s) => s.sourceNodeId === masterSlideId);
+  if (!master) return slides;
+  const shared = master.elements.filter((el): el is IRText => el.kind === 'text' && !!el.placeholder);
+  if (shared.length === 0) return slides;
+  return slides.map((s) => {
+    if (s === master) return { ...s, elements: s.elements.filter((el) => !shared.includes(el as IRText)) };
+    const k = s.frameSize.width / master.frameSize.width;
+    const copies = shared.map((el): IRText => ({
+      ...el,
+      id: `${el.id}_${s.sourceNodeId}`.replace(/[^a-zA-Z0-9_-]/g, '_'),
+      rect: { x: el.rect.x * k, y: el.rect.y * k, w: el.rect.w * k, h: el.rect.h * k },
+      runs: el.runs.map((run) => ({ ...run, fontSizePx: run.fontSizePx * k })),
+    }));
+    return { ...s, elements: [...copies, ...s.elements] };
+  });
+}
+
+/**
  * Choisit un layout distinct par frame : celui qui sert le plus de textes à
  * rôle, puis le plus de textes sans puces, puis celui qui a le
  * moins de placeholders en trop. Les frames qui demandent le plus passent
@@ -158,6 +185,7 @@ function matchPlaceholders(slide: IRSlide, layout: NativeLayout): Match {
 export function planTemplateLayouts(slides: IRSlide[], layouts: NativeLayout[], masterSlideId?: string): Record<string, LayoutAssignment> {
   const plan: Record<string, LayoutAssignment> = {};
   const free = [...layouts];
+  slides = withMasterPlaceholders(slides, masterSlideId);
   const demand = (s: IRSlide) => s.elements.filter((el) => nativeRole(el)).length;
   const ordered = slides.filter((s) => s.sourceNodeId !== masterSlideId).sort((a, b) => demand(b) - demand(a) || a.order - b.order);
 
@@ -230,6 +258,9 @@ function textOntoPlaceholder(requests: SlidesRequest[], slot: LayoutPlaceholder)
   return out;
 }
 
+/** Écart gardé entre une boîte élargie et son voisin, en px Figma. */
+const WIDEN_GAP_PX = 16;
+
 /**
  * Un texte Figma en largeur auto (hug) colle pile à son contenu. Sur un
  * placeholder, Slides affiche à la place son invite ("Cliquez ici pour
@@ -237,30 +268,55 @@ function textOntoPlaceholder(requests: SlidesRequest[], slot: LayoutPlaceholder)
  * mot à mot dans une boîte taillée pour "87%". Slides ne sait pas élargir
  * une zone de texte d'après son contenu (et l'API ne règle que l'autofit
  * NONE) : la boîte prend donc d'emblée toute la largeur disponible, en
- * gardant le bord d'alignement du texte et des marges symétriques. Le
- * texte lui-même ne bouge pas.
+ * gardant le bord d'alignement du texte. Elle s'arrête avant le texte
+ * voisin sur la même bande (trois cartes côte à côte), sinon à la marge de
+ * la frame (la plus petite marge de ses textes, à gauche comme à droite).
+ * Le texte lui-même ne bouge pas.
  */
-export function widenForPrompt(el: IRText, frameWidth: number): IRText {
+export function widenForPrompt(el: IRText, frameWidth: number, others: IRText[] = []): IRText {
   if (!el.tightFit || el.rotation !== 0) return el;
-  const { x, w } = el.rect;
-  const left = x;
-  const right = frameWidth - x - w;
-  if (left < 0 || right < 0) return el;
+  const { x, y, w, h } = el.rect;
+  if (x < 0 || x + w > frameWidth) return el;
+  const margin = Math.min(...[el, ...others].flatMap((o) => [o.rect.x, frameWidth - o.rect.x - o.rect.w]).filter((m) => m >= 0));
+  const sameBand = others.filter((o) => o !== el && o.rect.y < y + h && o.rect.y + o.rect.h > y);
+  const rightLimit = Math.min(frameWidth - margin, ...sameBand.filter((o) => o.rect.x >= x + w).map((o) => o.rect.x - WIDEN_GAP_PX));
+  const leftLimit = Math.max(margin, ...sameBand.filter((o) => o.rect.x + o.rect.w <= x).map((o) => o.rect.x + o.rect.w + WIDEN_GAP_PX));
   const align = el.paragraphs[0]?.align ?? 'START';
   let nx = x;
   let nw = w;
   if (align === 'CENTER') {
-    const margin = Math.min(left, right);
-    nx = margin;
-    nw = frameWidth - 2 * margin;
+    const half = Math.min(x + w / 2 - leftLimit, rightLimit - (x + w / 2));
+    nx = x + w / 2 - half;
+    nw = 2 * half;
   } else if (align === 'END') {
-    nx = right;
-    nw = x + w - right;
+    nx = leftLimit;
+    nw = x + w - leftLimit;
   } else {
-    nw = frameWidth - 2 * left;
+    nw = rightLimit - x;
   }
   if (nw <= w) return el;
   return { ...el, tightFit: false, rect: { ...el.rect, x: nx, w: nw } };
+}
+
+/**
+ * Un rectangle plein qui couvre toute la frame, sous tout le reste, est un
+ * fond : posé sur le layout, il passerait par-dessus le décor du Master
+ * (17 octobre, logo du Master caché). Il devient le fond de la page.
+ */
+export function absorbFullBleedBackground(slide: IRSlide): { background: IRSlide['background']; elements: IRElement[] } {
+  const { width, height } = slide.frameSize;
+  let background = slide.background;
+  let i = 0;
+  for (; i < slide.elements.length; i++) {
+    const el = slide.elements[i];
+    if (el.kind !== 'shape' || el.placeholder || el.stroke || !el.fill || el.rotation !== 0) break;
+    if (el.shapeType !== 'RECTANGLE' && el.shapeType !== 'TEXT_BOX') break;
+    if (el.fill.color.a * el.opacity < 0.99) break;
+    const { x, y, w, h } = el.rect;
+    if (x > 1 || y > 1 || x + w < width - 1 || y + h < height - 1) break;
+    background = { ...el.fill, color: { ...el.fill.color, a: 1 } };
+  }
+  return { background, elements: slide.elements.slice(i) };
 }
 
 export function mapSlideOntoLayout(
@@ -275,12 +331,14 @@ export function mapSlideOntoLayout(
   const { scale, offsetXPt, offsetYPt } = computeScale(slide.frameSize, doc.slideSize);
   const slotById = new Map(layout.placeholders.map((p) => [p.objectId, p]));
   const requests: SlidesRequest[] = [];
+  const { background, elements } = absorbFullBleedBackground(slide);
+  const texts = elements.filter((el): el is IRText => el.kind === 'text');
 
-  if (slide.background) {
+  if (background) {
     requests.push({
       updatePageProperties: {
         objectId: layoutId,
-        pageProperties: { pageBackgroundFill: { solidFill: toSolidFill(slide.background.color) } },
+        pageProperties: { pageBackgroundFill: { solidFill: toSolidFill(background.color) } },
         fields: 'pageBackgroundFill',
       },
     });
@@ -300,15 +358,17 @@ export function mapSlideOntoLayout(
   // Slides n'ayant pas de placeholder d'image). Un texte à rôle sans
   // placeholder (layout sans titre ni corps) va sur la slide.
   const onSlide: IRElement[] = [];
-  const filled: { slotId: string; content: string; bulleted: boolean }[] = [];
+  const filled: { slotId: string; content: string; bulleted: boolean; styles: SlidesRequest[] }[] = [];
   const placed: string[] = [];
-  for (const el of slide.elements) {
+  for (const el of elements) {
     const slotId = assignment.placeholderByElementId[el.id];
     const slot = slotId ? slotById.get(slotId) : undefined;
     if (slot && el.kind === 'text') {
-      requests.push(...textOntoPlaceholder(mapText(widenForPrompt(el, slide.frameSize.width), layoutId, scale, offsetXPt, offsetYPt, calibration), slot));
+      const onSlot = textOntoPlaceholder(mapText(widenForPrompt(el, slide.frameSize.width, texts), layoutId, scale, offsetXPt, offsetYPt, calibration), slot);
+      requests.push(...onSlot);
       placed.push(slot.objectId);
-      filled.push({ slotId: slot.objectId, content: el.content, bulleted: slot.type === 'BODY' });
+      const styles = onSlot.filter((q) => 'updateTextStyle' in q || 'updateParagraphStyle' in q);
+      filled.push({ slotId: slot.objectId, content: el.content, bulleted: slot.type === 'BODY', styles });
       continue;
     }
     if (el.placeholder && el.kind === 'text') {
@@ -341,9 +401,17 @@ export function mapSlideOntoLayout(
   // ("Cliquez ici pour ajouter un titre") : écrire dans un placeholder de
   // SLIDE est permis, le style vient du layout.
   // Les puces d'un corps, elles, ne se retirent que sur la slide.
-  for (const { slotId, content, bulleted } of filled) {
+  // Le style est réécrit sur la slide aussi : un texte inséré n'hérite pas
+  // toujours de celui posé sur l'invite du layout (17 octobre, couleur
+  // perdue sur des sous-titres).
+  for (const { slotId, content, bulleted, styles } of filled) {
     if (content.length === 0) continue;
-    requests.push({ insertText: { objectId: slideIdOf(slotId), text: content, insertionIndex: 0 } });
+    const objectId = slideIdOf(slotId);
+    requests.push({ insertText: { objectId, text: content, insertionIndex: 0 } });
+    for (const q of styles) {
+      if ('updateTextStyle' in q) requests.push({ updateTextStyle: { ...q.updateTextStyle, objectId } });
+      else if ('updateParagraphStyle' in q) requests.push({ updateParagraphStyle: { ...q.updateParagraphStyle, objectId } });
+    }
     if (bulleted) requests.push({ deleteParagraphBullets: { objectId: slideIdOf(slotId), textRange: { type: 'ALL' } } });
   }
 
@@ -376,16 +444,17 @@ function mapElement(
   }
 }
 
-/** Hors de la slide, en haut à gauche : là où le titre caché du Master ne se voit pas dans "Modifier le thème". */
-const HIDDEN_TITLE_OFFSET_PT = -200;
+/** Hors de la slide, en haut à gauche : là où les placeholders cachés du Master ne se voient pas dans "Modifier le thème". */
+const HIDDEN_PLACEHOLDER_OFFSET_PT = -200;
 
 /**
- * Le titre par défaut du Master ne se supprime pas (il emporterait les
- * titres des layouts, qui en héritent) : il est réduit à 1 pt et sorti de
- * la slide. Les titres des layouts ont leur propre position et leur propre
- * style : rien ne change pour eux.
+ * Le titre et le corps par défaut du Master ne se suppriment pas : les
+ * placeholders des layouts en héritent, et les supprimer leur fait perdre
+ * leur style (17 octobre, sous-titres repassés en noir). Ils sont réduits
+ * à 1 pt et sortis de la slide. Les placeholders des layouts ont leur
+ * propre position et leur propre style : rien ne change pour eux.
  */
-function hideMasterTitle(slot: LayoutPlaceholder): SlidesRequest[] {
+function hidePlaceholder(slot: LayoutPlaceholder): SlidesRequest[] {
   const target = EMU_PER_PT;
   return [
     {
@@ -397,8 +466,8 @@ function hideMasterTitle(slot: LayoutPlaceholder): SlidesRequest[] {
           shearY: 0,
           shearX: 0,
           scaleY: roundForSerialization(target / slot.heightEmu),
-          translateX: HIDDEN_TITLE_OFFSET_PT,
-          translateY: HIDDEN_TITLE_OFFSET_PT,
+          translateX: HIDDEN_PLACEHOLDER_OFFSET_PT,
+          translateY: HIDDEN_PLACEHOLDER_OFFSET_PT,
           unit: 'PT',
         },
       },
@@ -411,10 +480,11 @@ function hideMasterTitle(slot: LayoutPlaceholder): SlidesRequest[] {
  * Frame Master (la première du rail) : son fond et tous ses éléments sont
  * écrits sur la page Master, comme décor. Slides les peint sur chaque
  * layout et chaque slide, entre le fond de la page et son contenu ; aucune
- * slide n'est créée pour elle. Ses tags sont ignorés : un placeholder du
- * Master ne s'affiche sur aucune slide (17 octobre, un `[[title]]` posé
- * sur un surtitre disparaissait), il ne fait que donner son style aux
- * layouts. Son titre par défaut est donc toujours caché.
+ * slide n'est créée pour elle. Ses textes tagués n'y sont plus : ils sont
+ * recopiés en placeholders dans chaque layout (`withMasterPlaceholders`),
+ * car un placeholder du Master ne s'affiche sur aucune slide (17 octobre,
+ * un `[[title]]` posé sur un surtitre disparaissait). Son titre et son
+ * corps par défaut sont toujours cachés.
  */
 export function mapMasterBatch(
   slide: IRSlide,
@@ -423,19 +493,21 @@ export function mapMasterBatch(
   resolveAssetUrl: (assetKey: string) => string,
   calibration: CalibrationData,
   masterTitle?: LayoutPlaceholder,
+  masterBody?: LayoutPlaceholder,
 ): RequestBatch {
   const { scale, offsetXPt, offsetYPt } = computeScale(slide.frameSize, doc.slideSize);
   const requests: SlidesRequest[] = [];
-  if (slide.background) {
+  const { background, elements } = absorbFullBleedBackground(slide);
+  if (background) {
     requests.push({
       updatePageProperties: {
         objectId: masterObjectId,
-        pageProperties: { pageBackgroundFill: { solidFill: toSolidFill(slide.background.color) } },
+        pageProperties: { pageBackgroundFill: { solidFill: toSolidFill(background.color) } },
         fields: 'pageBackgroundFill',
       },
     });
   }
-  for (const el of slide.elements) requests.push(...mapElement(el, masterObjectId, scale, offsetXPt, offsetYPt, resolveAssetUrl, calibration));
-  if (masterTitle) requests.push(...hideMasterTitle(masterTitle));
+  for (const el of elements) requests.push(...mapElement(el, masterObjectId, scale, offsetXPt, offsetYPt, resolveAssetUrl, calibration));
+  for (const slot of [masterTitle, masterBody]) if (slot) requests.push(...hidePlaceholder(slot));
   return { sourceSlideId: slide.sourceNodeId, requests };
 }

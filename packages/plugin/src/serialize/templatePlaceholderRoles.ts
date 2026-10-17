@@ -1,22 +1,26 @@
-import type { PlaceholderRole } from '@figma-to-slides/shared';
 import type { TextStats } from './templateSummary.js';
 
 /**
  * "Suggest roles" de la section Composition (mode template) : propose un
- * rôle de placeholder aux textes du layout affiché, d'après leur forme.
- * 0. `custom` : chaque chiffre clé ("87%", "120k"), qui n'est ni un titre
- *    ni un corps (voir `isStatText`) ;
- * 1. `title` : le texte écrit le plus gros (à taille égale, le plus haut) ;
- * 2. `body` : le texte le plus long parmi les autres, s'il a l'allure d'un
- *    paragraphe (`BODY_MIN_CHARS` caractères ou plusieurs lignes) ;
- * 3. `subtitle` : le plus gros des textes courts restants, s'il est écrit
- *    plus gros que tous les autres textes hors titre (sinon c'est une
- *    légende, un numéro, une mention : rien à proposer).
+ * rôle de placeholder à chaque texte du layout affiché, d'après sa forme.
+ * Un layout porte autant de placeholders qu'il faut (trois cartes = trois
+ * sous-titres et trois corps, voir backend mapper/templateLayouts.ts) :
+ * 1. `title` : le texte écrit le plus gros, chiffre clé compris ("87%"
+ *    affiché en grand est le titre de sa slide) ; à taille égale, le plus
+ *    haut. Un seul titre par layout ;
+ * 2. la taille de référence du corps est celle du texte le plus long des
+ *    autres (à longueur égale, le plus petit), dès qu'il en reste deux ;
+ * 3. `custom` : un autre chiffre clé ;
+ * 4. `subtitle` : un texte court écrit plus gros que le corps (titres de
+ *    cartes, chapô) ;
+ * 5. `body` : les autres textes d'au moins `BODY_MIN_CHARS` caractères ou
+ *    de plusieurs lignes ; plus court et pas plus gros que le corps, c'est
+ *    une étiquette ("2026", "NEW") : rien à proposer.
  *
  * Même contrat que les rôles de couleur (templateColorRoles.ts) : un calque
- * qui a déjà un rôle n'est pas touché, et un rôle déjà présent dans le
- * layout n'est pas proposé une deuxième fois. Images et logos sont laissés
- * de côté : deviner qu'une image est un logo est trop hasardeux.
+ * qui a déjà un rôle n'est pas touché, et un titre n'est pas proposé si le
+ * layout en a déjà un. Images et logos sont laissés de côté : deviner
+ * qu'une image est un logo est trop hasardeux.
  */
 
 export interface SuggestableElement {
@@ -31,10 +35,8 @@ export interface PlaceholderSuggestion {
   tag: 'title' | 'subtitle' | 'body' | 'custom';
 }
 
-const BODY_MIN_CHARS = 80;
+const BODY_MIN_CHARS = 20;
 const SUBTITLE_MAX_CHARS = 140;
-
-const ROLE_OF_TAG: Record<Exclude<PlaceholderSuggestion['tag'], 'custom'>, PlaceholderRole> = { title: 'TITLE', subtitle: 'SUBTITLE', body: 'BODY' };
 
 type Candidate = SuggestableElement & { text: TextStats };
 
@@ -43,33 +45,22 @@ function biggestFirst(a: Candidate, b: Candidate): number {
 }
 
 export function suggestPlaceholderRoles(elements: SuggestableElement[]): PlaceholderSuggestion[] {
-  const present = new Set(elements.map((el) => el.role).filter(Boolean));
-  const candidates: Candidate[] = elements.filter((el): el is Candidate => el.kind === 'text' && !el.role && !!el.text && el.text.chars > 0);
-  if (candidates.length === 0) return [];
+  const hasTitle = elements.some((el) => el.role === 'TITLE');
+  const free: Candidate[] = elements.filter((el): el is Candidate => el.kind === 'text' && !el.role && !!el.text && el.text.chars > 0);
+  if (free.length === 0) return [];
 
-  const suggestions: PlaceholderSuggestion[] = candidates.filter((el) => el.text.stat).map((el) => ({ sourceNodeId: el.sourceNodeId, tag: 'custom' }));
-  const free = candidates.filter((el) => !el.text.stat);
-  if (free.length === 0) return suggestions;
+  const suggestions: PlaceholderSuggestion[] = [];
+  const title = hasTitle ? undefined : [...free].sort(biggestFirst)[0];
+  if (title) suggestions.push({ sourceNodeId: title.sourceNodeId, tag: 'title' });
+  const rest = free.filter((el) => el !== title);
 
-  const take = (el: Candidate | undefined, tag: Exclude<PlaceholderSuggestion['tag'], 'custom'>) => {
-    if (!el || present.has(ROLE_OF_TAG[tag])) return;
-    suggestions.push({ sourceNodeId: el.sourceNodeId, tag });
-    free.splice(free.indexOf(el), 1);
-  };
+  const longest = [...rest].sort((a, b) => b.text.chars - a.text.chars || a.text.fontSizePx - b.text.fontSizePx)[0];
+  const bodySize = rest.length >= 2 ? longest.text.fontSizePx : 0;
 
-  const titleIds = new Set(elements.filter((el) => el.role === 'TITLE').map((el) => el.sourceNodeId));
-  if (titleIds.size === 0) {
-    const title = [...free].sort(biggestFirst)[0];
-    take(title, 'title');
-    titleIds.add(title.sourceNodeId);
+  for (const el of rest) {
+    if (el.text.stat) suggestions.push({ sourceNodeId: el.sourceNodeId, tag: 'custom' });
+    else if (el.text.fontSizePx > bodySize && el.text.chars <= SUBTITLE_MAX_CHARS) suggestions.push({ sourceNodeId: el.sourceNodeId, tag: 'subtitle' });
+    else if (el.text.chars >= BODY_MIN_CHARS || el.text.paragraphs > 1) suggestions.push({ sourceNodeId: el.sourceNodeId, tag: 'body' });
   }
-
-  const longest = [...free].sort((a, b) => b.text.chars - a.text.chars)[0];
-  if (longest && (longest.text.chars >= BODY_MIN_CHARS || longest.text.paragraphs > 1)) take(longest, 'body');
-
-  const subtitle = free.filter((el) => el.text.chars <= SUBTITLE_MAX_CHARS).sort(biggestFirst)[0];
-  const others = elements.filter((el) => el.kind === 'text' && el.text && !el.text.stat && el !== subtitle && !titleIds.has(el.sourceNodeId));
-  if (subtitle && others.every((el) => subtitle.text.fontSizePx > el.text!.fontSizePx)) take(subtitle, 'subtitle');
-
   return suggestions;
 }

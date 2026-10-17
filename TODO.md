@@ -236,9 +236,13 @@ les suivants) :
    le corps ne sert que dans un layout sans sous-titre, et ses puces ne
    sont retirées que sur la slide d'exemple. Images et logos vont dans le layout en décor : Slides n'a pas
    de placeholder d'image hors PowerPoint importé. La slide d'exemple est
-   remplie avec le texte d'exemple. Les tags du Master sont ignorés (un
-   placeholder du Master ne s'affiche sur aucune slide) et son titre par
-   défaut est toujours caché.
+   remplie avec le texte d'exemple. Un placeholder du Master ne s'affiche
+   sur aucune slide : un texte tagué du Master est donc recopié en
+   placeholder dans chaque layout (modifiable sur chaque slide), le reste
+   du Master reste en décor commun. Le titre et le corps par défaut du
+   Master sont cachés, pas supprimés : les supprimer faisait perdre leur
+   couleur aux sous-titres des layouts. Un rectangle plein qui couvre la
+   frame devient le fond de la page (il cachait le décor du Master).
 4. ~~**Slide de style guide optionnelle.**~~ — abandonné (2026-08-03) :
    l'idée initiale (checkbox à l'export générant une slide swatches/rôles/
    échantillon typo en 1ère position) servait surtout de preuve visuelle de

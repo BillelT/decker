@@ -5316,35 +5316,26 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
   }
 
   // src/serialize/templatePlaceholderRoles.ts
-  var BODY_MIN_CHARS = 80;
+  var BODY_MIN_CHARS = 20;
   var SUBTITLE_MAX_CHARS = 140;
-  var ROLE_OF_TAG = { title: "TITLE", subtitle: "SUBTITLE", body: "BODY" };
   function biggestFirst(a3, b2) {
     return b2.text.fontSizePx - a3.text.fontSizePx || a3.text.y - b2.text.y;
   }
   function suggestPlaceholderRoles(elements) {
-    const present = new Set(elements.map((el) => el.role).filter(Boolean));
-    const candidates = elements.filter((el) => el.kind === "text" && !el.role && !!el.text && el.text.chars > 0);
-    if (candidates.length === 0) return [];
-    const suggestions = candidates.filter((el) => el.text.stat).map((el) => ({ sourceNodeId: el.sourceNodeId, tag: "custom" }));
-    const free = candidates.filter((el) => !el.text.stat);
-    if (free.length === 0) return suggestions;
-    const take = (el, tag) => {
-      if (!el || present.has(ROLE_OF_TAG[tag])) return;
-      suggestions.push({ sourceNodeId: el.sourceNodeId, tag });
-      free.splice(free.indexOf(el), 1);
-    };
-    const titleIds = new Set(elements.filter((el) => el.role === "TITLE").map((el) => el.sourceNodeId));
-    if (titleIds.size === 0) {
-      const title = [...free].sort(biggestFirst)[0];
-      take(title, "title");
-      titleIds.add(title.sourceNodeId);
+    const hasTitle = elements.some((el) => el.role === "TITLE");
+    const free = elements.filter((el) => el.kind === "text" && !el.role && !!el.text && el.text.chars > 0);
+    if (free.length === 0) return [];
+    const suggestions = [];
+    const title = hasTitle ? void 0 : [...free].sort(biggestFirst)[0];
+    if (title) suggestions.push({ sourceNodeId: title.sourceNodeId, tag: "title" });
+    const rest = free.filter((el) => el !== title);
+    const longest = [...rest].sort((a3, b2) => b2.text.chars - a3.text.chars || a3.text.fontSizePx - b2.text.fontSizePx)[0];
+    const bodySize = rest.length >= 2 ? longest.text.fontSizePx : 0;
+    for (const el of rest) {
+      if (el.text.stat) suggestions.push({ sourceNodeId: el.sourceNodeId, tag: "custom" });
+      else if (el.text.fontSizePx > bodySize && el.text.chars <= SUBTITLE_MAX_CHARS) suggestions.push({ sourceNodeId: el.sourceNodeId, tag: "subtitle" });
+      else if (el.text.chars >= BODY_MIN_CHARS || el.text.paragraphs > 1) suggestions.push({ sourceNodeId: el.sourceNodeId, tag: "body" });
     }
-    const longest = [...free].sort((a3, b2) => b2.text.chars - a3.text.chars)[0];
-    if (longest && (longest.text.chars >= BODY_MIN_CHARS || longest.text.paragraphs > 1)) take(longest, "body");
-    const subtitle = free.filter((el) => el.text.chars <= SUBTITLE_MAX_CHARS).sort(biggestFirst)[0];
-    const others = elements.filter((el) => el.kind === "text" && el.text && !el.text.stat && el !== subtitle && !titleIds.has(el.sourceNodeId));
-    if (subtitle && others.every((el) => subtitle.text.fontSizePx > el.text.fontSizePx)) take(subtitle, "subtitle");
     return suggestions;
   }
 
@@ -5625,7 +5616,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
                   type: "button",
                   className: "f2s-btn f2s-btn--ghost",
                   disabled: locked || placeholderSuggestions.length === 0,
-                  title: previewingMaster ? "The Master is drawn on every slide as is: its layers need no role." : placeholderSuggestions.length === 0 ? "Nothing left to suggest in this layout: its title, subtitle and body are set, or no other text fits them." : "Tag the title, subtitle and body of this layout from the size and length of its texts.",
+                  title: previewingMaster ? "Tag a Master text yourself to make it editable on every slide. Untagged layers stay fixed on every slide." : placeholderSuggestions.length === 0 ? "Nothing left to suggest in this layout: its title, subtitle and body are set, or no other text fits them." : "Tag the title, subtitle and body of this layout from the size and length of its texts.",
                   onClick: applyPlaceholderSuggestions,
                   children: "Suggest roles"
                 }

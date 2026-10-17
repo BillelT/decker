@@ -98,6 +98,7 @@ export async function runExportJob(
           plan: planTemplateLayouts(doc.slides, created.layouts, doc.masterSlideId),
           masterPlaceholderIds: created.masterPlaceholderIds,
           masterTitle: created.masterTitle,
+          masterBody: created.masterBody,
         };
       }
       // Persisté sur le job (pas seulement gardé en variable locale) : sans
@@ -147,9 +148,8 @@ export async function runExportJob(
         if (used.has(layout.objectId) || (keepBlank && layout.name === 'BLANK')) continue;
         await applyBatch(accessToken, presentationId, { sourceSlideId: '__layout__', requests: [{ deleteObject: { objectId: layout.objectId } }] }).catch(() => undefined);
       }
-      // Puis le corps par défaut du Master (9 niveaux de puces) et son
-      // numéro de slide : plus aucun layout restant ne les utilise. Un
-      // échec ici ne gêne rien.
+      // Puis le numéro de slide du Master : plus aucun layout restant ne
+      // l'utilise. Un échec ici ne gêne rien.
       for (const objectId of templateLayouts.masterPlaceholderIds ?? []) {
         await applyBatch(accessToken, presentationId, { sourceSlideId: '__master__', requests: [{ deleteObject: { objectId } }] }).catch(() => undefined);
       }
