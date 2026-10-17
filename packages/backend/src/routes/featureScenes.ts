@@ -189,7 +189,7 @@ export const FEATURE_SUGGEST_HTML = scene(
   440,
   'The two Suggest roles buttons of the Decker plugin: Composition, where the layout title and body were just tagged as placeholders, and Colors, where each detected color is mapped to a Slides theme role',
   `<div class="dm-plugin fs-focus">${toast('info', '2 roles suggested. Change any of them in Composition.')}
-    <div class="f2s-tmpl-panel"><section class="f2s-tmpl-section"><div class="f2s-section-head"><h3 class="f2s-tmpl-heading">Composition</h3>${btn('f2s-btn--ghost fs-pressed', 'Suggest roles')}</div><ul class="f2s-tmpl-list">${roleRow('title', 'Click to edit title')}${roleRow('body', 'Click to edit text')}</ul></section></div>
+    <div class="f2s-tmpl-panel"><section class="f2s-tmpl-section"><div class="f2s-section-head"><h3 class="f2s-tmpl-heading">Composition</h3>${btn('f2s-btn--ghost fs-hover', 'Suggest roles')}</div><ul class="f2s-tmpl-list">${roleRow('title', 'Click to edit title')}${roleRow('body', 'Click to edit text')}</ul></section></div>
     <div class="f2s-style-panel">${colorsSection(btn('f2s-btn--ghost', 'Suggest roles'))}</div>
     <span class="fs-cursor-at fs-cursor-at--suggest">${CURSOR}</span>
   </div>`,
@@ -328,7 +328,7 @@ export const FEATURE_SCENES_CSS = `
    cadre, les boutons restent entiers. */
 .fs-pwin--deck .f2s-topbar-title-group { display: none; }
 .fs-toast { animation: none; }
-.fs-pressed { box-shadow: var(--hyb-pressed); }
+.fs .f2s-btn--ghost.fs-hover { background: var(--b-surface-sunken); color: var(--b-ink); }
 /* Card Fonts : la barre des polices, puis la meme slide avant (titre sans
    serif, la General Sans du site pour Satoshi) et apres (titre serif). */
 .fs-fonts { position: absolute; inset: 0; height: auto; display: flex; flex-direction: column; gap: 18px; padding: 22px 20px 0; background: var(--b-surface); }
