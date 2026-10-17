@@ -1662,10 +1662,15 @@ a.f2s-btn {
   border: 1px solid var(--color-border);
   border-radius: 6px;
   padding: 6px 10px;
+  transition: background-color var(--b-duration) var(--b-ease-default);
 }
 
-.f2s-tmpl-chip:hover {
-  border-color: var(--color-orange);
+/* Meme survol que .f2s-log-entry (Composition) : fond gray 200, sans bordure
+   orange, reservee a l'action principale. */
+@media (hover: hover) and (pointer: fine) {
+  .f2s-tmpl-chip:hover {
+    background: var(--color-gray-200);
+  }
 }
 
 
