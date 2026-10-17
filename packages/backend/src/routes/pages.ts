@@ -4,7 +4,7 @@ import { MARKETING_CSS } from './marketingStyles.js';
 import { OG_IMAGE_PNG_BASE64 } from '../og/ogImageData.js';
 import { OG_IMAGE } from '../og/variants.js';
 import { HERO_DEMO_CSS, HERO_DEMO_HTML, HERO_DEMO_JS } from './heroDemo.js';
-import { EASTER_EGG_VERSION, easterEggScript } from './easterEgg.js';
+import { gamePage } from './game.js';
 import {
   FEATURE_FULL_DECK_HTML,
   FEATURE_NATIVE_HTML,
@@ -99,7 +99,7 @@ const REL_OWN = 'noopener';
 const REL_THIRD_PARTY = 'noopener noreferrer';
 
 /**
- * Logo du footer, déclencheur de l'easter egg (voir easterEgg.ts) : le même
+ * Logo du footer, lien vers l'easter egg (/game, voir game.ts) : le même
  * dessin que DECKER_MARK_SVG, mais découpé en trois groupes, une carte par
  * groupe, pour que l'animation de survol les ferme et les rouvre comme des
  * fenêtres en boucle. À garder aligné sur DECKER_MARK_SVG (brand.ts).
@@ -200,22 +200,6 @@ ${footer()}
   };
   onScroll();
   document.addEventListener('scroll', onScroll, { passive: true });
-
-  // Easter egg du footer : le jeu n'est chargé qu'au premier clic sur le logo.
-  var egg = document.querySelector('[data-egg]');
-  if (egg) {
-    var eggLoading = false;
-    egg.addEventListener('click', function () {
-      if (window.DeckerEgg) { window.DeckerEgg.open(egg); return; }
-      if (eggLoading) return;
-      eggLoading = true;
-      var script = document.createElement('script');
-      script.src = '/easter-egg.js?v=${EASTER_EGG_VERSION}';
-      script.onload = function () { if (window.DeckerEgg) window.DeckerEgg.open(egg); };
-      script.onerror = function () { eggLoading = false; };
-      document.head.appendChild(script);
-    });
-  }
 
   // Carrousel de cards. La piste défile déjà nativement (tactile, trackpad,
   // clavier) : le script n'ajoute que les flèches, et les masque tant que tout
@@ -326,10 +310,10 @@ function footer(): string {
   <div class="footer__top">
     <div class="footer__brand">
       <div class="footer__brand-row">
-        <button type="button" class="footer__egg" data-egg aria-labelledby="footer-egg-tip">
+        <a class="footer__egg" href="/game" aria-labelledby="footer-egg-tip">
           ${FOOTER_EGG_MARK}
-          <span class="footer__egg-tip" id="footer-egg-tip">Get spammed like it’s 2003</span>
-        </button>
+          <span class="footer__egg-tip" id="footer-egg-tip">Play a quick game</span>
+        </a>
       </div>
       <p class="footer__meta">&copy; 2026 Decker<br>
         Made by <a class="text-link" href="${FOLIO_URL}" target="_blank" rel="${REL_OWN}">Billel</a>
@@ -610,13 +594,10 @@ pagesRouter.get(`/${OG_IMAGE.file}`, (_req, res) => {
     .send(Buffer.from(OG_IMAGE_PNG_BASE64, 'base64'));
 });
 
-/** Jeu de l'easter egg, chargé au clic. Versionné comme la vidéo : cache d'un an. */
-const EASTER_EGG_JS = easterEggScript(PLUGIN_URL);
-pagesRouter.get('/easter-egg.js', (_req, res) => {
-  res
-    .type('application/javascript')
-    .set('Cache-Control', 'public, max-age=31536000, immutable')
-    .send(EASTER_EGG_JS);
+/** Easter egg du footer : page à part, hors sitemap et non indexée (voir game.ts). */
+const GAME_HTML = gamePage({ pluginUrl: PLUGIN_URL });
+pagesRouter.get('/game', (_req, res) => {
+  res.type('html').send(GAME_HTML);
 });
 
 pagesRouter.get('/robots.txt', (_req, res) => {

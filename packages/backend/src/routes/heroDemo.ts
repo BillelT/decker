@@ -19,7 +19,7 @@
  * minimale réelle) puis mise à l'échelle de son conteneur par le script,
  * comme une capture.
  *
- * Le JS est en `String.raw`, comme celui de l'easter egg : pas de backtick ni
+ * Le JS est en `String.raw`, comme celui du jeu (game.ts) : pas de backtick ni
  * de `${` dedans.
  */
 import { PLUGIN_STYLES_CSS } from '../generated/pluginStyles.js';

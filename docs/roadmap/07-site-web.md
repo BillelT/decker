@@ -31,4 +31,4 @@ Le site (decker.billeltighidet.fr, rendu par `packages/backend/src/routes/pages.
 
 ## À ajouter
 
-- [x] **Easter egg jouable dans le footer** (prototype complet le 16 octobre) : voir [08-site-easter-egg-jeu.md](./08-site-easter-egg-jeu.md).
+- [x] **Easter egg jouable dans le footer** (v1 le 16 octobre, refaite le 17 sur le flow de smoo.link) : voir [08-site-easter-egg-jeu.md](./08-site-easter-egg-jeu.md).

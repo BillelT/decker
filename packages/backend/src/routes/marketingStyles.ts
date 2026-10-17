@@ -422,8 +422,8 @@ a { color: inherit; }
 .footer__brand-row { display: flex; align-items: center; gap: var(--b-space-12); }
 .footer__brand-mark { width: 24px; height: 24px; flex: 0 0 auto; display: block; }
 
-/* Logo du footer = déclencheur de l'easter egg (easterEgg.ts). Un vrai
-   bouton, cible étendue à 44px par un pseudo-élément. */
+/* Logo du footer = lien vers l'easter egg (/game, game.ts). Cible étendue à
+   44px par un pseudo-élément. */
 .footer__egg {
   position: relative; display: block; padding: 0; border: 0; border-radius: 0;
   background: none; color: inherit; font: inherit; cursor: pointer;
