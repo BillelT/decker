@@ -54,7 +54,7 @@ On passe aux choses qui manquent, aux problèmes de flow et d'UX, et à tout ce 
 | [05-plugin-interface-et-da.md](./05-plugin-interface-et-da.md) | Interface et DA : biseaux, typo, animation d'export, icônes |
 | [06-plugin-textes.md](./06-plugin-textes.md) | Textes de l'interface, à faire en dernier |
 | [07-site-web.md](./07-site-web.md) | Site : accessibilité, contenu, DA, code |
-| [08-site-easter-egg-jeu.md](./08-site-easter-egg-jeu.md) | Easter egg du footer : « Decker 95 », un Asteroids pixel façon Windows 95 sur sa propre page |
+| [08-site-easter-egg-jeu.md](./08-site-easter-egg-jeu.md) | Easter egg du footer : « Decker 95 », le jeu des pop-ups en pixel Windows 95 sur sa propre page |
 
 ## Arbitrages encore ouverts
 
