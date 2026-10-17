@@ -186,11 +186,11 @@ const toast = (tone: 'success' | 'info', text: string) =>
     Slides), a grande echelle, avec le toast qui confirme le clic. */
 export const FEATURE_SUGGEST_HTML = scene(
   'suggest',
-  580,
+  440,
   'The two Suggest roles buttons of the Decker plugin: Composition, where the layout title and body were just tagged as placeholders, and Colors, where each detected color is mapped to a Slides theme role',
   `<div class="dm-plugin fs-focus">${toast('info', '2 roles suggested. Change any of them in Composition.')}
-    <div class="fs-focus__col"><div class="f2s-tmpl-panel"><section class="f2s-tmpl-section"><div class="f2s-section-head"><h3 class="f2s-tmpl-heading">Composition</h3>${btn('f2s-btn--ghost fs-pressed', 'Suggest roles')}</div><ul class="f2s-tmpl-list">${roleRow('title', 'Click to edit title')}${roleRow('body', 'Click to edit text')}</ul></section></div></div>
-    <div class="fs-focus__col"><div class="f2s-style-panel">${colorsSection(btn('f2s-btn--ghost', 'Suggest roles'))}</div></div>
+    <div class="f2s-tmpl-panel"><section class="f2s-tmpl-section"><div class="f2s-section-head"><h3 class="f2s-tmpl-heading">Composition</h3>${btn('f2s-btn--ghost fs-pressed', 'Suggest roles')}</div><ul class="f2s-tmpl-list">${roleRow('title', 'Click to edit title')}${roleRow('body', 'Click to edit text')}</ul></section></div>
+    <div class="f2s-style-panel">${colorsSection(btn('f2s-btn--ghost', 'Suggest roles'))}</div>
     <span class="fs-cursor-at fs-cursor-at--suggest">${CURSOR}</span>
   </div>`,
 );
@@ -220,17 +220,18 @@ export const FEATURE_PREPARE_HTML = scene(
 /** Fonts : chaque police se remplace en un clic, dans la liste des polices
     de Google Slides. Satoshi, absente de Slides, passe en Inter ; Arial, qui
     y est déjà, peut aussi être échangée, ici contre Roboto. */
-const FONT_LIST = ['Arial', 'Inter', 'Lato', 'Montserrat', 'Poppins', 'Roboto', 'Verdana'];
 export const FEATURE_FONTS_HTML = scene(
   'fonts',
-  580,
-  'The Fonts bar of the Decker plugin: Satoshi is replaced by Inter, and the Google Slides font list is open to swap Arial for Roboto',
-  `<div class="fs-pwin fs-pwin--fonts"><div class="dm-pwin__bar">${DECKER_ICON}<span>Decker</span><span class="dm-pwin__x">${ICONS.close}</span></div><div class="dm-plugin">
-    <header class="f2s-topbar"><div class="f2s-topbar-left"><div class="f2s-tabs" role="tablist"><button type="button" class="f2s-tab is-active">Deck</button><button type="button" class="f2s-tab">Templates</button></div><div class="f2s-topbar-title-group"><label class="f2s-toolbar-label">Name:</label><input type="text" class="f2s-title-input" value="Trailworn deck"></div></div></header>
-    <div class="f2s-toolbar"><div class="f2s-toolbar-row"><div class="f2s-toolbar-group"><span class="f2s-toolbar-label">Fonts:</span><label class="f2s-font-select"><span class="f2s-font-original">Satoshi</span><span class="f2s-font-arrow">&rarr;</span><div class="f2s-font-combobox"><input type="text" class="f2s-font-combobox-input" size="10" value="Inter"><span class="f2s-font-combobox-arrow"></span></div></label><label class="f2s-font-select"><span class="f2s-font-original">Arial</span><span class="f2s-font-arrow">&rarr;</span><div class="f2s-font-combobox f2s-font-combobox--open"><input type="text" class="f2s-font-combobox-input" size="10" value="Roboto"><span class="f2s-font-combobox-arrow"></span>
-    <ul class="f2s-font-combobox-list">${FONT_LIST.map((f) => `<li class="f2s-font-combobox-option${f === 'Roboto' ? ' f2s-font-combobox-option--active f2s-font-combobox-option--selected' : ''}">${f}</li>`).join('')}</ul></div></label></div></div></div>
-    <div class="f2s-body"></div>
-  </div></div>`,
+  470,
+  'The Fonts bar of the Decker plugin: Satoshi is replaced by Georgia and Arial by Roboto, and the same cover slide is shown before, with a sans-serif title, and after, with a serif title',
+  `<div class="dm-plugin fs-fonts">
+    <div class="f2s-toolbar"><div class="f2s-toolbar-row"><div class="f2s-toolbar-group"><span class="f2s-toolbar-label">Fonts:</span><label class="f2s-font-select"><span class="f2s-font-original">Satoshi</span><span class="f2s-font-arrow">&rarr;</span><div class="f2s-font-combobox"><input type="text" class="f2s-font-combobox-input" size="10" value="Georgia"><span class="f2s-font-combobox-arrow"></span></div></label><label class="f2s-font-select"><span class="f2s-font-original">Arial</span><span class="f2s-font-arrow">&rarr;</span><div class="f2s-font-combobox"><input type="text" class="f2s-font-combobox-input" size="10" value="Roboto"><span class="f2s-font-combobox-arrow"></span></div></label></div></div></div>
+    <div class="fs-fonts__grid">
+      <span class="fs-fonts__tag">Before</span><span class="fs-fonts__tag">After</span>
+      <div class="fs-fonts__slide fs-fonts__slide--before">${slide('cover')}</div><div class="fs-fonts__slide fs-fonts__slide--after">${slide('cover')}</div>
+      <div class="fs-fonts__slide fs-fonts__slide--before">${slide('pillars')}</div><div class="fs-fonts__slide fs-fonts__slide--after">${slide('pillars')}</div>
+    </div>
+  </div>`,
 );
 
 /** Fidelity : le titre exporté sélectionné dans Slides, une vraie zone de texte. */
@@ -328,11 +329,24 @@ export const FEATURE_SCENES_CSS = `
 .fs-pwin--deck .f2s-topbar-title-group { display: none; }
 .fs-toast { animation: none; }
 .fs-pressed { box-shadow: var(--hyb-pressed); }
-/* Card Suggest : deux colonnes, Composition puis Colors, sur toute la scene. */
-.fs-focus { position: absolute; inset: 0; height: auto; display: flex; flex-direction: row; align-items: flex-start; gap: 16px; padding: 62px 18px 0; background: var(--b-surface); }
-.fs-focus__col { flex: 1 1 0; min-width: 0; }
+/* Card Fonts : la barre des polices, puis la meme slide avant (titre sans
+   serif, la General Sans du site pour Satoshi) et apres (titre serif). */
+.fs-fonts { position: absolute; inset: 0; height: auto; display: flex; flex-direction: column; gap: 18px; padding: 22px 20px 0; background: var(--b-surface); }
+.fs-fonts .f2s-toolbar { padding: 0; background: none; border: 0; }
+.fs-fonts__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
+.fs-fonts__tag { justify-self: start; padding: 3px 8px; border-radius: var(--b-radius-full); background: var(--b-surface-muted); font-size: 11px; font-weight: var(--b-font-semibold); }
+.fs-fonts__slide { box-shadow: ${CHROME.shadow}; }
+.fs-fonts__slide--before .dm-s__title { font-family: var(--b-font-sans); }
+.fs-fonts__slide--after .dm-s__title { font-family: Georgia, 'Times New Roman', serif; font-weight: 700; }
+.fs-fonts__slide--after .dm-s__title { letter-spacing: 0; }
+.fs-fonts__slide--after .dm-s__sub, .fs-fonts__slide--after .dm-s__head, .fs-fonts__slide--after .dm-s__num { font-family: Roboto, Arial, sans-serif; }
+
+/* Card Suggest : Composition puis Colors, empilees sur toute la largeur de
+   la scene, a grande echelle ; le toast flotte a distance du bord. */
+.fs-focus { position: absolute; inset: 0; height: auto; display: flex; flex-direction: column; gap: 14px; padding: 62px 16px 0; background: var(--b-surface); }
+.fs-focus .f2s-toast { top: 18px; }
 .fs-focus .f2s-tmpl-panel { width: 100%; padding: 0; }
-.fs-cursor-at--suggest { left: 222px; top: 80px; }
+.fs-cursor-at--suggest { left: 340px; top: 82px; }
 
 /* Prepare for Slides : deux frames d'origine et leurs copies prêtes pour
    Slides, l'en-tête du plugin en bas sur toute la largeur. */
