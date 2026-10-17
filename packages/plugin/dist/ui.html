@@ -1298,8 +1298,9 @@ a.f2s-btn {
 }
 
 /* Tag "Master" du premier layout du rail (mode Template), en haut à
-   gauche : le coin haut droit appartient au badge d'échec d'export. Fond
-   accent à 80 % (calculé depuis --b-accent, pas de token dédié). */
+   gauche : le coin haut droit appartient au badge d'échec d'export. Même
+   tapis orange clair et même encre que le tag "approximated" du panneau
+   Content (--color-orange-soft, 12.45:1), choix du 17 octobre. */
 .f2s-frame-tag {
   position: absolute;
   top: 4px;
@@ -1314,8 +1315,8 @@ a.f2s-btn {
 }
 
 .f2s-frame-tag--master {
-  background: color-mix(in srgb, var(--b-accent) 80%, transparent);
-  color: var(--b-ink);
+  background: var(--color-orange-soft);
+  color: var(--color-badge-ink);
 }
 
 .f2s-frame-badge--error {
