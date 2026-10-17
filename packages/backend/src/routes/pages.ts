@@ -6,13 +6,13 @@ import { OG_IMAGE } from '../og/variants.js';
 import { HERO_DEMO_CSS, HERO_DEMO_HTML, HERO_DEMO_JS } from './heroDemo.js';
 import { EASTER_EGG_VERSION, easterEggScript } from './easterEgg.js';
 import {
-  FEATURE_FREE_HTML,
   FEATURE_FULL_DECK_HTML,
   FEATURE_NATIVE_HTML,
-  FEATURE_PICK_HTML,
-  FEATURE_PRIVATE_HTML,
+  FEATURE_PREPARE_HTML,
+  FEATURE_FONTS_HTML,
   FEATURE_SCENES_CSS,
   FEATURE_SCENES_JS,
+  FEATURE_SUGGEST_HTML,
   FEATURE_TEMPLATE_HTML,
   STEP_GET_DECK_HTML,
   STEP_MATCHED_HTML,
@@ -378,14 +378,6 @@ pagesRouter.get('/', (_req, res) => {
       <div class="carousel" data-carousel>
         <ul class="carousel__track" data-carousel-track tabindex="0" aria-label="What Decker does">
         <li class="carousel__item card">
-          ${FEATURE_FREE_HTML}
-          <div class="card__body">
-            <p class="card__eyebrow">Pricing</p>
-            <h3 class="card__title">100% free</h3>
-            <p class="card__desc">No paywall, no subscription, no trial, no export limit. Decker is free to use, today and every day after.</p>
-          </div>
-        </li>
-        <li class="carousel__item card">
           ${FEATURE_FULL_DECK_HTML}
           <div class="card__body">
             <p class="card__eyebrow">Full deck</p>
@@ -402,11 +394,27 @@ pagesRouter.get('/', (_req, res) => {
           </div>
         </li>
         <li class="carousel__item card">
-          ${FEATURE_PICK_HTML}
+          ${FEATURE_SUGGEST_HTML}
           <div class="card__body">
-            <p class="card__eyebrow">Control</p>
-            <h3 class="card__title">Pick what you export</h3>
-            <p class="card__desc">Choose exactly which frames to send and in which order, right from inside Figma, before you even sign in.</p>
+            <p class="card__eyebrow">Templates</p>
+            <h3 class="card__title">Roles, suggested for you</h3>
+            <p class="card__desc">Decker reads each layout and suggests its title, body, and theme colors. Change any role in one click.</p>
+          </div>
+        </li>
+        <li class="carousel__item card">
+          ${FEATURE_PREPARE_HTML}
+          <div class="card__body">
+            <p class="card__eyebrow">Prepare</p>
+            <h3 class="card__title">Fixed in Figma, not in Slides</h3>
+            <p class="card__desc">Prepare for Slides copies each frame and flattens what Slides can’t render, so you adjust it in Figma first.</p>
+          </div>
+        </li>
+        <li class="carousel__item card">
+          ${FEATURE_FONTS_HTML}
+          <div class="card__body">
+            <p class="card__eyebrow">Fonts</p>
+            <h3 class="card__title">A Slides font for every font</h3>
+            <p class="card__desc">Fonts that Slides doesn’t have are listed upfront, and you pick the one that replaces them in the whole deck.</p>
           </div>
         </li>
         <li class="carousel__item card">
@@ -415,14 +423,6 @@ pagesRouter.get('/', (_req, res) => {
             <p class="card__eyebrow">Fidelity</p>
             <h3 class="card__title">Real Slides objects</h3>
             <p class="card__desc">Text, shapes, colors, and fonts come back as native objects you can edit, never as a flattened screenshot.</p>
-          </div>
-        </li>
-        <li class="carousel__item card">
-          ${FEATURE_PRIVATE_HTML}
-          <div class="card__body">
-            <p class="card__eyebrow">Privacy</p>
-            <h3 class="card__title">Private by default</h3>
-            <p class="card__desc">Nothing is stored beyond what’s needed to run the export. No tracking, no analytics, no data ever resold.</p>
           </div>
         </li>
         </ul>

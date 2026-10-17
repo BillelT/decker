@@ -74,10 +74,6 @@ function pluginApp(cls: string, o: { mode: 'deck' | 'template'; actions: string;
   </div></div>`;
 }
 
-/** Fenêtre du plugin réduite au rail (scène Control). */
-const pluginRailWindow = (cls: string, rail: string): string =>
-  `<div class="fs-pwin ${cls}"><div class="dm-pwin__bar">${DECKER_ICON}<span>Decker</span><span class="dm-pwin__x">${ICONS.close}</span></div><div class="dm-plugin"><div class="f2s-body"><aside class="f2s-sidebar">${rail}</aside></div></div></div>`;
-
 const btn = (cls: string, label: string, disabled = false) => `<button type="button" class="f2s-btn ${cls}"${disabled ? ' disabled' : ''}>${label}</button>`;
 
 const CURSOR = `<svg class="fs-cursor" viewBox="0 0 24 24"><path d="M4 2 L4 20 L9 15.5 L12.5 22 L15.5 20.6 L12.2 14.2 L19 14 Z" fill="var(--b-ink)" stroke="var(--b-white)" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
@@ -136,34 +132,17 @@ function googleSlides(o: { current: number; editing?: boolean }): string {
 
 /* ---------- What Decker does ---------- */
 
-/** Pricing : la fiche de Decker, à zéro, dans la DA du site. */
-export const FEATURE_FREE_HTML = scene(
-  'free',
-  480,
-  'Decker priced at $0 forever, with unlimited exports, decks and templates, and every feature included',
-  `<div class="fs-price">
-    <div class="fs-price__head">${DECKER_ICON}<span class="fs-price__name">Decker</span></div>
-    <p class="fs-price__amount"><span>$0</span><span class="fs-price__per">forever</span></p>
-    <ul class="fs-price__list">
-      <li>${CHECK}Unlimited exports</li>
-      <li>${CHECK}Decks and templates</li>
-      <li>${CHECK}Every feature, no trial</li>
-    </ul>
-    <div class="fs-price__foot"><span class="btn cta">Try it on Figma</span><span class="btn secondary">Buy me a coffee</span></div>
-  </div>`,
-);
-
 /** Full deck : le rail du plugin plein, l'export en cours sur tout le fichier. */
 const RETRO = `<div class="f2s-canvas-preview f2s-canvas-preview--retro"><div class="f2s-retro"><div class="f2s-retro-titlebar"><span class="f2s-retro-title">Exporting - Stats</span><span class="f2s-retro-window-buttons"><i>_</i><i>&#9633;</i><i>&#10005;</i></span></div><div class="f2s-retro-screen">${slide('stats')}<div class="f2s-retro-scanlines"></div></div><div class="f2s-retro-status"><span class="f2s-retro-status-text">Generating slide 3 of 12<span class="f2s-retro-ellipsis">...</span></span><div class="f2s-retro-bar"><div class="f2s-retro-bar-fill" style="--f2s-retro-progress:0.25"></div></div></div></div></div>`;
 export const FEATURE_FULL_DECK_HTML = scene(
   'deck',
-  760,
+  1000,
   'The Decker plugin exporting a whole Figma file: twelve frames in its rail, slide 3 of 12 being generated',
   pluginApp('fs-pwin--deck', {
     mode: 'deck',
     name: 'Trailworn deck',
-    actions: `${btn('f2s-btn--ghost', 'Cancel')}<span class="f2s-btn f2s-btn--primary f2s-btn--busy f2s-tabular"><span class="f2s-btn-loading"><span class="f2s-spinner"></span>Exporting 3/12</span></span>`,
-    body: `<aside class="f2s-sidebar">${railItem(1, 'cover', 'Cover')}${railItem(2, 'pillars', 'Three pillars')}${railItem(3, 'stats', 'Stats', { active: true, exporting: true })}${railItem(4, 'cover', 'Roadmap')}</aside><main class="f2s-canvas"><div class="f2s-deck-column">${RETRO}</div></main>`,
+    actions: `${btn('f2s-btn--secondary', 'Add frames', true)}${btn('f2s-btn--secondary', 'Prepare for Slides', true)}${btn('f2s-btn--ghost', 'Cancel')}<span class="f2s-btn f2s-btn--primary f2s-btn--busy f2s-tabular"><span class="f2s-btn-loading"><span class="f2s-spinner"></span>Exporting 3/12</span></span>`,
+    body: `<aside class="f2s-sidebar">${railItem(1, 'cover', 'Cover')}${railItem(2, 'pillars', 'Three pillars')}${railItem(3, 'stats', 'Stats', { active: true, exporting: true })}${railItem(4, 'cover', 'Roadmap')}${railItem(5, 'pillars', 'Team')}</aside><main class="f2s-canvas"><div class="f2s-deck-column">${RETRO}</div></main>`,
   }),
 );
 
@@ -174,30 +153,81 @@ const colorRow = (hex: string, role: string) =>
   `<li class="f2s-style-row"><div class="f2s-style-row-main"><span class="f2s-style-swatch" style="background-color:${hex}"></span><span class="f2s-style-label">${hex}</span><select class="f2s-font-dropdown f2s-style-role-select"><option>${role}</option></select></div></li>`;
 const roleRow = (role: string, name: string) =>
   `<li class="f2s-log-entry"><button type="button" class="f2s-log-entry-clickarea"><span class="f2s-log-entry-text"><strong class="f2s-log-entry-name">[[${role}]] ${name}</strong></span></button><select class="f2s-font-dropdown f2s-log-entry-role"><option>[[${role}]]</option></select></li>`;
+const plainRow = (name: string) =>
+  `<li class="f2s-log-entry"><button type="button" class="f2s-log-entry-clickarea"><span class="f2s-log-entry-text"><strong class="f2s-log-entry-name">${name}</strong></span></button><select class="f2s-font-dropdown f2s-log-entry-role"><option>No role</option></select></li>`;
+const chip = (name: string) => `<li><button type="button" class="f2s-tmpl-chip"><span class="f2s-tmpl-chip-label">${name}</span></button></li>`;
+const MASTER_SECTION = `<section class="f2s-tmpl-section"><h3 class="f2s-tmpl-heading f2s-style-heading">Master content</h3><ul class="f2s-style-list">${chip('Logo')}${chip('Footer')}</ul></section>`;
+const TYPO_SECTION = `<section class="f2s-tmpl-section"><h3 class="f2s-tmpl-heading f2s-style-heading">Typography</h3><ul class="f2s-style-list"><li class="f2s-style-row"><div class="f2s-style-row-main"><span class="f2s-style-font-swatch">Aa</span><span class="f2s-style-font-info"><span class="f2s-tmpl-font-family">Arial</span><span class="f2s-toolbar-muted">400, 700</span></span></div><div class="f2s-style-font-replace"><span class="f2s-font-arrow">&rarr;</span><div class="f2s-font-combobox"><input type="text" class="f2s-font-combobox-input" size="10" value="Arial"><span class="f2s-font-combobox-arrow"></span></div></div></li></ul></section>`;
 export const FEATURE_TEMPLATE_HTML = scene(
   'template',
-  820,
+  1000,
   'The Decker plugin in Templates mode: the Cover layout tagged Master, a layout whose title and body are tagged as placeholders, and the detected colors mapped to theme roles',
   pluginApp('fs-pwin--tmpl', {
     mode: 'template',
-    fonts: false,
-    actions: `${btn('f2s-btn--secondary', 'Add frames', true)}${btn('f2s-btn--primary', 'Create template')}`,
+    name: 'Trailworn template',
+    actions: `${btn('f2s-btn--secondary', 'Add frames', true)}${btn('f2s-btn--secondary', 'Prepare for Slides')}${btn('f2s-btn--primary', 'Create template')}`,
     body: `<aside class="f2s-sidebar">${railItem(1, 'cover', 'Cover', { master: true, tmpl: true })}${railItem(2, 'pillars', 'Content', { active: true, tmpl: true })}${railItem(3, 'stats', 'Key figure', { tmpl: true })}</aside>
     <main class="f2s-canvas"><div class="f2s-tmpl-report"><div class="f2s-canvas-preview f2s-tmpl-preview">${slide('pillars', { tmpl: true })}</div>
-    <div class="f2s-tmpl-panel"><section class="f2s-tmpl-section"><div class="f2s-section-head"><h3 class="f2s-tmpl-heading">Composition</h3>${btn('f2s-btn--ghost', 'Suggest roles', true)}</div><ul class="f2s-tmpl-list">${roleRow('title', 'Click to edit title')}${roleRow('body', 'Click to edit text')}</ul></section></div></div></main>
-    <aside class="f2s-style-aside"><div class="f2s-style-panel"><section class="f2s-tmpl-section"><div class="f2s-section-head"><h3 class="f2s-tmpl-heading f2s-style-heading">Colors</h3>${btn('f2s-btn--ghost', 'Suggest roles', true)}</div>
-    <ul class="f2s-style-list">${colorRow(DECK.forest.toUpperCase(), 'Text &amp; background 1')}${colorRow(DECK.paper.toUpperCase(), 'Text &amp; background 2')}${colorRow(DECK.sand.toUpperCase(), 'Text &amp; background 4')}${colorRow(DECK.clay.toUpperCase(), 'Accent 1')}${colorRow(DECK.rust.toUpperCase(), 'Accent 2')}</ul></section></div></aside>`,
+    <div class="f2s-tmpl-panel"><section class="f2s-tmpl-section"><div class="f2s-section-head"><h3 class="f2s-tmpl-heading">Composition</h3>${btn('f2s-btn--ghost', 'Suggest roles', true)}</div><ul class="f2s-tmpl-list">${roleRow('title', 'Click to edit title')}${roleRow('body', 'Click to edit text')}</ul></section><section class="f2s-tmpl-section"><h3 class="f2s-tmpl-heading">Content</h3><ul class="f2s-tmpl-list">${plainRow('Craft')}${plainRow('Speed')}</ul></section></div></div></main>
+    <aside class="f2s-style-aside"><div class="f2s-style-panel">${MASTER_SECTION}<section class="f2s-tmpl-section"><div class="f2s-section-head"><h3 class="f2s-tmpl-heading f2s-style-heading">Colors</h3>${btn('f2s-btn--ghost', 'Suggest roles', true)}</div>
+    <ul class="f2s-style-list">${colorRow(DECK.forest.toUpperCase(), 'Text &amp; background 1')}${colorRow(DECK.paper.toUpperCase(), 'Text &amp; background 2')}${colorRow(DECK.sand.toUpperCase(), 'Text &amp; background 4')}${colorRow(DECK.clay.toUpperCase(), 'Accent 1')}${colorRow(DECK.rust.toUpperCase(), 'Accent 2')}</ul></section>${TYPO_SECTION}</div></aside>`,
   }),
 );
 
-/** Control : les frames choisies sur le canvas, triées dans le rail avant tout export. */
-export const FEATURE_PICK_HTML = scene(
-  'pick',
-  480,
-  'Two frames selected on the Figma canvas, and the Decker rail where a slide is being dragged to a new position',
-  `<div class="fs-pickframes">${canvasFrameMini('Stats', 'stats')}${canvasFrameMini('Three pillars', 'pillars')}</div>` +
-    pluginRailWindow('fs-pwin--pick', `${railItem(1, 'cover', 'Cover')}${railItem(2, 'stats', 'Stats', { cls: 'is-dragging fs-lifted' })}${railItem(3, 'pillars', 'Three pillars')}`) +
-    `<span class="fs-cursor-at fs-cursor-at--pick">${CURSOR}</span>`,
+/** Toast du plugin (StatusIcon.tsx), figé. */
+const toast = (tone: 'success' | 'info', text: string) =>
+  `<div class="f2s-toast f2s-toast--${tone} fs-toast"><svg class="f2s-status-icon f2s-status-icon--${tone}" width="16" height="16" viewBox="0 0 66 66" fill="none"><rect class="f2s-status-icon-disc" width="66" height="66" rx="33"/>${tone === 'success' ? '<path d="M20 34 L29 43 L46 24" stroke="currentColor" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none"/>' : '<path d="M33 31 L33 46 M33 20 L33 20.01" stroke="currentColor" stroke-width="9" stroke-linecap="round"/>'}</svg><span class="f2s-toast-text">${text}</span><span class="f2s-icon-btn f2s-toast-close">${ICONS.close}</span></div>`;
+
+/** Suggest roles : le clic qui vient de taguer le titre et le corps d'un
+    layout, cadré sur Composition et les couleurs (même fenêtre que la card
+    Templates, décalée pour masquer le rail). */
+export const FEATURE_SUGGEST_HTML = scene(
+  'suggest',
+  760,
+  'The Decker plugin right after Suggest roles: the layout title and body are now tagged as placeholders, and a notice confirms two roles were suggested',
+  pluginApp('fs-pwin--suggest', {
+    mode: 'template',
+    name: 'Trailworn template',
+    actions: `${btn('f2s-btn--secondary', 'Add frames', true)}${btn('f2s-btn--secondary', 'Prepare for Slides')}${btn('f2s-btn--primary', 'Create template')}`,
+    body: `${toast('info', '2 roles suggested. Change any of them in Composition.')}<aside class="f2s-sidebar">${railItem(1, 'cover', 'Cover', { master: true, tmpl: true })}${railItem(2, 'pillars', 'Content', { active: true, tmpl: true })}</aside>
+    <main class="f2s-canvas"><div class="f2s-tmpl-report"><div class="f2s-canvas-preview f2s-tmpl-preview">${slide('pillars', { tmpl: true })}</div>
+    <div class="f2s-tmpl-panel"><section class="f2s-tmpl-section"><div class="f2s-section-head"><h3 class="f2s-tmpl-heading">Composition</h3>${btn('f2s-btn--ghost fs-pressed', 'Suggest roles')}</div><ul class="f2s-tmpl-list">${roleRow('title', 'Click to edit title')}${roleRow('body', 'Click to edit text')}</ul></section><section class="f2s-tmpl-section"><h3 class="f2s-tmpl-heading">Content</h3><ul class="f2s-tmpl-list">${plainRow('Craft')}${plainRow('Speed')}</ul></section></div></div></main>
+    <aside class="f2s-style-aside"><div class="f2s-style-panel">${MASTER_SECTION}</div></aside>`,
+  }) + `<span class="fs-cursor-at fs-cursor-at--suggest">${CURSOR}</span>`,
+);
+
+/** Prepare for Slides : la frame d'origine, puis sa copie « [Slides Ready] »
+    posée à côté sur le canvas, déjà ramenée à ce que Slides sait rendre
+    (dégradé aplati, ombre retirée, interlettrage remis à zéro). */
+export const FEATURE_PREPARE_HTML = scene(
+  'prepare',
+  760,
+  'On the Figma canvas, a frame with a gradient, a shadow and letter spacing, next to its [Slides Ready] copy where Decker already flattened all three',
+  `<div class="fs-frame fs-prep fs-prep--orig"><span class="fs-frame__name">Stats</span>${slide('stats')}</div>
+  <div class="fs-frame fs-prep fs-prep--ready is-selected"><span class="fs-frame__name">[Slides Ready] Stats</span>${slide('stats')}</div>
+  <span class="fs-prep__arrow">${ICONS.arrow(28)}</span>` +
+    pluginApp('fs-pwin--prepare', {
+      mode: 'deck',
+      name: 'Trailworn deck',
+      actions: `${btn('f2s-btn--secondary', 'Add frames', true)}${btn('f2s-btn--secondary fs-pressed', 'Prepare for Slides')}${btn('f2s-btn--primary', 'Export')}`,
+      body: `${toast('success', 'Slides ready')}`,
+    }) +
+    `<span class="fs-cursor-at fs-cursor-at--prepare">${CURSOR}</span>`,
+);
+
+/** Fonts : une police absente de Slides, et la liste de celles qui y sont,
+    ouverte dans la barre Fonts du plugin. */
+const FONT_LIST = ['Inter', 'Lato', 'Manrope', 'Montserrat', 'Poppins', 'Roboto'];
+export const FEATURE_FONTS_HTML = scene(
+  'fonts',
+  520,
+  'The Fonts bar of the Decker plugin: Satoshi is not available in Google Slides, and the list of Slides fonts is open to pick Inter as its replacement',
+  `<div class="fs-pwin fs-pwin--fonts"><div class="dm-pwin__bar">${DECKER_ICON}<span>Decker</span><span class="dm-pwin__x">${ICONS.close}</span></div><div class="dm-plugin">
+    <header class="f2s-topbar"><div class="f2s-topbar-left"><div class="f2s-tabs" role="tablist"><button type="button" class="f2s-tab is-active">Deck</button><button type="button" class="f2s-tab">Templates</button></div><div class="f2s-topbar-title-group"><label class="f2s-toolbar-label">Name:</label><input type="text" class="f2s-title-input" value="Trailworn deck"></div></div></header>
+    <div class="f2s-toolbar"><div class="f2s-toolbar-row"><div class="f2s-toolbar-group"><span class="f2s-toolbar-label">Fonts:</span><label class="f2s-font-select"><span class="f2s-font-original">Satoshi</span><span class="f2s-font-arrow">&rarr;</span><div class="f2s-font-combobox f2s-font-combobox--open"><input type="text" class="f2s-font-combobox-input" size="10" value="Inter"><span class="f2s-font-combobox-arrow"></span>
+    <ul class="f2s-font-combobox-list">${FONT_LIST.map((f, i) => `<li class="f2s-font-combobox-option${i === 0 ? ' f2s-font-combobox-option--active f2s-font-combobox-option--selected' : ''}">${f}</li>`).join('')}</ul></div></label></div></div></div>
+    <div class="f2s-body"></div>
+  </div></div>`,
 );
 
 /** Fidelity : le titre exporté sélectionné dans Slides, une vraie zone de texte. */
@@ -206,25 +236,6 @@ export const FEATURE_NATIVE_HTML = scene(
   900,
   'Google Slides editing the exported deck: the title is a native text box, selected, with its font and size in the toolbar',
   googleSlides({ current: 1, editing: true }),
-);
-
-/** Privacy : la page Accès du compte Google, où Decker n'a que deux droits,
-    les plus étroits possibles, et se retire d'un clic. */
-const DRIVE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3h8l6 10-4 7H6l-4-7z"/><path d="M8 3l6 10h8M2 13h12l-4 7"/></svg>';
-const MAIL_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>';
-export const FEATURE_PRIVATE_HTML = scene(
-  'private',
-  520,
-  'The Google Account page for Decker: access limited to the Drive files Decker creates and to your email address, with a button to remove all access',
-  `<div class="fs-ga">
-    <div class="fs-ga__head"><span class="fs-ga__app">${DECKER_ICON}</span><div><p class="fs-ga__name">Decker</p><p class="fs-ga__sub">Decker has some access to your Google Account</p></div></div>
-    <p class="fs-ga__label">Access given to Decker</p>
-    <ul class="fs-ga__list">
-      <li><span class="fs-ga__ico">${DRIVE_ICON}</span><div><strong>Google Drive</strong><span>See, edit, create and delete only the specific Google Drive files you use with this app</span></div></li>
-      <li><span class="fs-ga__ico">${MAIL_ICON}</span><div><strong>Email address</strong><span>See your primary Google Account email address</span></div></li>
-    </ul>
-    <span class="fs-ga__btn">Delete all connections you have with Decker</span>
-  </div>`,
 );
 
 /* ---------- How it works ---------- */
@@ -295,51 +306,39 @@ export const FEATURE_SCENES_CSS = `
 .fs-pwin .f2s-body { flex: 1 1 auto; min-height: 0; }
 .fs-pwin .f2s-sidebar, .fs-pwin .f2s-canvas { overflow: clip; }
 
-/* Pricing : dans la DA du site (panneau en relief 95, angles droits) */
-.fs--free { --fs-bg: var(--b-surface-subtle); }
-.fs-price {
-  position: absolute; inset: 16px; display: flex; flex-direction: column; gap: 16px; padding: 24px;
-  background: var(--b-surface); box-shadow: var(--hyb-out);
-}
-.fs-price__head { display: flex; align-items: center; gap: 8px; }
-.fs-price__head svg { width: 18px; height: 18px; display: block; }
-.fs-price__name { font-size: var(--b-text-base); font-weight: var(--b-font-bold); }
-.fs-price__amount { display: flex; align-items: baseline; gap: 8px; margin: 0; font-size: 48px; font-weight: var(--b-font-bold); letter-spacing: -0.02em; line-height: 1; font-variant-numeric: tabular-nums; }
-.fs-price__per { font-size: var(--b-text-sm); font-weight: var(--b-font-medium); letter-spacing: 0; color: var(--b-text-muted); }
-.fs-price__list { display: grid; gap: 6px; margin: 0; padding: 14px 0 0; list-style: none; border-top: 1px solid var(--hyb-lo); box-shadow: inset 0 1px var(--hyb-hi); font-size: var(--b-text-sm); font-weight: var(--b-font-medium); }
-.fs-price__list li { display: flex; align-items: center; gap: 8px; }
-.fs-price__list svg { width: 14px; height: 14px; flex: none; color: var(--b-accent); }
-.fs-price__foot { display: flex; align-items: center; gap: 12px; margin-top: auto; }
-.fs-price__foot .btn { font-size: var(--b-text-sm); }
+/* Fenêtres du plugin à leur taille réelle (960 x 600 sous la barre de
+   Figma) : mêmes proportions que dans Figma et que la démo du hero. Seul
+   le cadrage change d'une card à l'autre. */
+.fs-pwin .dm-pwin__bar { height: 40px; }
+.fs-pwin--deck, .fs-pwin--tmpl { left: 20px; top: 37px; width: 960px; height: 640px; }
+.fs-pwin--suggest { left: -170px; top: -30px; width: 960px; height: 640px; }
+.fs-pwin--prepare { left: -180px; top: 330px; width: 960px; height: 640px; }
+.fs-pwin--fonts { left: 30px; top: 40px; width: 960px; height: 640px; }
+.fs .f2s-canvas-preview .dm-slide, .fs .f2s-retro-screen .dm-slide { width: 100%; }
+.fs-toast { animation: none; }
+.fs-pressed { box-shadow: var(--hyb-pressed); }
+.fs-cursor-at--suggest { left: 424px; top: 416px; }
+.fs-cursor-at--prepare { left: 606px; top: 400px; }
 
-/* Full deck */
-.fs-pwin--deck .dm-pwin__bar, .fs-pwin--tmpl .dm-pwin__bar { height: 44px; font-size: 16px; }
-.fs-pwin--deck .dm-pwin__bar svg, .fs-pwin--tmpl .dm-pwin__bar svg { width: 22px; height: 22px; }
-.fs-pwin--deck { left: 32px; top: 28px; width: 656px; height: 520px; }
-.fs-pwin--deck .f2s-topbar { padding: 10px 12px; }
-.fs-pwin--deck .f2s-sidebar { width: 170px; }
-.fs-pwin--deck .f2s-canvas { padding: 24px; justify-content: flex-start; align-items: stretch; }
-.fs-pwin--deck .f2s-canvas-preview { width: 100%; }
+/* Prepare for Slides : la frame d'origine et sa copie prête pour Slides */
+.fs-prep { width: 300px; }
+.fs-prep--orig { left: 40px; top: 40px; }
+.fs-prep--ready { left: 420px; top: 40px; }
+.fs-prep--orig .dm-slide { background: linear-gradient(135deg, var(--dm-clay), var(--dm-rust)); box-shadow: 0 18px 30px rgba(0, 0, 0, 0.35); }
+.fs-prep--orig .dm-s__cap { letter-spacing: 0.18em; text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4); }
+.fs-prep__arrow { position: absolute; left: 356px; top: 120px; color: ${CHROME.label}; rotate: 45deg; }
+.fs-prep__arrow svg { display: block; }
+
+/* Fonts : la liste des polices de Slides, ouverte sous son champ */
+/* La rangée de la barre Fonts défile en x dans le plugin, ce qui rognait la
+   liste ouverte : ici elle n'a rien à faire défiler. */
+.fs .dm-plugin .f2s-toolbar-row { overflow: visible; }
+.fs .f2s-font-combobox { position: relative; }
+.fs .dm-plugin .f2s-font-combobox-list { position: absolute; top: calc(100% + 4px); left: -1px; min-width: calc(100% + 2px); }
 
 /* Templates */
 .fs--template { --fs-bg: ${CHROME.canvas}; }
-.fs-pwin--tmpl { left: 28px; top: 28px; width: 764px; height: 600px; }
-.fs-pwin--tmpl .f2s-topbar { padding: 12px 16px; }
-.fs-pwin--tmpl .f2s-sidebar { width: 128px; }
-.fs-pwin--tmpl .f2s-canvas { padding: 16px; justify-content: flex-start; align-items: stretch; }
-.fs-pwin--tmpl .f2s-style-aside { width: 272px; overflow: clip; }
-.fs-pwin--tmpl .f2s-frame-tag { top: 3px; left: 3px; padding: 1px 4px; font-size: 9px; }
-.fs-pwin--tmpl .f2s-style-role-select { width: 150px; min-width: 0; flex: none; }
 .fs .f2s-frame-preview { position: relative; }
-
-/* Control */
-.fs-pwin--pick { left: 28px; top: 28px; width: 200px; height: 340px; }
-.fs-pwin--pick .f2s-sidebar { width: 100%; }
-.fs-pickframes { position: absolute; left: 268px; top: 40px; display: grid; gap: 28px; }
-.fs-pickframes .fs-frame { position: relative; width: 170px; }
-.fs-lifted { transform: translate(18px, -6px) rotate(-1.5deg); }
-.fs-lifted .f2s-frame-preview { box-shadow: ${CHROME.shadowWindow}; cursor: grabbing; }
-.fs-cursor-at--pick { left: 160px; top: 214px; }
 
 /* Fidelity : Google Slides, recopié comme une capture */
 .fs--native { --fs-bg: var(--b-surface-subtle); }
@@ -399,29 +398,6 @@ export const FEATURE_SCENES_CSS = `
 .fs-gtool--color { text-decoration: underline 3px ${DECK.forest}; text-underline-offset: 3px; }
 .fs-gsep { width: 1px; height: 20px; margin: 0 6px; background: #c7c7c7; }
 .fs-textbox::after { content: ""; display: inline-block; width: 0.35cqw; height: 0.9em; margin-left: 0.3cqw; vertical-align: -0.08em; background: currentColor; }
-
-/* Privacy : la page Accès du compte Google, recopiée comme une capture */
-.fs--private { --fs-bg: var(--b-surface-subtle); }
-.fs-ga {
-  position: absolute; inset: 0; padding: 30px 36px;
-  background: #fff; font-family: Arial, Helvetica, sans-serif; color: #1f1f1f;
-};
-  font-family: Arial, Helvetica, sans-serif; color: #1f1f1f;
-}
-.fs-ga p { margin: 0; }
-.fs-ga__head { display: flex; align-items: center; gap: 14px; }
-.fs-ga__app { display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid #dadce0; border-radius: 50%; }
-.fs-ga__app svg { width: 24px; height: 24px; display: block; }
-.fs-ga__name { font-size: 20px; }
-.fs-ga__sub { margin-top: 4px !important; font-size: 13px; color: #444746; }
-.fs-ga__label { margin: 22px 0 8px !important; font-size: 14px; font-weight: 700; }
-.fs-ga__list { display: grid; margin: 0; padding: 0; list-style: none; border-top: 1px solid #e3e3e3; }
-.fs-ga__list li { display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px solid #e3e3e3; font-size: 13px; line-height: 1.4; }
-.fs-ga__list div { display: grid; gap: 2px; }
-.fs-ga__list span:not(.fs-ga__ico) { color: #444746; }
-.fs-ga__ico { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: #e8f0fe; color: #0b57d0; }
-.fs-ga__ico svg { width: 16px; height: 16px; display: block; }
-.fs-ga__btn { display: inline-block; margin-top: 18px; padding: 9px 18px; border: 1px solid #747775; border-radius: 999px; font-size: 13px; color: #0b57d0; }
 
 /* Canvas Figma (étape 1) */
 .fs-frame { position: absolute; width: 170px; }

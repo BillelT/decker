@@ -153,6 +153,9 @@ ${PLUGIN_STYLES_CSS}
 /* La liste des polices est en position fixe dans le plugin : dans la scène
    mise à l'échelle, elle se cale sous son champ. */
 .dm .dm-plugin .f2s-font-combobox { position: relative; }
+/* La rangée de la barre Fonts défile en x dans le plugin, ce qui rognait la
+   liste ouverte : dans la démo, une seule police, rien à faire défiler. */
+.dm .dm-plugin .f2s-toolbar-row { overflow: visible; }
 .dm .dm-plugin .f2s-font-combobox-list { position: absolute; top: calc(100% + 4px); left: -1px; min-width: calc(100% + 2px); }
 .dm .dm-plugin .f2s-canvas-preview .dm-slide { width: 100%; }
 .dm .dm-plugin .f2s-frame-preview .dm-slide { width: 100%; height: 100%; pointer-events: none; }
