@@ -401,8 +401,10 @@ a { color: inherit; }
 .carousel__btn:disabled:active { transform: none; }
 .carousel__btn svg { width: 20px; height: 20px; display: block; }
 
-.section__cta { display: flex; justify-content: flex-end; margin-top: var(--b-space-32); }
-.section__cta .btn { padding: var(--b-space-12) var(--b-space-16); }
+/* Titre a gauche, CTA a droite, aligne sur le bas du titre comme .hero__row. */
+.section__head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--b-space-32); }
+.section__head .section__title { margin-bottom: var(--b-space-16); }
+.section__head .btn { flex: none; margin-bottom: var(--b-space-16); padding: var(--b-space-12) var(--b-space-16); }
 
 /* ---------- Footer (b-footer, compo marketing) ---------- */
 .footer {
@@ -575,7 +577,9 @@ main:focus { outline: none; }
   .footer__top { flex-direction: column; }
   .footer__bottom { flex-direction: column; align-items: flex-start; }
   .card-grid { grid-template-columns: 1fr; }
-  .section__cta { justify-content: flex-start; }
+  .section__head { flex-direction: column; align-items: flex-start; gap: var(--b-space-16); }
+  .section__head .section__title { margin-bottom: 0; }
+  .section__head .btn { margin-bottom: var(--b-space-16); }
 }
 
 `;

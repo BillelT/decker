@@ -443,8 +443,13 @@ pagesRouter.get('/', (_req, res) => {
     </section>
 
     <section class="section" id="how-it-works">
-      <p class="section__eyebrow">How it works</p>
-      <h2 class="section__title">Three steps to a live deck.</h2>
+      <div class="section__head">
+        <div>
+          <p class="section__eyebrow">How it works</p>
+          <h2 class="section__title">Three steps to a live deck.</h2>
+        </div>
+        <a class="btn cta" href="${PLUGIN_URL}" target="_blank" rel="${REL_THIRD_PARTY}">Try it on Figma</a>
+      </div>
       <ol class="card-grid">
         <li class="card">
           ${STEP_PICK_FRAMES_HTML}
@@ -471,9 +476,6 @@ pagesRouter.get('/', (_req, res) => {
           </div>
         </li>
       </ol>
-      <div class="section__cta">
-        <a class="btn cta" href="${PLUGIN_URL}" target="_blank" rel="${REL_THIRD_PARTY}">Try it on Figma</a>
-      </div>
     </section>
 
     <section class="section" id="google-access">
