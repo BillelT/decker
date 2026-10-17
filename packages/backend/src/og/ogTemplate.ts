@@ -30,9 +30,9 @@
  * prochain `og:build`, sans rien recopier.
  *
  * Le crème du fond et celui du plugin sont presque les mêmes : posé tel quel,
- * le plugin se fondait dans la carte. Un contour et une ombre portée dure à
- * l'encre, décalée en bas à droite (celle des boutons du site et du chrome 95
- * du plugin), l'en détachent.
+ * le plugin se fondait dans la carte. Un contour très léger et une ombre
+ * douce l'en détachent, juste assez pour lire deux plans sans alourdir la
+ * carte.
  *
  * Contraintes de la carte de partage, qui expliquent les valeurs ci-dessous :
  * - 1200x630 (ratio 1.91:1), la seule taille sûre sur Facebook/LinkedIn/X ;
@@ -130,7 +130,7 @@ body {
 .preview .dm-stage { width: ${PWIN_WIDTH}px; height: auto; transform: scale(${PWIN_SCALE}) !important; }
 .preview .dm-pwin {
   position: relative; left: 0; top: 0; border-radius: 0;
-  box-shadow: 0 0 0 1px var(--b-ink), 12px 12px 0 var(--b-ink);
+  box-shadow: 0 0 0 1px rgba(18, 15, 13, 0.1), 0 2px 6px rgba(18, 15, 13, 0.06), 0 12px 32px rgba(18, 15, 13, 0.1);
 }
 `;
 
