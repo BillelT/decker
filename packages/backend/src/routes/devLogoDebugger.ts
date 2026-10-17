@@ -10,8 +10,12 @@
  * marketingStyles.ts s'écrit en bas du panneau.
  *
  * L'animation est rejouée en Web Animations API, keyframes recopiées de
- * marketingStyles.ts pour l'avant et le milieu (à garder alignées). Le JS est
- * en `String.raw` : pas de backtick ni de `${` dedans.
+ * marketingStyles.ts pour l'avant et le milieu (à garder alignées), avec les
+ * courbes que le navigateur applique vraiment : Chrome ignore un `var()` dans
+ * l'`animation-timing-function` d'un @keyframes et retombe sur `ease` (vérifié
+ * avec getKeyframes() le 17 octobre). Le CSS généré écrit donc les courbes en
+ * valeur littérale. Le JS est en `String.raw` : pas de backtick ni de `${`
+ * dedans.
  */
 
 const DEBUGGER_CSS = String.raw`
@@ -59,14 +63,17 @@ const DEBUGGER_JS = String.raw`
   var css = getComputedStyle(document.documentElement);
   var EASE_OUT = css.getPropertyValue('--b-ease-out').trim() || 'cubic-bezier(0.23, 1, 0.32, 1)';
   var EASE_IN_OUT = css.getPropertyValue('--b-ease-in-out').trim() || 'cubic-bezier(0.77, 0, 0.175, 1)';
+  /* css : ce qu'il faut écrire dans le @keyframes (jamais de var(), ignoré). */
   var EASINGS = {
+    'ease (current)': { js: 'ease', css: 'ease' },
     'steps(1, end)': { js: 'steps(1, end)', css: 'steps(1, end)' },
     'linear': { js: 'linear', css: 'linear' },
-    '--b-ease-out': { js: EASE_OUT, css: 'var(--b-ease-out)' },
-    '--b-ease-in-out': { js: EASE_IN_OUT, css: 'var(--b-ease-in-out)' }
+    '--b-ease-out': { js: EASE_OUT, css: EASE_OUT },
+    '--b-ease-in-out': { js: EASE_IN_OUT, css: EASE_IN_OUT }
   };
-  /* Valeurs en ligne (marketingStyles.ts, egg-back) au chargement. */
-  var DEFAULTS = { sx: 1.02, sy: 0.98, blur: 1, peak: 43, rest: 59, jump: 'steps(1, end)', settle: '--b-ease-out', origin: 'center', duration: 360 };
+  /* Valeurs en ligne au chargement : celles de marketingStyles.ts (egg-back),
+     courbe de retour telle que le navigateur l'applique (ease). */
+  var DEFAULTS = { sx: 1.02, sy: 0.98, blur: 1, peak: 43, rest: 59, jump: 'steps(1, end)', settle: 'ease (current)', origin: 'center', duration: 360 };
   var p = Object.assign({}, DEFAULTS);
   var FRAME = 1000 / 60;
 
@@ -74,7 +81,7 @@ const DEBUGGER_JS = String.raw`
     return [
       { offset: 0, opacity: 1, easing: 'steps(1, end)' },
       { offset: 0.13, opacity: 0, easing: 'steps(1, end)' },
-      { offset: 0.78, opacity: 0, transform: 'scale(0.92, 0.84)', filter: 'blur(1px)', easing: EASE_OUT },
+      { offset: 0.78, opacity: 0, transform: 'scale(0.92, 0.84)', filter: 'blur(1px)', easing: 'ease' },
       { offset: 1, opacity: 1, transform: 'none', filter: 'none' }
     ];
   }
@@ -82,7 +89,7 @@ const DEBUGGER_JS = String.raw`
     return [
       { offset: 0, opacity: 1, easing: 'steps(1, end)' },
       { offset: 0.27, opacity: 0, easing: 'steps(1, end)' },
-      { offset: 0.59, opacity: 0, transform: 'scale(0.92, 0.84)', filter: 'blur(1px)', easing: EASE_OUT },
+      { offset: 0.59, opacity: 0, transform: 'scale(0.92, 0.84)', filter: 'blur(1px)', easing: 'ease' },
       { offset: 0.78, opacity: 1, transform: 'none', filter: 'none' },
       { offset: 1, opacity: 1, transform: 'none', filter: 'none' }
     ];
@@ -251,6 +258,10 @@ const DEBUGGER_JS = String.raw`
   /* Le vrai logo rejoue les valeurs réglées, à vitesse réelle. */
   egg.addEventListener('mouseenter', function () {
     hover.forEach(function (a) { a.playbackRate = 1; a.currentTime = 0; a.play(); });
+  });
+  /* Comme le CSS (:hover) : la souris sort, l'animation s'arrête net. */
+  egg.addEventListener('mouseleave', function () {
+    hover.forEach(function (a) { a.finish(); });
   });
 
   /* ---------- Réglages ---------- */

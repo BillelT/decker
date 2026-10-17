@@ -451,7 +451,12 @@ a { color: inherit; }
    ça accroche fort au début et se pose vers la fin. Chaque réapparition suit
    le conseil Interfere pour un changement d'icône : opacité + léger flou +
    scale étiré, en --b-ease-out (départ sec, fin posée). Rejoué à chaque
-   nouveau survol. Rien en mouvement réduit. */
+   nouveau survol. Rien en mouvement réduit.
+   Attention : Chrome ignore un var() dans l'animation-timing-function d'un
+   @keyframes ; ces var(--b-ease-out) retombent sur ease, et c'est ce rendu-là
+   qui a été validé à l'œil (vérifié avec getKeyframes() le 17 octobre). Pour
+   une autre courbe, l'écrire en valeur littérale. Réglages en local :
+   devLogoDebugger.ts. */
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
   @keyframes egg-front {
     0% { opacity: 1; animation-timing-function: steps(1, end); }
