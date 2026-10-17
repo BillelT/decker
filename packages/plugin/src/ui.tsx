@@ -496,11 +496,10 @@ function App() {
   const [exportedCount, setExportedCount] = useState(0);
   // Taille du deck exporté, pour « 2 of 4 slides were created » après une annulation.
   const [canceledTotal, setCanceledTotal] = useState(0);
-  // L'aperçu d'export (usePacedExportCursor) défile à son propre rythme et
-  // finit souvent APRÈS le job : annoncer "3 slides exported" pendant qu'il
-  // affiche encore "Generating slide 1 of 3" se contredisait. Le panneau
-  // signale ici la fin de sa séquence (`onPreviewSettled`), et le succès
-  // (toast + statut du footer) n'apparaît qu'à ce moment-là.
+  // L'aperçu d'export (usePacedExportCursor) s'arrête dès que le job est
+  // conclu ; le panneau signale ici la fin de sa séquence
+  // (`onPreviewSettled`), et le succès (toast + statut du footer) n'apparaît
+  // qu'à ce moment-là, pour ne jamais coexister avec "Generating slide 1 of 3".
   const [previewSettled, setPreviewSettled] = useState(true);
   // Le job a une présentation créée et au moins un lot encore non appliqué :
   // POST /export/:jobId/retry peut rejouer UNIQUEMENT ces lots-là plutôt que

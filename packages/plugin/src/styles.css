@@ -1307,9 +1307,10 @@ a.f2s-btn {
   min-height: 0;
 }
 
-/* La fenêtre d'export garde sa propre hauteur (barres de titre et de statut
-   en plus de l'image), mais prend la largeur de la colonne : pas de saut de
-   largeur au lancement de l'export. */
+/* La fenêtre d'export prend la largeur de la colonne et la hauteur de
+   l'image (les barres de titre et de statut se posent PAR-DESSUS l'écran,
+   cf. `.f2s-retro`) : elle occupe la place exacte de l'aperçu normal, sans
+   saut de taille ni décalage du bloc Content au lancement de l'export. */
 .f2s-deck-column .f2s-canvas-preview--retro {
   display: block;
   aspect-ratio: auto;
@@ -2382,8 +2383,13 @@ html:not(.f2s-skin--win95)
    Pendant un export, le grand aperçu du deck montre la frame dont le lot est
    en cours d'application côté backend, en la "générant" bande par bande
    (voir ui/RetroExportPreview.tsx). Les couleurs de cette fenêtre sont
-   volontairement figées (indépendantes du skin) : c'est une
-   citation littérale du chrome 95, gris #c0c0c0 et biseaux 1 px compris.
+   ceux d'une citation littérale du chrome 95 (gris #c0c0c0, biseaux 1 px,
+   bureau turquoise), repeinte aux couleurs de la marque par le skin moderne
+   (styles.modern.css) via les variables posées ci-dessous.
+
+   Les barres de titre et de statut sont posées PAR-DESSUS l'écran, pas
+   au-dessus et en dessous : la fenêtre a ainsi la taille de l'image, donc
+   celle de l'aperçu normal qu'elle remplace.
 
    La taille, elle, n'est PAS figée : `.f2s-retro` n'a plus de largeur à lui
    (ni `width`, ni `max-width` en dur) — il est toujours monté dans le MÊME
@@ -2405,7 +2411,15 @@ html:not(.f2s-skin--win95)
   --w95-dark: #000000;
   --w95-title: #000080;
   --w95-title-fade: #1084d0;
+  /* Zone de l'écran pas encore "chargée", relue par RetroExportPreview pour
+     le fond du canvas. */
+  --f2s-retro-screen: #008080;
+  /* Blocs de la barre de progression et ligne de balayage. */
+  --f2s-retro-accent: var(--w95-title);
+  --f2s-retro-beam: rgba(255, 255, 255, 0.85);
+  --f2s-retro-beam-glow: rgba(255, 255, 255, 0.7);
 
+  position: relative;
   display: flex;
   flex-direction: column;
   /* Résout contre la hauteur (déjà plafonnée à 65%) de `.f2s-canvas-preview`,
@@ -2435,7 +2449,11 @@ html:not(.f2s-skin--win95)
 }
 
 .f2s-retro-titlebar {
-  flex: none;
+  position: absolute;
+  z-index: 1;
+  top: 4px;
+  left: 4px;
+  right: 4px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2476,17 +2494,14 @@ html:not(.f2s-skin--win95)
 }
 
 /* Biseau rentrant : l'écran est "enfoncé" dans la fenêtre. `flex: 1 1 auto`
-   + `min-height: 0` : c'est LUI qui doit céder si le chrome (titre + statut,
-   hauteur fixe) ne tient plus dans le `max-height: 100%` de `.f2s-retro`,
-   pas les barres — même pattern que .f2s-retro-titlebar/-status ci-dessus
-   en `flex: none`. */
+   + `min-height: 0` : il cède si le `max-height: 100%` de `.f2s-retro`
+   plafonne la fenêtre. */
 .f2s-retro-screen {
   position: relative;
   flex: 1 1 auto;
   min-height: 0;
-  margin-top: 3px;
   overflow: hidden;
-  background: #008080;
+  background: var(--f2s-retro-screen);
   border-top: 1px solid var(--w95-shadow);
   border-left: 1px solid var(--w95-shadow);
   border-right: 1px solid var(--w95-light);
@@ -2535,17 +2550,21 @@ html:not(.f2s-skin--win95)
   right: 0;
   height: 2px;
   pointer-events: none;
-  background: rgba(255, 255, 255, 0.85);
-  box-shadow: 0 0 6px rgba(255, 255, 255, 0.7);
+  background: var(--f2s-retro-beam);
+  box-shadow: 0 0 6px var(--f2s-retro-beam-glow);
 }
 
 .f2s-retro-status {
-  flex: none;
+  position: absolute;
+  z-index: 1;
+  left: 4px;
+  right: 4px;
+  bottom: 4px;
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 4px;
   padding: 3px 4px;
+  background: var(--w95-face);
   border-top: 1px solid var(--w95-shadow);
   border-left: 1px solid var(--w95-shadow);
   border-right: 1px solid var(--w95-light);
@@ -2586,8 +2605,8 @@ html:not(.f2s-skin--win95)
   height: 100%;
   background: repeating-linear-gradient(
     to right,
-    var(--w95-title) 0,
-    var(--w95-title) 8px,
+    var(--f2s-retro-accent) 0,
+    var(--f2s-retro-accent) 8px,
     transparent 8px,
     transparent 10px
   );

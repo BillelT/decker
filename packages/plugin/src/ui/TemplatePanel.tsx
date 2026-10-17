@@ -469,6 +469,7 @@ export function TemplatePanel({
                   frameName={exportingLayout.name}
                   index={pacedCursor.index}
                   total={pacedCursor.total}
+                  revealMs={pacedCursor.revealMs}
                 />
               </div>
             ) : (

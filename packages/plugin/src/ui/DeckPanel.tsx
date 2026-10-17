@@ -77,9 +77,8 @@ export function DeckPanel({
 
   const activeFrame = activeId ? frames[activeId] : undefined;
   // Aperçu d'export "paced" : avance d'une frame à la fois plutôt que de
-  // suivre tel quel `exportCursor` (qui peut sauter plusieurs slides, ou
-  // disparaître avant la fin de la révélation de la dernière — voir
-  // pacedExportCursor.ts).
+  // suivre tel quel `exportCursor` (qui peut sauter plusieurs slides), en
+  // rattrapant le backend plutôt qu'en le retardant (pacedExportCursor.ts).
   const pacedCursor = usePacedExportCursor(exportAttempt, order, exportCursor, exportConcluded);
   const pacedIndex = pacedCursor?.index;
   const pacedTotal = pacedCursor?.total;
@@ -235,6 +234,7 @@ export function DeckPanel({
                   frameName={displayFrameName(exportingFrame.name)}
                   index={pacedCursor.index}
                   total={pacedCursor.total}
+                  revealMs={pacedCursor.revealMs}
                 />
               </div>
             ) : (

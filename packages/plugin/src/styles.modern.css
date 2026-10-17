@@ -236,3 +236,55 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
   border-color: transparent;
 }
 
+
+/* ---- Fenêtre d'export (RetroExportPreview) ----
+   Même fenêtre que le skin win95, repeinte dans la palette de marque :
+   surface et biseaux du skin, barre de titre à l'encre, écran en creux gris,
+   progression et balayage à l'orange. Le tramage de la passe grossière, lui,
+   reste : c'est l'animation, pas l'habillage. */
+
+html.f2s-skin--modern .f2s-retro {
+  --w95-face: var(--color-bg);
+  --f2s-retro-screen: var(--color-gray-100);
+  --f2s-retro-accent: var(--color-orange);
+  --f2s-retro-beam: var(--color-orange);
+  --f2s-retro-beam-glow: var(--color-orange-40);
+
+  border: none;
+  box-shadow: var(--hyb-out);
+  color: var(--color-text);
+  font-family: inherit;
+}
+
+html.f2s-skin--modern .f2s-retro-titlebar {
+  background: var(--color-text);
+  color: var(--color-bg);
+  font-weight: var(--b-font-medium);
+}
+
+html.f2s-skin--modern .f2s-retro-window-buttons i {
+  border: none;
+  background: var(--color-bg);
+  color: var(--color-text);
+  box-shadow: var(--hyb-out);
+}
+
+html.f2s-skin--modern .f2s-retro-screen {
+  border: none;
+  box-shadow: var(--hyb-well);
+}
+
+html.f2s-skin--modern .f2s-retro-noise {
+  color: var(--color-text-muted);
+}
+
+html.f2s-skin--modern .f2s-retro-status {
+  border: none;
+  box-shadow: var(--hyb-etched);
+}
+
+html.f2s-skin--modern .f2s-retro-bar {
+  border: none;
+  background: var(--color-field);
+  box-shadow: var(--hyb-well);
+}

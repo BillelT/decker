@@ -16,26 +16,30 @@ import { ditherToVgaPalette } from './retroDither.js';
  *
  * L'animation est temporelle (pas branchée sur une progression serveur, qui
  * n'existe pas à l'intérieur d'une slide) : elle se rejoue à chaque
- * changement de frame, puis tient l'image complète jusqu'à ce que le lot
- * suivant démarre. La barre de progression, elle, reste honnête : elle
+ * changement de frame, en `revealMs` (plus court quand l'aperçu a du retard
+ * sur le backend, cf. pacedExportCursor.ts), puis tient l'image complète
+ * jusqu'à ce que le lot suivant démarre. La barre de progression, elle, reste honnête : elle
  * reflète la position réelle dans le deck (`index` vient des lots appliqués
  * côté backend).
  */
 
-/** Durée d'une "génération" complète, les deux passes comprises — exportée
- *  pour que ui.tsx cale dessus le rythme de sa simulation multi-frames
- *  (beginExportPacing) : sans ce partage, les deux durées divergeraient au
- *  premier ajustement de l'une des deux. */
+/** Durée d'une "génération" complète, les deux passes comprises, quand
+ *  l'aperçu est à jour sur le backend. Partagée avec pacedExportCursor.ts,
+ *  qui cale dessus le passage d'une slide à la suivante. */
 export const REVEAL_MS = 2600;
+/** Plancher de la révélation quand l'aperçu rattrape un backend plus rapide. */
+export const MIN_REVEAL_MS = 450;
 /** Nombre de bandes visé — la hauteur d'une bande s'en déduit. */
 const TARGET_BANDS = 56;
 /** Entrelacement de la passe grossière : une bande dessinée sur quatre. */
 const INTERLACE_STRIDE = 4;
 /** Part de l'animation consacrée à la passe grossière. */
 const COARSE_PHASE = 0.5;
-/** Au-delà, on rééchantillonne : inutile de tramer 2000 px de large. */
-const MAX_CANVAS_WIDTH = 720;
-/** Le turquoise du bureau Windows 95, pour la zone pas encore "chargée". */
+/** Au-delà, on rééchantillonne. Même largeur que l'aperçu PNG du sandbox
+ *  (PREVIEW_WIDTH, code.ts) : le canvas a ainsi la taille intrinsèque de
+ *  l'`<img>` de l'aperçu normal, et la fenêtre en épouse exactement la place. */
+const MAX_CANVAS_WIDTH = 960;
+/** Zone pas encore "chargée" : couleur d'écran du skin (`--f2s-retro-screen`), turquoise 95 à défaut. */
 const DESKTOP_TEAL = '#008080';
 
 export interface RetroExportPreviewProps {
@@ -45,6 +49,8 @@ export interface RetroExportPreviewProps {
   /** Position 0-based de la frame dans le deck en cours d'export. */
   index: number;
   total: number;
+  /** Durée de la révélation (passes comprises), `REVEAL_MS` par défaut. */
+  revealMs?: number;
 }
 
 /**
@@ -71,9 +77,13 @@ function buildCoarseCanvas(image: HTMLImageElement, width: number, height: numbe
   return canvas;
 }
 
-export function RetroExportPreview({ src, frameName, index, total }: RetroExportPreviewProps) {
+export function RetroExportPreview({ src, frameName, index, total, revealMs = REVEAL_MS }: RetroExportPreviewProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [reveal, setReveal] = useState(0);
+  // Lue au chargement de l'image : un rattrapage qui change en cours de
+  // révélation ne doit pas la relancer.
+  const revealMsRef = useRef(revealMs);
+  revealMsRef.current = revealMs;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -96,7 +106,7 @@ export function RetroExportPreview({ src, frameName, index, total }: RetroExport
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
       ctx.imageSmoothingEnabled = false;
-      ctx.fillStyle = DESKTOP_TEAL;
+      ctx.fillStyle = getComputedStyle(canvas).getPropertyValue('--f2s-retro-screen').trim() || DESKTOP_TEAL;
       ctx.fillRect(0, 0, width, height);
 
       const coarse = buildCoarseCanvas(image, width, height);
@@ -149,9 +159,10 @@ export function RetroExportPreview({ src, frameName, index, total }: RetroExport
         canvas.animate?.([{ opacity: 0 }, { opacity: 1 }], { duration: 300, easing: easeOut });
       }
       const start = performance.now();
+      const duration = revealMsRef.current;
 
       const step = (now: number) => {
-        const progress = Math.min(1, (now - start) / REVEAL_MS);
+        const progress = Math.min(1, (now - start) / duration);
 
         const wantedBlocks = Math.round(blockCount * Math.min(1, progress / COARSE_PHASE));
         while (drawnBlocks < wantedBlocks) drawCoarseBlock(drawnBlocks++);
