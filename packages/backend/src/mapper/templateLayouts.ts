@@ -1,4 +1,4 @@
-import type { CalibrationData, IRDocument, IRElement, IRSlide, IRText } from '@figma-to-slides/shared';
+import { isFixedMasterText, type CalibrationData, type IRDocument, type IRElement, type IRSlide, type IRText } from '@figma-to-slides/shared';
 import { toSolidFill } from './colors.js';
 import { mapImage } from './images.js';
 import { mapLine } from './lines.js';
@@ -149,18 +149,20 @@ function matchPlaceholders(slide: IRSlide, layout: NativeLayout): Match {
 }
 
 /**
- * Un texte tagué du Master (surtitre, mention, numéro) doit rester
- * modifiable sur chaque slide. Or un élément du Master est figé sur les
- * slides, et un placeholder du Master ne s'affiche sur aucune : Slides
- * s'en sert seulement comme modèle des placeholders des layouts. Le texte
- * est donc recopié dans chaque layout, où il devient un placeholder comme
- * les autres (même position, même style), et retiré du Master. Le reste du
- * Master (logo, mentions sans tag, formes) y reste en décor commun.
+ * Les textes du Master (surtitre, sujet, date) doivent rester modifiables
+ * sur chaque slide. Or un élément du Master est figé sur les slides, et un
+ * placeholder du Master ne s'affiche sur aucune : Slides s'en sert
+ * seulement comme modèle des placeholders des layouts. Chaque texte est
+ * donc recopié dans chaque layout, où il devient un placeholder comme les
+ * autres (même position, même style), et retiré du Master. C'est
+ * automatique, sans tag (décision du 17 octobre) : seules les mentions
+ * légales (`isFixedMasterText`) restent sur le Master en décor commun,
+ * avec le logo, les images et les formes.
  */
 export function withMasterPlaceholders(slides: IRSlide[], masterSlideId?: string): IRSlide[] {
   const master = slides.find((s) => s.sourceNodeId === masterSlideId);
   if (!master) return slides;
-  const shared = master.elements.filter((el): el is IRText => el.kind === 'text' && !!el.placeholder);
+  const shared = master.elements.filter((el): el is IRText => el.kind === 'text' && el.content.trim().length > 0 && !isFixedMasterText(el.content));
   if (shared.length === 0) return slides;
   return slides.map((s) => {
     if (s === master) return { ...s, elements: s.elements.filter((el) => !shared.includes(el as IRText)) };
@@ -170,6 +172,8 @@ export function withMasterPlaceholders(slides: IRSlide[], masterSlideId?: string
       id: `${el.id}_${s.sourceNodeId}`.replace(/[^a-zA-Z0-9_-]/g, '_'),
       rect: { x: el.rect.x * k, y: el.rect.y * k, w: el.rect.w * k, h: el.rect.h * k },
       runs: el.runs.map((run) => ({ ...run, fontSizePx: run.fontSizePx * k })),
+      // Un texte libre : il prend un placeholder de sous-titre, sans puces.
+      placeholder: { role: 'CUSTOM', label: el.content.trim().slice(0, 40) },
     }));
     return { ...s, elements: [...copies, ...s.elements] };
   });
@@ -491,8 +495,9 @@ function hidePlaceholder(slot: LayoutPlaceholder): SlidesRequest[] {
  * Frame Master (la première du rail) : son fond et tous ses éléments sont
  * écrits sur la page Master, comme décor. Slides les peint sur chaque
  * layout et chaque slide, entre le fond de la page et son contenu ; aucune
- * slide n'est créée pour elle. Ses textes tagués n'y sont plus : ils sont
- * recopiés en placeholders dans chaque layout (`withMasterPlaceholders`),
+ * slide n'est créée pour elle. Ses textes (hors mentions légales) n'y sont
+ * plus : ils sont recopiés en placeholders dans chaque layout
+ * (`withMasterPlaceholders`),
  * car un placeholder du Master ne s'affiche sur aucune slide (17 octobre,
  * un `[[title]]` posé sur un surtitre disparaissait). Son titre et son
  * corps par défaut sont toujours cachés.

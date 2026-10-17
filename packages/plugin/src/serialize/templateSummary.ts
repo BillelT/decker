@@ -1,4 +1,5 @@
 import type { IRColor, IRElement, IRPaint, PlaceholderRole } from '@figma-to-slides/shared';
+import { isFixedMasterText } from '@figma-to-slides/shared';
 
 /**
  * brief-creation-template-google-slides.md — "focus d'abord sur le
@@ -86,6 +87,8 @@ export interface TextStats {
   y: number;
   /** Chiffre clé affiché en grand ("87%", "120k", "$4.2M") : voir `isStatText`. */
   stat: boolean;
+  /** Mention légale (copyright…) : sur le Master, elle reste fixe au lieu de devenir modifiable (voir `isFixedMasterText`). */
+  fixed: boolean;
 }
 
 /**
@@ -228,6 +231,7 @@ export function summarizeTaggableElements(elements: IRElement[]): TemplateElemen
               paragraphs: Math.max(1, el.content.split('\n').filter((line) => line.trim()).length),
               y: el.rect.y,
               stat: isStatText(el.content),
+              fixed: isFixedMasterText(el.content),
             },
           }
         : {}),

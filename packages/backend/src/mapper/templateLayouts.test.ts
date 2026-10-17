@@ -147,7 +147,7 @@ describe('mapDocumentToBatches with template layouts', () => {
   });
 
   it('writes the master frame on the Master page, without creating a slide', () => {
-    const master = slide('m', [text('logo', undefined)], 0);
+    const master = slide('m', [{ ...text('logo', undefined), content: '© Trailworn' }], 0);
     master.background = { type: 'SOLID', color: { r: 0, g: 0, b: 0, a: 1 } };
     const d = doc([master, slide('l', [text('t', 'TITLE')], 1)], 'm');
     const plan = planTemplateLayouts(d.slides, LAYOUTS, 'm');
@@ -171,8 +171,9 @@ describe('mapDocumentToBatches with template layouts', () => {
     expect(r.some((q) => q.deleteObject)).toBe(false);
   });
 
-  it('copies a tagged master text into every layout as a placeholder, and keeps the rest on the Master', () => {
-    const master = slide('m', [text('eyebrow', 'SUBTITLE'), text('legal', undefined)], 0);
+  it('copies every master text into every layout as a placeholder, except legal mentions', () => {
+    const legal = { ...text('legal', undefined), content: 'COPYRIGHT - TRAILWORN INC.' };
+    const master = slide('m', [text('eyebrow', undefined), legal], 0);
     const d = doc([master, slide('l', [text('t', 'TITLE')], 1)], 'm');
     const plan = planTemplateLayouts(d.slides, LAYOUTS, 'm');
     expect(Object.keys(plan.l.placeholderByElementId)).toEqual(['t', 'eyebrow_l']);

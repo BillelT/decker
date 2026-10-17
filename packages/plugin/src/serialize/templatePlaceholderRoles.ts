@@ -17,10 +17,14 @@ import type { TextStats } from './templateSummary.js';
  *    de plusieurs lignes ; plus court et pas plus gros que le corps, c'est
  *    une étiquette ("2026", "NEW") : rien à proposer.
  *
+ * 6. `image` : chaque image, photo ou icône complexe partie en image.
+ *    Deviner qu'une image est un logo est trop hasardeux : `[[logo]]` reste
+ *    au choix du créateur. Les formes natives (aplats, cercles) sont du
+ *    décor : rien à proposer.
+ *
  * Même contrat que les rôles de couleur (templateColorRoles.ts) : un calque
  * qui a déjà un rôle n'est pas touché, et un titre n'est pas proposé si le
- * layout en a déjà un. Images et logos sont laissés de côté : deviner
- * qu'une image est un logo est trop hasardeux.
+ * layout en a déjà un.
  */
 
 export interface SuggestableElement {
@@ -32,7 +36,7 @@ export interface SuggestableElement {
 
 export interface PlaceholderSuggestion {
   sourceNodeId: string;
-  tag: 'title' | 'subtitle' | 'body' | 'custom';
+  tag: 'title' | 'subtitle' | 'body' | 'custom' | 'image';
 }
 
 const BODY_MIN_CHARS = 20;
@@ -46,8 +50,9 @@ function biggestFirst(a: Candidate, b: Candidate): number {
 
 export function suggestPlaceholderRoles(elements: SuggestableElement[]): PlaceholderSuggestion[] {
   const hasTitle = elements.some((el) => el.role === 'TITLE');
+  const images: PlaceholderSuggestion[] = elements.filter((el) => el.kind === 'image' && !el.role).map((el) => ({ sourceNodeId: el.sourceNodeId, tag: 'image' }));
   const free: Candidate[] = elements.filter((el): el is Candidate => el.kind === 'text' && !el.role && !!el.text && el.text.chars > 0);
-  if (free.length === 0) return [];
+  if (free.length === 0) return images;
 
   const suggestions: PlaceholderSuggestion[] = [];
   const title = hasTitle ? undefined : [...free].sort(biggestFirst)[0];

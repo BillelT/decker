@@ -1160,6 +1160,12 @@
     return warnings.some((w) => w.severity === "blocking");
   }
 
+  // ../shared/dist/masterText.js
+  var LEGAL_MENTION = /©|\(c\)|copyright|all rights reserved|tous droits|confidential|confidentiel/i;
+  function isFixedMasterText(content) {
+    return LEGAL_MENTION.test(content);
+  }
+
   // src/serialize/templateSummary.ts
   var BACKGROUND_AREA_RATIO = 0.25;
   function emptyUsage() {
@@ -1242,7 +1248,8 @@
             chars: el.content.trim().length,
             paragraphs: Math.max(1, el.content.split("\n").filter((line) => line.trim()).length),
             y: el.rect.y,
-            stat: isStatText(el.content)
+            stat: isStatText(el.content),
+            fixed: isFixedMasterText(el.content)
           }
         } : {}
       });

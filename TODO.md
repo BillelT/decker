@@ -237,9 +237,10 @@ les suivants) :
    sont retirées que sur la slide d'exemple. Images et logos vont dans le layout en décor : Slides n'a pas
    de placeholder d'image hors PowerPoint importé. La slide d'exemple est
    remplie avec le texte d'exemple. Un placeholder du Master ne s'affiche
-   sur aucune slide : un texte tagué du Master est donc recopié en
-   placeholder dans chaque layout (modifiable sur chaque slide), le reste
-   du Master reste en décor commun. Le titre et le corps par défaut du
+   sur aucune slide : chaque texte du Master est donc recopié en
+   placeholder dans chaque layout (modifiable sur chaque slide),
+   automatiquement et sans tag ; les mentions légales (©, copyright),
+   logos, images et formes restent en décor commun sur le Master. Le titre et le corps par défaut du
    Master sont cachés, pas supprimés : les supprimer faisait perdre leur
    couleur aux sous-titres des layouts. Un rectangle plein qui couvre la
    frame devient le fond de la page (il cachait le décor du Master).

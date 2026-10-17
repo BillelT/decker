@@ -45,10 +45,13 @@ function TemplateElementList({
   elements,
   noteByNode,
   conflicts,
+  master = false,
 }: {
   elements: TemplateElement[];
   noteByNode: Map<string, { flag: 'rasterized' | 'visual-diff'; text: string; tooltip: string }>;
   conflicts?: Map<string, string[]>;
+  /** Frame Master : pas de rôle à choisir, chaque ligne dit si le calque sera modifiable sur les slides ou fixe. */
+  master?: boolean;
 }) {
   return (
     <ul className="f2s-tmpl-list">
@@ -76,26 +79,37 @@ function TemplateElementList({
               </span>
               {note && <span className={`f2s-log-entry-flag f2s-log-entry-flag--${note.flag}`}>{note.text}</span>}
             </button>
-            <select
-              className="f2s-font-dropdown f2s-log-entry-role"
-              value={roleTag ?? ''}
-              title="Assign this layer to a Slides template placeholder role"
-              aria-label={`Placeholder role for ${el.name}`}
-              aria-invalid={problems ? true : undefined}
-              onChange={(e) => setPlaceholderRole(el.sourceNodeId, (e.target as HTMLSelectElement).value)}
-            >
-              <option value="">No role</option>
-              {options.map((tag) => (
-                <option key={tag} value={tag}>
-                  [[{tag}]]
-                </option>
-              ))}
-            </select>
+            {master ? (
+              <span className={`f2s-log-entry-flag f2s-log-entry-flag--${isEditableOnSlides(el) ? 'visual-diff' : 'rasterized'}`}>
+                {isEditableOnSlides(el) ? 'Editable on slides' : 'Fixed'}
+              </span>
+            ) : (
+              <select
+                className="f2s-font-dropdown f2s-log-entry-role"
+                value={roleTag ?? ''}
+                title="Assign this layer to a Slides template placeholder role"
+                aria-label={`Placeholder role for ${el.name}`}
+                aria-invalid={problems ? true : undefined}
+                onChange={(e) => setPlaceholderRole(el.sourceNodeId, (e.target as HTMLSelectElement).value)}
+              >
+                <option value="">No role</option>
+                {options.map((tag) => (
+                  <option key={tag} value={tag}>
+                    [[{tag}]]
+                  </option>
+                ))}
+              </select>
+            )}
           </li>
         );
       })}
     </ul>
   );
+}
+
+/** Sur le Master, un texte devient un placeholder de chaque layout, sauf une mention légale (backend mapper/templateLayouts.ts::withMasterPlaceholders). */
+function isEditableOnSlides(el: TemplateElement): boolean {
+  return el.kind === 'text' && !!el.text && el.text.chars > 0 && !el.text.fixed;
 }
 
 /**
@@ -312,9 +326,8 @@ export function TemplatePanel({
   const rows = splitCompositionRows(previewedLayout?.elements ?? [], compositionWarnings);
   const unattachedComposition = rows.unattached.filter((w) => w.code !== 'LAYOUT_WITHOUT_PLACEHOLDER');
 
-  // Sur le Master, un texte tagué devient un placeholder de CHAQUE layout
-  // (backend mapper/templateLayouts.ts::withMasterPlaceholders) : c'est au
-  // créateur de choisir lesquels, Suggest y mettrait un second titre partout.
+  // Sur le Master, rien à suggérer : chaque texte devient automatiquement un
+  // placeholder de chaque layout (backend mapper/templateLayouts.ts::withMasterPlaceholders).
   const previewingMaster = order.length >= 2 && previewedLayout?.id === order[0];
   const placeholderSuggestions = previewingMaster ? [] : suggestPlaceholderRoles(previewedLayout?.elements ?? []);
   function applyPlaceholderSuggestions() {
@@ -466,53 +479,68 @@ export function TemplatePanel({
             )}
 
             <div className="f2s-tmpl-panel">
-              {/* Composition (TODO.md § Mode template, point 7) : les calques qui
-                  deviendront des placeholders. Un calque y passe dès qu'il reçoit
-                  un rôle, et revient dans Content quand on le lui retire. */}
-              <section className="f2s-tmpl-section">
-                <div className="f2s-section-head">
-                  <h3 className="f2s-tmpl-heading">Composition</h3>
-                  {/* Propose title, subtitle et body d'après la taille et la
-                      longueur des textes de CE layout, sans toucher à un
-                      calque qui a déjà un rôle (templatePlaceholderRoles.ts).
-                      Chaque rôle posé reste modifiable dans sa ligne. */}
-                  <button
-                    type="button"
-                    className="f2s-btn f2s-btn--ghost"
-                    disabled={locked || placeholderSuggestions.length === 0}
-                    title={
-                      previewingMaster
-                        ? 'Tag a Master text yourself to make it editable on every slide. Untagged layers stay fixed on every slide.'
-                        : placeholderSuggestions.length === 0
-                        ? 'Nothing left to suggest in this layout: its title, subtitle and body are set, or no other text fits them.'
-                        : 'Tag the title, subtitle and body of this layout from the size and length of its texts.'
-                    }
-                    onClick={applyPlaceholderSuggestions}
-                  >
-                    Suggest roles
-                  </button>
-                </div>
-                {rows.tagged.length === 0 ? (
-                  <p className="f2s-toolbar-muted">No placeholder yet. Pick a role for a layer in Content.</p>
-                ) : (
-                  <TemplateElementList elements={rows.tagged} noteByNode={noteByNode} conflicts={rows.conflicts} />
-                )}
-                {unattachedComposition.length > 0 && <TemplateLogList warnings={unattachedComposition} fontOverrides={fontOverrides} wrap />}
-              </section>
-
-              <section className="f2s-tmpl-section">
-                <h3 className="f2s-tmpl-heading">Content</h3>
-                {previewedLayout.elements.length === 0 ? (
+              {previewingMaster ? (
+                // Master : rien à taguer (décision du 17 octobre), le
+                // partage est automatique, voir isEditableOnSlides.
+                <section className="f2s-tmpl-section">
+                  <h3 className="f2s-tmpl-heading">Master content</h3>
                   <p className="f2s-toolbar-muted">
-                    Nothing to tag in this layout yet. A placeholder can also be set by prefixing a layer name in Figma with <code>[[title]]</code>,{' '}
-                    <code>[[body]]</code>, <code>[[image]]</code>, <code>[[subtitle]]</code> or <code>[[logo]]</code>.
+                    Automatic on the Master: every text becomes editable on each slide, at the same place and in the same style. Legal mentions (©,
+                    copyright), logos, images and shapes stay fixed on every slide.
                   </p>
-                ) : rows.untagged.length === 0 ? (
-                  <p className="f2s-toolbar-muted">Every layer has a role.</p>
-                ) : (
-                  <TemplateElementList elements={rows.untagged} noteByNode={noteByNode} />
-                )}
-              </section>
+                  {previewedLayout.elements.length > 0 && <TemplateElementList elements={previewedLayout.elements} noteByNode={noteByNode} master />}
+                </section>
+              ) : (
+                <>
+                {/* Composition (TODO.md § Mode template, point 7) : les calques qui
+                    deviendront des placeholders. Un calque y passe dès qu'il reçoit
+                    un rôle, et revient dans Content quand on le lui retire. */}
+                <section className="f2s-tmpl-section">
+                  <div className="f2s-section-head">
+                    <h3 className="f2s-tmpl-heading">Composition</h3>
+                    {/* Propose title, subtitle et body d'après la taille et la
+                        longueur des textes de CE layout, sans toucher à un
+                        calque qui a déjà un rôle (templatePlaceholderRoles.ts).
+                        Chaque rôle posé reste modifiable dans sa ligne. */}
+                    <button
+                      type="button"
+                      className="f2s-btn f2s-btn--ghost"
+                      disabled={locked || placeholderSuggestions.length === 0}
+                      title={
+                        previewingMaster
+                          ? 'Tag a Master text yourself to make it editable on every slide. Untagged layers stay fixed on every slide.'
+                          : placeholderSuggestions.length === 0
+                          ? 'Nothing left to suggest in this layout: its title, subtitle and body are set, or no other text fits them.'
+                          : 'Tag the title, subtitles, bodies and images of this layout from the size and length of its texts.'
+                      }
+                      onClick={applyPlaceholderSuggestions}
+                    >
+                      Suggest roles
+                    </button>
+                  </div>
+                  {rows.tagged.length === 0 ? (
+                    <p className="f2s-toolbar-muted">No placeholder yet. Pick a role for a layer in Content.</p>
+                  ) : (
+                    <TemplateElementList elements={rows.tagged} noteByNode={noteByNode} conflicts={rows.conflicts} />
+                  )}
+                  {unattachedComposition.length > 0 && <TemplateLogList warnings={unattachedComposition} fontOverrides={fontOverrides} wrap />}
+                </section>
+
+                <section className="f2s-tmpl-section">
+                  <h3 className="f2s-tmpl-heading">Content</h3>
+                  {previewedLayout.elements.length === 0 ? (
+                    <p className="f2s-toolbar-muted">
+                      Nothing to tag in this layout yet. A placeholder can also be set by prefixing a layer name in Figma with <code>[[title]]</code>,{' '}
+                      <code>[[body]]</code>, <code>[[image]]</code>, <code>[[subtitle]]</code> or <code>[[logo]]</code>.
+                    </p>
+                  ) : rows.untagged.length === 0 ? (
+                    <p className="f2s-toolbar-muted">Every layer has a role.</p>
+                  ) : (
+                    <TemplateElementList elements={rows.untagged} noteByNode={noteByNode} />
+                  )}
+                </section>
+                </>
+              )}
 
               {leftoverNotes.length > 0 && (
                 <div className="f2s-logs">

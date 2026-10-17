@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { suggestPlaceholderRoles, type SuggestableElement } from './templatePlaceholderRoles.js';
 
 function text(id: string, fontSizePx: number, chars: number, y = 0, extra: Partial<SuggestableElement> = {}): SuggestableElement {
-  return { sourceNodeId: id, kind: 'text', text: { fontSizePx, chars, paragraphs: 1, y, stat: false }, ...extra };
+  return { sourceNodeId: id, kind: 'text', text: { fontSizePx, chars, paragraphs: 1, y, stat: false, fixed: false }, ...extra };
 }
 
 describe('suggestPlaceholderRoles', () => {
@@ -50,7 +50,7 @@ describe('suggestPlaceholderRoles', () => {
   });
 
   it('makes a big key figure the title, and another one custom', () => {
-    const stat = (id: string, size: number): SuggestableElement => ({ sourceNodeId: id, kind: 'text', text: { fontSizePx: size, chars: 3, paragraphs: 1, y: 100, stat: true } });
+    const stat = (id: string, size: number): SuggestableElement => ({ sourceNodeId: id, kind: 'text', text: { fontSizePx: size, chars: 3, paragraphs: 1, y: 100, stat: true, fixed: false } });
     expect(suggestPlaceholderRoles([stat('big', 240), text('line', 24, 60, 300), text('source', 14, 29, 400), stat('small', 64)])).toEqual([
       { sourceNodeId: 'big', tag: 'title' },
       { sourceNodeId: 'line', tag: 'body' },
@@ -59,7 +59,9 @@ describe('suggestPlaceholderRoles', () => {
     ]);
   });
 
-  it('ignores images and empty texts', () => {
-    expect(suggestPlaceholderRoles([{ sourceNodeId: 'img', kind: 'image' }, text('empty', 40, 0)])).toEqual([]);
+  it('tags every image, never a native shape or an empty text', () => {
+    expect(
+      suggestPlaceholderRoles([{ sourceNodeId: 'img', kind: 'image' }, { sourceNodeId: 'tagged', kind: 'image', role: 'LOGO' }, { sourceNodeId: 'rect', kind: 'shape' }, text('empty', 40, 0)]),
+    ).toEqual([{ sourceNodeId: 'img', tag: 'image' }]);
   });
 });
