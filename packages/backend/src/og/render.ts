@@ -20,7 +20,7 @@ import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { renderOgImageHtml } from './ogTemplate.js';
-import { OG_IMAGE, type OgVariant } from './variants.js';
+import { OG_IMAGE } from './variants.js';
 
 const OUT_FILE = join(dirname(fileURLToPath(import.meta.url)), 'ogImageData.ts');
 
@@ -51,8 +51,7 @@ async function main(): Promise<void> {
   // La démo du hero s'ouvre alors dans son état figé, sans lecture
   // automatique ni curseur (voir ogTemplate.ts).
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  const variant = (process.env.OG_VARIANT as OgVariant | undefined) ?? OG_IMAGE.variant;
-  await page.setContent(renderOgImageHtml(OG_IMAGE.content, variant), { waitUntil: 'load' });
+  await page.setContent(renderOgImageHtml(OG_IMAGE.content), { waitUntil: 'load' });
   await page.evaluate(() => document.fonts.ready);
   const png = await page.screenshot({ type: 'png' });
   // eslint-disable-next-line no-console

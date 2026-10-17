@@ -6,9 +6,6 @@
  * qui n'a besoin que du nom de fichier et du texte alternatif — pas du
  * gabarit HTML ni de la police inlinée que trimballe `ogTemplate.ts`.
  */
-/** Traitement qui détache la fenêtre du plugin du fond (voir ogTemplate.ts). */
-export type OgVariant = 'shadow' | 'shape';
-
 export interface OgImageContent {
   /** Accroche principale, affichée en h1 : c'est ce qu'on lit en vignette. */
   headline: string;
@@ -27,5 +24,4 @@ export const OG_IMAGE = {
   content: {
     headline: 'Export editable, pixel perfect decks and templates',
   },
-  variant: 'shape',
-} as const satisfies { file: string; alt: string; content: OgImageContent; variant: OgVariant };
+} as const satisfies { file: string; alt: string; content: OgImageContent };

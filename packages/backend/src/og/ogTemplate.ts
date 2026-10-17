@@ -14,28 +14,25 @@
  * fond --b-surface, Cabinet Grotesk.
  *
  * Mise en page en pile : logo complet (icône + nom, le lockup du header, un
- * peu plus grand) en haut à gauche, le h1 du hero juste en dessous, puis la
- * fenêtre du plugin, tous trois dans la même marge latérale de page (48px).
- * Seul le bas de la fenêtre déborde volontairement de cette marge, jusqu'au
- * bord de la carte, comme une photo qui dépasse du cadre.
+ * peu plus grand) en haut à gauche, le h1 du hero juste en dessous, puis le
+ * plugin, tous trois dans la même marge latérale de page (48px). Seul le bas
+ * du plugin déborde volontairement de cette marge, jusqu'au bord de la
+ * carte, comme une photo qui dépasse du cadre.
  *
- * La fenêtre du plugin n'est PAS recopiée ici : c'est celle de la démo du
- * hero (routes/heroDemo.ts), même markup, même CSS (celui du plugin,
- * régénéré par scripts/sync-plugin-styles.mjs), même script. render.ts
- * émule `prefers-reduced-motion: reduce`, la démo s'ouvre donc directement
- * dans son état figé (trois frames dans le rail, la couverture active), sans
- * curseur. Seuls la barre d'onglets et le canvas Figma autour sont masqués :
- * la carte montre le plugin, pas Figma. Une évolution de l'UI du plugin se
- * retrouve ainsi dans la carte au prochain `og:build`, sans rien recopier.
+ * Le plugin n'est PAS recopié ici : c'est celui de la démo du hero
+ * (routes/heroDemo.ts), même markup, même CSS (celui du plugin, régénéré par
+ * scripts/sync-plugin-styles.mjs), même script. render.ts émule
+ * `prefers-reduced-motion: reduce`, la démo s'ouvre donc directement dans
+ * son état figé (trois frames dans le rail, la couverture active), sans
+ * curseur. Tout l'habillage Figma de la démo (barre d'onglets, canvas, barre
+ * de titre et coins arrondis de la fenêtre) est masqué : la carte pose le
+ * plugin tel quel. Une évolution de son UI se retrouve ainsi dans la carte au
+ * prochain `og:build`, sans rien recopier.
  *
- * Le crème du fond et le blanc cassé du plugin sont presque les mêmes : posée
- * telle quelle, la fenêtre se fondait dans la carte. Deux traitements pour
- * l'en détacher (`OgVariant`) :
- * - `shadow` : ombre portée dure à l'encre, décalée en bas à droite, celle
- *   des boutons du site et du chrome 95 du plugin ;
- * - `shape` : une forme orange (--b-accent) de la même géométrie que la
- *   fenêtre, derrière elle, qui vient de l'extérieur de la carte (collée aux
- *   bords droit et bas) et s'arrête avant le bord gauche de la fenêtre.
+ * Le crème du fond et celui du plugin sont presque les mêmes : posé tel quel,
+ * le plugin se fondait dans la carte. Un contour et une ombre portée dure à
+ * l'encre, décalée en bas à droite (celle des boutons du site et du chrome 95
+ * du plugin), l'en détachent.
  *
  * Contraintes de la carte de partage, qui expliquent les valeurs ci-dessous :
  * - 1200x630 (ratio 1.91:1), la seule taille sûre sur Facebook/LinkedIn/X ;
@@ -49,7 +46,7 @@ import { DESIGN_TOKENS_CSS } from '../generated/designTokens.js';
 import { CABINET_GROTESK_BASE64 } from '../routes/fontData.js';
 import { DECKER_MARK_SVG } from '../routes/brand.js';
 import { HERO_DEMO_CSS, HERO_DEMO_HTML, HERO_DEMO_JS } from '../routes/heroDemo.js';
-import type { OgImageContent, OgVariant } from './variants.js';
+import type { OgImageContent } from './variants.js';
 
 /** Largeur de la fenêtre du plugin dans la démo (heroDemo.ts, .dm-pwin). */
 const PWIN_WIDTH = 960;
@@ -95,19 +92,19 @@ body {
 .brand {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 28px;
+  gap: 11px;
+  font-size: 30.8px;
   font-weight: var(--b-font-bold);
   letter-spacing: var(--b-tracking-tight);
   line-height: 1;
 }
-.brand__mark { height: 28px; width: auto; aspect-ratio: 27 / 25; flex: none; display: block; translate: 0 -1px; }
+.brand__mark { height: 30.8px; width: auto; aspect-ratio: 27 / 25; flex: none; display: block; translate: 0 -1px; }
 
 /* Le h1 du hero (marketingStyles.ts, .hero__title), à la taille de la carte. */
 .headline {
   margin-top: 24px;
   max-width: 22ch;
-  font-size: 60px;
+  font-size: 72px;
   font-weight: var(--b-font-bold);
   line-height: var(--b-leading-none);
   letter-spacing: var(--b-tracking-tighter);
@@ -118,40 +115,27 @@ body {
   position: relative;
   flex: 1;
   min-height: 0;
-  margin-top: 36px;
+  margin-top: 24px;
 }
 
-/* La démo du hero réduite à sa fenêtre de plugin : plus de canvas ni de
-   barre d'onglets Figma, plus de mise à l'échelle sur 1440px (son script
-   pose --dm-scale, écrasé ici par l'échelle de la carte). */
+/* La démo du hero réduite au plugin seul : plus de canvas, de barre
+   d'onglets ni de barre de titre Figma, plus de mise à l'échelle sur 1440px
+   (son script pose --dm-scale, écrasé ici par l'échelle de la carte). */
 .preview .dm { position: relative; width: 100%; height: 100%; aspect-ratio: auto; overflow: visible; background: none; border-radius: 0; }
 .preview .dm-tabbar,
 .preview .dm-canvas,
 .preview .dm-cursor,
-.preview .dm-shield { display: none !important; }
+.preview .dm-shield,
+.preview .dm-pwin__bar { display: none !important; }
 .preview .dm-stage { width: ${PWIN_WIDTH}px; height: auto; transform: scale(${PWIN_SCALE}) !important; }
-.preview .dm-pwin { position: relative; left: 0; top: 0; }
-
-/* Variante shadow : ombre dure à l'encre, contour 1px pour un bord net. */
-.layout--shadow .dm-pwin { box-shadow: 0 0 0 1px var(--b-ink), 12px 12px 0 var(--b-ink); }
-
-/* Variante shape : même géométrie que la fenêtre (rayon compris, à la même
-   échelle), décalée vers le haut et collée aux bords droit et bas de la
-   carte. Elle ne couvre pas toute la largeur : elle part du tiers de la
-   fenêtre, à la manière d'un aplat qui entre dans le cadre. */
-.preview__shape {
-  position: absolute;
-  top: -20px;
-  left: 34%;
-  right: -48px;
-  bottom: 0;
-  background: var(--b-accent);
-  border-top-left-radius: calc(var(--b-radius-md) * ${PWIN_SCALE});
+.preview .dm-pwin {
+  position: relative; left: 0; top: 0; border-radius: 0;
+  box-shadow: 0 0 0 1px var(--b-ink), 12px 12px 0 var(--b-ink);
 }
 `;
 
 /** HTML autonome (police, images et script de la démo inclus) prêt à être rasterisé. */
-export function renderOgImageHtml(content: OgImageContent, variant: OgVariant): string {
+export function renderOgImageHtml(content: OgImageContent): string {
   const markInner = DECKER_MARK_SVG.replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '');
   return `<!doctype html>
 <html lang="en">
@@ -160,14 +144,13 @@ export function renderOgImageHtml(content: OgImageContent, variant: OgVariant): 
 <style>${CSS}</style>
 </head>
 <body>
-<div class="layout layout--${variant}">
+<div class="layout">
   <div class="brand">
     <svg class="brand__mark" viewBox="2 4 27 25" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${markInner}</svg>
     <span>Decker</span>
   </div>
   <h1 class="headline">${content.headline}</h1>
   <div class="preview">
-    ${variant === 'shape' ? '<div class="preview__shape"></div>' : ''}
     ${HERO_DEMO_HTML}
   </div>
 </div>
