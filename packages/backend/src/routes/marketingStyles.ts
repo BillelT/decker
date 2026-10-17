@@ -1,6 +1,13 @@
 import { DESIGN_TOKENS_CSS } from '../generated/designTokens.js';
 import { CABINET_GROTESK_BASE64 } from './fontData.js';
 
+/* Le site garde la barre de defilement du navigateur : on retire de la DA le
+   seul bloc de barre fine (scrollbar-width/color sur *, ::-webkit-scrollbar),
+   le reste des tokens passe tel quel. */
+const SITE_TOKENS_CSS = DESIGN_TOKENS_CSS
+  .replace(/\s*scrollbar-width: thin;\s*scrollbar-color:[^;]*;/, '')
+  .replace(/\*::-webkit-scrollbar[^{]*\{[^}]*\}\s*/g, '');
+
 /**
  * DA "Billel" (design system perso, repo billel-skill), archétype b-marketing :
  * header + hero + footer "à copier tel quel" depuis b-header.md/b-hero.md/b-footer.md,
@@ -19,7 +26,7 @@ export const MARKETING_CSS = `
   font-display: swap;
 }
 
-${DESIGN_TOKENS_CSS}
+${SITE_TOKENS_CSS}
 
 /* Tout ce qui précède vient de la DA (src/generated/designTokens.ts, voir
    scripts/sync-tokens.mjs). Ce :root ne garde que ce qui est propre au site. */
