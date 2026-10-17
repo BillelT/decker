@@ -467,7 +467,7 @@ a { color: inherit; }
   }
   @keyframes egg-back {
     0% { animation-timing-function: steps(1, end); }
-    43% { transform: scale(1.04, 0.92); filter: blur(1px); animation-timing-function: var(--b-ease-out); }
+    43% { transform: scale(1.025, 0.95); filter: blur(1px); animation-timing-function: var(--b-ease-out); }
     59%, 100% { transform: none; filter: none; }
   }
   .footer__egg .egg-card { transform-box: fill-box; transform-origin: center; }
