@@ -201,10 +201,14 @@ a { color: inherit; }
 .header__nav .nav-link[aria-current="page"] { color: var(--b-text-muted); }
 .header__brand {
   display: inline-flex; align-items: center; gap: var(--b-space-8); color: var(--b-ink);
-  font-size: var(--b-text-base); font-weight: var(--b-font-bold); letter-spacing: var(--b-tracking-tight);
-  text-decoration: none;
+  font-size: var(--b-text-lg); font-weight: var(--b-font-bold); letter-spacing: var(--b-tracking-tight);
+  line-height: 1; text-decoration: none;
 }
-.header__brand-mark { width: 24px; height: 24px; flex: 0 0 auto; display: block; }
+/* Lockup icône + nom (rules logo) : viewBox serré sur le dessin, icône
+   à ~1,5 fois la hauteur des capitales du nom (18 px pour 12 px de cap),
+   écart visible de ~0,75 cap, et icône remontée de 1 px pour que son
+   centre tombe sur le centre des capitales (sa masse est en bas). */
+.header__brand-mark { height: 18px; width: auto; aspect-ratio: 27 / 25; flex: 0 0 auto; display: block; translate: 0 -1px; }
 .header__brand:focus-visible {
   outline: var(--b-focus-outline); outline-offset: var(--b-focus-offset); border-radius: 0;
 }

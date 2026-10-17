@@ -298,7 +298,7 @@ function header(path: string): string {
   <div class="header__inner">
     <div class="header__lead">
       <${brandTag} class="header__brand"${brandHref}>
-        <svg class="header__brand-mark" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${brandMarkInline()}</svg>
+        <svg class="header__brand-mark" viewBox="2.5 4.5 27 25" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${brandMarkInline()}</svg>
         <span class="header__brand-name">Decker</span>
       </${brandTag}>
     </div>
