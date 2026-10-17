@@ -5,7 +5,6 @@ import { OG_IMAGE_PNG_BASE64 } from '../og/ogImageData.js';
 import { OG_IMAGE } from '../og/variants.js';
 import { HERO_DEMO_CSS, HERO_DEMO_HTML, HERO_DEMO_JS } from './heroDemo.js';
 import { gamePage } from './game.js';
-import { LOGO_DEBUGGER_HTML } from './devLogoDebugger.js';
 import {
   FEATURE_FULL_DECK_HTML,
   FEATURE_NATIVE_HTML,
@@ -56,10 +55,6 @@ const HERO_TITLE_LINES_JS = `(function () {
 })();`;
 
 export const pagesRouter = Router();
-
-/** Outils de mise au point, seulement quand le serveur tourne en local
- *  (Vercel pose VERCEL ; même test que le listen() d'index.ts). */
-const DEV_TOOLS = !process.env.VERCEL;
 
 const LAST_UPDATED = 'September 1, 2026';
 const CONTACT_EMAIL = 'b.tighidet0@gmail.com';
@@ -279,7 +274,7 @@ ${footer()}
 })();
 </script>
 ${opts.script ? `<script>${opts.script}</script>` : ''}
-${DEV_TOOLS ? LOGO_DEBUGGER_HTML : ''}</body>
+</body>
 </html>`;
 }
 
