@@ -65,15 +65,14 @@ const DEBUGGER_JS = String.raw`
   var EASE_IN_OUT = css.getPropertyValue('--b-ease-in-out').trim() || 'cubic-bezier(0.77, 0, 0.175, 1)';
   /* css : ce qu'il faut écrire dans le @keyframes (jamais de var(), ignoré). */
   var EASINGS = {
-    'ease (current)': { js: 'ease', css: 'ease' },
+    'ease': { js: 'ease', css: 'ease' },
     'steps(1, end)': { js: 'steps(1, end)', css: 'steps(1, end)' },
     'linear': { js: 'linear', css: 'linear' },
     '--b-ease-out': { js: EASE_OUT, css: EASE_OUT },
     '--b-ease-in-out': { js: EASE_IN_OUT, css: EASE_IN_OUT }
   };
-  /* Valeurs en ligne au chargement : celles de marketingStyles.ts (egg-back),
-     courbe de retour telle que le navigateur l'applique (ease). */
-  var DEFAULTS = { sx: 1.02, sy: 0.98, blur: 1, peak: 43, rest: 59, jump: 'steps(1, end)', settle: 'ease (current)', origin: 'center', duration: 360 };
+  /* Valeurs en ligne au chargement : celles de marketingStyles.ts (egg-back). */
+  var DEFAULTS = { sx: 1.055, sy: 0.925, blur: 1, peak: 43, rest: 59, jump: 'steps(1, end)', settle: '--b-ease-out', origin: 'center', duration: 420 };
   var p = Object.assign({}, DEFAULTS);
   var FRAME = 1000 / 60;
 
@@ -81,7 +80,7 @@ const DEBUGGER_JS = String.raw`
     return [
       { offset: 0, opacity: 1, easing: 'steps(1, end)' },
       { offset: 0.13, opacity: 0, easing: 'steps(1, end)' },
-      { offset: 0.78, opacity: 0, transform: 'scale(0.92, 0.84)', filter: 'blur(1px)', easing: 'ease' },
+      { offset: 0.78, opacity: 0, transform: 'scale(0.92, 0.84)', filter: 'blur(1px)', easing: EASE_OUT },
       { offset: 1, opacity: 1, transform: 'none', filter: 'none' }
     ];
   }
@@ -89,7 +88,7 @@ const DEBUGGER_JS = String.raw`
     return [
       { offset: 0, opacity: 1, easing: 'steps(1, end)' },
       { offset: 0.27, opacity: 0, easing: 'steps(1, end)' },
-      { offset: 0.59, opacity: 0, transform: 'scale(0.92, 0.84)', filter: 'blur(1px)', easing: 'ease' },
+      { offset: 0.59, opacity: 0, transform: 'scale(0.92, 0.84)', filter: 'blur(1px)', easing: EASE_OUT },
       { offset: 0.78, opacity: 1, transform: 'none', filter: 'none' },
       { offset: 1, opacity: 1, transform: 'none', filter: 'none' }
     ];
@@ -298,7 +297,7 @@ const DEBUGGER_JS = String.raw`
       '}'
     ];
     if (p.origin !== 'center') lines.push('.footer__egg .egg-card--back { transform-origin: ' + p.origin + '; }');
-    if (p.duration !== 360) lines.push('/* Duration: ' + p.duration + 'ms (.footer__egg:hover .egg-card { animation: ' + (p.duration / 1000) + 's 1; }), front and mid follow. */');
+    if (p.duration !== 420) lines.push('/* Duration: ' + p.duration + 'ms (.footer__egg:hover .egg-card { animation: ' + (p.duration / 1000) + 's 1; }), front and mid follow. */');
     return lines.join('\n');
   }
 

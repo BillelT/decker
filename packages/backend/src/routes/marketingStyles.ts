@@ -447,36 +447,38 @@ a { color: inherit; }
 /* Au survol, un seul tour de spam : la carte avant puis celle du milieu
    disparaissent d'un coup, la carte du fond (toujours visible, pour qu'il
    n'y ait jamais de vide) encaisse un à-coup, puis le milieu et l'avant
-   repopent. Moments placés sur cubic-bezier(0.3, 0.4, 0.7, 0.8) sur 360 ms :
+   repopent. Moments placés sur cubic-bezier(0.3, 0.4, 0.7, 0.8), sur 420 ms
+   depuis le 17 octobre (réglé au débogueur local, devLogoDebugger.ts) :
    ça accroche fort au début et se pose vers la fin. Chaque réapparition suit
    le conseil Interfere pour un changement d'icône : opacité + léger flou +
    scale étiré, en --b-ease-out (départ sec, fin posée). Rejoué à chaque
    nouveau survol. Rien en mouvement réduit.
-   Attention : Chrome ignore un var() dans l'animation-timing-function d'un
-   @keyframes ; ces var(--b-ease-out) retombent sur ease, et c'est ce rendu-là
-   qui a été validé à l'œil (vérifié avec getKeyframes() le 17 octobre). Pour
-   une autre courbe, l'écrire en valeur littérale. Réglages en local :
-   devLogoDebugger.ts. */
+   La courbe est --b-ease-out écrite en dur : Chrome ignore un var() dans
+   l'animation-timing-function d'un @keyframes et retombait sur ease (vérifié
+   avec getKeyframes() le 17 octobre). À garder alignée sur le token.
+   Keyframes et pas transitions (rules/ui/motion-implementation.md) : c'est
+   un aller-retour en plusieurs temps, qu'une transition (un état A vers un
+   état B) ne sait pas jouer ; une séquence jouée une fois par survol. */
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
   @keyframes egg-front {
     0% { opacity: 1; animation-timing-function: steps(1, end); }
     13% { opacity: 0; animation-timing-function: steps(1, end); }
-    78% { opacity: 0; transform: scale(0.92, 0.84); filter: blur(1px); animation-timing-function: var(--b-ease-out); }
+    78% { opacity: 0; transform: scale(0.92, 0.84); filter: blur(1px); animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1); }
     100% { opacity: 1; transform: none; filter: none; }
   }
   @keyframes egg-mid {
     0% { opacity: 1; animation-timing-function: steps(1, end); }
     27% { opacity: 0; animation-timing-function: steps(1, end); }
-    59% { opacity: 0; transform: scale(0.92, 0.84); filter: blur(1px); animation-timing-function: var(--b-ease-out); }
+    59% { opacity: 0; transform: scale(0.92, 0.84); filter: blur(1px); animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1); }
     78%, 100% { opacity: 1; transform: none; filter: none; }
   }
   @keyframes egg-back {
     0% { animation-timing-function: steps(1, end); }
-    43% { transform: scale(1.02, 0.98); filter: blur(1px); animation-timing-function: var(--b-ease-out); }
+    43% { transform: scale(1.055, 0.925); filter: blur(1px); animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1); }
     59%, 100% { transform: none; filter: none; }
   }
   .footer__egg .egg-card { transform-box: fill-box; transform-origin: center; }
-  .footer__egg:hover .egg-card { animation: 0.36s 1; }
+  .footer__egg:hover .egg-card { animation: 0.42s 1; }
   .footer__egg:hover .egg-card--front { animation-name: egg-front; }
   .footer__egg:hover .egg-card--mid { animation-name: egg-mid; }
   .footer__egg:hover .egg-card--back { animation-name: egg-back; }
