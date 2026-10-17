@@ -507,10 +507,11 @@ main:focus { outline: none; }
    rules/ui/motion-implementation.md, le marketing peut dépasser les durées
    de l'interface (motion-decisions.md). Jamais bloquant : le contenu reste
    cliquable, et visible sans JS (le titre entre alors d'un bloc).
-   Le CTA entre sans flou (17 octobre) : sur son aplat orange, le flou
-   finissant (moins d'un pixel, arrondi à un pixel par le navigateur) faisait
-   baver une ligne orange au-dessus du bouton pendant les dernières images.
-   La rangée glisse et apparaît, seule l'accroche se défloute. */
+   Le CTA a son propre flou, plus léger (3px), éteint dès 70 % de l'entrée
+   (17 octobre) : sur son aplat orange, un flou finissant (moins d'un pixel,
+   arrondi à un pixel par le navigateur) faisait baver une ligne orange
+   au-dessus du bouton pendant les dernières images. La rangée glisse et
+   apparaît ; l'accroche se défloute, le CTA aussi mais finit net. */
 @media (prefers-reduced-motion: no-preference) {
   @keyframes hero-enter {
     from { opacity: 0; filter: blur(6px); transform: translateY(16px); }
@@ -524,6 +525,10 @@ main:focus { outline: none; }
     from { filter: blur(6px); }
     to { filter: blur(0); }
   }
+  @keyframes hero-unblur-cta {
+    from { filter: blur(3px); }
+    70%, to { filter: none; }
+  }
   .hero > * {
     animation: hero-enter 900ms var(--b-ease-out) both;
   }
@@ -533,6 +538,9 @@ main:focus { outline: none; }
   .hero > .hero__title { animation-duration: 1200ms; }
   .hero > .hero__row { animation-name: hero-rise; animation-duration: 800ms; animation-delay: 200ms; }
   .hero > .hero__row .hero__lede { animation: hero-unblur 800ms var(--b-ease-out) 200ms both; }
+  /* Linéaire, pas ease-out : la queue d'un ease-out laisse le flou des
+     dizaines d'images sous 0.1px, la valeur qui faisait baver l'orange. */
+  .hero > .hero__row .hero__actions { animation: hero-unblur-cta 800ms linear 200ms both; }
   .hero > .hero__demo { animation-duration: 1700ms; animation-delay: 320ms; }
 }
 /* Mouvement réduit : fondu seul, plus de glissement ni de flou. */
