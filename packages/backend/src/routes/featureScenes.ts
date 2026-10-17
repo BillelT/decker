@@ -181,21 +181,18 @@ const toast = (tone: 'success' | 'info', text: string) =>
   `<div class="f2s-toast f2s-toast--${tone} fs-toast"><svg class="f2s-status-icon f2s-status-icon--${tone}" width="16" height="16" viewBox="0 0 66 66" fill="none"><rect class="f2s-status-icon-disc" width="66" height="66" rx="33"/>${tone === 'success' ? '<path d="M20 34 L29 43 L46 24" stroke="currentColor" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none"/>' : '<path d="M33 31 L33 46 M33 20 L33 20.01" stroke="currentColor" stroke-width="9" stroke-linecap="round"/>'}</svg><span class="f2s-toast-text">${text}</span><span class="f2s-icon-btn f2s-toast-close">${ICONS.close}</span></div>`;
 
 /** Suggest roles : le clic qui vient de taguer le titre et le corps d'un
-    layout. Zoom sur Composition et sur la colonne de droite, où les
-    couleurs détectées ont leur propre Suggest roles. */
+    layout. Pas de fenetre entiere : seulement les deux sections qui ont leur
+    bouton Suggest roles, Composition (placeholders) et Colors (roles du theme
+    Slides), a grande echelle, avec le toast qui confirme le clic. */
 export const FEATURE_SUGGEST_HTML = scene(
   'suggest',
-  760,
-  'The Decker plugin right after Suggest roles: the layout title and body are now tagged as placeholders, and a notice confirms two roles were suggested',
-  pluginApp('fs-pwin--suggest', {
-    mode: 'template',
-    name: 'Trailworn template',
-    actions: `${btn('f2s-btn--secondary', 'Add frames', true)}${btn('f2s-btn--secondary', 'Prepare for Slides')}${btn('f2s-btn--primary', 'Create template')}`,
-    body: `${toast('info', '2 roles suggested. Change any of them in Composition.')}<aside class="f2s-sidebar">${railItem(1, 'cover', 'Cover', { master: true, tmpl: true })}${railItem(2, 'pillars', 'Content', { active: true, tmpl: true })}</aside>
-    <main class="f2s-canvas"><div class="f2s-tmpl-report"><div class="f2s-canvas-preview f2s-tmpl-preview">${slide('pillars', { tmpl: true })}</div>
-    <div class="f2s-tmpl-panel"><section class="f2s-tmpl-section"><div class="f2s-section-head"><h3 class="f2s-tmpl-heading">Composition</h3>${btn('f2s-btn--ghost fs-pressed', 'Suggest roles')}</div><ul class="f2s-tmpl-list">${roleRow('title', 'Click to edit title')}${roleRow('body', 'Click to edit text')}</ul></section><section class="f2s-tmpl-section"><h3 class="f2s-tmpl-heading">Content</h3><ul class="f2s-tmpl-list">${plainRow('Craft')}${plainRow('Speed')}</ul></section></div></div></main>
-    <aside class="f2s-style-aside"><div class="f2s-style-panel">${MASTER_SECTION}${colorsSection(btn('f2s-btn--ghost', 'Suggest roles'))}${TYPO_SECTION}</div></aside>`,
-  }) + `<span class="fs-cursor-at fs-cursor-at--suggest">${CURSOR}</span>`,
+  580,
+  'The two Suggest roles buttons of the Decker plugin: Composition, where the layout title and body were just tagged as placeholders, and Colors, where each detected color is mapped to a Slides theme role',
+  `<div class="dm-plugin fs-focus">${toast('info', '2 roles suggested. Change any of them in Composition.')}
+    <div class="fs-focus__col"><div class="f2s-tmpl-panel"><section class="f2s-tmpl-section"><div class="f2s-section-head"><h3 class="f2s-tmpl-heading">Composition</h3>${btn('f2s-btn--ghost fs-pressed', 'Suggest roles')}</div><ul class="f2s-tmpl-list">${roleRow('title', 'Click to edit title')}${roleRow('body', 'Click to edit text')}</ul></section></div></div>
+    <div class="fs-focus__col"><div class="f2s-style-panel">${colorsSection(btn('f2s-btn--ghost', 'Suggest roles'))}</div></div>
+    <span class="fs-cursor-at fs-cursor-at--suggest">${CURSOR}</span>
+  </div>`,
 );
 
 /** Prepare for Slides : sur le canvas Figma, deux frames du deck à gauche et
@@ -226,7 +223,7 @@ export const FEATURE_PREPARE_HTML = scene(
 const FONT_LIST = ['Arial', 'Inter', 'Lato', 'Montserrat', 'Poppins', 'Roboto', 'Verdana'];
 export const FEATURE_FONTS_HTML = scene(
   'fonts',
-  520,
+  580,
   'The Fonts bar of the Decker plugin: Satoshi is replaced by Inter, and the Google Slides font list is open to swap Arial for Roboto',
   `<div class="fs-pwin fs-pwin--fonts"><div class="dm-pwin__bar">${DECKER_ICON}<span>Decker</span><span class="dm-pwin__x">${ICONS.close}</span></div><div class="dm-plugin">
     <header class="f2s-topbar"><div class="f2s-topbar-left"><div class="f2s-tabs" role="tablist"><button type="button" class="f2s-tab is-active">Deck</button><button type="button" class="f2s-tab">Templates</button></div><div class="f2s-topbar-title-group"><label class="f2s-toolbar-label">Name:</label><input type="text" class="f2s-title-input" value="Trailworn deck"></div></div></header>
@@ -329,15 +326,13 @@ export const FEATURE_SCENES_CSS = `
 /* Le champ Name fait deborder la barre d'actions a cette largeur : il sort du
    cadre, les boutons restent entiers. */
 .fs-pwin--deck .f2s-topbar-title-group { display: none; }
-.fs-pwin--suggest { left: -200px; top: -110px; width: 960px; height: 726px; }
-/* Le focus est sur ce que Suggest roles remplit : Composition et Colors.
-   Master content sort pour que Colors remonte a hauteur de Composition. */
-.fs-pwin--suggest .f2s-style-panel > .f2s-tmpl-section:first-child { display: none; }
-.fs-pwin--fonts { left: 30px; top: 40px; width: 960px; height: 640px; }
-.fs .f2s-canvas-preview .dm-slide, .fs .f2s-retro-screen .dm-slide { width: 100%; }
 .fs-toast { animation: none; }
 .fs-pressed { box-shadow: var(--hyb-pressed); }
-.fs-cursor-at--suggest { left: 410px; top: 340px; }
+/* Card Suggest : deux colonnes, Composition puis Colors, sur toute la scene. */
+.fs-focus { position: absolute; inset: 0; height: auto; display: flex; flex-direction: row; align-items: flex-start; gap: 16px; padding: 62px 18px 0; background: var(--b-surface); }
+.fs-focus__col { flex: 1 1 0; min-width: 0; }
+.fs-focus .f2s-tmpl-panel { width: 100%; padding: 0; }
+.fs-cursor-at--suggest { left: 222px; top: 80px; }
 
 /* Prepare for Slides : deux frames d'origine et leurs copies prêtes pour
    Slides, l'en-tête du plugin en bas sur toute la largeur. */
