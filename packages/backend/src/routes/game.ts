@@ -116,15 +116,12 @@ body {
   background: repeating-linear-gradient(90deg, var(--b-accent-red) 0 8px, transparent 8px 10px);
 }
 .bar95 { margin-top: var(--b-space-12); }
-.bar95--scan .bar95__fill { transition: clip-path 1200ms steps(24, end); }
 
 .w95__well { position: relative; margin-top: 3px; padding: 2px; box-shadow: var(--w95-in); background: var(--b-white); }
-/* Le bureau : grille de points façon canvas Figma. */
+/* Le bureau : un fond uni, les pop-ups font tout le décor. */
 .desk {
   position: relative; overflow: hidden; width: 640px; height: 400px;
   background-color: var(--b-white);
-  background-image: radial-gradient(circle at 1px 1px, var(--b-gray-200) 1px, transparent 0);
-  background-size: 16px 16px;
   -webkit-user-select: none; user-select: none; touch-action: manipulation;
 }
 .g-noscript { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; font-size: 16px; color: var(--b-ink); }
@@ -157,11 +154,12 @@ body {
 }
 
 /* ---------- Pop-ups ---------- */
-.pop { position: absolute; box-sizing: border-box; width: min(380px, calc(100% - 16px)); box-shadow: var(--w95-out), var(--w95-drop); }
-.pop--wide { width: min(460px, calc(100% - 16px)); }
+/* Sur un petit bureau, 56px de marge laissent la place au décalage de la pile. */
+.pop { position: absolute; box-sizing: border-box; width: min(440px, calc(100% - 56px)); box-shadow: var(--w95-out), var(--w95-drop); }
+.pop--wide { width: min(520px, calc(100% - 56px)); }
 /* Écrans de début, de pause et de fin : centrés. translate et non transform :
    l'animation d'entrée pose déjà un transform. */
-.pop--modal { left: 50%; top: 50%; translate: -50% -50%; width: min(420px, calc(100% - 16px)); }
+.pop--modal { left: 50%; top: 50%; translate: -50% -50%; width: min(440px, calc(100% - 16px)); }
 .pop__body { padding: var(--b-space-16); font-size: 14px; line-height: 1.45; }
 .pop__body p { margin: 0 0 var(--b-space-8); text-wrap: pretty; }
 .pop__body p:last-child { margin-bottom: 0; }
@@ -195,7 +193,6 @@ body {
 @media (prefers-reduced-motion: reduce) {
   @keyframes pop-fade { from { opacity: 0; } to { opacity: 1; } }
   .pop { animation: pop-fade 200ms var(--b-ease-out) both; }
-  .bar95--scan .bar95__fill { transition: none; }
 }
 
 /* Tactile : cibles à 44px. */
@@ -205,34 +202,16 @@ body {
   .btn95 { min-height: 44px; }
 }
 
-/* ---------- Sous la fenêtre ---------- */
-.g-info {
-  display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--b-space-16) var(--b-space-32);
-  font-size: 14px; line-height: 1.5;
-}
-.g-info p { margin: 0; text-wrap: pretty; }
-.g-info__brand { max-width: 30ch; text-align: end; }
-.g-info a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 3px; }
-.g-info a:focus-visible { outline: 2px solid var(--b-white); outline-offset: 2px; }
+/* ---------- Autour de la fenêtre ---------- */
+.g-head { display: flex; align-items: center; gap: var(--b-space-12); }
+.g-head__mark { flex: none; width: 32px; height: 32px; display: block; }
+.g-head__name { margin: 0; font-size: 20px; font-weight: 700; line-height: 1.2; color: var(--b-white); }
+.g-head__tag { margin: 0; font-size: 14px; line-height: 1.4; color: var(--b-gray-400); text-wrap: balance; }
+.g-links { display: flex; flex-wrap: wrap; gap: var(--b-space-8) var(--b-space-24); font-size: 14px; line-height: 1.5; }
+.g-links a { color: var(--b-gray-400); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.g-links a:focus-visible { outline: 2px solid var(--b-white); outline-offset: 2px; }
 @media (hover: hover) and (pointer: fine) {
-  .g-info a:hover { color: var(--b-white); }
-}
-.keys { display: grid; grid-template-columns: auto auto; justify-content: start; align-items: center; gap: var(--b-space-6) var(--b-space-12); margin: 0; }
-.keys dd { margin: 0; }
-.keys dt { display: flex; gap: var(--b-space-4); }
-.kbd {
-  display: inline-grid; place-items: center; box-sizing: border-box; min-width: 22px; height: 20px; padding: 0 var(--b-space-4);
-  background: var(--b-gray-800); color: var(--b-gray-100); font: inherit; font-size: 12px; line-height: 1;
-  box-shadow: inset -1px -1px var(--b-black), inset 1px 1px var(--b-gray-600);
-}
-.kbd svg { width: 8px; height: 7px; display: block; }
-/* Sur un écran tactile sans clavier, seule la première ligne sert. */
-@media (pointer: coarse) and (hover: none) {
-  .keys .keys__kb { display: none; }
-}
-@media (max-width: 600px) {
-  .g-info { flex-direction: column; }
-  .g-info__brand { text-align: start; }
+  .g-links a:hover { color: var(--b-white); }
 }
 `;
 
@@ -342,6 +321,9 @@ function makeWin(o) {
     x.innerHTML = ICON_X;
     x.setAttribute('aria-label', o.xLabel || 'Close ' + o.title);
     x.addEventListener('click', function () { o.onX(w, x); });
+    x.addEventListener('pointerenter', function (e) {
+      if (e.pointerType === 'mouse' && s.phase === 'play' && Math.random() < 0.03) nudge(w);
+    });
     bar.appendChild(x);
     w._x = x;
   }
@@ -397,42 +379,48 @@ function overlap(a, b) {
   return ox * oy;
 }
 
-/* Placement : parmi une vingtaine de positions tirées au sort, celle qui
-   recouvre le moins les pop-ups déjà ouvertes. Une position dont le coin
-   tombe à moins de 56px du coin d'une autre est écartée tant que possible :
-   deux pop-ups de même taille et de même dessin posées l'une sur l'autre
-   n'en feraient voir qu'une. */
+/* Placement en pile décalée, comme les cartes du logo Decker : chaque
+   nouvelle pop-up se pose un cran à droite et un cran plus haut que la
+   précédente, la plus récente devant, les anciennes qui dépassent en bas à
+   gauche. Quand la pile sort du bureau, une nouvelle démarre ailleurs, dans
+   la moitié basse. Jamais un coin à moins de 24px du coin d'une autre : deux
+   fenêtres identiques posées pile l'une sur l'autre n'en laissaient voir
+   qu'une. */
+var STEP_X = 40;
+var STEP_Y = 48;
+var stack = null;
+function tooClose(x, y, others) {
+  return others.some(function (o) { return Math.abs(o.x - x) < 24 && Math.abs(o.y - y) < 24; });
+}
 function placeRandom(w, near) {
-  var fw = desk.clientWidth;
-  var fh = desk.clientHeight;
-  var ww = w.offsetWidth;
-  var wh = w.offsetHeight;
-  var maxX = Math.max(0, fw - ww);
-  var maxY = Math.max(0, fh - wh);
+  var maxX = Math.max(0, desk.clientWidth - w.offsetWidth);
+  var maxY = Math.max(0, desk.clientHeight - w.offsetHeight);
   var others = s.wins.filter(function (o) { return o !== w; }).map(rectOf);
-  var best = null;
-  var bestCost = Infinity;
-  var tries = near ? 12 : 24;
-  for (var i = 0; i < tries; i++) {
-    var x;
-    var y;
-    if (near) {
-      x = Math.min(maxX, Math.max(0, near.offsetLeft + rand(-40, 72)));
-      y = Math.min(maxY, Math.max(0, near.offsetTop + rand(36, 72)));
-    } else {
-      x = rand(0, maxX);
-      y = rand(0, maxY);
+  var from = near ? { x: near.offsetLeft, y: near.offsetTop } : stack;
+  var x = from ? from.x + STEP_X : -1;
+  var y = from ? from.y - STEP_Y : -1;
+  if (!from || x > maxX || y < 0 || tooClose(x, y, others)) {
+    for (var i = 0; i < 24; i++) {
+      x = rand(0, maxX * 0.7);
+      y = rand(maxY * 0.5, maxY);
+      if (!tooClose(x, y, others)) break;
     }
-    var cand = { x: x, y: y, w: ww, h: wh };
-    var cost = 0;
-    others.forEach(function (o) {
-      cost += overlap(cand, o);
-      if (Math.abs(o.x - x) < 56 && Math.abs(o.y - y) < 56) cost += 1e7;
-    });
-    if (cost < bestCost) { bestCost = cost; best = cand; }
   }
-  w.style.left = Math.round(best.x) + 'px';
-  w.style.top = Math.round(best.y) + 'px';
+  x = Math.round(Math.min(maxX, Math.max(0, x)));
+  y = Math.round(Math.min(maxY, Math.max(0, y)));
+  stack = { x: x, y: y };
+  w.style.left = x + 'px';
+  w.style.top = y + 'px';
+}
+/* Une fois sur trente-trois, une pop-up esquive la souris qui arrive sur sa
+   croix : un petit saut, pas loin de sa place. */
+function nudge(w) {
+  var maxX = Math.max(0, desk.clientWidth - w.offsetWidth);
+  var maxY = Math.max(0, desk.clientHeight - w.offsetHeight);
+  var dx = (Math.random() < 0.5 ? -1 : 1) * rand(16, 40);
+  var dy = (Math.random() < 0.5 ? -1 : 1) * rand(8, 24);
+  w.style.left = Math.round(Math.min(maxX, Math.max(0, w.offsetLeft + dx))) + 'px';
+  w.style.top = Math.round(Math.min(maxY, Math.max(0, w.offsetTop + dy))) + 'px';
 }
 function clampWin(w) {
   if (w.classList.contains('pop--modal')) return;
@@ -545,25 +533,12 @@ function spawnAlert() {
   }));
 }
 
-/* La croix se dérobe une fois : au survol à la souris, ou au premier clic
-   (tactile, clavier). Le deuxième clic ferme. */
-function spawnRunaway() {
-  var moved = false;
-  var w = makeWin({
+function spawnStubborn() {
+  addWin(makeWin({
     title: 'Untitled_presentation (1).pptx',
     html: slideSvg() + '<p>You can’t close me. Probably.</p>',
-    onX: function (p) {
-      if (!moved) { dodge(); return; }
-      closeWin(p, 20);
-    }
-  });
-  function dodge() {
-    if (moved) return;
-    moved = true;
-    placeRandom(w);
-  }
-  w._x.addEventListener('pointerenter', function (e) { if (e.pointerType === 'mouse') dodge(); });
-  addWin(w);
+    onX: function (w) { closeWin(w, 20); }
+  }));
 }
 
 var CHAIN = [
@@ -645,7 +620,7 @@ function spawnRandom(fromAd) {
   if (r < 34) return spawnDeck();
   if (r < 49 && !fromAd) return spawnAd();
   if (r < 67) return spawnAlert();
-  if (r < 81) return spawnRunaway();
+  if (r < 81) return spawnStubborn();
   if (r < 92 && !fromAd) return spawnChain(0);
   if (s.wins.length >= 4 && !fromAd) return spawnBonus();
   return spawnDeck();
@@ -654,7 +629,7 @@ function spawnRandom(fromAd) {
 /* ---------- Boucle ---------- */
 function spawnInterval() {
   var t = Math.min(1, s.elapsed / DURATION);
-  var ms = 1500 - (1500 - 420) * t;
+  var ms = 2400 - (2400 - 450) * t;
   if (isSmall()) ms *= 1.5;
   if (reduceMotion) ms *= 1.3;
   return ms;
@@ -709,6 +684,7 @@ function renderHud() {
 
 /* ---------- Écrans ---------- */
 function clearDesk() {
+  stack = null;
   s.wins = [];
   s.boss = null;
   desk.textContent = '';
@@ -733,47 +709,8 @@ function closeModals() {
   win.removeAttribute('data-inactive');
 }
 
-function startScreen() {
-  s.phase = 'intro';
-  pauseBtn.disabled = true;
-  clearDesk();
-  renderHud();
-  var best = readBest();
-  var w = showModal({
-    title: 'Decker Security 2000',
-    html: '<p class="pop__lead">Scanning your deck…</p>' +
-      '<div class="bar95 bar95--scan" aria-hidden="true"><div class="bar95__fill"></div></div>'
-  });
-  var fill = w.querySelector('.bar95__fill');
-  var reveal = function () {
-    if (s.phase !== 'intro') return;
-    w._body.innerHTML = '<div class="pop__row">' + ICON_WARN + '<div>' +
-      '<p class="pop__lead">Threat found: SCREENSHOT.EXE</p>' +
-      '<p>It wants to flatten your deck into a single image. Close the pop-ups as fast as they open, for 60 seconds.</p>' +
-      (best ? '<p>Your best: ' + fmtScore(best) + '</p>' : '') + '</div></div>';
-    var actions = el('div', 'pop__actions');
-    var leave = el('a', 'btn95', 'Quit');
-    leave.href = '/';
-    var start = el('button', 'btn95 btn95--default', 'Start');
-    start.type = 'button';
-    start.addEventListener('click', play);
-    actions.appendChild(leave);
-    actions.appendChild(start);
-    w.appendChild(actions);
-    start.focus();
-    say('Threat found. Press Start to play.');
-  };
-  if (reduceMotion) {
-    reveal();
-  } else {
-    requestAnimationFrame(function () {
-      requestAnimationFrame(function () { fill.style.clipPath = 'inset(0 0 0 0)'; });
-    });
-    s.introTimer = window.setTimeout(reveal, 1300);
-  }
-}
-
 function play() {
+  var fromDialog = desk.contains(doc.activeElement);
   closeModals();
   clearDesk();
   s.phase = 'play';
@@ -783,7 +720,7 @@ function play() {
   s.closed = 0;
   s.elapsed = 0;
   s.lastClose = -9999;
-  s.untilSpawn = 300;
+  s.untilSpawn = 900;
   s.bossDone = false;
   s.last = performance.now();
   pauseBtn.disabled = false;
@@ -791,7 +728,9 @@ function play() {
   renderHud();
   window.clearInterval(s.timer);
   s.timer = window.setInterval(tick, 100);
-  pauseBtn.focus();
+  /* Au chargement, le focus reste où il est ; après « Try again », il
+     quitte le dialogue qui vient de disparaître. */
+  if (fromDialog) pauseBtn.focus();
   say('Game started. Close the pop-ups.');
 }
 
@@ -892,7 +831,7 @@ doc.addEventListener('visibilitychange', function () { if (doc.hidden) pause(); 
 
 fit();
 window.addEventListener('resize', fit);
-startScreen();
+play();
 `;
 
 const ICON_CLOSE = `<svg viewBox="0 0 8 7" shape-rendering="crispEdges" aria-hidden="true"><path fill="currentColor" d="M0 0h2v1H0zM6 0h2v1H6zM1 1h2v1H1zM5 1h2v1H5zM2 2h4v1H2zM3 3h2v1H3zM2 4h4v1H2zM1 5h2v1H1zM5 5h2v1H5zM0 6h2v1H0zM6 6h2v1H6z"/></svg>`;
@@ -909,6 +848,8 @@ const ICON_WARN = (() => {
 
 /** Bulle de question en pixels, pour la chaîne « Are you sure? ». */
 const ICON_ASK = `<svg class="pop__icon" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><path class="icon__mark" d="M3 2h10v9H3zM2 3h12v7H2z"/><path class="icon__line" d="M3 1h10v1H3zM2 2h1v1H2zM13 2h1v1h-1zM1 3h1v7H1zM14 3h1v7h-1zM2 10h1v1H2zM13 10h1v1h-1zM3 11h10v1H3zM4 12h2v1H4zM4 13h1v1H4zM6 3h4v1H6zM10 4h1v2h-1zM8 6h2v1H8zM7 7h2v1H7zM7 9h2v1H7z"/></svg>`;
+
+const MARK = DECKER_MARK_SVG.replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '');
 
 export function gamePage(opts: { pluginUrl: string }): string {
   return `<!doctype html>
@@ -936,10 +877,17 @@ ${GAME_CSS}
 <body>
 <main class="g">
   <div class="g__col" data-col>
+    <header class="g-head">
+      <svg class="g-head__mark" viewBox="0 0 32 32" shape-rendering="crispEdges" aria-hidden="true">${MARK}</svg>
+      <div>
+        <h1 class="g-head__name">Decker</h1>
+        <p class="g-head__tag">Google Slides deck with Figma comfort</p>
+      </div>
+    </header>
     <section class="w95" aria-labelledby="g-title" data-win>
       <div class="w95__bar">
-        <svg class="w95__icon" viewBox="0 0 32 32" shape-rendering="crispEdges" aria-hidden="true">${DECKER_MARK_SVG.replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '')}</svg>
-        <h1 class="w95__title" id="g-title">Decker 95</h1>
+        <svg class="w95__icon" viewBox="0 0 32 32" shape-rendering="crispEdges" aria-hidden="true">${MARK}</svg>
+        <p class="w95__title" id="g-title">Decker 95</p>
         <a class="w95__x" href="/" aria-label="Close the game and go back to Decker">${ICON_CLOSE}</a>
       </div>
       <div class="w95__tools">
@@ -962,17 +910,10 @@ ${GAME_CSS}
         <p class="w95__field w95__field--end">High <span data-high>0</span></p>
       </div>
     </section>
-    <div class="g-info">
-      <dl class="keys">
-        <dt><kbd class="kbd">${ICON_CLOSE}<span class="g-sr">Close button</span></kbd></dt><dd>Close a pop-up</dd>
-        <dt class="keys__kb"><kbd class="kbd">Tab</kbd></dt><dd class="keys__kb">Next button</dd>
-        <dt class="keys__kb"><kbd class="kbd">Enter</kbd></dt><dd class="keys__kb">Press it</dd>
-        <dt class="keys__kb"><kbd class="kbd">Esc</kbd></dt><dd class="keys__kb">Pause</dd>
-      </dl>
-      <p>Font: Pixelify Sans<br>by Stefie Justprince</p>
-      <p class="g-info__brand">Decker exports editable, pixel perfect decks from Figma to Google Slides.<br>
-        <a href="${opts.pluginUrl}" target="_blank" rel="noopener noreferrer">Try it on Figma</a> · <a href="/">Back to the site</a></p>
-    </div>
+    <nav class="g-links" aria-label="Decker">
+      <a href="${opts.pluginUrl}" target="_blank" rel="noopener noreferrer">Try it on Figma</a>
+      <a href="/">Back to the site</a>
+    </nav>
   </div>
   <div class="g-sr" role="status" data-status></div>
 </main>
