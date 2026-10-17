@@ -778,13 +778,13 @@ function act(name) {
 
 /* Export et Create template renvoient au vrai plugin : une bombe de pixels
    éclate au centre du CTA du hero, juste au-dessus de la démo, pour le
-   désigner. Une onde circulaire part du centre ; à son passage, les pixels
-   du bouton s'allument dans les orange lumineux de la DA et le bouton gonfle
-   à 1.04. Arrivée au bord, l'onde projette des pixels hors du bouton, qui
+   désigner. Une onde circulaire, épaisse de deux à trois rangées, part du
+   centre ; à son passage, les pixels du bouton s'allument dans les orange
+   lumineux de la DA et gonflent, là où est l'onde seulement. Arrivée au bord, l'onde projette des pixels hors du bouton, qui
    retombent et s'effacent (opacity + réduction, jamais scale(0)). Courbes
-   lues dans les tokens --b-ease-*. En mouvement réduit : les pixels du
-   bouton s'allument et s'éteignent ensemble, sans onde, sans gonflement ni
-   projection. */
+   lues dans les tokens --b-ease-*. Les éclats tombent derrière la démo. En
+   mouvement réduit : les pixels du bouton s'allument et s'éteignent
+   ensemble, sans onde, sans gonflement ni projection. */
 var BURST_TONES = ['var(--b-accent-hover)', 'color-mix(in oklab, var(--b-accent-hover) 55%, var(--b-white))', 'color-mix(in oklab, var(--b-accent) 70%, var(--b-white))', 'var(--b-accent)'];
 var WAVE_MS = 520;
 function token(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || 'ease-out'; }
@@ -815,16 +815,13 @@ function ctaTrail() {
       var d = Math.hypot(x + size / 2 - cx, y + size / 2 - cy) / reach;
       px.animate(reduceMotion
         ? [{ opacity: 0 }, { opacity: 1, offset: 0.3 }, { opacity: 0 }]
-        : [{ opacity: 0, transform: 'scale(0.95)' }, { opacity: 1, transform: 'none', offset: 0.3 }, { opacity: 0, transform: 'none' }],
-        { duration: reduceMotion ? 600 : 300, delay: reduceMotion ? 0 : d * WAVE_MS, easing: easeOut, fill: 'backwards' });
+        : [{ opacity: 0, transform: 'none' }, { opacity: 1, transform: 'scale(1.4)', offset: 0.35 }, { opacity: 1, transform: 'scale(1.4)', offset: 0.55 }, { opacity: 0, transform: 'none' }],
+        { duration: reduceMotion ? 600 : 480, delay: reduceMotion ? 0 : d * WAVE_MS, easing: easeOut, fill: 'backwards' });
     }
   }
   cta.appendChild(layer);
-  window.setTimeout(function () { layer.remove(); }, WAVE_MS + 500);
+  window.setTimeout(function () { layer.remove(); }, WAVE_MS + 650);
   if (reduceMotion) return;
-
-  /* Le bouton gonfle au passage de l'onde, puis revient. */
-  cta.animate([{ transform: 'none' }, { transform: 'scale(1.04)', offset: 0.45 }, { transform: 'none' }], { duration: WAVE_MS + 240, easing: easeOut });
 
   /* Les éclats : partis du bord quand l'onde l'atteint, projetés vers
      l'extérieur puis tirés vers le bas. Trajectoire calculée image clé par

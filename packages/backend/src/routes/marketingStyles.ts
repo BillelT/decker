@@ -145,7 +145,9 @@ a { color: inherit; }
 .cta { position: relative; isolation: isolate; }
 .cta-trail { position: absolute; inset: 0; z-index: -1; overflow: clip; pointer-events: none; }
 .cta-trail i { position: absolute; opacity: 0; }
-.cta-burst { position: absolute; z-index: 15; pointer-events: none; }
+.cta-burst { position: absolute; z-index: 0; pointer-events: none; }
+/* La démo passe devant les éclats qui retombent dessus. */
+.hero__demo { position: relative; z-index: 1; }
 .cta-burst i { position: absolute; opacity: 0; }
 
 /* Survol : seulement avec une vraie souris, sinon il colle après un tap sur
