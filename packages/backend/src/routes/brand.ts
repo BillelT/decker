@@ -11,16 +11,17 @@ export function escapeHtml(value: string): string {
 
 /** Pile de cartes façon icône du plugin. */
 export const DECKER_MARK_SVG = `<svg viewBox="0 0 32 32" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">
-<rect x="3" y="15" width="20" height="14" fill="#7a3b12" stroke="#1a0d02" stroke-width="1"/>
-<rect x="6" y="10" width="20" height="14" fill="#c1651c" stroke="#1a0d02" stroke-width="1"/>
-<rect x="9" y="5" width="20" height="14" fill="#ffb238" stroke="#1a0d02" stroke-width="1"/>
-<rect x="9" y="5" width="20" height="1" fill="#fff4d6"/>
-<rect x="9" y="5" width="1" height="14" fill="#fff4d6"/>
-<rect x="10.5" y="6.5" width="17" height="3.2" fill="#1a0d02"/>
-<rect x="10.5" y="12" width="17" height="2" fill="#fff4d6"/>
-<rect x="10.5" y="15" width="11" height="2" fill="#fff4d6"/>
-<path d="M26 5 L29 5 L29 8 Z" fill="#1a0d02"/>
-<path d="M26 5 L28 5 L28 7 Z" fill="#fff4d6"/>
+<rect x="2" y="14" width="21" height="15" fill="#1a0d02"/>
+<rect x="3" y="15" width="19" height="13" fill="#7a3b12"/>
+<rect x="5" y="9" width="21" height="15" fill="#1a0d02"/>
+<rect x="6" y="10" width="19" height="13" fill="#c1651c"/>
+<rect x="8" y="4" width="21" height="15" fill="#1a0d02"/>
+<rect x="9" y="5" width="19" height="13" fill="#ffb238"/>
+<rect x="9" y="5" width="19" height="1" fill="#fff4d6"/>
+<rect x="9" y="5" width="1" height="13" fill="#fff4d6"/>
+<rect x="11" y="7" width="16" height="3" fill="#1a0d02"/>
+<rect x="11" y="12" width="16" height="2" fill="#fff4d6"/>
+<rect x="11" y="15" width="10" height="2" fill="#fff4d6"/>
 </svg>`;
 
 export const DECKER_FAVICON = `data:image/svg+xml,${encodeURIComponent(DECKER_MARK_SVG)}`;

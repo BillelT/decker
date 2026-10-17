@@ -105,17 +105,22 @@ const REL_THIRD_PARTY = 'noopener noreferrer';
  * fenêtres en boucle. À garder aligné sur DECKER_MARK_SVG (brand.ts).
  */
 const FOOTER_EGG_MARK = `<svg class="footer__brand-mark" viewBox="0 0 32 32" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-<g class="egg-card egg-card--back"><rect x="3" y="15" width="20" height="14" fill="#7a3b12" stroke="#1a0d02" stroke-width="1"/></g>
-<g class="egg-card egg-card--mid"><rect x="6" y="10" width="20" height="14" fill="#c1651c" stroke="#1a0d02" stroke-width="1"/></g>
+<g class="egg-card egg-card--back">
+<rect x="2" y="14" width="21" height="15" fill="#1a0d02"/>
+<rect x="3" y="15" width="19" height="13" fill="#7a3b12"/>
+</g>
+<g class="egg-card egg-card--mid">
+<rect x="5" y="9" width="21" height="15" fill="#1a0d02"/>
+<rect x="6" y="10" width="19" height="13" fill="#c1651c"/>
+</g>
 <g class="egg-card egg-card--front">
-<rect x="9" y="5" width="20" height="14" fill="#ffb238" stroke="#1a0d02" stroke-width="1"/>
-<rect x="9" y="5" width="20" height="1" fill="#fff4d6"/>
-<rect x="9" y="5" width="1" height="14" fill="#fff4d6"/>
-<rect x="10.5" y="6.5" width="17" height="3.2" fill="#1a0d02"/>
-<rect x="10.5" y="12" width="17" height="2" fill="#fff4d6"/>
-<rect x="10.5" y="15" width="11" height="2" fill="#fff4d6"/>
-<path d="M26 5 L29 5 L29 8 Z" fill="#1a0d02"/>
-<path d="M26 5 L28 5 L28 7 Z" fill="#fff4d6"/>
+<rect x="8" y="4" width="21" height="15" fill="#1a0d02"/>
+<rect x="9" y="5" width="19" height="13" fill="#ffb238"/>
+<rect x="9" y="5" width="19" height="1" fill="#fff4d6"/>
+<rect x="9" y="5" width="1" height="13" fill="#fff4d6"/>
+<rect x="11" y="7" width="16" height="3" fill="#1a0d02"/>
+<rect x="11" y="12" width="16" height="2" fill="#fff4d6"/>
+<rect x="11" y="15" width="10" height="2" fill="#fff4d6"/>
 </g>
 </svg>`;
 
@@ -298,7 +303,7 @@ function header(path: string): string {
   <div class="header__inner">
     <div class="header__lead">
       <${brandTag} class="header__brand"${brandHref}>
-        <svg class="header__brand-mark" viewBox="2.5 4.5 27 25" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${brandMarkInline()}</svg>
+        <svg class="header__brand-mark" viewBox="2 4 27 25" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${brandMarkInline()}</svg>
         <span class="header__brand-name">Decker</span>
       </${brandTag}>
     </div>
