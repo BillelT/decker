@@ -20,7 +20,7 @@ Pas de nom produit : c'est une intégration. Notre jeu des pop-ups façon virus 
 ## Déroulé d'une partie
 
 1. **Démarrage.** Direct, dès l'arrivée sur la page : pas d'écran « Start ».
-2. **La vague.** C'est la cadence qui monte en ligne droite, de 0.9 à 2 pop-ups par seconde, pour que la fin ne s'emballe pas d'un coup. Pour que ce ne soit pas monotone : écarts irréguliers (de 0.55 à 1.45 fois l'écart moyen) et petites rafales de 2 ou 3 pop-ups rapprochées (de 12 % à 24 % de chance à chaque apparition au fil de la partie), suivies d'une courte accalmie. Première pop-up à 0.4 s. Plus lent sur un petit écran. Simulation : 10 à 14 pop-ups sur les 10 premières secondes, 18 à 20 sur les 10 dernières. (Essais du 17 octobre : un départ trop lent ennuyait, des paliers à +15 % s'emballaient, un écart qui baisse en ligne droite était monotone puis s'emballait.)
+2. **Les vagues.** Une vague lâche quelques pop-ups (0.26 à 0.62 s d'écart), puis on respire : la vague suivante part 0.9 s après que le bureau est vide, ou au plus tard après une attente qui raccourcit (6.5 s au début, 2 s à la fin). Les vagues grossissent, de 2 ou 3 pop-ups jusqu'à 8. Plus lent sur un petit écran. Simulé : qui ferme une pop-up par seconde gagne, qui en ferme une toutes les 1.5 s perd presque toujours (sans compter le boss ni les pièges). (Essais du 17 octobre : un flux continu, même irrégulier, laissait toujours au moins une pop-up ouverte, et la partie devenait impossible à gagner quand la cadence montait.)
 3. **Fermer.** Clic sur la croix, ou au clavier (Tab puis Entrée).
 4. **La jauge.** « Deck integrity » remonte doucement avec peu de pop-ups ouvertes et fond d'autant plus vite qu'elles s'empilent.
 5. **Défaite.** La jauge tombe à zéro : dialogue `SCREENSHOT.EXE` « Your deck was flattened into a screenshot. », temps tenu, score et meilleur score, « Quit » et « Try again ».
@@ -34,13 +34,13 @@ Pas de nom produit : c'est une intégration. Notre jeu des pop-ups façon virus 
 | Fausse pub | « Congratulations! You are the 1,000,000th designer. Claim your free font. » | Le gros bouton ouvre deux autres pop-ups ; il faut trouver la petite croix |
 | Fausse alerte | « Warning: 99+ gradients detected. Rasterize now? » | « Keep editable » ferme ; « Rasterize » fait perdre de l'intégrité |
 | Deck têtu | `Untitled_presentation (1).pptx`, « You can’t close me. Probably. » | Croix normale |
-| Chaîne | « Are you sure you want to close? », puis « Really sure? » | Trois fenêtres en cascade, chacune décalée de la précédente |
+| Confirmation | « Are you sure you want to close this deck? » | Une seule fenêtre : « Yes, close it » ou la croix. (Elle ouvrait la suivante en cascade, retiré le 17 octobre : fermer une pop-up n'en ouvre jamais une autre.) |
 | Boss | `SCREENSHOT.EXE`, « Flattening your deck... 12% » à 32 s | Dix clics sur « Stop » avant 100 % |
 | Bonus | « Decker Antivirus » | Ferme toutes les pop-ups d'un coup, sauf le boss |
 
 **Placement.** En pile décalée, comme les cartes du logo Decker : chaque nouvelle pop-up se pose 40 px à droite et 48 px plus haut que la précédente, la plus récente devant, les anciennes qui dépassent en bas à gauche. Quand la pile sort du bureau, une nouvelle démarre ailleurs, dans la moitié basse. Jamais un coin à moins de 24 px du coin d'une autre : deux fenêtres identiques posées pile l'une sur l'autre n'en laissaient voir qu'une.
 
-**Tailles.** Trois tailles pour varier : grande (80 % de la largeur du bureau), moyenne (50 %), petite (15 %), avec des minimums lisibles (260 px et 170 px). Un grand deck montre trois slides, les autres une seule. Decks au hasard dans les trois tailles ; pub en moyenne ou grande ; alerte et antivirus en moyenne ; chaîne et deck têtu en petite ou moyenne ; boss en grande.
+**Tailles.** Trois tailles pour varier : grande (80 % de la largeur du bureau), moyenne (50 %), petite (15 %), avec des minimums lisibles (260 px et 170 px). Un grand deck montre trois slides, les autres une seule. Decks au hasard dans les trois tailles ; pub en moyenne ou grande ; alerte et antivirus en moyenne ; confirmation et deck têtu en petite ou moyenne ; boss en grande.
 
 **Esquive.** Quand la souris arrive sur une croix, la pop-up a 3 % de chance de faire un petit saut (16 à 40 px), pas loin de sa place. Rien au tactile ni au clavier.
 
@@ -49,8 +49,8 @@ Score : points par pop-up fermée, combo jusqu'à x5 quand on enchaîne à moins
 ## Dans notre DA, en pixel Win95
 
 - **Fenêtres en tokens** : face `--b-gray-200`, biseaux en `--b-white`, `--b-gray-100`, `--b-gray-500` et `--b-ink` (variables `--w95-*` de `game.ts`), ombre portée dure de 4 px.
-- **L'orange de la DA en teintes secondaires, jamais en aplat** (17 octobre) : barre de titre de la pop-up active pleine au survol `--b-accent-hover`, titre à l'encre (7.5:1), comme le bleu marine de Windows 95 ; bouton par défaut sur `--b-accent-40` posé sur blanc, à l'encre (11.7:1), avec le liseré noir de Windows, `--b-accent-20` au survol ; blocs de progression en `--b-accent-hover` (2.4:1 sur leur fond, doublés du pourcentage écrit à côté) ; aplats des mini-slides en `--b-accent-40`. La fenêtre Decker 95 est le cadre : barre à l'encre, titre blanc. Bureau `--b-white` uni. Tout vient des tokens.
-- **Une seule fenêtre active**, comme sous Windows : les autres pop-ups passent au gris 600, titre blanc. Pendant un dialogue, la fenêtre Decker 95 passe en inactive aussi.
+- **Couleurs posées comme sur le site** (17 octobre, après deux essais écartés : palette du logo, puis teintes saumon et pêche de l'orange) : fenêtres claires (face `--b-gray-100`, biseaux en `--b-gray-50`, `--b-white`, `--b-gray-500`, `--b-ink`), bureau `--b-white` ; barre de titre active à l'encre, titre blanc, comme le bleu marine de Windows 95 ; barres inactives en `--b-gray-200`, titre `--b-gray-800` ; l'orange de la DA en aplat seulement sur le bouton par défaut (texte à l'encre et liseré noir de Windows, comme le CTA du site), les blocs de progression et les mini-slides. Tout vient des tokens.
+- **Une seule fenêtre active**, comme sous Windows : les autres passent au gris clair. Pendant un dialogue, la fenêtre Decker 95 passe en inactive aussi.
 - `--b-accent-red` seulement pour le graphisme d'alerte (triangle, jauge basse, barre du boss).
 - Barres de progression en blocs, rognées (`clip-path`) plutôt qu'étirées. Icônes en pixels (`crispEdges`) : triangle d'alerte, bulle « ? », croix, coche.
 - **Police pixel** : Pixelify Sans (OFL), variable 400 à 700, inlinée en base64 sur cette page seulement (`gameFontData.ts`, 12 Ko). Pas de crédit affiché sur la page (la licence ne l'exige pas).
@@ -63,7 +63,7 @@ Dérogation à la DA (le son y est réservé à l'archétype outil), demandée p
 |---|---|
 | Une pop-up s'ouvre | Petit blip triangle, note au hasard dans une gamme pentatonique (le plus discret) |
 | Pop-up fermée | Clic carré qui monte d'une note à chaque cran de combo |
-| « Keep editable », fin de la chaîne | Deux notes montantes |
+| « Keep editable », « Yes, close it » | Deux notes montantes |
 | « Rasterize » | Note qui s'écrase |
 | « Claim my free font » | Bourdon grave, puis les deux pop-ups qui s'ouvrent |
 | La croix esquive | Boing qui monte |

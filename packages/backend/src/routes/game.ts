@@ -24,15 +24,12 @@ import { PIXELIFY_SANS_BASE64 } from './gameFontData.js';
 
 const GAME_CSS = String.raw`
 :root {
-  /* Orange de la DA en teintes secondaires plutôt qu'en aplat (17 octobre) :
-     le survol (--b-accent-hover) pour les barres de titre actives, la teinte
-     à 40 % posée sur blanc pour les boutons par défaut. L'orange plein ne
-     sert plus nulle part dans le jeu. */
-  --g-tint-40: linear-gradient(var(--b-accent-40), var(--b-accent-40)) var(--b-white);
-  --g-tint-20: linear-gradient(var(--b-accent-20), var(--b-accent-20)) var(--b-white);
-  /* Les cinq tons du biseau Win95, pris dans la rampe de gris de la marque. */
-  --w95-face: var(--b-gray-200);
-  --w95-light: var(--b-gray-100);
+  /* Couleurs posées comme sur le site : surfaces claires, encre pour les
+     barres de titre, et l'orange de la DA en aplat seulement sur les boutons
+     d'action, comme le CTA. Les cinq tons du biseau Win95 viennent de la
+     rampe de gris de la marque, côté clair pour des fenêtres lumineuses. */
+  --w95-face: var(--b-gray-100);
+  --w95-light: var(--b-gray-50);
   --w95-hi: var(--b-white);
   --w95-shadow: var(--b-gray-500);
   --w95-dark: var(--b-ink);
@@ -77,17 +74,12 @@ body {
 .w95__bar {
   display: flex; align-items: center; gap: var(--b-space-6); min-height: 24px;
   padding: 2px 2px 2px var(--b-space-6);
-  /* Barre active pleine, comme le bleu marine de Windows 95, au survol de
-     l'orange de la DA, titre à l'encre (7.5:1). */
-  background: var(--b-accent-hover); color: var(--b-ink);
+  /* Barre active pleine, comme le bleu marine de Windows 95, à l'encre. */
+  background: var(--b-ink); color: var(--b-white);
 }
-/* Fenêtre inactive, comme sous Windows : la barre passe au gris, le titre
-   reste lisible (blanc sur gris 600). */
-.w95[data-inactive] > .w95__bar, .pop:not(.is-active) > .w95__bar { background: var(--b-gray-600); color: var(--b-white); }
-/* La fenêtre Decker 95 est le cadre : barre à l'encre, l'orange reste aux
-   pop-ups actives. */
-.w95--frame > .w95__bar { background: var(--b-ink); color: var(--b-white); }
-.w95--frame[data-inactive] > .w95__bar { background: var(--b-gray-600); }
+/* Fenêtre inactive, comme sous Windows : la barre passe au gris clair, le
+   titre à l'encre reste lisible. */
+.w95[data-inactive] > .w95__bar, .pop:not(.is-active) > .w95__bar { background: var(--b-gray-200); color: var(--b-gray-800); }
 .w95__icon { flex: none; width: 16px; height: 16px; display: block; }
 .w95__title {
   flex: 1 1 auto; min-width: 0; margin: 0; font: inherit; font-size: 14px; font-weight: 700; line-height: 1.2;
@@ -131,7 +123,7 @@ body {
 .meter { width: 160px; }
 .meter__fill, .bar95__fill {
   position: absolute; inset: 3px;
-  background: repeating-linear-gradient(90deg, var(--b-accent-hover) 0 8px, transparent 8px 10px);
+  background: repeating-linear-gradient(90deg, var(--b-accent) 0 8px, transparent 8px 10px);
   clip-path: inset(0 100% 0 0);
 }
 /* L'alerte rouge est un graphisme d'état, doublé du pourcentage écrit à côté. */
@@ -167,13 +159,14 @@ body {
 }
 .btn95:active:not(:disabled) { box-shadow: var(--w95-pressed); transform: scale(0.97); }
 .btn95:disabled { color: var(--b-gray-500); cursor: default; }
-/* Bouton par défaut : le liseré noir de Windows, sur la teinte à 40 %. */
-.btn95--default { background: var(--g-tint-40); box-shadow: 0 0 0 1px var(--b-ink), var(--w95-out); font-weight: 700; }
+/* Bouton par défaut : le liseré noir de Windows, plein à l'orange de la DA
+   avec le texte à l'encre, comme le CTA du site. */
+.btn95--default { background: var(--b-accent); box-shadow: 0 0 0 1px var(--b-ink), var(--w95-out); font-weight: 700; }
 .btn95--default:active:not(:disabled) { box-shadow: 0 0 0 1px var(--b-ink), var(--w95-pressed); }
 .btn95:focus-visible { outline: 2px dotted var(--b-ink); outline-offset: -6px; }
 @media (hover: hover) and (pointer: fine) {
   .btn95:hover:not(:disabled) { background: var(--w95-light); }
-  .btn95--default:hover:not(:disabled) { background: var(--g-tint-20); }
+  .btn95--default:hover:not(:disabled) { background: var(--b-accent-hover); }
 }
 
 /* ---------- Pop-ups ---------- */
@@ -212,7 +205,7 @@ body {
 .slide__bg { fill: var(--b-gray-100); }
 .slide__ink { fill: var(--b-ink); }
 .slide__muted { fill: var(--b-gray-400); }
-.slide__accent { fill: var(--b-accent-40); }
+.slide__accent { fill: var(--b-accent); }
 .icon__shape { fill: var(--b-accent-red); }
 .icon__mark { fill: var(--b-white); }
 .icon__line { fill: var(--b-ink); }
@@ -693,32 +686,23 @@ function spawnStubborn() {
   }));
 }
 
-var CHAIN = [
-  { title: 'Close deck?', text: 'Are you sure you want to close this deck?' },
-  { title: 'Close deck??', text: 'Really sure? It has 48 unsaved slides.' },
-  { title: 'Close deck???', text: 'Really, really sure?' }
+/* « Are you sure? » : une seule fenêtre. Elle ouvrait la suivante quand on
+   la fermait (trois en cascade) ; avec le flux, le bureau n'était jamais vide
+   et on finissait forcément par perdre (17 octobre). */
+var CONFIRMS = [
+  'Are you sure you want to close this deck?',
+  'Really sure? It has 48 unsaved slides.',
+  'Close without saving 214 slides?'
 ];
-function spawnChain(step, near) {
-  step = step || 0;
-  var c = CHAIN[step];
-  var advance = function (w) {
-    var last = step === CHAIN.length - 1;
-    closeWin(w, last ? 40 : 5);
-    if (last) sfx.good();
-    if (!last) {
-      var next = spawnChain(step + 1, w);
-      var btn = next.querySelector('.btn95');
-      if (w._hadFocus && btn) btn.focus();
-    }
-  };
-  var w = makeWin({
-    title: c.title,
+function spawnConfirm() {
+  var yes = function (w) { closeWin(w, 15); sfx.good(); };
+  addWin(makeWin({
+    title: 'Close deck?',
     size: pick(['s', 'm']),
-    html: '<div class="pop__row">' + ICON_ASK + '<p class="pop__lead">' + c.text + '</p></div>',
-    onX: function (p) { p._hadFocus = true; advance(p); },
-    buttons: [{ label: 'Yes, close it', cta: true, onClick: function (p) { p._hadFocus = true; advance(p); } }]
-  });
-  return addWin(w, near);
+    html: '<div class="pop__row">' + ICON_ASK + '<p class="pop__lead">' + pick(CONFIRMS) + '</p></div>',
+    onX: yes,
+    buttons: [{ label: 'Yes, close it', cta: true, onClick: yes }]
+  }));
 }
 
 function spawnBonus() {
@@ -779,35 +763,52 @@ function spawnRandom(fromAd) {
   if (r < 49 && !fromAd) return spawnAd();
   if (r < 67) return spawnAlert();
   if (r < 81) return spawnStubborn();
-  if (r < 92 && !fromAd) return spawnChain(0);
+  if (r < 92 && !fromAd) return spawnConfirm();
   if (s.wins.length >= 4 && !fromAd) return spawnBonus();
   return spawnDeck();
 }
 
 /* ---------- Boucle ---------- */
-/* Rythme : c'est la cadence (pop-ups par seconde) qui monte en ligne droite,
-   de 0.9 à 2 par seconde ; l'écart entre deux pop-ups, lui, ne baisse pas
-   en ligne droite, sinon la fin s'emballe d'un coup (17 octobre). Pour que
-   le début ne soit pas monotone : écarts irréguliers (de 0.55 à 1.45 fois
-   l'écart moyen), petites rafales de 2 ou 3 pop-ups rapprochées, plus
-   fréquentes au fil de la partie, suivies d'une courte accalmie. */
-function spawnInterval() {
-  var t = Math.min(1, s.elapsed / DURATION);
-  var base = 1000 / (0.9 + 1.1 * t);
-  var ms;
-  if (s.burst > 0) {
-    s.burst -= 1;
-    ms = s.burst > 0 ? rand(160, 260) : base * 1.6;
-  } else if (Math.random() < 0.12 + 0.12 * t) {
-    s.burst = Math.random() < 0.5 ? 2 : 3;
-    ms = rand(160, 260);
-    s.burst -= 1;
-  } else {
-    ms = base * rand(0.55, 1.45);
-  }
+/* Rythme en vagues (17 octobre) : un flux continu laissait toujours au
+   moins une pop-up ouverte, donc le bureau ne se vidait jamais et la
+   partie ne se gagnait pas. Une vague lâche quelques pop-ups à 0.26 à
+   0.62 s d'écart, puis on respire : la vague suivante part 0.9 s après que
+   le bureau est vide, ou au plus tard après une attente qui raccourcit
+   (6.5 s au début, 2 s à la fin). Les vagues grossissent : 2 ou 3 pop-ups
+   au début, jusqu'à 8. Simulé : qui ferme une pop-up par seconde gagne, qui
+   en ferme une toutes les 1.5 s perd presque toujours (sans compter le boss
+   ni les pièges). */
+function slow(ms) {
   if (isSmall()) ms *= 1.5;
   if (reduceMotion) ms *= 1.3;
   return ms;
+}
+function startWave() {
+  var t = Math.min(1, s.elapsed / DURATION);
+  s.waveNo += 1;
+  s.waveLeft = Math.min(8, 2 + Math.floor(s.waveNo / 2) + (Math.random() < 0.4 ? 1 : 0));
+  s.untilSpawn = 0;
+  s.waitIn = slow(Math.max(2000, 6500 - 4500 * t));
+  s.breath = null;
+}
+function runWaves(dt) {
+  if (s.waveLeft > 0) {
+    s.untilSpawn -= dt;
+    if (s.untilSpawn <= 0) {
+      if (s.wins.length < 40) spawnRandom(false);
+      s.waveLeft -= 1;
+      s.untilSpawn = slow(rand(260, 620));
+    }
+    return;
+  }
+  s.waitIn -= dt;
+  if (s.wins.length === 0) {
+    if (s.breath === null) s.breath = 900;
+    s.breath -= dt;
+  } else {
+    s.breath = null;
+  }
+  if (s.waitIn <= 0 || (s.breath !== null && s.breath <= 0)) startWave();
 }
 
 function tick() {
@@ -817,11 +818,7 @@ function tick() {
   s.last = now;
   s.elapsed += dt;
 
-  s.untilSpawn -= dt;
-  if (s.untilSpawn <= 0 && s.wins.length < 40) {
-    spawnRandom(false);
-    s.untilSpawn = spawnInterval();
-  }
+  runWaves(dt);
   if (!s.bossDone && s.elapsed >= BOSS_AT) {
     s.bossDone = true;
     spawnBoss();
@@ -907,8 +904,10 @@ function play() {
   s.elapsed = 0;
   s.lastClose = -9999;
   s.beatIn = 0;
-  s.untilSpawn = 400;
-  s.burst = 0;
+  s.waveNo = 0;
+  s.waveLeft = 0;
+  s.waitIn = 400;
+  s.breath = null;
   s.bossDone = false;
   s.last = performance.now();
   pauseBtn.disabled = false;
@@ -1076,7 +1075,7 @@ ${GAME_CSS}
         <p class="g-head__tag">Google Slides deck with Figma comfort</p>
       </div>
     </header>
-    <section class="w95 w95--frame" aria-labelledby="g-title" data-win>
+    <section class="w95" aria-labelledby="g-title" data-win>
       <div class="w95__bar">
         <svg class="w95__icon" viewBox="0 0 32 32" shape-rendering="crispEdges" aria-hidden="true">${MARK}</svg>
         <p class="w95__title" id="g-title">Decker 95</p>
