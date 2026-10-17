@@ -317,7 +317,7 @@ function footer(): string {
       <div class="footer__brand-row">
         <a class="footer__egg" href="/game" aria-labelledby="footer-egg-tip">
           ${FOOTER_EGG_MARK}
-          <span class="footer__egg-tip" id="footer-egg-tip">Play a quick game</span>
+          <span class="footer__egg-tip" id="footer-egg-tip">Get spammed like it’s 2003</span>
         </a>
       </div>
       <p class="footer__meta">&copy; 2026 Decker<br>

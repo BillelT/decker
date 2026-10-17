@@ -12,7 +12,7 @@ Pas de nom produit : c'est une intégration. Notre jeu des pop-ups façon virus 
 
 ## Le flow
 
-1. **Footer.** Le logo (pile de cartes) est un lien vers `/game`. Au survol, ses cartes se ferment puis se rouvrent une fois, comme un tour de spam de pop-ups, et l'infobulle « Play a quick game » s'affiche.
+1. **Footer.** Le logo (pile de cartes) est un lien vers `/game`. Au survol, ses cartes se ferment puis se rouvrent une fois, comme un tour de spam de pop-ups, et l'infobulle « Get spammed like it’s 2003 » s'affiche.
 2. **Page `/game`.** Fond encre, sans header ni footer du site. En haut, le logo, « Decker » et l'accroche « Google Slides deck with Figma comfort ». Au centre, une fenêtre « Decker 95 » : barre d'outils (Pause, jauge « Deck integrity »), le bureau où tombent les pop-ups, barre d'état (Time, Score, Combo, High).
 3. **Sous la fenêtre**, seulement deux liens : « Try it on Figma » et « Back to the site ». Pas de légende des touches (le jeu se joue à la souris) ni de crédit de police.
 4. La croix de la fenêtre et les boutons « Quit » ramènent au site.
