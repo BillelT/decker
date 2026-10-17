@@ -447,7 +447,7 @@ a { color: inherit; }
 /* Au survol, un seul tour de spam : la carte avant puis celle du milieu
    disparaissent d'un coup, la carte du fond (toujours visible, pour qu'il
    n'y ait jamais de vide) encaisse un à-coup, puis le milieu et l'avant
-   repopent. Moments placés sur cubic-bezier(0.3, 0.4, 0.7, 0.8), sur 420 ms
+   repopent. Moments placés sur cubic-bezier(0.3, 0.4, 0.7, 0.8), sur 380 ms
    depuis le 17 octobre (réglé au débogueur local, devLogoDebugger.ts) :
    ça accroche fort au début et se pose vers la fin. Chaque réapparition suit
    le conseil Interfere pour un changement d'icône : opacité + léger flou +
@@ -474,11 +474,11 @@ a { color: inherit; }
   }
   @keyframes egg-back {
     0% { animation-timing-function: steps(1, end); }
-    43% { transform: scale(1.055, 0.925); filter: blur(1px); animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1); }
+    43% { transform: scale(1.035, 0.95); filter: blur(1.25px); animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1); }
     59%, 100% { transform: none; filter: none; }
   }
   .footer__egg .egg-card { transform-box: fill-box; transform-origin: center; }
-  .footer__egg:hover .egg-card { animation: 0.42s 1; }
+  .footer__egg:hover .egg-card { animation: 0.38s 1; }
   .footer__egg:hover .egg-card--front { animation-name: egg-front; }
   .footer__egg:hover .egg-card--mid { animation-name: egg-mid; }
   .footer__egg:hover .egg-card--back { animation-name: egg-back; }

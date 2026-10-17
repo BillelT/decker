@@ -72,7 +72,7 @@ const DEBUGGER_JS = String.raw`
     '--b-ease-in-out': { js: EASE_IN_OUT, css: EASE_IN_OUT }
   };
   /* Valeurs en ligne au chargement : celles de marketingStyles.ts (egg-back). */
-  var DEFAULTS = { sx: 1.055, sy: 0.925, blur: 1, peak: 43, rest: 59, jump: 'steps(1, end)', settle: '--b-ease-out', origin: 'center', duration: 420 };
+  var DEFAULTS = { sx: 1.035, sy: 0.95, blur: 1.25, peak: 43, rest: 59, jump: 'steps(1, end)', settle: '--b-ease-out', origin: 'center', duration: 380 };
   var p = Object.assign({}, DEFAULTS);
   var FRAME = 1000 / 60;
 
@@ -297,7 +297,7 @@ const DEBUGGER_JS = String.raw`
       '}'
     ];
     if (p.origin !== 'center') lines.push('.footer__egg .egg-card--back { transform-origin: ' + p.origin + '; }');
-    if (p.duration !== 420) lines.push('/* Duration: ' + p.duration + 'ms (.footer__egg:hover .egg-card { animation: ' + (p.duration / 1000) + 's 1; }), front and mid follow. */');
+    if (p.duration !== 380) lines.push('/* Duration: ' + p.duration + 'ms (.footer__egg:hover .egg-card { animation: ' + (p.duration / 1000) + 's 1; }), front and mid follow. */');
     return lines.join('\n');
   }
 
