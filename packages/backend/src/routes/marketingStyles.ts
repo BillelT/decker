@@ -137,12 +137,16 @@ a { color: inherit; }
   box-shadow: var(--hyb-out);
 }
 .secondary:active { box-shadow: var(--hyb-pressed); }
-/* Traînée de pixels sur le CTA du header, lancée par Export dans la démo du
-   hero : elle montre où se trouve le vrai plugin. Les pixels sont posés par
-   le script ; le calque passe sous le libellé, au-dessus du fond. */
+/* Bombe de pixels sur le CTA du hero, lancée par Export dans la démo :
+   elle montre où se trouve le vrai plugin (pixels posés par le script, voir
+   ctaTrail dans heroDemo.ts). L'onde passe sous le libellé, au-dessus du
+   fond ; les éclats sortent du bouton dans un calque à part, posé sur la
+   page à sa place. */
 .cta { position: relative; isolation: isolate; }
 .cta-trail { position: absolute; inset: 0; z-index: -1; overflow: clip; pointer-events: none; }
 .cta-trail i { position: absolute; opacity: 0; }
+.cta-burst { position: absolute; z-index: 15; pointer-events: none; }
+.cta-burst i { position: absolute; opacity: 0; }
 
 /* Survol : seulement avec une vraie souris, sinon il colle après un tap sur
    écran tactile (le retour tactile passe par :active). */

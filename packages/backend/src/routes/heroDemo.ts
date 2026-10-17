@@ -776,37 +776,95 @@ function act(name) {
   }
 }
 
-/* Export et Create template renvoient au vrai plugin : une traînée de pixels
-   orange balaie le CTA du hero, juste au-dessus de la démo, pour le désigner. Clairsemée et rapide (environ
-   600 ms en tout) : un signal, pas un spectacle. En mouvement réduit, les
-   pixels apparaissent et s'effacent ensemble, sans balayage. */
-var TRAIL_TONES = ['var(--b-accent-hover)', 'var(--b-accent-red)', 'color-mix(in oklab, var(--b-accent-hover) 50%, var(--b-white))'];
+/* Export et Create template renvoient au vrai plugin : une bombe de pixels
+   éclate au centre du CTA du hero, juste au-dessus de la démo, pour le
+   désigner. Une onde circulaire part du centre ; à son passage, les pixels
+   du bouton s'allument dans les orange lumineux de la DA et le bouton gonfle
+   à 1.04. Arrivée au bord, l'onde projette des pixels hors du bouton, qui
+   retombent et s'effacent (opacity + réduction, jamais scale(0)). Courbes
+   lues dans les tokens --b-ease-*. En mouvement réduit : les pixels du
+   bouton s'allument et s'éteignent ensemble, sans onde, sans gonflement ni
+   projection. */
+var BURST_TONES = ['var(--b-accent-hover)', 'color-mix(in oklab, var(--b-accent-hover) 55%, var(--b-white))', 'color-mix(in oklab, var(--b-accent) 70%, var(--b-white))', 'var(--b-accent)'];
+var WAVE_MS = 520;
+function token(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || 'ease-out'; }
 function ctaTrail() {
   var cta = document.querySelector('.hero__actions .cta');
   if (!cta || !cta.animate) return;
   var old = cta.querySelector('.cta-trail');
   if (old) old.remove();
+  var easeOut = token('--b-ease-out');
+  var tone = function () { return BURST_TONES[Math.floor(Math.random() * BURST_TONES.length)]; };
+  var size = 6;
+  var w = cta.offsetWidth;
+  var h = cta.offsetHeight;
+  var cx = w / 2;
+  var cy = h / 2;
+  var reach = Math.hypot(cx, cy);
+
+  /* L'onde : chaque pixel du bouton s'allume quand le front le traverse. */
   var layer = document.createElement('span');
   layer.className = 'cta-trail';
   layer.setAttribute('aria-hidden', 'true');
-  var size = 6;
-  var cols = Math.ceil(cta.offsetWidth / size);
-  var rows = Math.ceil(cta.offsetHeight / size);
-  var longest = 0;
-  for (var c = 0; c < cols; c++) {
-    for (var r = 0; r < rows; r++) {
-      if (Math.random() < 0.4) continue;
+  for (var x = 0; x < w; x += size) {
+    for (var y = 0; y < h; y += size) {
+      if (Math.random() < 0.15) continue;
       var px = document.createElement('i');
-      px.style.cssText = 'left:' + c * size + 'px;top:' + r * size + 'px;width:' + size + 'px;height:' + size + 'px;background:' + TRAIL_TONES[Math.floor(Math.random() * TRAIL_TONES.length)];
+      px.style.cssText = 'left:' + x + 'px;top:' + y + 'px;width:' + size + 'px;height:' + size + 'px;background:' + tone();
       layer.appendChild(px);
-      var delay = reduceMotion ? 0 : c * 16 + Math.random() * 60;
-      var duration = reduceMotion ? 400 : 180 + Math.random() * 100;
-      longest = Math.max(longest, delay + duration);
-      px.animate([{ opacity: 0 }, { opacity: 1 }, { opacity: 0 }], { duration: duration, delay: delay, easing: reduceMotion ? 'ease-out' : 'steps(3, end)', fill: 'both' });
+      var d = Math.hypot(x + size / 2 - cx, y + size / 2 - cy) / reach;
+      px.animate(reduceMotion
+        ? [{ opacity: 0 }, { opacity: 1, offset: 0.3 }, { opacity: 0 }]
+        : [{ opacity: 0, transform: 'scale(0.95)' }, { opacity: 1, transform: 'none', offset: 0.3 }, { opacity: 0, transform: 'none' }],
+        { duration: reduceMotion ? 600 : 300, delay: reduceMotion ? 0 : d * WAVE_MS, easing: easeOut, fill: 'backwards' });
     }
   }
   cta.appendChild(layer);
-  window.setTimeout(function () { layer.remove(); }, longest + 50);
+  window.setTimeout(function () { layer.remove(); }, WAVE_MS + 500);
+  if (reduceMotion) return;
+
+  /* Le bouton gonfle au passage de l'onde, puis revient. */
+  cta.animate([{ transform: 'none' }, { transform: 'scale(1.04)', offset: 0.45 }, { transform: 'none' }], { duration: WAVE_MS + 240, easing: easeOut });
+
+  /* Les éclats : partis du bord quand l'onde l'atteint, projetés vers
+     l'extérieur puis tirés vers le bas. Trajectoire calculée image clé par
+     image clé (une vraie chute, pas une courbe d'accélération). */
+  var r = cta.getBoundingClientRect();
+  var burst = document.createElement('span');
+  burst.className = 'cta-burst';
+  burst.setAttribute('aria-hidden', 'true');
+  burst.style.cssText = 'left:' + (r.left + window.scrollX) + 'px;top:' + (r.top + window.scrollY) + 'px;width:' + w + 'px;height:' + h + 'px';
+  document.body.appendChild(burst);
+  var count = 26;
+  var longest = 0;
+  for (var k = 0; k < count; k++) {
+    var a = (k / count) * Math.PI * 2 + Math.random() * 0.4;
+    var dx = Math.cos(a);
+    var dy = Math.sin(a);
+    /* Point de sortie sur le bord du bouton, dans la direction de l'éclat. */
+    var t = Math.min(cx / Math.max(Math.abs(dx), 0.001), cy / Math.max(Math.abs(dy), 0.001));
+    var sx = cx + dx * t - size / 2;
+    var sy = cy + dy * t - size / 2;
+    var speed = 70 + Math.random() * 70;
+    var vx = dx * speed;
+    var vy = dy * speed * 0.6 - 60;
+    var dur = 650 + Math.random() * 250;
+    var frames = [];
+    for (var f = 0; f <= 10; f++) {
+      var q = f / 10;
+      var tt = q * dur / 1000;
+      var ox = vx * tt;
+      var oy = vy * tt + 0.5 * 900 * tt * tt;
+      frames.push({ transform: 'translate(' + ox.toFixed(1) + 'px, ' + oy.toFixed(1) + 'px) scale(' + (1 - 0.4 * q).toFixed(2) + ')', opacity: f === 0 ? 0 : q < 0.55 ? 1 : (1 - q) / 0.45 });
+    }
+    var p = document.createElement('i');
+    p.style.cssText = 'left:' + sx.toFixed(1) + 'px;top:' + sy.toFixed(1) + 'px;width:' + size + 'px;height:' + size + 'px;background:' + tone();
+    burst.appendChild(p);
+    var delay = WAVE_MS * 0.85;
+    p.animate(frames, { duration: dur, delay: delay, easing: 'linear', fill: 'backwards' });
+    longest = Math.max(longest, delay + dur);
+  }
+  window.setTimeout(function () { burst.remove(); }, longest + 50);
 }
 
 demo.addEventListener('click', function (e) {
