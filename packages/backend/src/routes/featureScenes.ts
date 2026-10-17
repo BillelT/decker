@@ -204,7 +204,8 @@ export const FEATURE_SUGGEST_HTML = scene(
     remplacée par Arial, dégradé aplati en couleur unie, ombre retirée,
     interlettrage remis à zéro. Le changement se lit dans les slides
     elles-mêmes ; deux pastilles, hors de la scène pour rester lisibles,
-    nomment les colonnes. En bas, l'en-tête du plugin, focus sur le bouton. */
+    nomment les colonnes. En bas, les actions de l'en-tête du plugin, en
+    grand, la souris sur Prepare for Slides. */
 const prepPair = (row: string, kind: SlideKind) =>
   `<div class="fs-frame fs-prep fs-prep--orig fs-prep--${row}">${slide(kind)}</div>
   <span class="fs-prep__arrow fs-prep__arrow--${row}">${ICONS.arrow(24)}</span>
@@ -212,9 +213,9 @@ const prepPair = (row: string, kind: SlideKind) =>
 export const FEATURE_PREPARE_HTML = scene(
   'prepare',
   640,
-  'On the Figma canvas, two slides set in General Sans with a gradient and a drop shadow, next to their Slides Ready copies in Arial with solid fills and no shadow, above the Decker plugin header with the Prepare for Slides button in focus',
+  'On the Figma canvas, two slides set in General Sans with a gradient and a drop shadow, next to their Slides Ready copies in Arial with solid fills and no shadow, above the Decker plugin actions with the pointer on the Prepare for Slides button',
   `${prepPair('a', 'cover')}${prepPair('b', 'stats')}
-  <div class="fs-pwin fs-pwin--prep"><div class="dm-plugin"><header class="f2s-topbar"><div class="f2s-topbar-left"><div class="f2s-tabs" role="tablist"><button type="button" role="tab" class="f2s-tab is-active" aria-selected="true">Deck</button><button type="button" role="tab" class="f2s-tab" aria-selected="false">Templates</button></div></div><div class="f2s-topbar-actions">${btn('f2s-btn--secondary', 'Add frames')}${btn('f2s-btn--secondary fs-focus', 'Prepare for Slides')}${btn('f2s-btn--primary', 'Export')}</div></header></div></div>
+  <div class="fs-pwin fs-pwin--prep"><div class="dm-plugin"><header class="f2s-topbar"><div class="f2s-topbar-actions">${btn('f2s-btn--secondary', 'Add frames')}${btn('f2s-btn--secondary fs-hover', 'Prepare for Slides')}${btn('f2s-btn--primary', 'Export')}</div></header></div></div>
   <span class="fs-cursor-at fs-cursor-at--prep">${CURSOR}</span>`,
   '<span class="pill fs-prep__pill fs-prep__pill--orig">Figma</span><span class="pill fs-prep__pill fs-prep__pill--ready">Slides ready</span>',
 );
@@ -330,39 +331,48 @@ export const FEATURE_SCENES_CSS = `
    Slides, l'en-tête du plugin en bas sur toute la largeur. */
 @font-face { font-family: "General Sans"; src: url("data:font/woff2;base64,${GENERAL_SANS_400_BASE64}") format("woff2"); font-weight: 400; font-display: block; }
 @font-face { font-family: "General Sans"; src: url("data:font/woff2;base64,${GENERAL_SANS_700_BASE64}") format("woff2"); font-weight: 700; font-display: block; }
-.fs-frame.fs-prep { width: 280px; }
-.fs-prep--orig { left: 24px; }
+.fs-frame.fs-prep { width: 264px; }
+.fs-prep--orig { left: 40px; }
 .fs-prep--ready { left: 336px; }
-.fs-prep--a { top: 64px; }
-.fs-prep--b { top: 237px; }
+.fs-prep--a { top: 60px; }
+.fs-prep--b { top: 222px; }
 .fs-prep--orig .dm-slide { font-family: "General Sans", var(--dm-deck-font); box-shadow: 0 14px 24px rgba(0, 0, 0, 0.32); }
 .fs-prep--orig .dm-slide--cover { background: linear-gradient(160deg, color-mix(in oklab, var(--dm-forest), white 22%), var(--dm-forest) 70%); }
 .fs-prep--orig .dm-slide--stats { background: linear-gradient(135deg, var(--dm-clay), var(--dm-rust)); }
 .fs-prep--orig .dm-s__cap, .fs-prep--orig .dm-s__sub { letter-spacing: 0.12em; }
 .fs-prep__arrow { position: absolute; left: 320px; color: ${CHROME.label}; rotate: 45deg; translate: -50% -50%; }
-.fs-prep__arrow--a { top: 143px; }
-.fs-prep__arrow--b { top: 316px; }
+.fs-prep__arrow--a { top: 134px; }
+.fs-prep__arrow--b { top: 296px; }
 .fs-prep__arrow svg { display: block; }
-.fs-pwin--prep { left: 0; right: 0; bottom: 0; box-shadow: none; border-top: 1px solid ${CHROME.label}; }
+/* Les actions de l'en-tête, agrandies 1,4 fois : la barre est dessinée à
+   640 / 1,4 de large puis mise à l'échelle depuis le coin bas gauche, pour
+   occuper toute la largeur de la scène. */
+.fs-pwin--prep {
+  left: 0; bottom: 0; width: calc(640px / 1.4); box-shadow: none;
+  border-top: 1px solid ${CHROME.label}; transform: scale(1.4); transform-origin: 0 100%;
+}
 .fs-pwin--prep .dm-plugin { height: auto; }
 /* Dans le plugin, la barre Fonts suit l'en-tête : seul ici, il garde la même
-   marge en bas qu'en haut, resserrée pour laisser la place aux slides. */
-.fs-pwin--prep .f2s-topbar { padding: 12px 16px; }
-.fs-focus { outline: var(--b-focus-outline); outline-offset: var(--b-focus-offset); }
-.fs-cursor-at--prep { left: 524px; top: 432px; }
-/* Pastilles hors de la scène mise à l'échelle (sinon illisibles), calées
+   marge en bas qu'en haut. */
+.fs-pwin--prep .f2s-topbar { padding: 12px 16px; justify-content: flex-end; }
+/* Survol du secondaire dans le plugin (fond encre), relief 95 gardé */
+.fs-pwin--prep .f2s-btn--secondary.fs-hover { background: var(--color-text); color: var(--color-bg); }
+.fs-cursor-at--prep { left: 470px; top: 424px; }
+/* Étiquettes hors de la scène mise à l'échelle (sinon illisibles), calées
    sur les colonnes en pourcentage de la scène (640 x 457) et centrées dans
-   la bande au-dessus des slides (64px de haut, pastille de 24px). */
-.fs-prep__pill { position: absolute; z-index: 4; top: calc((64 / 457 * 100%) / 2 - 12px); }
-.fs-prep__pill--orig { left: calc(24 / 640 * 100%); }
+   la bande au-dessus des slides (60px de haut, étiquette de 24px). Typo et
+   marges de la pill du design system, angles droits comme tout le site. */
+.fs-prep__pill { position: absolute; z-index: 4; top: calc((60 / 457 * 100%) / 2 - 12px); }
+.fs-prep__pill--orig { left: calc(40 / 640 * 100%); }
 .fs-prep__pill--ready { left: calc(336 / 640 * 100%); }
-/* Pill du design system (ui-marker), copiée telle quelle */
+/* Pill du design system (ui-marker), angles droits (radius 0) pour suivre
+   le site, où rien n'est arrondi. */
 .pill {
   display: inline-flex;
   align-items: center;
   gap: var(--b-space-4);
   padding: var(--b-space-4) var(--b-space-12);
-  border-radius: var(--b-radius-full);
+  border-radius: 0;
   background-color: var(--b-ink);
   color: var(--b-white);
   font-family: inherit;
