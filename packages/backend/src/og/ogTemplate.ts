@@ -25,14 +25,17 @@
  * `prefers-reduced-motion: reduce`, la démo s'ouvre donc directement dans
  * son état figé (trois frames dans le rail, la couverture active), sans
  * curseur. Tout l'habillage Figma de la démo (barre d'onglets, canvas, barre
- * de titre et coins arrondis de la fenêtre) est masqué : la carte pose le
- * plugin tel quel. Une évolution de son UI se retrouve ainsi dans la carte au
+ * de titre de la fenêtre) est masqué : la carte pose le plugin tel quel,
+ * coins à peine arrondis (4px). Une évolution de son UI se retrouve ainsi dans la carte au
  * prochain `og:build`, sans rien recopier.
  *
  * Le crème du fond et celui du plugin sont presque les mêmes : posé tel quel,
  * le plugin se fondait dans la carte. Un contour très léger et une ombre
  * douce l'en détachent, juste assez pour lire deux plans sans alourdir la
- * carte.
+ * carte. Derrière lui, une forme orange (--b-accent) arrive du même côté
+ * que lui, par le bas : elle sort par le bas de la carte, s'arrête à 16px de
+ * ses bords gauche et droit, et son haut passe sous le plugin, si bien que
+ * l'orange ne se lit que dans les marges latérales.
  *
  * Contraintes de la carte de partage, qui expliquent les valeurs ci-dessous :
  * - 1200x630 (ratio 1.91:1), la seule taille sûre sur Facebook/LinkedIn/X ;
@@ -118,6 +121,19 @@ body {
   margin-top: 24px;
 }
 
+/* Forme orange sous le plugin : 32px de chaque côté de lui (16px des bords
+   de la carte), haut à 56px sous celui du plugin, coins du haut à 8px. */
+.preview::before {
+  content: "";
+  position: absolute;
+  left: -32px;
+  right: -32px;
+  top: 56px;
+  bottom: 0;
+  background: var(--b-accent);
+  border-radius: 8px 8px 0 0;
+}
+
 /* La démo du hero réduite au plugin seul : plus de canvas, de barre
    d'onglets ni de barre de titre Figma, plus de mise à l'échelle sur 1440px
    (son script pose --dm-scale, écrasé ici par l'échelle de la carte). */
@@ -129,8 +145,8 @@ body {
 .preview .dm-pwin__bar { display: none !important; }
 .preview .dm-stage { width: ${PWIN_WIDTH}px; height: auto; transform: scale(${PWIN_SCALE}) !important; }
 .preview .dm-pwin {
-  position: relative; left: 0; top: 0; border-radius: 0;
-  box-shadow: 0 0 0 1px rgba(18, 15, 13, 0.1), 0 2px 6px rgba(18, 15, 13, 0.06), 0 12px 32px rgba(18, 15, 13, 0.1);
+  position: relative; left: 0; top: 0; border-radius: 4px;
+  box-shadow: 0 0 0 1px rgba(18, 15, 13, 0.12), 0 2px 4px rgba(18, 15, 13, 0.04), 0 8px 28px rgba(18, 15, 13, 0.09);
 }
 `;
 
