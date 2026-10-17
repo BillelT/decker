@@ -1301,7 +1301,7 @@
     }
     const byKey = /* @__PURE__ */ new Map();
     for (const el of tagged) {
-      if (el.placeholder.role === "CUSTOM") continue;
+      if (el.placeholder.role !== "TITLE") continue;
       const key = el.placeholder.role;
       const group = byKey.get(key);
       if (group) group.push(el);
@@ -1766,13 +1766,9 @@
     postPreparedNotice("deck", copies.length, totalWarnings);
     await addFrames(newlyCreated, pending, idGen, false);
   }
-  function nodesHoldingTextOrPlaceholder(frame) {
+  function nodesHoldingText(frame) {
     const ids = /* @__PURE__ */ new Set();
-    const holders = frame.findAll((n) => {
-      if (n.type === "TEXT") return true;
-      const tag = parsePlaceholderTag(n.name);
-      return tag !== void 0 && tag.role !== "IMAGE" && tag.role !== "LOGO";
-    });
+    const holders = frame.findAll((n) => n.type === "TEXT");
     for (const holder of holders) {
       let current = holder;
       while (current && !ids.has(current.id)) {
@@ -1784,7 +1780,7 @@
     return ids;
   }
   function withCompositionWarnings(frame, slide) {
-    const frozen = nodesHoldingTextOrPlaceholder(frame);
+    const frozen = nodesHoldingText(frame);
     return [
       ...enforceTemplateStrictness(slide.warnings, (id) => frozen.has(id)),
       ...collectCompositionWarnings({ sourceNodeId: frame.id, frameName: frame.name, elements: slide.elements })

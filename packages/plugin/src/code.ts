@@ -8,7 +8,7 @@ import { aggregateColorSwatches, summarizeColors, summarizeFonts, summarizeTagga
 import { collectCompositionWarnings } from './serialize/templateComposition.js';
 import { applyThemeRolesToElements, applyThemeRoleToBackground, buildTemplateTheme } from './serialize/templateTheme.js';
 import { applyPlaceholderText } from './serialize/templatePlaceholderText.js';
-import { clearPlaceholderTag, KNOWN_ROLE_TAGS, parsePlaceholderTag, setPlaceholderTag } from './serialize/placeholder.js';
+import { clearPlaceholderTag, KNOWN_ROLE_TAGS, setPlaceholderTag } from './serialize/placeholder.js';
 import { nextSelectionOrder } from './serialize/selectionOrder.js';
 import { collectFontSubstitutions, withFontOverrides } from './serialize/fontChoices.js';
 
@@ -561,20 +561,16 @@ async function handlePrepareForSlides(
 
 /**
  * Calques qu'un raster figerait pour les futurs utilisateurs du template :
- * chaque texte ou placeholder tagué, et tous ses ancêtres jusqu'à la frame
+ * chaque texte, et tous ses ancêtres jusqu'à la frame
  * (un groupe masqué qui contient un titre emporte ce titre dans l'image),
  * frame comprise : un fond de frame rasterisé emporte tout le layout.
  * Voir `enforceTemplateStrictness`.
  */
-function nodesHoldingTextOrPlaceholder(frame: ExportableNode): Set<string> {
+function nodesHoldingText(frame: ExportableNode): Set<string> {
   const ids = new Set<string>();
-  // Un `[[image]]` ou un `[[logo]]` sans texte dedans peut partir en image :
-  // c'est ce qu'il sera de toute façon dans Slides.
-  const holders = frame.findAll((n) => {
-    if (n.type === 'TEXT') return true;
-    const tag = parsePlaceholderTag(n.name);
-    return tag !== undefined && tag.role !== 'IMAGE' && tag.role !== 'LOGO';
-  });
+  // Seul le texte compte : une forme complexe, tagée ou non, peut partir en
+  // image sans bloquer (signalée par la pastille "rasterized").
+  const holders = frame.findAll((n) => n.type === 'TEXT');
   for (const holder of holders) {
     let current: BaseNode | null = holder;
     while (current && !ids.has(current.id)) {
@@ -594,7 +590,7 @@ function nodesHoldingTextOrPlaceholder(frame: ExportableNode): Set<string> {
  * jeu de codes que `enforceTemplateStrictness` reclasse.
  */
 function withCompositionWarnings(frame: ExportableNode, slide: PendingSlide['slide']): IRWarning[] {
-  const frozen = nodesHoldingTextOrPlaceholder(frame);
+  const frozen = nodesHoldingText(frame);
   return [
     ...enforceTemplateStrictness(slide.warnings, (id) => frozen.has(id)),
     ...collectCompositionWarnings({ sourceNodeId: frame.id, frameName: frame.name, elements: slide.elements }),

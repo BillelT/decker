@@ -12,8 +12,9 @@ import type { IRWarning } from '@figma-to-slides/shared';
  *
  * 1. un tag de placeholder mal orthographié (`[[titel]]`) : le placeholder
  *    prévu manquerait dans le template livré ;
- * 2. un raster qui emporte du texte ou un placeholder : ils seraient figés
- *    en image, plus modifiables depuis Slides ;
+ * 2. un raster qui emporte du texte : il serait figé en image, plus
+ *    modifiable depuis Slides (une forme complexe tagée, elle, part en
+ *    image sans bloquer, décision du 17 octobre) ;
  * 3. un raster que « Prepare » corrige (dégradé, ombre, fills multiples,
  *    tracking, police absente, rayon, style de ligne).
  *

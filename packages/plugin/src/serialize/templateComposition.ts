@@ -68,14 +68,15 @@ export function collectCompositionWarnings(layout: CompositionInput): IRWarning[
     });
   }
 
-  // Doublons : un layout qui porte deux `[[title]]` ne dit pas lequel EST le
+  // Doublons de titre : un layout qui porte deux `[[title]]` ne dit pas lequel EST le
   // titre. Signalé sur CHAQUE occurrence plutôt que sur les suivantes
   // seulement : le créateur doit pouvoir cliquer les deux pour arbitrer.
   const byKey = new Map<PlaceholderRole, IRElement[]>();
   for (const el of tagged) {
-    // Plusieurs `[[custom]]` sur un layout sont normaux (chiffres clés,
-    // mentions) : chacun devient sa propre zone de texte, rien d'ambigu.
-    if (el.placeholder!.role === 'CUSTOM') continue;
+    // Seul le titre doit être unique : plusieurs corps, images, logos ou
+    // sous-titres (trois cartes côte à côte) sont un layout normal, chacun
+    // devient sa propre zone.
+    if (el.placeholder!.role !== 'TITLE') continue;
     const key = el.placeholder!.role;
     const group = byKey.get(key);
     if (group) group.push(el);

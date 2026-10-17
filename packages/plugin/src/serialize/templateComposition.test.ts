@@ -108,6 +108,18 @@ describe('collectCompositionWarnings', () => {
     expect(warnings.filter((w) => w.code === 'PLACEHOLDER_ROLE_DUPLICATE')).toEqual([]);
   });
 
+  it('never flags several bodies, subtitles, images or logos (three cards side by side)', () => {
+    const warnings = run([
+      text({ placeholder: { role: 'SUBTITLE', label: 'Subtitle' } }),
+      text({ placeholder: { role: 'SUBTITLE', label: 'Subtitle' } }),
+      text({ placeholder: { role: 'BODY', label: 'Body text' } }),
+      text({ placeholder: { role: 'BODY', label: 'Body text' } }),
+      shape({ placeholder: { role: 'IMAGE', label: 'Image' } }),
+      shape({ placeholder: { role: 'IMAGE', label: 'Image' } }),
+    ]);
+    expect(warnings.filter((w) => w.code === 'PLACEHOLDER_ROLE_DUPLICATE')).toEqual([]);
+  });
+
   it('never flags custom placeholders as duplicates, even with the same label (several key figures on one layout)', () => {
     const warnings = run([
       text({ placeholder: { role: 'CUSTOM', label: 'Custom placeholder' } }),
