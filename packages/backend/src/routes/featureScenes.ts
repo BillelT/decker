@@ -21,6 +21,7 @@
  * la même page.
  */
 import { CHROME, DECK, DECKER_ICON, HILLS, ICONS, SLIDES_ICON } from './heroDemo.js';
+import { GENERAL_SANS_400_BASE64, GENERAL_SANS_700_BASE64 } from './generalSansData.js';
 
 /** Jaune de l'icône d'un fichier Google Slides, comme une capture. */
 const SLIDES_YELLOW = '#fbbc04';
@@ -53,8 +54,8 @@ function slide(kind: SlideKind, opts: { tmpl?: boolean; editing?: boolean } = {}
  * largeur à laquelle la scène est dessinée (sa hauteur en découle) : plus elle
  * est grande, plus la scène est réduite dans la card.
  */
-const scene = (name: string, width: number, label: string, body: string): string =>
-  `<div class="card__media fs fs--${name}" role="img" aria-label="${label}" data-fs="${width}"><div class="fs-stage" style="width:${width}px;height:${Math.round((width * 5) / 7)}px" inert aria-hidden="true">${body}</div></div>`;
+const scene = (name: string, width: number, label: string, body: string, overlay = ''): string =>
+  `<div class="card__media fs fs--${name}" role="img" aria-label="${label}" data-fs="${width}"><div class="fs-stage" style="width:${width}px;height:${Math.round((width * 5) / 7)}px" inert aria-hidden="true">${body}</div>${overlay}</div>`;
 
 /**
  * Le plugin dans sa fenêtre Figma, avec la structure de ui.tsx : en-tête
@@ -197,18 +198,25 @@ export const FEATURE_SUGGEST_HTML = scene(
   }) + `<span class="fs-cursor-at fs-cursor-at--suggest">${CURSOR}</span>`,
 );
 
-/** Prepare for Slides : la frame d'origine, puis sa copie « [Slides Ready] »
-    posée à côté sur le canvas, déjà ramenée à ce que Slides sait rendre :
-    police remplacée par une police de Slides, dégradé aplati, ombre retirée,
-    interlettrage remis à zéro. Sous chaque frame, ce qui a changé. */
-const prepNotes = (items: string[]) => `<ul class="fs-prep__notes">${items.map((t) => `<li>${t}</li>`).join('')}</ul>`;
+/** Prepare for Slides : sur le canvas Figma, deux frames du deck à gauche et
+    leurs copies « [Slides Ready] » à droite, déjà ramenées à ce que Slides
+    sait rendre (comme reformatForSlides.ts dans le plugin) : General Sans
+    remplacée par Arial, dégradé aplati en couleur unie, ombre retirée,
+    interlettrage remis à zéro. Le changement se lit dans les slides
+    elles-mêmes ; deux pastilles, hors de la scène pour rester lisibles,
+    nomment les colonnes. En bas, l'en-tête du plugin, focus sur le bouton. */
+const prepPair = (row: string, kind: SlideKind) =>
+  `<div class="fs-frame fs-prep fs-prep--orig fs-prep--${row}">${slide(kind)}</div>
+  <span class="fs-prep__arrow fs-prep__arrow--${row}">${ICONS.arrow(24)}</span>
+  <div class="fs-frame fs-prep fs-prep--ready fs-prep--${row} is-selected">${slide(kind)}</div>`;
 export const FEATURE_PREPARE_HTML = scene(
   'prepare',
-  580,
-  'On the Figma canvas, a frame set in Cabinet Grotesk with a gradient and a shadow, next to its [Slides Ready] copy where Decker switched to Arial, flattened the gradient and removed the shadow',
-  `<div class="fs-frame fs-prep fs-prep--orig"><span class="fs-frame__name">Stats</span>${slide('stats')}${prepNotes(['Cabinet Grotesk', 'Gradient', 'Drop shadow'])}</div>
-  <div class="fs-frame fs-prep fs-prep--ready is-selected"><span class="fs-frame__name">[Slides Ready] Stats</span>${slide('stats')}${prepNotes(['Arial', 'Solid fill', 'No shadow'])}</div>
-  <span class="fs-prep__arrow">${ICONS.arrow(24)}</span>`,
+  640,
+  'On the Figma canvas, two slides set in General Sans with a gradient and a drop shadow, next to their Slides Ready copies in Arial with solid fills and no shadow, above the Decker plugin header with the Prepare for Slides button in focus',
+  `${prepPair('a', 'cover')}${prepPair('b', 'stats')}
+  <div class="fs-pwin fs-pwin--prep"><div class="dm-plugin"><header class="f2s-topbar"><div class="f2s-topbar-left"><div class="f2s-tabs" role="tablist"><button type="button" role="tab" class="f2s-tab is-active" aria-selected="true">Deck</button><button type="button" role="tab" class="f2s-tab" aria-selected="false">Templates</button></div></div><div class="f2s-topbar-actions">${btn('f2s-btn--secondary', 'Add frames')}${btn('f2s-btn--secondary fs-focus', 'Prepare for Slides')}${btn('f2s-btn--primary', 'Export')}</div></header></div></div>
+  <span class="fs-cursor-at fs-cursor-at--prep">${CURSOR}</span>`,
+  '<span class="pill fs-prep__pill fs-prep__pill--orig">Figma</span><span class="pill fs-prep__pill fs-prep__pill--ready">Slides ready</span>',
 );
 
 /** Fonts : chaque police se remplace en un clic, dans la liste des polices
@@ -318,17 +326,50 @@ export const FEATURE_SCENES_CSS = `
 .fs-pressed { box-shadow: var(--hyb-pressed); }
 .fs-cursor-at--suggest { left: 410px; top: 340px; }
 
-/* Prepare for Slides : la frame d'origine et sa copie prête pour Slides */
-.fs-prep { width: 250px; }
-.fs-prep--orig { left: 28px; top: 88px; }
-.fs-prep--ready { left: 302px; top: 88px; }
-.fs-prep--orig .dm-slide { font-family: var(--b-font-sans); background: linear-gradient(135deg, var(--dm-clay), var(--dm-rust)); box-shadow: 0 18px 30px rgba(0, 0, 0, 0.35); }
-.fs-prep--orig .dm-s__cap { letter-spacing: 0.12em; }
-.fs-prep__arrow { position: absolute; left: 266px; top: 158px; color: ${CHROME.label}; rotate: 45deg; }
+/* Prepare for Slides : deux frames d'origine et leurs copies prêtes pour
+   Slides, l'en-tête du plugin en bas sur toute la largeur. */
+@font-face { font-family: "General Sans"; src: url("data:font/woff2;base64,${GENERAL_SANS_400_BASE64}") format("woff2"); font-weight: 400; font-display: block; }
+@font-face { font-family: "General Sans"; src: url("data:font/woff2;base64,${GENERAL_SANS_700_BASE64}") format("woff2"); font-weight: 700; font-display: block; }
+.fs-frame.fs-prep { width: 280px; }
+.fs-prep--orig { left: 24px; }
+.fs-prep--ready { left: 336px; }
+.fs-prep--a { top: 64px; }
+.fs-prep--b { top: 237px; }
+.fs-prep--orig .dm-slide { font-family: "General Sans", var(--dm-deck-font); box-shadow: 0 14px 24px rgba(0, 0, 0, 0.32); }
+.fs-prep--orig .dm-slide--cover { background: linear-gradient(160deg, color-mix(in oklab, var(--dm-forest), white 22%), var(--dm-forest) 70%); }
+.fs-prep--orig .dm-slide--stats { background: linear-gradient(135deg, var(--dm-clay), var(--dm-rust)); }
+.fs-prep--orig .dm-s__cap, .fs-prep--orig .dm-s__sub { letter-spacing: 0.12em; }
+.fs-prep__arrow { position: absolute; left: 320px; color: ${CHROME.label}; rotate: 45deg; translate: -50% -50%; }
+.fs-prep__arrow--a { top: 143px; }
+.fs-prep__arrow--b { top: 316px; }
 .fs-prep__arrow svg { display: block; }
-.fs-prep__notes { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0 0; padding: 0; list-style: none; }
-.fs-prep__notes li { padding: 3px 8px; border-radius: var(--b-radius-2xs); background: var(--b-surface); font-size: 12px; font-weight: var(--b-font-medium); color: var(--b-ink); box-shadow: ${CHROME.shadow}; }
-.fs-prep--ready .fs-prep__notes li { background: ${CHROME.select}; color: ${CHROME.barText}; }
+.fs-pwin--prep { left: 0; right: 0; bottom: 0; box-shadow: none; border-top: 1px solid ${CHROME.label}; }
+.fs-pwin--prep .dm-plugin { height: auto; }
+/* Dans le plugin, la barre Fonts suit l'en-tête : seul ici, il garde la même
+   marge en bas qu'en haut, resserrée pour laisser la place aux slides. */
+.fs-pwin--prep .f2s-topbar { padding: 12px 16px; }
+.fs-focus { outline: var(--b-focus-outline); outline-offset: var(--b-focus-offset); }
+.fs-cursor-at--prep { left: 524px; top: 432px; }
+/* Pastilles hors de la scène mise à l'échelle (sinon illisibles), calées
+   sur les colonnes en pourcentage de la scène (640 x 457) et centrées dans
+   la bande au-dessus des slides (64px de haut, pastille de 24px). */
+.fs-prep__pill { position: absolute; z-index: 4; top: calc((64 / 457 * 100%) / 2 - 12px); }
+.fs-prep__pill--orig { left: calc(24 / 640 * 100%); }
+.fs-prep__pill--ready { left: calc(336 / 640 * 100%); }
+/* Pill du design system (ui-marker), copiée telle quelle */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--b-space-4);
+  padding: var(--b-space-4) var(--b-space-12);
+  border-radius: var(--b-radius-full);
+  background-color: var(--b-ink);
+  color: var(--b-white);
+  font-family: inherit;
+  font-size: var(--b-text-xs);
+  font-weight: var(--b-font-semibold);
+  line-height: var(--b-leading-snug);
+}
 
 /* Fonts : la liste des polices de Slides, ouverte sous son champ */
 /* La rangée de la barre Fonts défile en x dans le plugin, ce qui rognait la
