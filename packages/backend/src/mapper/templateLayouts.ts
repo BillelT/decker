@@ -10,22 +10,29 @@ import type { AffineTransform, RequestBatch, SlidesRequest } from './slidesReque
 
 /**
  * Mode template : vrais layouts et vrais placeholders dans le thème Slides
- * (spike du 16 octobre).
+ * (spikes des 16 et 17 octobre).
  *
  * L'API Slides ne sait ni créer un layout, ni faire d'une forme un
  * placeholder. Mais toute présentation neuve arrive avec ses layouts
  * prédéfinis ("Titre et corps", "Titre seul"…), qui portent déjà de vrais
- * placeholders. Chaque frame du template prend donc l'un de ces layouts :
- * - son `[[title]]` et son `[[subtitle]]` deviennent les placeholders
- *   natifs du layout, déplacés, redimensionnés et restylés pour tomber
- *   pile sur le texte Figma ;
- * - les autres éléments à rôle (`[[body]]`, `[[image]]`…) vont sur la
- *   slide, où ils restent modifiables ;
- * - le reste (fond, formes, images, textes sans rôle) est posé sur le
- *   layout comme décor : il apparaît sur chaque slide qui l'utilise ;
+ * placeholders, et un placeholder de layout dupliqué reste un placeholder
+ * (comme un copier-coller dans "Modifier le thème"). Chaque frame du
+ * template prend donc l'un de ces layouts :
+ * - chaque texte à rôle (`[[title]]`, `[[subtitle]]`, `[[body]]`, texte
+ *   `[[custom]]`) devient un placeholder du layout : un existant du bon
+ *   type s'il en reste, sinon la copie d'un placeholder du même type,
+ *   déplacée, redimensionnée et restylée pour tomber pile sur le texte
+ *   Figma. Plusieurs titres, sous-titres ou corps par layout vont donc bien ;
+ * - un sous-titre sans placeholder de sous-titre dans le layout prend un
+ *   placeholder de corps (sans puces) ;
+ * - le reste (fond, formes, images, logos, textes sans rôle) est posé sur
+ *   le layout comme décor : Slides n'a pas de placeholder d'image (il n'en
+ *   existe que dans un PowerPoint importé), une image reste donc dans le
+ *   layout, visible sur chaque slide qui l'utilise ;
  * - les placeholders du layout qui ne servent pas sont supprimés ;
- * - la slide du template est créée depuis ce layout : "Nouvelle
- *   diapositive" dans Slides redonne le même layout, placeholders vides.
+ * - la slide du template est créée depuis ce layout, ses placeholders
+ *   remplis avec le texte d'exemple : "Nouvelle diapositive" dans Slides
+ *   redonne le même layout, placeholders vides.
  *
  * Une frame sans layout libre (plus de frames que de layouts prédéfinis)
  * garde l'ancien chemin : tout est écrit sur la slide. La frame Master,
@@ -55,55 +62,86 @@ export interface NativeLayout {
 export interface LayoutAssignment {
   layoutId: string;
   layoutName: string;
-  /** id d'élément IR → objectId du placeholder du layout qui le remplace. */
+  /** id d'élément IR → objectId du placeholder du layout qui le remplace (existant ou copie). */
   placeholderByElementId: Record<string, string>;
+  /** Copies à créer avant tout : `objectId` est la copie de `sourceId`, un placeholder du layout. */
+  duplicates?: { sourceId: string; objectId: string }[];
   /** Placeholders du layout sans élément : supprimés. */
   unusedPlaceholderIds: string[];
 }
 
-type NativeRole = 'TITLE' | 'SUBTITLE';
+type NativeRole = 'TITLE' | 'SUBTITLE' | 'BODY';
 
-/**
- * Seuls le titre et le sous-titre prennent un placeholder natif. Le corps
- * natif de Slides ne s'affiche que comme une liste à puces sur 9 niveaux
- * ("Premier niveau"…) dans "Modifier le thème", texte que l'API interdit de
- * modifier (16 octobre) : un `[[body]]` reste donc une zone de texte
- * classique, posée sur la SLIDE pour rester modifiable (un élément de
- * layout est figé sur les slides).
- */
+/** Types de placeholder acceptés par rôle, par ordre de préférence. */
 const ACCEPTED_TYPES: Record<NativeRole, string[]> = {
   TITLE: ['TITLE', 'CENTERED_TITLE'],
-  SUBTITLE: ['SUBTITLE'],
+  SUBTITLE: ['SUBTITLE', 'BODY'],
+  BODY: ['BODY'],
 };
 
+const ROLE_ORDER: NativeRole[] = ['TITLE', 'SUBTITLE', 'BODY'];
+
+/** Un `[[custom]]` texte se comporte comme un corps : une zone de texte libre. */
 function nativeRole(el: IRElement): NativeRole | undefined {
   if (el.kind !== 'text' || !el.placeholder) return undefined;
   const role = el.placeholder.role;
-  return role === 'TITLE' || role === 'SUBTITLE' ? role : undefined;
+  if (role === 'TITLE' || role === 'SUBTITLE' || role === 'BODY') return role;
+  return role === 'CUSTOM' ? 'BODY' : undefined;
 }
 
-/** Associe à chaque rôle natif de la frame un placeholder du layout, quand il en a un (un seul titre et un seul sous-titre). */
-function matchPlaceholders(slide: IRSlide, layout: NativeLayout): Record<string, string> {
-  const result: Record<string, string> = {};
-  for (const role of ['TITLE', 'SUBTITLE'] as NativeRole[]) {
-    const element = slide.elements.find((el) => nativeRole(el) === role);
-    const slot = layout.placeholders.find((p) => ACCEPTED_TYPES[role].includes(p.type));
-    if (element && slot) result[element.id] = slot.objectId;
-  }
-  return result;
+/** id d'une copie de placeholder : dérivé de l'élément, unique dans la présentation. */
+function duplicateId(elementId: string): string {
+  return `f2s_ph_${elementId}`.replace(/[^a-zA-Z0-9_-]/g, '_');
 }
 
-/** Placeholders texte du layout (titre, sous-titre, corps) : ceux qui restent vides sont supprimés comme les autres. */
-function isTextSlot(p: LayoutPlaceholder): boolean {
-  return ['TITLE', 'CENTERED_TITLE', 'SUBTITLE', 'BODY'].includes(p.type);
+interface Match {
+  placeholderByElementId: Record<string, string>;
+  duplicates: { sourceId: string; objectId: string }[];
+  matched: number;
+  /** Rôles servis par leur type préféré (un sous-titre dans un SUBTITLE plutôt qu'un BODY). */
+  exact: number;
+  unused: string[];
 }
 
 /**
- * Choisit un layout distinct par frame : celui qui reçoit le plus de rôles
- * natifs, puis celui qui a le moins de placeholders texte en trop. Les
- * frames qui demandent le plus passent d'abord (seuls deux layouts
- * prédéfinis ont un sous-titre). La frame Master n'en prend aucun : elle
- * est écrite sur le Master (`mapMasterBatch`).
+ * Associe chaque texte à rôle de la frame à un placeholder du layout : un
+ * libre du type le plus juste, sinon la copie d'un placeholder de ce type.
+ * Titres d'abord, puis sous-titres, puis corps, dans l'ordre de la frame.
+ */
+function matchPlaceholders(slide: IRSlide, layout: NativeLayout): Match {
+  const free = [...layout.placeholders];
+  const placeholderByElementId: Record<string, string> = {};
+  const duplicates: Match['duplicates'] = [];
+  let matched = 0;
+  let exact = 0;
+  for (const role of ROLE_ORDER) {
+    for (const el of slide.elements.filter((e) => nativeRole(e) === role)) {
+      const types = ACCEPTED_TYPES[role];
+      const slot = types.map((t) => free.find((p) => p.type === t)).find(Boolean);
+      if (slot) {
+        free.splice(free.indexOf(slot), 1);
+        placeholderByElementId[el.id] = slot.objectId;
+      } else {
+        const source = types.map((t) => layout.placeholders.find((p) => p.type === t)).find(Boolean);
+        if (!source) continue;
+        const objectId = duplicateId(el.id);
+        duplicates.push({ sourceId: source.objectId, objectId });
+        placeholderByElementId[el.id] = objectId;
+      }
+      matched += 1;
+      const used = slot ?? layout.placeholders.find((p) => p.objectId === duplicates[duplicates.length - 1].sourceId)!;
+      if (used.type === types[0] || (role === 'TITLE' && used.type === 'CENTERED_TITLE')) exact += 1;
+    }
+  }
+  return { placeholderByElementId, duplicates, matched, exact, unused: free.map((p) => p.objectId) };
+}
+
+/**
+ * Choisit un layout distinct par frame : celui qui sert le plus de textes à
+ * rôle, puis le plus de rôles dans leur type exact, puis celui qui a le
+ * moins de placeholders en trop. Les frames qui demandent le plus passent
+ * d'abord (seuls deux layouts prédéfinis ont un sous-titre). La frame
+ * Master n'en prend aucun : elle est écrite sur le Master (`mapMasterBatch`).
  */
 export function planTemplateLayouts(slides: IRSlide[], layouts: NativeLayout[], masterSlideId?: string): Record<string, LayoutAssignment> {
   const plan: Record<string, LayoutAssignment> = {};
@@ -112,21 +150,25 @@ export function planTemplateLayouts(slides: IRSlide[], layouts: NativeLayout[], 
   const ordered = slides.filter((s) => s.sourceNodeId !== masterSlideId).sort((a, b) => demand(b) - demand(a) || a.order - b.order);
 
   for (const slide of ordered) {
-    let best: { layout: NativeLayout; match: Record<string, string>; matched: number; extra: number } | undefined;
+    let best: { layout: NativeLayout; match: Match } | undefined;
     for (const layout of free) {
       const match = matchPlaceholders(slide, layout);
-      const matched = Object.keys(match).length;
-      const extra = layout.placeholders.filter(isTextSlot).length - matched;
-      if (!best || matched > best.matched || (matched === best.matched && extra < best.extra)) best = { layout, match, matched, extra };
+      if (
+        !best ||
+        match.matched > best.match.matched ||
+        (match.matched === best.match.matched && (match.exact > best.match.exact || (match.exact === best.match.exact && match.unused.length < best.match.unused.length)))
+      ) {
+        best = { layout, match };
+      }
     }
     if (!best) continue;
     free.splice(free.indexOf(best.layout), 1);
-    const used = new Set(Object.values(best.match));
     plan[slide.sourceNodeId] = {
       layoutId: best.layout.objectId,
       layoutName: best.layout.name,
-      placeholderByElementId: best.match,
-      unusedPlaceholderIds: best.layout.placeholders.filter((p) => !used.has(p.objectId)).map((p) => p.objectId),
+      placeholderByElementId: best.match.placeholderByElementId,
+      duplicates: best.match.duplicates,
+      unusedPlaceholderIds: best.match.unused,
     };
   }
   return plan;
@@ -232,40 +274,64 @@ export function mapSlideOntoLayout(
     });
   }
 
-  // Ce qui a un rôle sans placeholder natif ([[body]], [[image]], [[logo]],
-  // un second titre…) va sur la slide, où il reste modifiable ; le reste
-  // est le décor du layout, repris par chaque nouvelle slide.
+  // Les copies d'abord : elles partent de leur source avant que celle-ci
+  // soit déplacée, et sont ensuite restylées comme les autres.
+  for (const dup of assignment.duplicates ?? []) {
+    const source = slotById.get(dup.sourceId);
+    if (!source) continue;
+    requests.push({ duplicateObject: { objectId: dup.sourceId, objectIds: { [dup.sourceId]: dup.objectId } } });
+    slotById.set(dup.objectId, { ...source, objectId: dup.objectId });
+  }
+
+  // Textes à rôle : sur leur placeholder. Tout le reste est le décor du
+  // layout, repris par chaque nouvelle slide (images et logos compris,
+  // Slides n'ayant pas de placeholder d'image). Un texte à rôle sans
+  // placeholder (layout sans titre ni corps) va sur la slide.
   const onSlide: IRElement[] = [];
+  const filled: { slotId: string; content: string }[] = [];
+  const placed: string[] = [];
   for (const el of slide.elements) {
     const slotId = assignment.placeholderByElementId[el.id];
     const slot = slotId ? slotById.get(slotId) : undefined;
     if (slot && el.kind === 'text') {
       requests.push(...textOntoPlaceholder(mapText(widenForPrompt(el, slide.frameSize.width), layoutId, scale, offsetXPt, offsetYPt, calibration), slot));
-      // Le placeholder existait avant tout le reste : sans ça, une carte
-      // ou un aplat créé ensuite passerait par-dessus le titre.
-      requests.push({ updatePageElementsZOrder: { pageElementObjectIds: [slot.objectId], operation: 'BRING_TO_FRONT' } });
+      if (slot.type === 'BODY') requests.push({ deleteParagraphBullets: { objectId: slot.objectId, textRange: { type: 'ALL' } } });
+      placed.push(slot.objectId);
+      filled.push({ slotId: slot.objectId, content: el.content });
       continue;
     }
-    if (el.placeholder) {
+    if (el.placeholder && el.kind === 'text') {
       onSlide.push(el);
       continue;
     }
     requests.push(...mapElement(el, layoutId, scale, offsetXPt, offsetYPt, resolveAssetUrl, calibration));
+    if (el.placeholder) requests.push({ updatePageElementAltText: mapPlaceholderAltText(el.id, el.placeholder) });
   }
+  // Les placeholders existaient avant tout le reste : sans ça, une carte
+  // ou un aplat créé ensuite passerait par-dessus leur texte.
+  if (placed.length > 0) requests.push({ updatePageElementsZOrder: { pageElementObjectIds: placed, operation: 'BRING_TO_FRONT' } });
 
   for (const objectId of assignment.unusedPlaceholderIds) requests.push({ deleteObject: { objectId } });
 
   const pageObjectId = `f2s_page_${slide.sourceNodeId}`;
+  const slideIdOf = (layoutPlaceholderObjectId: string) => `${layoutPlaceholderObjectId}_s`.replace(/[^a-zA-Z0-9_-]/g, '_');
   requests.push({
     createSlide: {
       objectId: pageObjectId,
       slideLayoutReference: { layoutId },
       placeholderIdMappings: Object.values(assignment.placeholderByElementId).map((layoutPlaceholderObjectId) => ({
         layoutPlaceholderObjectId,
-        objectId: `${layoutPlaceholderObjectId}_s`.replace(/[^a-zA-Z0-9_-]/g, '_'),
+        objectId: slideIdOf(layoutPlaceholderObjectId),
       })),
     },
   });
+
+  // La slide d'exemple montre le texte d'exemple, pas l'invite de Google
+  // ("Cliquez ici pour ajouter un titre") : écrire dans un placeholder de
+  // SLIDE est permis, le style vient du layout.
+  for (const { slotId, content } of filled) {
+    if (content.length > 0) requests.push({ insertText: { objectId: slideIdOf(slotId), text: content, insertionIndex: 0 } });
+  }
 
   for (const el of onSlide) {
     requests.push(...mapElement(el, pageObjectId, scale, offsetXPt, offsetYPt, resolveAssetUrl, calibration));
@@ -301,10 +367,9 @@ const HIDDEN_TITLE_OFFSET_PT = -200;
 
 /**
  * Le titre par défaut du Master ne se supprime pas (il emporterait les
- * titres des layouts, qui en héritent) : quand la frame Master n'a pas de
- * `[[title]]`, il est réduit à 1 pt et sorti de la slide. Les titres des
- * layouts ont leur propre position et leur propre style : rien ne change
- * pour eux.
+ * titres des layouts, qui en héritent) : il est réduit à 1 pt et sorti de
+ * la slide. Les titres des layouts ont leur propre position et leur propre
+ * style : rien ne change pour eux.
  */
 function hideMasterTitle(slot: LayoutPlaceholder): SlidesRequest[] {
   const target = EMU_PER_PT;
@@ -330,10 +395,12 @@ function hideMasterTitle(slot: LayoutPlaceholder): SlidesRequest[] {
 
 /**
  * Frame Master (la première du rail) : son fond et tous ses éléments sont
- * écrits sur la page Master. Slides les peint sur chaque layout et chaque
- * slide, entre le fond de la page et son contenu ; aucune slide n'est
- * créée pour elle. Son `[[title]]` prend le titre par défaut du Master
- * (le style dont partent les titres), sinon ce titre est caché.
+ * écrits sur la page Master, comme décor. Slides les peint sur chaque
+ * layout et chaque slide, entre le fond de la page et son contenu ; aucune
+ * slide n'est créée pour elle. Ses tags sont ignorés : un placeholder du
+ * Master ne s'affiche sur aucune slide (17 octobre, un `[[title]]` posé
+ * sur un surtitre disparaissait), il ne fait que donner son style aux
+ * layouts. Son titre par défaut est donc toujours caché.
  */
 export function mapMasterBatch(
   slide: IRSlide,
@@ -354,15 +421,7 @@ export function mapMasterBatch(
       },
     });
   }
-  const title = masterTitle ? slide.elements.find((el) => nativeRole(el) === 'TITLE') : undefined;
-  for (const el of slide.elements) {
-    if (el === title && el.kind === 'text') {
-      requests.push(...textOntoPlaceholder(mapText(widenForPrompt(el, slide.frameSize.width), masterObjectId, scale, offsetXPt, offsetYPt, calibration), masterTitle!));
-      requests.push({ updatePageElementsZOrder: { pageElementObjectIds: [masterTitle!.objectId], operation: 'BRING_TO_FRONT' } });
-      continue;
-    }
-    requests.push(...mapElement(el, masterObjectId, scale, offsetXPt, offsetYPt, resolveAssetUrl, calibration));
-  }
-  if (masterTitle && !title) requests.push(...hideMasterTitle(masterTitle));
+  for (const el of slide.elements) requests.push(...mapElement(el, masterObjectId, scale, offsetXPt, offsetYPt, resolveAssetUrl, calibration));
+  if (masterTitle) requests.push(...hideMasterTitle(masterTitle));
   return { sourceSlideId: slide.sourceNodeId, requests };
 }

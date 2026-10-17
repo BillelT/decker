@@ -5502,7 +5502,8 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     const leftoverNotes = fidelityNotes.filter((w3) => !consumedNotes.has(w3));
     const rows = splitCompositionRows(previewedLayout?.elements ?? [], compositionWarnings);
     const unattachedComposition = rows.unattached.filter((w3) => w3.code !== "LAYOUT_WITHOUT_PLACEHOLDER");
-    const placeholderSuggestions = suggestPlaceholderRoles(previewedLayout?.elements ?? []);
+    const previewingMaster = order.length >= 2 && previewedLayout?.id === order[0];
+    const placeholderSuggestions = previewingMaster ? [] : suggestPlaceholderRoles(previewedLayout?.elements ?? []);
     function applyPlaceholderSuggestions() {
       for (const { sourceNodeId, tag } of placeholderSuggestions) setPlaceholderRole(sourceNodeId, tag);
       const count = placeholderSuggestions.length;
@@ -5624,7 +5625,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
                   type: "button",
                   className: "f2s-btn f2s-btn--ghost",
                   disabled: locked || placeholderSuggestions.length === 0,
-                  title: placeholderSuggestions.length === 0 ? "Nothing left to suggest in this layout: its title, subtitle and body are set, or no other text fits them." : "Tag the title, subtitle and body of this layout from the size and length of its texts.",
+                  title: previewingMaster ? "The Master is drawn on every slide as is: its layers need no role." : placeholderSuggestions.length === 0 ? "Nothing left to suggest in this layout: its title, subtitle and body are set, or no other text fits them." : "Tag the title, subtitle and body of this layout from the size and length of its texts.",
                   onClick: applyPlaceholderSuggestions,
                   children: "Suggest roles"
                 }

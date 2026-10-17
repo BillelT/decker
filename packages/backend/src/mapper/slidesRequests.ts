@@ -109,6 +109,17 @@ export interface UpdatePageElementTransformRequest {
   transform: AffineTransform;
 }
 
+/** Copie un élément sur sa page ; `objectIds` fixe l'id de la copie. Sur un placeholder de layout, la copie est un placeholder du même type. */
+export interface DuplicateObjectRequest {
+  objectId: string;
+  objectIds?: Record<string, string>;
+}
+
+export interface DeleteParagraphBulletsRequest {
+  objectId: string;
+  textRange: TextRange;
+}
+
 export interface DeleteTextRequest {
   objectId: string;
   textRange: TextRange;
@@ -257,6 +268,8 @@ export type SlidesRequest =
   | { updatePageProperties: UpdatePagePropertiesRequest }
   | { updatePageElementTransform: UpdatePageElementTransformRequest }
   | { deleteText: DeleteTextRequest }
+  | { duplicateObject: DuplicateObjectRequest }
+  | { deleteParagraphBullets: DeleteParagraphBulletsRequest }
   | { deleteObject: DeleteObjectRequest };
 
 /** Un lot indivisible : toutes les requêtes d'une slide (spec §5.4). */

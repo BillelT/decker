@@ -226,6 +226,17 @@ les suivants) :
    content » dans l'aside) : fond et éléments écrits sur la page Master,
    pas de slide ; son corps par défaut est supprimé en fin d'export. Les
    noms de layouts ne sont pas modifiables par l'API.
+   **Refait le 2026-10-17** (retour : « deux types de placeholder, ce
+   n'est pas du templating ») : chaque texte à rôle (titre, sous-titre,
+   corps, texte `[[custom]]`) devient un placeholder du layout, en
+   dupliquant un placeholder du même type quand il en faut plusieurs
+   (`duplicateObject`, à valider) ; un sous-titre sans placeholder de
+   sous-titre prend un corps, puces retirées (`deleteParagraphBullets`, à
+   valider). Images et logos vont dans le layout en décor : Slides n'a pas
+   de placeholder d'image hors PowerPoint importé. La slide d'exemple est
+   remplie avec le texte d'exemple. Les tags du Master sont ignorés (un
+   placeholder du Master ne s'affiche sur aucune slide) et son titre par
+   défaut est toujours caché.
 4. ~~**Slide de style guide optionnelle.**~~ — abandonné (2026-08-03) :
    l'idée initiale (checkbox à l'export générant une slide swatches/rôles/
    échantillon typo en 1ère position) servait surtout de preuve visuelle de

@@ -57,11 +57,27 @@ describe('planTemplateLayouts', () => {
     );
     expect(plan.cover.layoutName).toBe('TITLE');
     expect(plan.cover.placeholderByElementId).toEqual({ a: 't1', b: 't2' });
-    expect(plan.content.layoutName).toBe('TITLE_ONLY');
-    expect(plan.content.placeholderByElementId).toEqual({ c: 'o1' });
+    expect(plan.content.layoutName).toBe('TITLE_AND_BODY');
+    expect(plan.content.placeholderByElementId).toEqual({ c: 'b1', d: 'b2' });
   });
 
-  it('never uses a native body placeholder, and deletes every text slot left empty', () => {
+  it('copies a placeholder when a layout needs more of a type than it has (three cards with a subtitle each)', () => {
+    const plan = planTemplateLayouts([slide('cards', [text('t', 'TITLE'), text('s1', 'SUBTITLE'), text('s2', 'SUBTITLE'), text('s3', 'SUBTITLE')])], LAYOUTS);
+    expect(plan.cards.layoutName).toBe('TITLE');
+    expect(plan.cards.placeholderByElementId).toEqual({ t: 't1', s1: 't2', s2: 'f2s_ph_s2', s3: 'f2s_ph_s3' });
+    expect(plan.cards.duplicates).toEqual([
+      { sourceId: 't2', objectId: 'f2s_ph_s2' },
+      { sourceId: 't2', objectId: 'f2s_ph_s3' },
+    ]);
+  });
+
+  it('puts a subtitle in a body placeholder when the layout has no subtitle, and a custom text too', () => {
+    const plan = planTemplateLayouts([slide('stat', [text('n', 'TITLE'), text('k', 'SUBTITLE'), { ...text('c', undefined), placeholder: { role: 'CUSTOM', label: 'Note' } }])], [LAYOUTS[1]]);
+    expect(plan.stat.placeholderByElementId).toEqual({ n: 'b1', k: 'b2', c: 'f2s_ph_c' });
+    expect(plan.stat.unusedPlaceholderIds).toEqual(['b3']);
+  });
+
+  it('deletes every placeholder left empty', () => {
     const plan = planTemplateLayouts([slide('a', [text('a1', 'TITLE')]), slide('b', [text('b1', 'TITLE')]), slide('c', [text('c1', 'TITLE')])], LAYOUTS);
     const body = Object.values(plan).find((p) => p.layoutName === 'TITLE_AND_BODY')!;
     expect(body.unusedPlaceholderIds).toEqual(['b2', 'b3']);
@@ -76,8 +92,9 @@ describe('planTemplateLayouts', () => {
 });
 
 describe('mapDocumentToBatches with template layouts', () => {
-  it('restyles the title placeholder, puts decor on the layout, the body on the slide created from it', () => {
-    const s = slide('content', [text('deco', undefined), text('c', 'TITLE'), text('d', 'BODY')]);
+  it('restyles title and body placeholders on the layout, decor and images too, then fills the slide created from it', () => {
+    const logo: IRElement = { kind: 'shape', id: 'logo', sourceNodeId: 'n_logo', rect: { x: 600, y: 10, w: 40, h: 40 }, rotation: 0, opacity: 1, shapeType: 'ELLIPSE', placeholder: { role: 'LOGO', label: 'Logo' } };
+    const s = slide('content', [text('deco', undefined), text('c', 'TITLE'), text('d', 'BODY'), logo]);
     s.background = { type: 'SOLID', color: { r: 1, g: 1, b: 1, a: 1 } };
     const d = doc([s]);
     const plan = planTemplateLayouts(d.slides, LAYOUTS);
@@ -85,20 +102,38 @@ describe('mapDocumentToBatches with template layouts', () => {
     const r = batch.requests as any[];
     const slideIdx = r.findIndex((q) => q.createSlide);
 
-    expect(r[0].updatePageProperties.objectId).toBe('L_only');
-    expect(r.find((q) => q.createShape?.objectId === 'deco').createShape.elementProperties.pageObjectId).toBe('L_only');
-    expect(r.find((q) => q.updatePageElementTransform)?.updatePageElementTransform.objectId).toBe('o1');
+    expect(r[0].updatePageProperties.objectId).toBe('L_body');
+    expect(r.find((q) => q.createShape?.objectId === 'deco').createShape.elementProperties.pageObjectId).toBe('L_body');
+    expect(r.find((q) => q.createShape?.objectId === 'logo').createShape.elementProperties.pageObjectId).toBe('L_body');
+    expect(r.filter((q) => q.updatePageElementTransform).map((q) => q.updatePageElementTransform.objectId)).toEqual(['b1', 'b2']);
     // Google refuse toute écriture de texte dans un placeholder de layout.
-    expect(r.some((q) => q.deleteText || q.insertText?.objectId === 'o1')).toBe(false);
-    expect(r.find((q) => q.updateTextStyle?.objectId === 'o1').updateTextStyle.textRange).toEqual({ type: 'ALL' });
+    expect(r.some((q) => q.deleteText || ['b1', 'b2'].includes(q.insertText?.objectId))).toBe(false);
+    expect(r.find((q) => q.deleteParagraphBullets).deleteParagraphBullets.objectId).toBe('b2');
+    expect(r.find((q) => q.deleteObject).deleteObject.objectId).toBe('b3');
     expect(r[slideIdx].createSlide).toEqual({
       objectId: 'f2s_page_content',
-      slideLayoutReference: { layoutId: 'L_only' },
-      placeholderIdMappings: [{ layoutPlaceholderObjectId: 'o1', objectId: 'o1_s' }],
+      slideLayoutReference: { layoutId: 'L_body' },
+      placeholderIdMappings: [
+        { layoutPlaceholderObjectId: 'b1', objectId: 'b1_s' },
+        { layoutPlaceholderObjectId: 'b2', objectId: 'b2_s' },
+      ],
     });
-    const body = r.findIndex((q) => q.createShape?.objectId === 'd');
-    expect(body).toBeGreaterThan(slideIdx);
-    expect(r[body].createShape.elementProperties.pageObjectId).toBe('f2s_page_content');
+    const inserts = r.filter((q) => q.insertText && r.indexOf(q) > slideIdx).map((q) => q.insertText);
+    expect(inserts).toEqual([
+      { objectId: 'b1_s', text: '[c]', insertionIndex: 0 },
+      { objectId: 'b2_s', text: '[d]', insertionIndex: 0 },
+    ]);
+    expect(r.some((q, i) => i > slideIdx && q.createShape)).toBe(false);
+  });
+
+  it('duplicates a layout placeholder before restyling the copy', () => {
+    const d = doc([slide('cards', [text('s1', 'SUBTITLE'), text('s2', 'SUBTITLE')])]);
+    const plan = planTemplateLayouts(d.slides, [LAYOUTS[0]]);
+    const [batch] = mapDocumentToBatches(d, () => '', UNCALIBRATED_DEFAULTS, 'master', { layouts: LAYOUTS, plan });
+    const r = batch.requests as any[];
+    const dup = r.findIndex((q) => q.duplicateObject);
+    expect(r[dup].duplicateObject).toEqual({ objectId: 't2', objectIds: { t2: 'f2s_ph_s2' } });
+    expect(r.findIndex((q) => q.updatePageElementTransform?.objectId === 'f2s_ph_s2')).toBeGreaterThan(dup);
   });
 
   it('writes the master frame on the Master page, without creating a slide', () => {
@@ -126,16 +161,13 @@ describe('mapDocumentToBatches with template layouts', () => {
     expect(r.some((q) => q.deleteObject)).toBe(false);
   });
 
-  it('puts the master frame title on the default Master title instead of a text box', () => {
+  it('ignores tags on the master frame: a tagged eyebrow stays a text on the Master, the default title stays hidden', () => {
     const master = slide('m', [text('t', 'TITLE')], 0);
     const d = doc([master], 'm');
     const [masterBatch] = mapDocumentToBatches(d, () => '', UNCALIBRATED_DEFAULTS, 'master-1', { layouts: LAYOUTS, plan: {}, masterTitle: slot('mt', 'TITLE') });
     const r = masterBatch.requests as any[];
-    expect(r.some((q) => q.createShape)).toBe(false);
-    const move = r.find((q) => q.updatePageElementTransform).updatePageElementTransform;
-    expect(move.objectId).toBe('mt');
-    expect(move.transform.translateX).toBeGreaterThanOrEqual(0);
-    expect(r.find((q) => q.updateTextStyle).updateTextStyle.objectId).toBe('mt');
+    expect(r.find((q) => q.createShape).createShape.objectId).toBe('t');
+    expect(r.find((q) => q.updatePageElementTransform).updatePageElementTransform.transform.translateX).toBeLessThan(0);
   });
 });
 
