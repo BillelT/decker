@@ -7,6 +7,7 @@ Pas de nom produit : c'est une intégration. Notre jeu des pop-ups façon virus 
 - **16 octobre, v1.** Le jeu des pop-ups en overlay sur la page du site.
 - **17 octobre, essai Asteroids.** Le flow de smoo.link avec un Asteroids pixel : le flow a plu, pas le jeu. On revient à nos fenêtres.
 - **17 octobre, v2 « Decker 95 ».** Le flow de smoo.link (page `/game`, fenêtre Win95 pixel) avec notre jeu des pop-ups dedans.
+- **17 octobre, bruitages, couleurs, tailles.** Sons 8-bit discrets, teintes du logo au lieu de l'orange de marque, trois tailles de fenêtres, rythme régulier.
 - **17 octobre, retouches.** Départ direct sans écran « Start » et plus lent au début, fond uni, fenêtres plus grandes empilées en léger décalage comme les cartes du logo, plus de croix fuyante systématique (3 % de chance d'un petit saut), plus de légende des touches ni de crédit de police, « Decker » et son accroche au-dessus de la fenêtre.
 
 ## Le flow
@@ -18,8 +19,8 @@ Pas de nom produit : c'est une intégration. Notre jeu des pop-ups façon virus 
 
 ## Déroulé d'une partie
 
-1. **Démarrage.** Direct, dès l'arrivée sur la page : pas d'écran « Start ». La première pop-up arrive au bout d'environ 1 s.
-2. **La vague.** Rythme façon Tetris : 3 s de calme pour que le joueur comprenne (une seule pop-up), puis la vitesse normale (une toutes les 1.3 s), qui monte d'un palier toutes les 6 s, 15 % plus vite à chaque fois, jusqu'à une toutes les 0.38 s. Plus lent sur un petit écran.
+1. **Démarrage.** Direct, dès l'arrivée sur la page : pas d'écran « Start ».
+2. **La vague.** Rythme régulier : première pop-up à 0.4 s, puis une toutes les 1.1 s, un écart qui se resserre en ligne droite jusqu'à 0.55 s à la fin. Ni palier ni emballement : ça monte petit à petit. Plus lent sur un petit écran. (Essais du 17 octobre : un départ trop lent ennuyait, des paliers à +15 % s'emballaient trop vite.)
 3. **Fermer.** Clic sur la croix, ou au clavier (Tab puis Entrée).
 4. **La jauge.** « Deck integrity » remonte doucement avec peu de pop-ups ouvertes et fond d'autant plus vite qu'elles s'empilent.
 5. **Défaite.** La jauge tombe à zéro : dialogue `SCREENSHOT.EXE` « Your deck was flattened into a screenshot. », temps tenu, score et meilleur score, « Quit » et « Try again ».
@@ -39,6 +40,8 @@ Pas de nom produit : c'est une intégration. Notre jeu des pop-ups façon virus 
 
 **Placement.** En pile décalée, comme les cartes du logo Decker : chaque nouvelle pop-up se pose 40 px à droite et 48 px plus haut que la précédente, la plus récente devant, les anciennes qui dépassent en bas à gauche. Quand la pile sort du bureau, une nouvelle démarre ailleurs, dans la moitié basse. Jamais un coin à moins de 24 px du coin d'une autre : deux fenêtres identiques posées pile l'une sur l'autre n'en laissaient voir qu'une.
 
+**Tailles.** Trois tailles pour varier : grande (80 % de la largeur du bureau), moyenne (50 %), petite (15 %), avec des minimums lisibles (260 px et 170 px). Un grand deck montre trois slides, les autres une seule. Decks au hasard dans les trois tailles ; pub en moyenne ou grande ; alerte et antivirus en moyenne ; chaîne et deck têtu en petite ou moyenne ; boss en grande.
+
 **Esquive.** Quand la souris arrive sur une croix, la pop-up a 3 % de chance de faire un petit saut (16 à 40 px), pas loin de sa place. Rien au tactile ni au clavier.
 
 Score : points par pop-up fermée, combo jusqu'à x5 quand on enchaîne à moins de 0.9 s, pénalité sur « Rasterize ». Meilleur score dans `localStorage` (`decker-egg-best`, la même clé qu'en v1), repli silencieux si le stockage est indisponible.
@@ -46,13 +49,29 @@ Score : points par pop-up fermée, combo jusqu'à x5 quand on enchaîne à moins
 ## Dans notre DA, en pixel Win95
 
 - **Fenêtres en tokens** : face `--b-gray-200`, biseaux en `--b-white`, `--b-gray-100`, `--b-gray-500` et `--b-ink` (variables `--w95-*` de `game.ts`), ombre portée dure de 4 px.
-- **Une seule fenêtre active**, comme sous Windows : barre de titre en dégradé orange de marque, titre à l'encre ; les autres pop-ups passent au gris 600, titre blanc. Pendant un dialogue, la fenêtre Decker 95 passe en inactive aussi.
-- Boutons Win95 ; le bouton par défaut est plein orange avec le liseré noir de Windows ; focus en pointillé dans le bouton.
-- Barres de progression en blocs, rognées (`clip-path`) plutôt qu'étirées. `--b-accent-red` seulement pour le graphisme d'alerte (triangle, jauge basse, barre du boss).
-- Icônes en pixels (`crispEdges`) : triangle d'alerte, bulle « ? » de la chaîne, croix de fermeture, flèches.
-- Bureau sur `--b-white` uni : les pop-ups font tout le décor. Fenêtres de 440 px (520 px pour le boss).
+- **Teintes secondaires plutôt que l'orange de marque** (17 octobre) : la palette du logo (`--logo-*` de `game.ts`, valeurs de `DECKER_MARK_SVG`). Barre de titre active pleine en brun `#7a3b12`, titre en crème `#fff4d6` (7.8:1), comme le bleu marine de Windows 95 ; bureau crème ; bouton par défaut ambre `#ffb238` à l'encre (10.6:1) avec le liseré noir de Windows ; blocs de progression terre cuite `#c1651c` (3.9:1 sur leur fond). Exception à la DA, listée dans `docs/roadmap/README.md`.
+- **Une seule fenêtre active**, comme sous Windows : les autres pop-ups passent au gris 600, titre blanc. Pendant un dialogue, la fenêtre Decker 95 passe en inactive aussi.
+- `--b-accent-red` seulement pour le graphisme d'alerte (triangle, jauge basse, barre du boss).
+- Barres de progression en blocs, rognées (`clip-path`) plutôt qu'étirées. Icônes en pixels (`crispEdges`) : triangle d'alerte, bulle « ? », croix, coche.
 - **Police pixel** : Pixelify Sans (OFL), variable 400 à 700, inlinée en base64 sur cette page seulement (`gameFontData.ts`, 12 Ko). Pas de crédit affiché sur la page (la licence ne l'exige pas).
-- Pas de son : la DA réserve le feedback sonore à l'archétype outil.
+
+## Bruitages
+
+Dérogation à la DA (le son y est réservé à l'archétype outil), demandée pour le jeu le 17 octobre. Les règles de `ui-audio` sont gardées : case « Sound » visible dans la barre d'outils, cochée par défaut (choix gardé dans `localStorage`, `decker-game-sound`), décochée et grisée en mouvement réduit ; aucun son avant le premier geste (l'`AudioContext` ne démarre qu'à ce moment) ; gains bas, de 0.06 à 0.2, plus bas pour les sons fréquents ; rien sur Pause. Synthé Web Audio en ondes carrées et triangle, façon 8-bit : aucun fichier, aucune lib.
+
+| Événement | Son |
+|---|---|
+| Une pop-up s'ouvre | Petit blip triangle, note au hasard dans une gamme pentatonique (le plus discret) |
+| Pop-up fermée | Clic carré qui monte d'une note à chaque cran de combo |
+| « Keep editable », fin de la chaîne | Deux notes montantes |
+| « Rasterize » | Note qui s'écrase |
+| « Claim my free font » | Bourdon grave, puis les deux pop-ups qui s'ouvrent |
+| La croix esquive | Boing qui monte |
+| Arrivée du boss | Sirène à deux tons, trois fois |
+| Chaque « Stop » sur le boss | Note qui monte à mesure qu'il cède ; arpège quand il tombe |
+| Antivirus | Balayage montant et deux notes |
+| Jauge sous 30 % | Battement de cœur grave, plus rapide sous 15 % |
+| Défaite / victoire | Descente classique / petite fanfare |
 
 ## Accessibilité et garde-fous
 

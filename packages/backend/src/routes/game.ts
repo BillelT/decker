@@ -24,6 +24,14 @@ import { PIXELIFY_SANS_BASE64 } from './gameFontData.js';
 
 const GAME_CSS = String.raw`
 :root {
+  /* Teintes secondaires de Decker : celles du logo (DECKER_MARK_SVG, brand.ts).
+     Le jeu les prend plutôt que l'orange de marque, trop présent partout
+     (17 octobre). Exception à la DA listée dans docs/roadmap/README.md, comme
+     la palette du skin Windows 95 du plugin. */
+  --logo-brown: #7a3b12;
+  --logo-clay: #c1651c;
+  --logo-amber: #ffb238;
+  --logo-cream: #fff4d6;
   /* Les cinq tons du biseau Win95, pris dans la rampe de gris de la marque. */
   --w95-face: var(--b-gray-200);
   --w95-light: var(--b-gray-100);
@@ -71,7 +79,8 @@ body {
 .w95__bar {
   display: flex; align-items: center; gap: var(--b-space-6); min-height: 24px;
   padding: 2px 2px 2px var(--b-space-6);
-  background: linear-gradient(90deg in oklab, var(--b-accent), var(--b-accent-hover)); color: var(--b-ink);
+  /* Barre active pleine, comme le bleu marine de Windows 95, en brun du logo. */
+  background: var(--logo-brown); color: var(--logo-cream);
 }
 /* Fenêtre inactive, comme sous Windows : la barre passe au gris, le titre
    reste lisible (blanc sur gris 600). */
@@ -94,12 +103,23 @@ body {
 .w95__x--tiny { background: transparent; box-shadow: none; color: inherit; opacity: 0.55; }
 .w95__x--tiny svg { width: 6px; height: 5px; }
 
-/* Barre d'outils : Pause à gauche, jauge à droite. */
+/* Barre d'outils : Pause et Sound à gauche, jauge à droite. */
 .w95__tools {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--b-space-8) var(--b-space-16);
   margin-top: 3px; padding: var(--b-space-4);
   box-shadow: inset 0 -1px var(--w95-shadow), inset 0 -2px var(--w95-hi);
 }
+.w95__group { display: flex; align-items: center; gap: var(--b-space-16); }
+/* Case à cocher Win95 : un puits blanc creusé, la coche en pixels. La vraie
+   case reste dans le DOM (focus, clavier, lecteur d'écran), invisible. */
+.chk95 { position: relative; display: inline-flex; align-items: center; gap: var(--b-space-6); font-size: 14px; line-height: 1.2; cursor: pointer; -webkit-user-select: none; user-select: none; }
+.chk95__input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: inherit; }
+.chk95__box { flex: none; display: grid; place-items: center; width: 16px; height: 16px; background: var(--b-white); box-shadow: var(--w95-in); color: var(--b-ink); }
+.chk95__box svg { width: 8px; height: 7px; display: block; visibility: hidden; }
+.chk95__input:checked + .chk95__box svg { visibility: visible; }
+.chk95__input:disabled + .chk95__box { background: var(--w95-face); }
+.chk95:has(.chk95__input:disabled) { color: var(--b-gray-600); cursor: default; }
+.chk95__input:focus-visible ~ .chk95__label { outline: 2px dotted var(--b-ink); outline-offset: 2px; }
 .meter-wrap { display: flex; align-items: center; gap: var(--b-space-8); font-size: 14px; line-height: 1.2; white-space: nowrap; }
 .meter-wrap__value { min-width: 4ch; text-align: end; font-variant-numeric: tabular-nums; }
 /* Barre de progression Win95 : des blocs, rognés par clip-path plutôt
@@ -108,7 +128,7 @@ body {
 .meter { width: 160px; }
 .meter__fill, .bar95__fill {
   position: absolute; inset: 3px;
-  background: repeating-linear-gradient(90deg, var(--b-accent) 0 8px, transparent 8px 10px);
+  background: repeating-linear-gradient(90deg, var(--logo-clay) 0 8px, transparent 8px 10px);
   clip-path: inset(0 100% 0 0);
 }
 /* L'alerte rouge est un graphisme d'état, doublé du pourcentage écrit à côté. */
@@ -118,10 +138,10 @@ body {
 .bar95 { margin-top: var(--b-space-12); }
 
 .w95__well { position: relative; margin-top: 3px; padding: 2px; box-shadow: var(--w95-in); background: var(--b-white); }
-/* Le bureau : un fond uni, les pop-ups font tout le décor. */
+/* Le bureau : un fond crème uni, les pop-ups font tout le décor. */
 .desk {
   position: relative; overflow: hidden; width: 640px; height: 400px;
-  background-color: var(--b-white);
+  background-color: var(--logo-cream);
   -webkit-user-select: none; user-select: none; touch-action: manipulation;
 }
 .g-noscript { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; font-size: 16px; color: var(--b-ink); }
@@ -144,22 +164,32 @@ body {
 }
 .btn95:active:not(:disabled) { box-shadow: var(--w95-pressed); transform: scale(0.97); }
 .btn95:disabled { color: var(--b-gray-500); cursor: default; }
-/* Bouton par défaut : le liseré noir de Windows, plein à l'orange de marque. */
-.btn95--default { background: var(--b-accent); box-shadow: 0 0 0 1px var(--b-ink), var(--w95-out); font-weight: 700; }
+/* Bouton par défaut : le liseré noir de Windows, plein à l'ambre du logo. */
+.btn95--default { background: var(--logo-amber); box-shadow: 0 0 0 1px var(--b-ink), var(--w95-out); font-weight: 700; }
 .btn95--default:active:not(:disabled) { box-shadow: 0 0 0 1px var(--b-ink), var(--w95-pressed); }
 .btn95:focus-visible { outline: 2px dotted var(--b-ink); outline-offset: -6px; }
 @media (hover: hover) and (pointer: fine) {
   .btn95:hover:not(:disabled) { background: var(--w95-light); }
-  .btn95--default:hover:not(:disabled) { background: var(--b-accent-hover); }
+  .btn95--default:hover:not(:disabled) { background: color-mix(in oklab, var(--logo-amber), var(--logo-cream) 45%); }
 }
 
 /* ---------- Pop-ups ---------- */
-/* Sur un petit bureau, 56px de marge laissent la place au décalage de la pile. */
-.pop { position: absolute; box-sizing: border-box; width: min(440px, calc(100% - 56px)); box-shadow: var(--w95-out), var(--w95-drop); }
-.pop--wide { width: min(520px, calc(100% - 56px)); }
+/* Trois tailles pour varier : grande (80 % du bureau), moyenne (50 %),
+   petite (15 %). Des minimums gardent texte et boutons lisibles ; sur un
+   petit bureau, 56px de marge laissent la place au décalage de la pile. */
+.pop { position: absolute; box-sizing: border-box; max-width: calc(100% - 56px); box-shadow: var(--w95-out), var(--w95-drop); }
+.pop--l { width: 80%; }
+.pop--m { width: max(50%, 260px); }
+.pop--s { width: max(15%, 170px); }
+.pop--s .pop__body { padding: var(--b-space-12); }
+.pop--s .pop__actions { padding: 0 var(--b-space-12) var(--b-space-12); }
+.pop--s .btn95 { min-width: 0; }
+.pop--s .pop__icon { width: 24px; height: 24px; }
+.slides { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--b-space-12); margin-bottom: var(--b-space-12); }
+.slides .slide { margin: 0; }
 /* Écrans de début, de pause et de fin : centrés. translate et non transform :
    l'animation d'entrée pose déjà un transform. */
-.pop--modal { left: 50%; top: 50%; translate: -50% -50%; width: min(440px, calc(100% - 16px)); }
+.pop--modal { left: 50%; top: 50%; translate: -50% -50%; width: min(440px, calc(100% - 16px)); max-width: none; }
 .pop__body { padding: var(--b-space-16); font-size: 14px; line-height: 1.45; }
 .pop__body p { margin: 0 0 var(--b-space-8); text-wrap: pretty; }
 .pop__body p:last-child { margin-bottom: 0; }
@@ -179,7 +209,7 @@ body {
 .slide__bg { fill: var(--b-gray-100); }
 .slide__ink { fill: var(--b-ink); }
 .slide__muted { fill: var(--b-gray-400); }
-.slide__accent { fill: var(--b-accent); }
+.slide__accent { fill: var(--logo-clay); }
 .icon__shape { fill: var(--b-accent-red); }
 .icon__mark { fill: var(--b-white); }
 .icon__line { fill: var(--b-ink); }
@@ -221,6 +251,7 @@ var DURATION = 60000;
 var BOSS_AT = 32000;
 var HIGH_KEY = 'decker-egg-best';
 var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+var SOUND_KEY = 'decker-game-sound';
 
 var col = doc.querySelector('[data-col]');
 var win = doc.querySelector('[data-win]');
@@ -277,6 +308,112 @@ function fit() {
   s.wins.forEach(clampWin);
 }
 
+/* ---------- Bruitages ----------
+   Dérogation à la DA (le son y est réservé aux outils), demandée pour le jeu
+   le 17 octobre. Reprend les règles de ui-audio : case « Sound » visible,
+   cochée par défaut, décochée et grisée en mouvement réduit ; aucun son
+   avant le premier geste (l'AudioContext ne démarre qu'à ce moment) ; gains
+   bas (0.06 à 0.2, plus bas pour les sons fréquents) ; un son par événement
+   qui compte, pas sur Pause. Synthé Web Audio en ondes carrées et triangle,
+   façon 8-bit : aucun fichier, aucune lib. */
+var sound = { ctx: null, out: null, on: false };
+var soundBox = doc.querySelector('[data-sound]');
+(function () {
+  var saved = null;
+  try { saved = window.localStorage.getItem(SOUND_KEY); } catch (e) {}
+  sound.on = !reduceMotion && saved !== 'off';
+  soundBox.checked = sound.on;
+  soundBox.disabled = reduceMotion;
+  soundBox.addEventListener('change', function () {
+    sound.on = soundBox.checked && !reduceMotion;
+    try { window.localStorage.setItem(SOUND_KEY, sound.on ? 'on' : 'off'); } catch (e) {}
+    unlockSound();
+    if (sound.on) sfx.toggle();
+  });
+})();
+function unlockSound() {
+  if (!sound.on) return;
+  if (!sound.ctx) {
+    var Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    sound.ctx = new Ctx();
+    sound.out = sound.ctx.createGain();
+    sound.out.gain.value = 0.8;
+    sound.out.connect(sound.ctx.destination);
+  }
+  if (sound.ctx.state === 'suspended') sound.ctx.resume();
+}
+doc.addEventListener('pointerdown', unlockSound, true);
+doc.addEventListener('keydown', unlockSound, true);
+
+/* Une note : forme, fréquence (ou [début, fin] pour un glissando), départ
+   en secondes, durée, gain. Attaque de 3 ms, extinction exponentielle. */
+function tone(o) {
+  var c = sound.ctx;
+  if (!sound.on || !c || c.state !== 'running') return;
+  var t = c.currentTime + 0.01 + (o.at || 0);
+  var osc = c.createOscillator();
+  var g = c.createGain();
+  var sweep = Array.isArray(o.f);
+  osc.type = o.type || 'square';
+  osc.frequency.setValueAtTime(sweep ? o.f[0] : o.f, t);
+  if (sweep) osc.frequency.exponentialRampToValueAtTime(o.f[1], t + o.dur);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(o.gain, t + 0.003);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + o.dur);
+  osc.connect(g);
+  g.connect(sound.out);
+  osc.start(t);
+  osc.stop(t + o.dur + 0.02);
+}
+function notes(list, type, step, dur, gain) {
+  list.forEach(function (f, i) { tone({ type: type, f: f, at: i * step, dur: dur, gain: gain }); });
+}
+var OPEN_NOTES = [523, 587, 659, 784, 880];
+var COMBO_NOTES = [659, 784, 880, 1047, 1319];
+var sfx = {
+  /* Une pop-up s'ouvre : petit blip triangle, note au hasard dans une gamme
+     pentatonique, très bas (c'est le son le plus fréquent). */
+  open: function () { tone({ type: 'triangle', f: OPEN_NOTES[Math.floor(Math.random() * OPEN_NOTES.length)], dur: 0.06, gain: 0.07 }); },
+  /* Fermée : un clic carré qui monte d'une note à chaque cran de combo. */
+  close: function (combo) { tone({ type: 'square', f: COMBO_NOTES[Math.min(combo, 5) - 1], dur: 0.05, gain: 0.06 }); },
+  /* Bonne réponse (Keep editable, dernière fenêtre de la chaîne). */
+  good: function () { notes([784, 1175], 'square', 0.06, 0.06, 0.06); },
+  /* Rasterize : la note qui s'écrase. */
+  bad: function () { tone({ type: 'square', f: [440, 90], dur: 0.32, gain: 0.08 }); },
+  /* La fausse pub : un bourdon grave, puis ses deux pop-ups. */
+  scam: function () { tone({ type: 'square', f: [180, 140], dur: 0.18, gain: 0.07 }); },
+  /* La croix qui esquive : un boing qui monte. */
+  dodge: function () { tone({ type: 'triangle', f: [300, 900], dur: 0.12, gain: 0.12 }); },
+  /* Le boss arrive : sirène à deux tons, trois fois. */
+  alarm: function () {
+    for (var i = 0; i < 3; i++) {
+      tone({ type: 'square', f: 494, at: i * 0.36, dur: 0.16, gain: 0.07 });
+      tone({ type: 'square', f: 392, at: i * 0.36 + 0.18, dur: 0.16, gain: 0.07 });
+    }
+  },
+  /* Chaque Stop sur le boss : une note qui monte à mesure qu'il cède. */
+  hit: function (left) { tone({ type: 'square', f: 330 * Math.pow(1.09, 10 - left), dur: 0.05, gain: 0.07 }); },
+  /* Boss vaincu, ou l'antivirus qui nettoie : arpège montant. */
+  win: function () { notes([523, 659, 784, 1047], 'square', 0.07, 0.08, 0.07); },
+  clean: function () {
+    tone({ type: 'triangle', f: [400, 1600], dur: 0.25, gain: 0.12 });
+    notes([784, 1047], 'square', 0.08, 0.07, 0.05);
+  },
+  /* Approche de la mort : un battement de cœur grave (deux coups), plus
+     rapide quand la jauge passe sous 15 %. */
+  beat: function () {
+    tone({ type: 'triangle', f: [120, 60], dur: 0.12, gain: 0.2 });
+    tone({ type: 'triangle', f: [110, 55], at: 0.16, dur: 0.1, gain: 0.14 });
+  },
+  /* Fin de partie, perdue : la descente classique. */
+  lose: function () { notes([523, 440, 349, 262], 'square', 0.16, 0.18, 0.08); tone({ type: 'triangle', f: [262, 65], at: 0.64, dur: 0.6, gain: 0.14 }); },
+  /* Fin de partie, gagnée : petite fanfare. */
+  victory: function () { notes([523, 659, 784, 1047, 784, 1047], 'square', 0.1, 0.12, 0.07); },
+  /* Le son vient d'être rallumé : un blip de confirmation. */
+  toggle: function () { tone({ type: 'triangle', f: 880, dur: 0.06, gain: 0.12 }); }
+};
+
 /* ---------- Annonces ---------- */
 var announceTimer = 0;
 function say(text) {
@@ -306,7 +443,7 @@ var zTop = 10;
 var winId = 0;
 
 function makeWin(o) {
-  var w = el('section', 'w95 pop' + (o.cls ? ' ' + o.cls : ''));
+  var w = el('section', 'w95 pop pop--' + (o.size || 'm') + (o.cls ? ' ' + o.cls : ''));
   var id = 'pop-' + (++winId);
   w.setAttribute('role', 'group');
   w.setAttribute('aria-labelledby', id);
@@ -421,6 +558,7 @@ function nudge(w) {
   var dy = (Math.random() < 0.5 ? -1 : 1) * rand(8, 24);
   w.style.left = Math.round(Math.min(maxX, Math.max(0, w.offsetLeft + dx))) + 'px';
   w.style.top = Math.round(Math.min(maxY, Math.max(0, w.offsetTop + dy))) + 'px';
+  sfx.dodge();
 }
 function clampWin(w) {
   if (w.classList.contains('pop--modal')) return;
@@ -439,6 +577,7 @@ function addWin(w, near) {
   s.wins.push(w);
   markActive();
   announceCount();
+  sfx.open();
   return w;
 }
 
@@ -474,6 +613,7 @@ function closeWin(w, points) {
   s.combo = now - s.lastClose < 900 ? Math.min(s.combo + 1, 5) : 1;
   s.lastClose = now;
   s.score += (points || 10) * s.combo;
+  sfx.close(s.combo);
   s.closed += 1;
   renderHud();
 }
@@ -493,10 +633,16 @@ var DECK_LINES = [
   'Slide 1 of 214.'
 ];
 
+/* Un grand deck montre trois slides, les autres une seule. */
+function deckHtml(size) {
+  return size === 'l' ? '<div class="slides">' + slideSvg() + slideSvg() + slideSvg() + '</div>' : slideSvg();
+}
 function spawnDeck() {
+  var size = pick(['s', 'm', 'l']);
   addWin(makeWin({
     title: pick(DECK_NAMES),
-    html: slideSvg() + '<p>' + pick(DECK_LINES) + '</p>',
+    size: size,
+    html: deckHtml(size) + '<p>' + pick(DECK_LINES) + '</p>',
     onX: function (w) { closeWin(w, 10); }
   }));
 }
@@ -504,13 +650,14 @@ function spawnDeck() {
 function spawnAd() {
   addWin(makeWin({
     title: 'You won!!!',
+    size: pick(['m', 'l']),
     tinyX: true,
     xLabel: 'Close the free font ad',
     html: '<p class="pop__lead">Congratulations! You are the 1,000,000th designer.</p><p>Claim your free font now. Totally not a virus.</p>',
     onX: function (w) { closeWin(w, 20); },
     buttons: [{
       label: 'Claim my free font', cta: true,
-      onClick: function () { spawnRandom(true); spawnRandom(true); }
+      onClick: function () { sfx.scam(); spawnRandom(true); spawnRandom(true); }
     }]
   }));
 }
@@ -525,10 +672,11 @@ function spawnAlert() {
         s.integrity = Math.max(0, s.integrity - 15);
         s.score = Math.max(0, s.score - 50);
         s.combo = 1;
+        sfx.bad();
         say('Rasterized. Deck integrity down.');
         renderHud();
       } },
-      { label: 'Keep editable', cta: true, onClick: function (w) { closeWin(w, 15); } }
+      { label: 'Keep editable', cta: true, onClick: function (w) { closeWin(w, 15); sfx.good(); } }
     ]
   }));
 }
@@ -536,6 +684,7 @@ function spawnAlert() {
 function spawnStubborn() {
   addWin(makeWin({
     title: 'Untitled_presentation (1).pptx',
+    size: pick(['s', 'm']),
     html: slideSvg() + '<p>You can’t close me. Probably.</p>',
     onX: function (w) { closeWin(w, 20); }
   }));
@@ -552,6 +701,7 @@ function spawnChain(step, near) {
   var advance = function (w) {
     var last = step === CHAIN.length - 1;
     closeWin(w, last ? 40 : 5);
+    if (last) sfx.good();
     if (!last) {
       var next = spawnChain(step + 1, w);
       var btn = next.querySelector('.btn95');
@@ -560,6 +710,7 @@ function spawnChain(step, near) {
   };
   var w = makeWin({
     title: c.title,
+    size: pick(['s', 'm']),
     html: '<div class="pop__row">' + ICON_ASK + '<p class="pop__lead">' + c.text + '</p></div>',
     onX: function (p) { p._hadFocus = true; advance(p); },
     buttons: [{ label: 'Yes, close it', cta: true, onClick: function (p) { p._hadFocus = true; advance(p); } }]
@@ -577,6 +728,7 @@ function spawnBonus() {
       targets.forEach(function (x) { removeWin(x); });
       s.score += targets.length * 15;
       s.closed += targets.length;
+      sfx.clean();
       say('Cleaned ' + targets.length + ' pop-ups.');
       renderHud();
       pauseBtn.focus();
@@ -589,19 +741,21 @@ function spawnBoss() {
   var left = 10;
   var w = makeWin({
     title: 'SCREENSHOT.EXE',
-    cls: 'pop--wide',
+    size: 'l',
     html: '<div class="pop__row">' + ICON_WARN + '<div><p class="pop__lead">Flattening your deck into one image…</p><p class="pop__pct">12%</p></div></div>' +
       '<div class="bar95 bar95--danger" aria-hidden="true"><div class="bar95__fill"></div></div>',
     buttons: [{ label: 'Stop (10)', cta: true, ref: '_stop', onClick: function (p, btn) {
       left -= 1;
       if (left > 0) {
         btn.textContent = 'Stop (' + left + ')';
+        sfx.hit(left);
         return;
       }
       s.boss = null;
       removeWin(p);
       s.score += 200;
       s.closed += 1;
+      sfx.win();
       say('SCREENSHOT.EXE stopped. Plus 200.');
       renderHud();
     } }]
@@ -612,6 +766,7 @@ function spawnBoss() {
   w._fill = w.querySelector('.bar95__fill');
   s.boss = w;
   addWin(w);
+  sfx.alarm();
   say('Boss: SCREENSHOT.EXE is flattening your deck. Press Stop ten times.');
 }
 
@@ -627,15 +782,12 @@ function spawnRandom(fromAd) {
 }
 
 /* ---------- Boucle ---------- */
-/* Rythme façon Tetris : 3 s de calme pour que le joueur comprenne (une
-   seule pop-up), puis la vitesse normale, une pop-up toutes les 1.3 s, qui
-   monte d'un palier toutes les 6 s (15 % plus vite à chaque fois) jusqu'à
-   une toutes les 0.38 s. */
-var CALM = 3000;
+/* Rythme régulier : une pop-up toutes les 1.1 s au départ, l'écart se
+   resserre en ligne droite jusqu'à 0.55 s à la fin. Pas de palier ni
+   d'emballement : ça monte petit à petit. */
 function spawnInterval() {
-  if (s.elapsed < CALM) return CALM - s.elapsed;
-  var level = Math.floor((s.elapsed - CALM) / 6000);
-  var ms = Math.max(380, 1300 * Math.pow(0.85, level));
+  var t = Math.min(1, s.elapsed / DURATION);
+  var ms = 1100 - 550 * t;
   if (isSmall()) ms *= 1.5;
   if (reduceMotion) ms *= 1.3;
   return ms;
@@ -663,6 +815,17 @@ function tick() {
   var drainPer = isSmall() ? 1.8 : 1.2;
   var delta = 2.5 - Math.max(0, s.wins.length - 1) * drainPer;
   s.integrity = Math.min(100, s.integrity + delta * dt / 1000);
+
+  /* Sous 30 %, le cœur bat ; sous 15 %, il s'emballe. */
+  if (s.integrity < 30) {
+    s.beatIn -= dt;
+    if (s.beatIn <= 0) {
+      sfx.beat();
+      s.beatIn = s.integrity < 15 ? 520 : 850;
+    }
+  } else {
+    s.beatIn = 0;
+  }
 
   if (s.boss) {
     s.boss._pct = Math.min(100, s.boss._pct + (88 / 9000) * dt);
@@ -726,7 +889,8 @@ function play() {
   s.closed = 0;
   s.elapsed = 0;
   s.lastClose = -9999;
-  s.untilSpawn = 900;
+  s.beatIn = 0;
+  s.untilSpawn = 400;
   s.bossDone = false;
   s.last = performance.now();
   pauseBtn.disabled = false;
@@ -787,6 +951,7 @@ function lose() {
   var r = endRound();
   var held = Math.round(s.elapsed / 1000);
   clearDesk();
+  sfx.lose();
   showModal({
     title: 'SCREENSHOT.EXE',
     html: '<div class="pop__row">' + ICON_WARN + '<div><p class="pop__lead">Your deck was flattened into a screenshot.</p>' +
@@ -804,6 +969,7 @@ function victory() {
   var r = endRound();
   var closed = s.closed;
   clearDesk();
+  sfx.victory();
   var share = 'I saved my deck from ' + closed + ' pop-ups on decker.billeltighidet.fr';
   showModal({
     title: 'Decker Security 2000',
@@ -855,6 +1021,8 @@ const ICON_WARN = (() => {
 /** Bulle de question en pixels, pour la chaîne « Are you sure? ». */
 const ICON_ASK = `<svg class="pop__icon" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><path class="icon__mark" d="M3 2h10v9H3zM2 3h12v7H2z"/><path class="icon__line" d="M3 1h10v1H3zM2 2h1v1H2zM13 2h1v1h-1zM1 3h1v7H1zM14 3h1v7h-1zM2 10h1v1H2zM13 10h1v1h-1zM3 11h10v1H3zM4 12h2v1H4zM4 13h1v1H4zM6 3h4v1H6zM10 4h1v2h-1zM8 6h2v1H8zM7 7h2v1H7zM7 9h2v1H7z"/></svg>`;
 
+const CHECK = `<svg viewBox="0 0 8 7" shape-rendering="crispEdges" aria-hidden="true"><path fill="currentColor" d="M7 0h1v2H7zM6 1h1v2H6zM5 2h1v2H5zM0 2h1v2H0zM1 3h1v2H1zM4 3h1v2H4zM2 4h2v3H2z"/></svg>`;
+
 const MARK = DECKER_MARK_SVG.replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '');
 
 export function gamePage(opts: { pluginUrl: string }): string {
@@ -897,7 +1065,10 @@ ${GAME_CSS}
         <a class="w95__x" href="/" aria-label="Close the game and go back to Decker">${ICON_CLOSE}</a>
       </div>
       <div class="w95__tools">
-        <button type="button" class="btn95" data-pause disabled>Pause</button>
+        <div class="w95__group">
+          <button type="button" class="btn95" data-pause disabled>Pause</button>
+          <label class="chk95"><input type="checkbox" class="chk95__input" data-sound><span class="chk95__box" aria-hidden="true">${CHECK}</span><span class="chk95__label">Sound</span></label>
+        </div>
         <div class="meter-wrap">
           <span id="meter-label">Deck integrity</span>
           <div class="meter" role="progressbar" aria-labelledby="meter-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100" data-meter><div class="meter__fill" data-meter-fill></div></div>
