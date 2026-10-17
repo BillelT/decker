@@ -19,6 +19,8 @@ export interface TemplateStylePanelProps {
   setColorRoles: (updater: (prev: Record<string, ThemeColorRole>) => Record<string, ThemeColorRole>) => void;
   /** Information à afficher dans le toast du panneau (ex. un rôle repris à une autre couleur). */
   onNotice: (message: string) => void;
+  /** Export en cours : les rôles de couleur sont déjà partis, on ne les change plus. */
+  locked?: boolean;
 }
 
 /** Hex ou nom de variable Figma tronqué sur une ligne — le libellé complet reste dans `title` (même convention que `f2s-tmpl-chip-label`). */
@@ -42,7 +44,7 @@ function colorLabel(c: TemplateColorSwatch): string {
  */
 const SUGGESTION_PLURALS = new Intl.PluralRules('en');
 
-export function TemplateStylePanel({ master, colors, fonts, fontOverrides, setFontOverrides, colorRoles, setColorRoles, onNotice }: TemplateStylePanelProps) {
+export function TemplateStylePanel({ master, colors, fonts, fontOverrides, setFontOverrides, colorRoles, setColorRoles, onNotice, locked = false }: TemplateStylePanelProps) {
   const assignedKeyByRole = new Map<ThemeColorRole, string>();
   for (const [key, role] of Object.entries(colorRoles)) assignedKeyByRole.set(role, key);
   const sortedColors = [...colors].sort((a, b) => b.usageCount - a.usageCount);
@@ -127,7 +129,7 @@ export function TemplateStylePanel({ master, colors, fonts, fontOverrides, setFo
             <button
               type="button"
               className="f2s-btn f2s-btn--ghost"
-              disabled={suggestedCount === 0}
+              disabled={locked || suggestedCount === 0}
               title={
                 suggestedCount === 0
                   ? 'Nothing left to suggest: every role or color is already assigned.'
@@ -160,6 +162,7 @@ export function TemplateStylePanel({ master, colors, fonts, fontOverrides, setFo
                       className="f2s-font-dropdown f2s-style-role-select"
                       aria-label={`Theme role for ${label}`}
                       value={colorRoles[key] ?? ''}
+                      disabled={locked}
                       onChange={(e) => handleRoleChange(key, (e.target as HTMLSelectElement).value)}
                     >
                       <option value="">No role</option>

@@ -230,6 +230,7 @@ export function TemplatePanel({
       colorRoles={colorRoles}
       setColorRoles={setColorRoles}
       onNotice={onNotice}
+      locked={locked}
     />
   );
 

@@ -5175,7 +5175,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
     return c3.variableName ?? c3.hex;
   }
   var SUGGESTION_PLURALS = new Intl.PluralRules("en");
-  function TemplateStylePanel({ master, colors, fonts, fontOverrides, setFontOverrides, colorRoles, setColorRoles, onNotice }) {
+  function TemplateStylePanel({ master, colors, fonts, fontOverrides, setFontOverrides, colorRoles, setColorRoles, onNotice, locked = false }) {
     const assignedKeyByRole = /* @__PURE__ */ new Map();
     for (const [key, role] of Object.entries(colorRoles)) assignedKeyByRole.set(role, key);
     const sortedColors = [...colors].sort((a3, b2) => b2.usageCount - a3.usageCount);
@@ -5228,7 +5228,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
             {
               type: "button",
               className: "f2s-btn f2s-btn--ghost",
-              disabled: suggestedCount === 0,
+              disabled: locked || suggestedCount === 0,
               title: suggestedCount === 0 ? "Nothing left to suggest: every role or color is already assigned." : "Fill the free roles from how each color is used: text, background, links, then vivid colors as accents.",
               onClick: applySuggestedRoles,
               children: "Suggest roles"
@@ -5253,6 +5253,7 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
                 className: "f2s-font-dropdown f2s-style-role-select",
                 "aria-label": `Theme role for ${label}`,
                 value: colorRoles[key] ?? "",
+                disabled: locked,
                 onChange: (e3) => handleRoleChange(key, e3.target.value),
                 children: [
                   /* @__PURE__ */ u3("option", { value: "", children: "No role" }),
@@ -5455,7 +5456,8 @@ html.f2s-skin--modern .f2s-footer-settings[aria-expanded='true'] {
         setFontOverrides,
         colorRoles,
         setColorRoles,
-        onNotice
+        onNotice,
+        locked
       }
     );
     const activeLayout = activeId ? layouts[activeId] : void 0;
