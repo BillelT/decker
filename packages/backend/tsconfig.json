@@ -14,7 +14,10 @@
     // playwright, volontairement absent des dépendances du dépôt, et manipule
     // le DOM de la page rendue — deux choses que ce projet de compilation, qui
     // ne cible que le serveur, ne sait pas typer.
-    "src/og/render.ts"
+    "src/og/render.ts",
+    // Visuels Figma Community : même cas (playwright), et ils importent un
+    // module du plugin, hors de ce projet de compilation.
+    "src/community"
   ],
   "references": [{ "path": "../shared" }]
 }

@@ -17,7 +17,8 @@
     "precalibrate": "npm --prefix ../shared run build",
     "calibrate": "tsx src/calibration/calibrate.ts",
     "spike:theme": "tsx src/spikes/masterThemeSpike.ts",
-    "og:build": "tsx src/og/render.ts"
+    "og:build": "tsx src/og/render.ts",
+    "community:build": "tsx src/community/render.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1104.0",
