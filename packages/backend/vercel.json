@@ -1,4 +1,11 @@
 {
   "buildCommand": "cd ../.. && npm install && npm run build --workspace packages/backend",
+  "redirects": [
+    {
+      "source": "/figma",
+      "destination": "https://www.figma.com/community/plugin/1666774362264403763",
+      "permanent": false
+    }
+  ],
   "rewrites": [{ "source": "/(.*)", "destination": "/api" }]
 }
