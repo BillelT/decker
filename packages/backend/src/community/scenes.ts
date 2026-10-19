@@ -488,16 +488,16 @@ body {
 .split__line i { position: absolute; left: 50%; top: 86%; width: 36px; height: 36px; margin: -18px 0 0 -18px; border-radius: 50%; background: var(--b-accent); box-shadow: 0 0 0 5px var(--b-surface); }
 
 /* ---------- Couverture ---------- */
-.cover .brand { left: 96px; top: 72px; }
+.cover .brand { left: 64px; top: 64px; }
 .cover__title {
-  position: absolute; left: 96px; top: 160px; width: 1500px;
+  position: absolute; left: 64px; top: 152px; width: 1500px;
   font-size: 104px; font-weight: var(--b-font-bold); line-height: var(--b-leading-none);
   letter-spacing: var(--b-tracking-tighter); text-wrap: balance;
 }
 /* Forme orange de l'image OG : elle sort par le bas, 32px de chaque côté
    du plugin, et son haut passe sous lui. */
 .cover__shape {
-  position: absolute; left: 64px; right: 64px; top: 496px; bottom: 0;
+  position: absolute; left: 32px; right: 32px; top: 496px; bottom: 0;
   background: var(--b-accent); border-radius: 8px 8px 0 0;
 }
 `;
@@ -514,7 +514,7 @@ export function scenes(pluginHtml: string): Scene[] {
     html: page(
       `${BRAND}<h1 class="cover__title">Export editable, pixel perfect decks and templates</h1>
       <div class="cover__shape"></div>
-      ${plugin({ x: 96, y: 440, w: 1440, h: 690, scale: 1.2, bare: true })}`,
+      ${plugin({ x: 64, y: 440, w: 1493, h: 690, scale: 1.2, bare: true })}`,
       'cover',
     ),
     async drive(ctx) {
