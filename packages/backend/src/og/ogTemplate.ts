@@ -33,7 +33,7 @@
  * le plugin se fondait dans la carte. Un contour très léger et une ombre
  * douce l'en détachent, juste assez pour lire deux plans sans alourdir la
  * carte. Derrière lui, une forme orange (--b-accent) arrive du même côté
- * que lui, par le bas : elle sort par le bas de la carte, s'arrête à 16px de
+ * que lui, par le bas : elle sort par le bas de la carte, s'arrête à 20px de
  * ses bords gauche et droit, et son haut passe sous le plugin, si bien que
  * l'orange ne se lit que dans les marges latérales.
  *
@@ -55,7 +55,10 @@ import type { OgImageContent } from './variants.js';
 const PWIN_WIDTH = 960;
 /** Largeur utile de la carte : 1200 moins deux marges de 48px. */
 const CONTENT_WIDTH = 1104;
-const PWIN_SCALE = CONTENT_WIDTH / PWIN_WIDTH;
+/* Le contour d'1px du plugin (box-shadow plus bas) déborde de sa boîte : le
+   plugin est rentré d'1px de chaque côté pour que ce contour, son bord
+   visible, tombe sur la marge de 48px comme le logo et le titre. */
+const PWIN_SCALE = (CONTENT_WIDTH - 2) / PWIN_WIDTH;
 
 const CSS = `
 @font-face {
@@ -107,6 +110,9 @@ body {
 .headline {
   margin-top: 24px;
   max-width: 22ch;
+  /* Approche gauche du E et du p de Cabinet Grotesk à 72px : sans ce
+     retrait, l'encre du titre commence à 52px, 4px après le logo. */
+  margin-left: -4px;
   font-size: 72px;
   font-weight: var(--b-font-bold);
   line-height: var(--b-leading-none);
@@ -121,13 +127,13 @@ body {
   margin-top: 24px;
 }
 
-/* Forme orange sous le plugin : 32px de chaque côté de lui (16px des bords
+/* Forme orange sous le plugin : 28px de chaque côté de lui (20px des bords
    de la carte), haut à 56px sous celui du plugin, coins du haut à 8px. */
 .preview::before {
   content: "";
   position: absolute;
-  left: -32px;
-  right: -32px;
+  left: -28px;
+  right: -28px;
   top: 56px;
   bottom: 0;
   background: var(--b-accent);
@@ -137,7 +143,7 @@ body {
 /* La démo du hero réduite au plugin seul : plus de canvas, de barre
    d'onglets ni de barre de titre Figma, plus de mise à l'échelle sur 1440px
    (son script pose --dm-scale, écrasé ici par l'échelle de la carte). */
-.preview .dm { position: relative; width: 100%; height: 100%; aspect-ratio: auto; overflow: visible; background: none; border-radius: 0; }
+.preview .dm { position: relative; left: 1px; width: calc(100% - 2px); height: 100%; aspect-ratio: auto; overflow: visible; background: none; border-radius: 0; }
 .preview .dm-tabbar,
 .preview .dm-canvas,
 .preview .dm-cursor,
