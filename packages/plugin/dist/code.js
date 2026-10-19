@@ -1762,7 +1762,6 @@
       await yieldToUi();
     }
     figma.currentPage.selection = copies;
-    figma.viewport.scrollAndZoomIntoView(copies);
     postPreparedNotice("deck", copies.length, totalWarnings);
     await addFrames(newlyCreated, pending, idGen, false);
   }
@@ -1874,7 +1873,6 @@
       await yieldToUi();
     }
     figma.currentPage.selection = copies;
-    figma.viewport.scrollAndZoomIntoView(copies);
     postPreparedNotice("template", copies.length, totalWarnings);
     await addTemplateLayoutNodes(newlyCreated, pending, idGen);
   }

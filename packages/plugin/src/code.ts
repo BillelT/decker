@@ -550,7 +550,6 @@ async function handlePrepareForSlides(
   }
 
   figma.currentPage.selection = copies;
-  figma.viewport.scrollAndZoomIntoView(copies);
 
   postPreparedNotice('deck', copies.length, totalWarnings);
 
@@ -742,7 +741,6 @@ async function handlePrepareTemplateForSlides(
   }
 
   figma.currentPage.selection = copies;
-  figma.viewport.scrollAndZoomIntoView(copies);
 
   postPreparedNotice('template', copies.length, totalWarnings);
 
