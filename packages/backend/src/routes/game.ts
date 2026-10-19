@@ -576,10 +576,16 @@ function clampWin(w) {
 function addWin(w, near) {
   w.style.visibility = 'hidden';
   w.style.zIndex = String(++zTop);
-  if (!w._boss && Math.random() < 0.6) {
-    w.style.minHeight = Math.round(desk.clientHeight * pick([0.35, 0.5, 0.65])) + 'px';
-  }
   desk.appendChild(w);
+  if (!w._boss) {
+    /* Le plus souvent au format 16/9 d'une fenêtre classique, celui des
+       fenêtres du logo Decker (le contenu peut l'agrandir, jamais le
+       réduire). Sinon une hauteur au hasard, pour varier. */
+    var h = Math.random() < 0.75
+      ? w.offsetWidth * 9 / 16
+      : desk.clientHeight * pick([0.35, 0.5, 0.65]);
+    w.style.minHeight = Math.round(Math.min(h, desk.clientHeight - 8)) + 'px';
+  }
   placeRandom(w, near);
   w.style.visibility = '';
   s.wins.push(w);
