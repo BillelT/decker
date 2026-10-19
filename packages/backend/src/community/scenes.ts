@@ -363,15 +363,17 @@ body {
 
 /* Lockup du header du site, à l'échelle du visuel. */
 .brand {
-  position: absolute; left: 112px; top: 96px; z-index: 5;
+  position: absolute; left: 64px; top: 80px; z-index: 5;
   display: flex; align-items: center; gap: 14px;
   font-size: 40px; font-weight: var(--b-font-bold); letter-spacing: var(--b-tracking-tight); line-height: 1;
 }
 .brand__mark { height: 40px; width: auto; aspect-ratio: 27 / 25; flex: none; display: block; translate: 0 -1px; }
 
-/* Colonne de texte : surtitre, titre, une phrase. Centrée sur la hauteur. */
+/* Colonne de texte : surtitre, titre, une phrase. Centrée sur la hauteur,
+   à la marge de la scène (64px) : la scène sort par la droite, une marge
+   gauche plus large déséquilibrait le visuel. */
 .copy {
-  position: absolute; left: 112px; top: 0; bottom: 0; width: 600px;
+  position: absolute; left: 64px; top: 0; bottom: 0; width: 600px;
   display: flex; flex-direction: column; justify-content: center;
 }
 .eyebrow {
@@ -391,7 +393,7 @@ body {
 
 /* Scène : le puits en creux des cards du site, qui sort par la droite. */
 .stage {
-  position: absolute; left: 800px; top: 80px; bottom: 80px; right: 0;
+  position: absolute; left: 728px; top: 64px; bottom: 64px; right: 0;
   overflow: clip; background: var(--b-surface-muted);
 }
 .stage::after { content: ""; position: absolute; inset: 0; z-index: 30; box-shadow: var(--hyb-in); pointer-events: none; }
@@ -479,8 +481,8 @@ body {
 /* Même slide aux mêmes coordonnées de scène dans les deux moitiés : chacune
    n'en montre que sa part. */
 .split__slide { position: absolute; top: 160px; width: 960px; }
-.split--figma .split__slide { left: 80px; }
-.split--slides .split__slide { left: calc(80px - 100%); }
+.split--figma .split__slide { left: calc(100% - 480px); }
+.split--slides .split__slide { left: -480px; }
 .split--slides .slide { box-shadow: 0 1px 3px rgba(60, 64, 67, 0.3), 0 4px 8px 3px rgba(60, 64, 67, 0.15); }
 .split__line { position: absolute; z-index: 15; left: 50%; top: 0; bottom: 0; width: 3px; margin-left: -1.5px; background: var(--b-accent); }
 .split__line i { position: absolute; left: 50%; top: 86%; width: 36px; height: 36px; margin: -18px 0 0 -18px; border-radius: 50%; background: var(--b-accent); box-shadow: 0 0 0 5px var(--b-surface); }
@@ -662,7 +664,7 @@ export function scenes(pluginHtml: string): Scene[] {
     alt: 'Suggest roles in the Decker plugin: the Three pillars layout gets its title, subtitles and body texts in one click.',
     html: page(
       `${BRAND}${copy('Templates', 'Suggested placeholders and colors', 'Decker reads each layout and suggests its placeholders and theme colors. Change any of them in one click.')}
-      <div class="stage">${plugin({ x: -290, y: -180, w: 960, h: 1000, scale: 1.5 })}${cursorAt(0, 0)}</div>`,
+      <div class="stage">${plugin({ x: -240, y: -180, w: 960, h: 1000, scale: 1.5 })}${cursorAt(0, 0)}</div>`,
     ),
     async drive(ctx) {
       const f = await ctx.plugin();
@@ -684,7 +686,7 @@ export function scenes(pluginHtml: string): Scene[] {
     alt: 'The Settings window of the Decker plugin, showing the Google account the export lands in.',
     html: page(
       `${BRAND}${copy('Google access', 'Only what the export needs', 'Decker only touches the deck it creates for you, shows which account is connected, and keeps nothing after the export.')}
-      <div class="stage">${plugin({ x: -640, y: -380, scale: 2 })}</div>`,
+      <div class="stage">${plugin({ x: -604, y: -364, scale: 2 })}</div>`,
     ),
     async drive(ctx) {
       const f = await ctx.plugin();
