@@ -24,6 +24,8 @@ export interface DeckPanelProps {
   exportAttempt?: number;
   /** Le job d'export en cours (celui qui a produit `exportCursor`) est-il conclu (réussi ou échoué) ? */
   exportConcluded: boolean;
+  /** Le job conclu est réussi : l'aperçu déroule les slides restantes avant d'annoncer le succès (pacedExportCursor.ts). */
+  exportSucceeded: boolean;
   /**
    * Notice de sélection ("no-frames-selected" / "too-many-frames") pilotée
    * par ui.tsx, auto-dismiss inclus. Affichée en toast absolu (voir `.f2s-toast`)
@@ -66,6 +68,7 @@ export function DeckPanel({
   exportCursor,
   exportAttempt,
   exportConcluded,
+  exportSucceeded,
   notice,
   onDismissNotice,
   locked,
@@ -79,7 +82,7 @@ export function DeckPanel({
   // Aperçu d'export "paced" : avance d'une frame à la fois plutôt que de
   // suivre tel quel `exportCursor` (qui peut sauter plusieurs slides), en
   // rattrapant le backend plutôt qu'en le retardant (pacedExportCursor.ts).
-  const pacedCursor = usePacedExportCursor(exportAttempt, order, exportCursor, exportConcluded);
+  const pacedCursor = usePacedExportCursor(exportAttempt, order, exportCursor, exportConcluded, exportSucceeded);
   const pacedIndex = pacedCursor?.index;
   const pacedTotal = pacedCursor?.total;
   useEffect(() => {

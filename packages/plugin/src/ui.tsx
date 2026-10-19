@@ -496,10 +496,11 @@ function App() {
   const [exportedCount, setExportedCount] = useState(0);
   // Taille du deck exporté, pour « 2 of 4 slides were created » après une annulation.
   const [canceledTotal, setCanceledTotal] = useState(0);
-  // L'aperçu d'export (usePacedExportCursor) s'arrête dès que le job est
-  // conclu ; le panneau signale ici la fin de sa séquence
-  // (`onPreviewSettled`), et le succès (toast + statut du footer) n'apparaît
-  // qu'à ce moment-là, pour ne jamais coexister avec "Generating slide 1 of 3".
+  // L'aperçu d'export (usePacedExportCursor) s'arrête net sur un job échoué ;
+  // sur un job réussi il déroule d'abord les slides restantes. Le panneau
+  // signale ici la fin de sa séquence (`onPreviewSettled`), et le succès
+  // (toast + statut du footer) n'apparaît qu'à ce moment-là, pour ne jamais
+  // coexister avec "Generating slide 1 of 3".
   const [previewSettled, setPreviewSettled] = useState(true);
   // Le job a une présentation créée et au moins un lot encore non appliqué :
   // POST /export/:jobId/retry peut rejouer UNIQUEMENT ces lots-là plutôt que
@@ -1801,6 +1802,7 @@ function App() {
           exportCursor={exportSource === 'deck' ? exportCursor : undefined}
           exportAttempt={exportSource === 'deck' && exportState !== 'canceled' ? exportAttempt : undefined}
           exportConcluded={exportSource === 'deck' && concludedExport}
+          exportSucceeded={exportSource === 'deck' && exportState === 'done'}
           onPacedCursorChange={setPreviewCursor}
           notice={selectionNotice}
           onDismissNotice={clearSelectionNotice}
@@ -1829,6 +1831,7 @@ function App() {
           exportCursor={exportSource === 'template' ? exportCursor : undefined}
           exportAttempt={exportSource === 'template' && exportState !== 'canceled' ? exportAttempt : undefined}
           exportConcluded={exportSource === 'template' && concludedExport}
+          exportSucceeded={exportSource === 'template' && exportState === 'done'}
           onPacedCursorChange={setPreviewCursor}
           colors={templateColors}
           fonts={templateFonts}

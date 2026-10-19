@@ -180,6 +180,8 @@ export interface TemplatePanelProps extends TemplateStylePanelProps {
   exportAttempt?: number;
   /** Le job en cours (celui qui a produit `exportCursor`) est-il conclu (réussi ou échoué) ? */
   exportConcluded: boolean;
+  /** Le job conclu est réussi : l'aperçu déroule les slides restantes avant d'annoncer le succès (pacedExportCursor.ts). */
+  exportSucceeded: boolean;
 }
 
 /**
@@ -208,6 +210,7 @@ export function TemplatePanel({
   exportCursor,
   exportAttempt,
   exportConcluded,
+  exportSucceeded,
   colors,
   fonts,
   colorRoles,
@@ -236,7 +239,7 @@ export function TemplatePanel({
 
   const activeLayout = activeId ? layouts[activeId] : undefined;
   // Aperçu d'export "paced" — voir DeckPanel et pacedExportCursor.ts.
-  const pacedCursor = usePacedExportCursor(exportAttempt, order, exportCursor, exportConcluded);
+  const pacedCursor = usePacedExportCursor(exportAttempt, order, exportCursor, exportConcluded, exportSucceeded);
   const pacedIndex = pacedCursor?.index;
   const pacedTotal = pacedCursor?.total;
   useEffect(() => {

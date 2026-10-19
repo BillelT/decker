@@ -4577,9 +4577,16 @@ html.f2s-skin--modern .f2s-retro-bar {
   function revealMsForLag(lag) {
     return lag <= 1 ? REVEAL_MS : Math.max(MIN_REVEAL_MS, Math.round(REVEAL_MS / lag));
   }
-  function usePacedExportCursor(attempt, order, rawCursor, concluded) {
+  var FINISH_BUDGET_MS = 4500;
+  var MAX_FINISH_REVEAL_MS = 1200;
+  function finishRevealMs(remaining) {
+    const share = Math.round(FINISH_BUDGET_MS / Math.max(1, remaining));
+    return Math.min(MAX_FINISH_REVEAL_MS, Math.max(MIN_REVEAL_MS, share));
+  }
+  function usePacedExportCursor(attempt, order, rawCursor, concluded, succeeded = false) {
     const total = order.length;
     const [displayIndex, setDisplayIndex] = d2(0);
+    const [rolledOut, setRolledOut] = d2(false);
     const attemptRef = A2(attempt);
     const rawIndexRef = A2(rawCursor?.index);
     rawIndexRef.current = rawCursor?.index;
@@ -4587,19 +4594,31 @@ html.f2s-skin--modern .f2s-retro-bar {
       if (attempt === attemptRef.current) return;
       attemptRef.current = attempt;
       setDisplayIndex(Math.min(rawIndexRef.current ?? 0, Math.max(0, total - 1)));
+      setRolledOut(false);
     }, [attempt, total]);
+    const finishing = concluded && succeeded;
     const rawIndex = rawCursor?.index;
-    const target = total === 0 || rawIndex === void 0 ? displayIndex : Math.min(rawIndex, total - 1);
+    const target = finishing ? Math.max(0, total - 1) : total === 0 || rawIndex === void 0 ? displayIndex : Math.min(rawIndex, total - 1);
     const lag = target - displayIndex;
+    const revealMs = finishing ? finishRevealMs(total - displayIndex) : revealMsForLag(lag);
+    const shownRef = A2({ key: "", at: 0, ms: 0 });
+    const shownKey = `${attempt}:${displayIndex}`;
+    if (shownRef.current.key !== shownKey) shownRef.current = { key: shownKey, at: Date.now(), ms: revealMs };
     h2(() => {
-      if (attempt === void 0 || total === 0 || concluded || lag <= 0) return;
+      if (attempt === void 0 || total === 0 || concluded && !succeeded || rolledOut) return;
+      if (finishing) {
+        const left = Math.max(0, shownRef.current.at + shownRef.current.ms - Date.now());
+        const t4 = setTimeout(() => lag > 0 ? setDisplayIndex((i3) => Math.min(i3 + 1, target)) : setRolledOut(true), left);
+        return () => clearTimeout(t4);
+      }
+      if (lag <= 0) return;
       const t3 = setTimeout(() => setDisplayIndex((i3) => Math.min(i3 + 1, target)), revealMsForLag(lag));
       return () => clearTimeout(t3);
-    }, [attempt, total, concluded, lag, target]);
-    if (attempt === void 0 || total === 0 || concluded) return void 0;
+    }, [attempt, total, concluded, succeeded, finishing, rolledOut, lag, target, displayIndex]);
+    if (attempt === void 0 || total === 0 || concluded && !succeeded || rolledOut) return void 0;
     const frameId = order[displayIndex];
     if (!frameId) return void 0;
-    return { frameId, index: displayIndex, total, revealMs: revealMsForLag(lag) };
+    return { frameId, index: displayIndex, total, revealMs };
   }
 
   // src/ui/EmptyStateDemo.tsx
@@ -4796,6 +4815,7 @@ html.f2s-skin--modern .f2s-retro-bar {
     exportCursor,
     exportAttempt,
     exportConcluded,
+    exportSucceeded,
     notice,
     onDismissNotice,
     locked,
@@ -4805,7 +4825,7 @@ html.f2s-skin--modern .f2s-retro-bar {
   }) {
     const { itemRefs, itemState, registerItem, onThumbPointerDown, onThumbKeyDown, announcement } = useRailReorder(order, setOrder, locked);
     const activeFrame = activeId ? frames[activeId] : void 0;
-    const pacedCursor = usePacedExportCursor(exportAttempt, order, exportCursor, exportConcluded);
+    const pacedCursor = usePacedExportCursor(exportAttempt, order, exportCursor, exportConcluded, exportSucceeded);
     const pacedIndex = pacedCursor?.index;
     const pacedTotal = pacedCursor?.total;
     h2(() => {
@@ -5509,6 +5529,7 @@ html.f2s-skin--modern .f2s-retro-bar {
     exportCursor,
     exportAttempt,
     exportConcluded,
+    exportSucceeded,
     colors,
     fonts,
     colorRoles,
@@ -5533,7 +5554,7 @@ html.f2s-skin--modern .f2s-retro-bar {
       }
     );
     const activeLayout = activeId ? layouts[activeId] : void 0;
-    const pacedCursor = usePacedExportCursor(exportAttempt, order, exportCursor, exportConcluded);
+    const pacedCursor = usePacedExportCursor(exportAttempt, order, exportCursor, exportConcluded, exportSucceeded);
     const pacedIndex = pacedCursor?.index;
     const pacedTotal = pacedCursor?.total;
     h2(() => {
@@ -7196,6 +7217,7 @@ html.f2s-skin--modern .f2s-retro-bar {
           exportCursor: exportSource === "deck" ? exportCursor : void 0,
           exportAttempt: exportSource === "deck" && exportState !== "canceled" ? exportAttempt : void 0,
           exportConcluded: exportSource === "deck" && concludedExport,
+          exportSucceeded: exportSource === "deck" && exportState === "done",
           onPacedCursorChange: setPreviewCursor,
           notice: selectionNotice,
           onDismissNotice: clearSelectionNotice,
@@ -7225,6 +7247,7 @@ html.f2s-skin--modern .f2s-retro-bar {
           exportCursor: exportSource === "template" ? exportCursor : void 0,
           exportAttempt: exportSource === "template" && exportState !== "canceled" ? exportAttempt : void 0,
           exportConcluded: exportSource === "template" && concludedExport,
+          exportSucceeded: exportSource === "template" && exportState === "done",
           onPacedCursorChange: setPreviewCursor,
           colors: templateColors,
           fonts: templateFonts,
