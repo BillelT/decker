@@ -613,17 +613,29 @@ a.f2s-btn {
   padding-right: 8px;
 }
 
-/* Bouton Export à chevron (deck) : le chevron est dans la pastille, après le
-   libellé, à la couleur de l'encre du bouton (currentColor). Le padding droit
-   de 8px vient de la règle d'alignement optique ci-dessus. Le menu reprend la
-   liste des polices (.f2s-font-combobox-list / -option) ; seuls son ancrage
-   (sous le bouton, de sa largeur) et le rendu des <a>/<button> changent. */
+/* Bouton Export à chevron (deck) : le chevron vit dans un segment au fond
+   à peine plus sombre, collé au bord droit de la pastille, qui le sépare du
+   libellé sans filet. Le segment est posé en absolu (le padding vertical du
+   bouton change selon le skin) et sa largeur est réservée par le padding
+   droit : libellé + 10px d'air + segment de 28px. Le chevron, centré dans le
+   segment, a donc le même blanc de chaque côté. Sélecteur renforcé : il doit
+   passer devant le padding de .f2s-topbar .f2s-btn et du skin Win 95. */
+html .f2s-topbar .f2s-btn.f2s-btn--has-chevron {
+  position: relative;
+  overflow: hidden;
+  padding-right: 38px;
+}
+
 .f2s-btn-chevron {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 28px;
   display: flex;
-  flex: none;
-  /* Zone de clic élargie sans bouger le glyphe. */
-  padding: 6px;
-  margin: -6px -6px -6px -2px;
+  align-items: center;
+  justify-content: center;
+  background: rgb(18 15 13 / 0.08);
 }
 
 .f2s-split {
@@ -634,18 +646,23 @@ a.f2s-btn {
 .f2s-split-menu {
   position: absolute;
   top: calc(100% + 4px);
-  left: 0;
   right: 0;
-  width: auto;
+  left: auto;
+  width: max-content;
+  min-width: 100%;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
 }
 
 .f2s-split-option {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
   box-sizing: border-box;
   width: 100%;
+  overflow: visible;
+  text-overflow: clip;
   border: 0;
   background: transparent;
   color: inherit;
@@ -661,6 +678,12 @@ a.f2s-btn {
 
 .f2s-split-option.f2s-font-combobox-option--selected {
   font-weight: 700;
+}
+
+.f2s-split-hint {
+  font-size: 11px;
+  font-weight: 400;
+  opacity: 0.7;
 }
 
 /* Action du statut d'export dans le footer (Retry, Export again, Open in

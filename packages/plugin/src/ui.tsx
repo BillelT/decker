@@ -216,7 +216,7 @@ function ArrowUpRightIcon({ size = 12 }: { size?: number }) {
 function ChevronDownIcon({ size = 12 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" strokeLinejoin="miter" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <path d="M2 4.25l4 4 4-4" />
+      <path d="M2 4l4 4 4-4" />
     </svg>
   );
 }
@@ -1629,7 +1629,7 @@ function App() {
           onKeyDown={onMainKeyDown}
           target="_blank"
           rel="noopener noreferrer"
-          className="f2s-btn f2s-btn--primary f2s-btn--icon-end"
+          className={`f2s-btn f2s-btn--primary f2s-btn--icon-end${isDeck ? ' f2s-btn--has-chevron' : ''}`}
           aria-haspopup={isDeck ? 'menu' : undefined}
           aria-expanded={isDeck ? formatMenuOpen : undefined}
           title={
@@ -1652,7 +1652,7 @@ function App() {
       main = (
         <button
           type="button"
-          className={`f2s-btn f2s-btn--primary${isDeck ? ' f2s-btn--icon-end' : ''}`}
+          className={`f2s-btn f2s-btn--primary${isDeck ? ' f2s-btn--has-chevron' : ''}`}
           disabled={disabled}
           title={title}
           aria-haspopup={isDeck ? 'menu' : undefined}
@@ -1699,6 +1699,7 @@ function App() {
                     }}
                   >
                     {format.label}
+                    <span className="f2s-split-hint">{format.hint}</span>
                   </a>
                 );
               }
@@ -1715,6 +1716,7 @@ function App() {
                   }}
                 >
                   {format.label}
+                  <span className="f2s-split-hint">{format.hint}</span>
                 </button>
               );
             })}

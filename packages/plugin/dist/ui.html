@@ -760,17 +760,29 @@ a.f2s-btn {
   padding-right: 8px;
 }
 
-/* Bouton Export à chevron (deck) : le chevron est dans la pastille, après le
-   libellé, à la couleur de l'encre du bouton (currentColor). Le padding droit
-   de 8px vient de la règle d'alignement optique ci-dessus. Le menu reprend la
-   liste des polices (.f2s-font-combobox-list / -option) ; seuls son ancrage
-   (sous le bouton, de sa largeur) et le rendu des <a>/<button> changent. */
+/* Bouton Export à chevron (deck) : le chevron vit dans un segment au fond
+   à peine plus sombre, collé au bord droit de la pastille, qui le sépare du
+   libellé sans filet. Le segment est posé en absolu (le padding vertical du
+   bouton change selon le skin) et sa largeur est réservée par le padding
+   droit : libellé + 10px d'air + segment de 28px. Le chevron, centré dans le
+   segment, a donc le même blanc de chaque côté. Sélecteur renforcé : il doit
+   passer devant le padding de .f2s-topbar .f2s-btn et du skin Win 95. */
+html .f2s-topbar .f2s-btn.f2s-btn--has-chevron {
+  position: relative;
+  overflow: hidden;
+  padding-right: 38px;
+}
+
 .f2s-btn-chevron {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 28px;
   display: flex;
-  flex: none;
-  /* Zone de clic élargie sans bouger le glyphe. */
-  padding: 6px;
-  margin: -6px -6px -6px -2px;
+  align-items: center;
+  justify-content: center;
+  background: rgb(18 15 13 / 0.08);
 }
 
 .f2s-split {
@@ -781,18 +793,23 @@ a.f2s-btn {
 .f2s-split-menu {
   position: absolute;
   top: calc(100% + 4px);
-  left: 0;
   right: 0;
-  width: auto;
+  left: auto;
+  width: max-content;
+  min-width: 100%;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
 }
 
 .f2s-split-option {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
   box-sizing: border-box;
   width: 100%;
+  overflow: visible;
+  text-overflow: clip;
   border: 0;
   background: transparent;
   color: inherit;
@@ -808,6 +825,12 @@ a.f2s-btn {
 
 .f2s-split-option.f2s-font-combobox-option--selected {
   font-weight: 700;
+}
+
+.f2s-split-hint {
+  font-size: 11px;
+  font-weight: 400;
+  opacity: 0.7;
 }
 
 /* Action du statut d'export dans le footer (Retry, Export again, Open in
@@ -6190,7 +6213,7 @@ html.f2s-skin--modern .f2s-retro-bar {
     return /* @__PURE__ */ u3("svg", { width: size, height: size, viewBox: "0 0 32 32", fill: "currentColor", xmlns: "http://www.w3.org/2000/svg", "aria-hidden": "true", children: /* @__PURE__ */ u3("path", { d: "M10,6V8H22.59L6,24.59,7.41,26,24,9.41V22h2V6Z" }) });
   }
   function ChevronDownIcon({ size = 12 }) {
-    return /* @__PURE__ */ u3("svg", { width: size, height: size, viewBox: "0 0 12 12", fill: "none", stroke: "currentColor", strokeWidth: "2.5", strokeLinecap: "square", strokeLinejoin: "miter", xmlns: "http://www.w3.org/2000/svg", "aria-hidden": "true", children: /* @__PURE__ */ u3("path", { d: "M2 4.25l4 4 4-4" }) });
+    return /* @__PURE__ */ u3("svg", { width: size, height: size, viewBox: "0 0 12 12", fill: "none", stroke: "currentColor", strokeWidth: "2.5", strokeLinecap: "square", strokeLinejoin: "miter", xmlns: "http://www.w3.org/2000/svg", "aria-hidden": "true", children: /* @__PURE__ */ u3("path", { d: "M2 4l4 4 4-4" }) });
   }
   function DownloadIcon({ size = 12 }) {
     return /* @__PURE__ */ u3("svg", { width: size, height: size, viewBox: "0 0 16 16", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", xmlns: "http://www.w3.org/2000/svg", "aria-hidden": "true", children: /* @__PURE__ */ u3("path", { d: "M8 2v8M4.5 6.5L8 10l3.5-3.5M3 13.5h10" }) });
@@ -7153,7 +7176,7 @@ html.f2s-skin--modern .f2s-retro-bar {
             onKeyDown: onMainKeyDown,
             target: "_blank",
             rel: "noopener noreferrer",
-            className: "f2s-btn f2s-btn--primary f2s-btn--icon-end",
+            className: `f2s-btn f2s-btn--primary f2s-btn--icon-end${isDeck ? " f2s-btn--has-chevron" : ""}`,
             "aria-haspopup": isDeck ? "menu" : void 0,
             "aria-expanded": isDeck ? formatMenuOpen : void 0,
             title: downloadUrl ? `Download the deck as ${formatShort}. The Google Slides copy stays in your Drive.` : isDeck ? "Open the presentation in Google Slides." : "Open the template in Google Slides.",
@@ -7172,7 +7195,7 @@ html.f2s-skin--modern .f2s-retro-bar {
           "button",
           {
             type: "button",
-            className: `f2s-btn f2s-btn--primary${isDeck ? " f2s-btn--icon-end" : ""}`,
+            className: `f2s-btn f2s-btn--primary${isDeck ? " f2s-btn--has-chevron" : ""}`,
             disabled,
             title,
             "aria-haspopup": isDeck ? "menu" : void 0,
@@ -7210,7 +7233,10 @@ html.f2s-skin--modern .f2s-retro-bar {
                   setResultOpened(true);
                   setFormatMenuOpen(false);
                 },
-                children: format.label
+                children: [
+                  format.label,
+                  /* @__PURE__ */ u3("span", { className: "f2s-split-hint", children: format.hint })
+                ]
               },
               format.id
             );
@@ -7226,7 +7252,10 @@ html.f2s-skin--modern .f2s-retro-bar {
                 setExportFormat(format.id);
                 setFormatMenuOpen(false);
               },
-              children: format.label
+              children: [
+                format.label,
+                /* @__PURE__ */ u3("span", { className: "f2s-split-hint", children: format.hint })
+              ]
             },
             format.id
           );
