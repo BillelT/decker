@@ -478,11 +478,8 @@ a {
   background: var(--color-gray-200);
 }
 
-/* L'option choisie garde son fond tant qu'aucune autre n'est survolée ou
-   sélectionnée au clavier : il passe alors à l'option visée. */
-.f2s-font-combobox-list:has(.f2s-font-combobox-option--active:not(.f2s-font-combobox-option--selected)) .f2s-font-combobox-option--selected {
-  background: transparent;
-}
+/* L'option choisie garde son fond gris en permanence, même quand une autre
+   est survolée : elle ne le perd qu'en cessant d'être la choisie. */
 
 .f2s-font-combobox-empty {
   padding: 4px 8px;
@@ -683,9 +680,6 @@ html .f2s-topbar .f2s-btn.f2s-btn--has-chevron {
   background: var(--color-gray-200);
 }
 
-.f2s-split-menu:has(.f2s-split-option:hover:not(.f2s-font-combobox-option--selected)) .f2s-font-combobox-option--selected {
-  background: transparent;
-}
 
 .f2s-split-hint {
   font-size: 11px;
@@ -1495,7 +1489,7 @@ html .f2s-topbar .f2s-btn.f2s-btn--has-chevron {
 }
 
 /* Un calque qui a un rôle (liste Composition) : la valeur s'écrit à l'encre. */
-.f2s-log-entry-role:not(:has(option[value=""]:checked)) {
+.f2s-log-entry-role:not([data-empty]) {
   color: var(--color-text);
 }
 
@@ -1901,6 +1895,48 @@ html .f2s-topbar .f2s-btn.f2s-btn--has-chevron {
   flex: none;
   width: 142px;
   font-size: 12px;
+}
+
+.f2s-select {
+  display: inline-block;
+}
+
+/* Bouton d'un Select : même champ que .f2s-font-dropdown (porté par le
+   conteneur), la flèche étant celle du sélecteur de polices. */
+.f2s-select-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.f2s-select-button:disabled {
+  cursor: default;
+}
+
+.f2s-select-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.f2s-select:focus-within {
+  border-color: var(--color-gray-500);
+}
+
+.f2s-select-list {
+  width: max-content;
+  max-width: calc(100vw - 16px);
+  box-sizing: border-box;
 }
 
 .f2s-style-font-swatch {

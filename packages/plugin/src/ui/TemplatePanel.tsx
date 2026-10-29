@@ -1,3 +1,4 @@
+import { Select } from './Select.js';
 import { useEffect } from 'preact/hooks';
 import { logEntryFlag, logEntryTagText, logEntryTooltip } from './logEntryFlag.js';
 import { placeholderRoleTagsForKind } from './placeholderRoleOptions.js';
@@ -80,21 +81,15 @@ function TemplateElementList({
               {note && <span className={`f2s-log-entry-flag f2s-log-entry-flag--${note.flag}`}>{note.text}</span>}
             </button>
             {master ? null : (
-              <select
+              <Select
                 className="f2s-font-dropdown f2s-log-entry-role"
                 value={roleTag ?? ''}
                 title="Assign this layer to a Slides template placeholder role"
-                aria-label={`Placeholder role for ${el.name}`}
-                aria-invalid={problems ? true : undefined}
-                onChange={(e) => setPlaceholderRole(el.sourceNodeId, (e.target as HTMLSelectElement).value)}
-              >
-                <option value="">No role</option>
-                {options.map((tag) => (
-                  <option key={tag} value={tag}>
-                    [[{tag}]]
-                  </option>
-                ))}
-              </select>
+                ariaLabel={`Placeholder role for ${el.name}`}
+                invalid={Boolean(problems)}
+                onChange={(value) => setPlaceholderRole(el.sourceNodeId, value)}
+                options={[{ value: '', label: 'No role' }, ...options.map((tag) => ({ value: tag, label: `[[${tag}]]` }))]}
+              />
             )}
           </li>
         );

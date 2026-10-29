@@ -625,11 +625,8 @@ a {
   background: var(--color-gray-200);
 }
 
-/* L'option choisie garde son fond tant qu'aucune autre n'est survolée ou
-   sélectionnée au clavier : il passe alors à l'option visée. */
-.f2s-font-combobox-list:has(.f2s-font-combobox-option--active:not(.f2s-font-combobox-option--selected)) .f2s-font-combobox-option--selected {
-  background: transparent;
-}
+/* L'option choisie garde son fond gris en permanence, même quand une autre
+   est survolée : elle ne le perd qu'en cessant d'être la choisie. */
 
 .f2s-font-combobox-empty {
   padding: 4px 8px;
@@ -830,9 +827,6 @@ html .f2s-topbar .f2s-btn.f2s-btn--has-chevron {
   background: var(--color-gray-200);
 }
 
-.f2s-split-menu:has(.f2s-split-option:hover:not(.f2s-font-combobox-option--selected)) .f2s-font-combobox-option--selected {
-  background: transparent;
-}
 
 .f2s-split-hint {
   font-size: 11px;
@@ -1642,7 +1636,7 @@ html .f2s-topbar .f2s-btn.f2s-btn--has-chevron {
 }
 
 /* Un calque qui a un rôle (liste Composition) : la valeur s'écrit à l'encre. */
-.f2s-log-entry-role:not(:has(option[value=""]:checked)) {
+.f2s-log-entry-role:not([data-empty]) {
   color: var(--color-text);
 }
 
@@ -2048,6 +2042,48 @@ html .f2s-topbar .f2s-btn.f2s-btn--has-chevron {
   flex: none;
   width: 142px;
   font-size: 12px;
+}
+
+.f2s-select {
+  display: inline-block;
+}
+
+/* Bouton d'un Select : même champ que .f2s-font-dropdown (porté par le
+   conteneur), la flèche étant celle du sélecteur de polices. */
+.f2s-select-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.f2s-select-button:disabled {
+  cursor: default;
+}
+
+.f2s-select-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.f2s-select:focus-within {
+  border-color: var(--color-gray-500);
+}
+
+.f2s-select-list {
+  width: max-content;
+  max-width: calc(100vw - 16px);
+  box-sizing: border-box;
 }
 
 .f2s-style-font-swatch {
@@ -3170,11 +3206,6 @@ html.f2s-skin--win95 .f2s-split-option:hover {
   color: var(--w95-white);
 }
 
-html.f2s-skin--win95 .f2s-font-combobox-list:has(.f2s-font-combobox-option--active:not(.f2s-font-combobox-option--selected)) .f2s-font-combobox-option--selected,
-html.f2s-skin--win95 .f2s-split-menu:has(.f2s-split-option:hover:not(.f2s-font-combobox-option--selected)) .f2s-font-combobox-option--selected {
-  background: transparent;
-  color: inherit;
-}
 
 html.f2s-skin--win95 .f2s-title-input::placeholder {
   color: var(--w95-shadow);
@@ -3631,7 +3662,8 @@ html.f2s-skin--modern .f2s-font-combobox-list {
   box-shadow: var(--hyb-out);
 }
 
-html.f2s-skin--modern .f2s-font-combobox-option--active {
+html.f2s-skin--modern .f2s-font-combobox-option--active,
+html.f2s-skin--modern .f2s-font-combobox-option--selected {
   box-shadow: var(--hyb-etched);
 }
 
@@ -5077,6 +5109,118 @@ html.f2s-skin--modern .f2s-retro-bar {
     ] });
   }
 
+  // src/ui/Select.tsx
+  function Select({ value, options, onChange, ariaLabel, title, className = "", disabled = false, invalid }) {
+    const [open, setOpen] = d2(false);
+    const [highlight, setHighlight] = d2(0);
+    const [rect, setRect] = d2(null);
+    const rootRef = A2(null);
+    const buttonRef = A2(null);
+    const current = Math.max(0, options.findIndex((o3) => o3.value === value));
+    const shown = options.find((o3) => o3.value === value) ?? options[0];
+    _2(() => {
+      if (!open) return;
+      function update() {
+        const box = buttonRef.current?.getBoundingClientRect();
+        if (!box) return;
+        const alignRight = box.left > window.innerWidth / 2;
+        setRect({
+          top: box.bottom + 4,
+          ...alignRight ? { right: window.innerWidth - box.right } : { left: box.left },
+          width: box.width
+        });
+      }
+      update();
+      window.addEventListener("scroll", update, true);
+      window.addEventListener("resize", update);
+      return () => {
+        window.removeEventListener("scroll", update, true);
+        window.removeEventListener("resize", update);
+      };
+    }, [open]);
+    h2(() => {
+      if (!open) return;
+      function onPointerDown(e3) {
+        if (rootRef.current && !rootRef.current.contains(e3.target)) setOpen(false);
+      }
+      document.addEventListener("pointerdown", onPointerDown);
+      return () => document.removeEventListener("pointerdown", onPointerDown);
+    }, [open]);
+    h2(() => {
+      if (!open) return;
+      rootRef.current?.querySelector(".f2s-font-combobox-option--active")?.scrollIntoView({ block: "nearest" });
+    }, [open, highlight]);
+    function openList() {
+      setHighlight(current);
+      setOpen(true);
+    }
+    function commit(next) {
+      setOpen(false);
+      buttonRef.current?.focus();
+      if (next !== value) onChange(next);
+    }
+    function onKeyDown(e3) {
+      if (e3.key === "ArrowDown" || e3.key === "ArrowUp") {
+        e3.preventDefault();
+        if (!open) return openList();
+        setHighlight((h3) => Math.min(options.length - 1, Math.max(0, h3 + (e3.key === "ArrowDown" ? 1 : -1))));
+      } else if ((e3.key === "Enter" || e3.key === " ") && open) {
+        e3.preventDefault();
+        commit(options[highlight].value);
+      } else if (e3.key === "Escape" && open) {
+        e3.preventDefault();
+        setOpen(false);
+      } else if (e3.key === "Tab") {
+        setOpen(false);
+      }
+    }
+    return /* @__PURE__ */ u3("div", { className: `f2s-select ${className}`, ref: rootRef, "data-empty": value === "" ? "" : void 0, children: [
+      /* @__PURE__ */ u3(
+        "button",
+        {
+          ref: buttonRef,
+          type: "button",
+          className: "f2s-select-button",
+          "aria-label": ariaLabel,
+          "aria-haspopup": "listbox",
+          "aria-expanded": open,
+          "aria-invalid": invalid ? true : void 0,
+          title,
+          disabled,
+          onClick: () => open ? setOpen(false) : openList(),
+          onKeyDown,
+          children: [
+            /* @__PURE__ */ u3("span", { className: "f2s-select-text", children: shown?.label }),
+            /* @__PURE__ */ u3("span", { className: "f2s-font-combobox-arrow", "aria-hidden": "true" })
+          ]
+        }
+      ),
+      open && rect && /* @__PURE__ */ u3(
+        "ul",
+        {
+          className: "f2s-font-combobox-list f2s-select-list",
+          role: "listbox",
+          style: { top: `${rect.top}px`, left: rect.left === void 0 ? void 0 : `${rect.left}px`, right: rect.right === void 0 ? void 0 : `${rect.right}px`, minWidth: `${rect.width}px` },
+          children: options.map((o3, i3) => /* @__PURE__ */ u3(
+            "li",
+            {
+              role: "option",
+              "aria-selected": o3.value === value,
+              className: `f2s-font-combobox-option${i3 === highlight ? " f2s-font-combobox-option--active" : ""}${o3.value === value ? " f2s-font-combobox-option--selected" : ""}`,
+              onMouseDown: (e3) => {
+                e3.preventDefault();
+                commit(o3.value);
+              },
+              onMouseEnter: () => setHighlight(i3),
+              children: o3.label
+            },
+            o3.value
+          ))
+        }
+      )
+    ] });
+  }
+
   // src/serialize/placeholder.ts
   var ROLE_ALIASES = {
     title: "TITLE",
@@ -5448,21 +5592,18 @@ html.f2s-skin--modern .f2s-retro-bar {
             ),
             /* @__PURE__ */ u3("span", { className: "f2s-style-label", title: label, children: label }),
             /* @__PURE__ */ u3(
-              "select",
+              Select,
               {
                 className: "f2s-font-dropdown f2s-style-role-select",
-                "aria-label": `Theme role for ${label}`,
+                ariaLabel: `Theme role for ${label}`,
                 value: colorRoles[key] ?? "",
                 disabled: locked,
-                onChange: (e3) => handleRoleChange(key, e3.target.value),
-                children: [
-                  /* @__PURE__ */ u3("option", { value: "", children: "No role" }),
-                  VISIBLE_THEME_ROLES.map((role) => {
+                onChange: (value) => handleRoleChange(key, value),
+                options: [
+                  { value: "", label: "No role" },
+                  ...VISIBLE_THEME_ROLES.map((role) => {
                     const takenByOther = assignedKeyByRole.get(role) && assignedKeyByRole.get(role) !== key;
-                    return /* @__PURE__ */ u3("option", { value: role, children: [
-                      THEME_ROLE_LABELS[role],
-                      takenByOther ? " (in use)" : ""
-                    ] }, role);
+                    return { value: role, label: `${THEME_ROLE_LABELS[role]}${takenByOther ? " (in use)" : ""}` };
                   })
                 ]
               }
@@ -5584,22 +5725,15 @@ html.f2s-skin--modern .f2s-retro-bar {
           }
         ),
         master ? null : /* @__PURE__ */ u3(
-          "select",
+          Select,
           {
             className: "f2s-font-dropdown f2s-log-entry-role",
             value: roleTag ?? "",
             title: "Assign this layer to a Slides template placeholder role",
-            "aria-label": `Placeholder role for ${el.name}`,
-            "aria-invalid": problems ? true : void 0,
-            onChange: (e3) => setPlaceholderRole(el.sourceNodeId, e3.target.value),
-            children: [
-              /* @__PURE__ */ u3("option", { value: "", children: "No role" }),
-              options.map((tag) => /* @__PURE__ */ u3("option", { value: tag, children: [
-                "[[",
-                tag,
-                "]]"
-              ] }, tag))
-            ]
+            ariaLabel: `Placeholder role for ${el.name}`,
+            invalid: Boolean(problems),
+            onChange: (value) => setPlaceholderRole(el.sourceNodeId, value),
+            options: [{ value: "", label: "No role" }, ...options.map((tag) => ({ value: tag, label: `[[${tag}]]` }))]
           }
         )
       ] }, el.id);

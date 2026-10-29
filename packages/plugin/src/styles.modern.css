@@ -89,7 +89,8 @@ html.f2s-skin--modern .f2s-font-combobox-list {
   box-shadow: var(--hyb-out);
 }
 
-html.f2s-skin--modern .f2s-font-combobox-option--active {
+html.f2s-skin--modern .f2s-font-combobox-option--active,
+html.f2s-skin--modern .f2s-font-combobox-option--selected {
   box-shadow: var(--hyb-etched);
 }
 

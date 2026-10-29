@@ -1,3 +1,4 @@
+import { Select } from './Select.js';
 import type { ThemeColorRole } from '@figma-to-slides/shared';
 import { AVAILABLE_SLIDES_FONTS } from '../serialize/fonts.js';
 import { suggestColorRoles } from '../serialize/templateColorRoles.js';
@@ -158,24 +159,20 @@ export function TemplateStylePanel({ master, colors, fonts, fontOverrides, setFo
                     <span className="f2s-style-label" title={label}>
                       {label}
                     </span>
-                    <select
+                    <Select
                       className="f2s-font-dropdown f2s-style-role-select"
-                      aria-label={`Theme role for ${label}`}
+                      ariaLabel={`Theme role for ${label}`}
                       value={colorRoles[key] ?? ''}
                       disabled={locked}
-                      onChange={(e) => handleRoleChange(key, (e.target as HTMLSelectElement).value)}
-                    >
-                      <option value="">No role</option>
-                      {VISIBLE_THEME_ROLES.map((role) => {
-                        const takenByOther = assignedKeyByRole.get(role) && assignedKeyByRole.get(role) !== key;
-                        return (
-                          <option key={role} value={role}>
-                            {THEME_ROLE_LABELS[role]}
-                            {takenByOther ? ' (in use)' : ''}
-                          </option>
-                        );
-                      })}
-                    </select>
+                      onChange={(value) => handleRoleChange(key, value)}
+                      options={[
+                        { value: '', label: 'No role' },
+                        ...VISIBLE_THEME_ROLES.map((role) => {
+                          const takenByOther = assignedKeyByRole.get(role) && assignedKeyByRole.get(role) !== key;
+                          return { value: role, label: `${THEME_ROLE_LABELS[role]}${takenByOther ? ' (in use)' : ''}` };
+                        }),
+                      ]}
+                    />
                   </div>
                 </li>
               );
