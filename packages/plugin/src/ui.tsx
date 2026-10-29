@@ -215,8 +215,8 @@ function ArrowUpRightIcon({ size = 12 }: { size?: number }) {
 
 function ChevronDownIcon({ size = 12 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <path d="M3.5 6l4.5 4.5L12.5 6" />
+    <svg width={size} height={size} viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" strokeLinejoin="miter" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M2 4.25l4 4 4-4" />
     </svg>
   );
 }
@@ -1598,15 +1598,40 @@ function App() {
     const downloadUrl = isDeck && resultLive ? exportDownloadUrl(resultUrl, exportFormat) : undefined;
     const formatShort = EXPORT_FORMATS.find((f) => f.id === exportFormat)?.short ?? '';
 
+    // Le chevron vit DANS le bouton (une seule pastille) : un clic dessus
+    // ouvre le menu, un clic ailleurs lance l'action principale.
+    const chevron = isDeck ? (
+      <span className="f2s-btn-chevron" aria-hidden="true">
+        <ChevronDownIcon />
+      </span>
+    ) : null;
+    const onChevron = (event: MouseEvent) => {
+      if (!isDeck || !(event.target as Element).closest('.f2s-btn-chevron')) return false;
+      event.preventDefault();
+      setFormatMenuOpen((open) => !open);
+      return true;
+    };
+    const onMainKeyDown = (event: KeyboardEvent) => {
+      if (isDeck && event.key === 'ArrowDown') {
+        event.preventDefault();
+        setFormatMenuOpen(true);
+      }
+    };
+
     let main;
     if (resultLive && !resultOpened) {
       main = (
         <a
           href={downloadUrl ?? resultUrl}
-          onClick={() => setResultOpened(true)}
+          onClick={(event) => {
+            if (!onChevron(event)) setResultOpened(true);
+          }}
+          onKeyDown={onMainKeyDown}
           target="_blank"
           rel="noopener noreferrer"
           className="f2s-btn f2s-btn--primary f2s-btn--icon-end"
+          aria-haspopup={isDeck ? 'menu' : undefined}
+          aria-expanded={isDeck ? formatMenuOpen : undefined}
           title={
             downloadUrl
               ? `Download the deck as ${formatShort}. The Google Slides copy stays in your Drive.`
@@ -1617,6 +1642,7 @@ function App() {
         >
           {downloadUrl ? `Download ${formatShort}` : 'Open in Slides'}
           {downloadUrl ? <DownloadIcon /> : <ArrowUpRightIcon />}
+          {chevron}
         </a>
       );
     } else {
@@ -1624,48 +1650,45 @@ function App() {
       const title = busyFromOtherMode ? busyTitle : exportedHere ? againTitle : undefined;
       const label = isDeck && exportFormat !== 'slides' ? `${startLabel} as ${formatShort}` : startLabel;
       main = (
-        <button type="button" className="f2s-btn f2s-btn--primary" disabled={disabled} title={title} onClick={isDeck ? startExport : startTemplateCreate}>
+        <button
+          type="button"
+          className={`f2s-btn f2s-btn--primary${isDeck ? ' f2s-btn--icon-end' : ''}`}
+          disabled={disabled}
+          title={title}
+          aria-haspopup={isDeck ? 'menu' : undefined}
+          aria-expanded={isDeck ? formatMenuOpen : undefined}
+          onKeyDown={onMainKeyDown}
+          onClick={(event) => {
+            if (onChevron(event)) return;
+            if (isDeck) startExport();
+            else startTemplateCreate();
+          }}
+        >
           {label}
+          {chevron}
         </button>
       );
     }
     if (!isDeck) return main;
 
-    // Chevron : choix de la sortie. Avant un export il règle ce que le
-    // prochain export produit ; une fois la présentation créée, ses entrées
-    // ouvrent ou téléchargent directement ce qui existe déjà.
-    const chevronDisabled = busyFromOtherMode || (order.length === 0 && !resultLive);
+    // Avant un export le menu règle ce que le prochain export produit ; une
+    // fois la présentation créée, ses entrées ouvrent ou téléchargent
+    // directement ce qui existe déjà. Mêmes classes que la liste des
+    // polices (`FontCombobox`) : même fond, même survol, mêmes marges.
     return (
       <div className="f2s-split" ref={formatMenuRef}>
         {main}
-        <button
-          type="button"
-          className="f2s-btn f2s-btn--primary f2s-split-toggle"
-          aria-haspopup="menu"
-          aria-expanded={formatMenuOpen}
-          aria-label="Choose the export format"
-          title="Choose the export format"
-          disabled={chevronDisabled}
-          onClick={() => setFormatMenuOpen((open) => !open)}
-        >
-          <ChevronDownIcon />
-        </button>
         {formatMenuOpen && (
-          <div className="f2s-split-menu" role="menu">
+          <div className="f2s-font-combobox-list f2s-split-menu" role="menu">
             {EXPORT_FORMATS.map((format) => {
               const href = resultLive ? (format.id === 'slides' ? resultUrl : exportDownloadUrl(resultUrl, format.id)) : undefined;
-              const content = (
-                <>
-                  <span className="f2s-split-item-label">{format.label}</span>
-                  <span className="f2s-split-item-hint">{format.hint}</span>
-                </>
-              );
+              const className = `f2s-font-combobox-option f2s-split-option${exportFormat === format.id ? ' f2s-font-combobox-option--selected' : ''}`;
               if (href) {
                 return (
                   <a
                     key={format.id}
                     role="menuitem"
-                    className="f2s-split-item"
+                    className={className}
                     href={href}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -1675,7 +1698,7 @@ function App() {
                       setFormatMenuOpen(false);
                     }}
                   >
-                    {content}
+                    {format.label}
                   </a>
                 );
               }
@@ -1685,13 +1708,13 @@ function App() {
                   type="button"
                   role="menuitemradio"
                   aria-checked={exportFormat === format.id}
-                  className="f2s-split-item"
+                  className={className}
                   onClick={() => {
                     setExportFormat(format.id);
                     setFormatMenuOpen(false);
                   }}
                 >
-                  {content}
+                  {format.label}
                 </button>
               );
             })}
