@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { ExportOptions, IRDocument, ThemeColorRole } from '@figma-to-slides/shared';
 import { sanitizeSessionToken } from './ui/sanitizeSessionToken.js';
 import { describeHttpFailure, describeJobFailure, describeNetworkFailure, describeSlideFailure, POLL_INTERRUPTED_MESSAGE, type RequestStep } from './ui/requestErrors.js';
+import { EXPORT_FORMATS, exportDownloadUrl, type ExportFormat } from './ui/exportFormats.js';
 import { exportCursorFromBatches, slideBatches, type ExportBatch, type ExportCursor } from './ui/exportCursor.js';
 import { AVAILABLE_SLIDES_FONTS } from './serialize/fonts.js';
 import { aggregateColorSwatches, aggregateFontUsages, colorKey } from './serialize/templateSummary.js';
@@ -208,6 +209,22 @@ function ArrowUpRightIcon({ size = 12 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <path d="M10,6V8H22.59L6,24.59,7.41,26,24,9.41V22h2V6Z" />
+    </svg>
+  );
+}
+
+function ChevronDownIcon({ size = 12 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M3.5 6l4.5 4.5L12.5 6" />
+    </svg>
+  );
+}
+
+function DownloadIcon({ size = 12 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M8 2v8M4.5 6.5L8 10l3.5-3.5M3 13.5h10" />
     </svg>
   );
 }
@@ -1403,6 +1420,26 @@ function App() {
   // bouton redevient un export classique (« Export again »), sans qu'il faille
   // fermer le plugin. Remis à zéro dès qu'un nouvel export démarre.
   const [resultOpened, setResultOpened] = useState(false);
+  // Sortie choisie dans le chevron du bouton Export (deck) : Slides par
+  // défaut, ou un fichier téléchargé depuis la présentation créée.
+  const [exportFormat, setExportFormat] = useState<ExportFormat>('slides');
+  const [formatMenuOpen, setFormatMenuOpen] = useState(false);
+  const formatMenuRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!formatMenuOpen) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (!formatMenuRef.current?.contains(event.target as Node)) setFormatMenuOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setFormatMenuOpen(false);
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [formatMenuOpen]);
   useEffect(() => {
     if (exporting) setResultOpened(false);
   }, [exporting]);
@@ -1557,28 +1594,110 @@ function App() {
       );
     }
 
-    if (resultCurrent && resultUrl && exportState !== 'canceled' && !resultOpened) {
-      return (
+    const resultLive = resultCurrent && Boolean(resultUrl) && exportState !== 'canceled';
+    const downloadUrl = isDeck && resultLive ? exportDownloadUrl(resultUrl, exportFormat) : undefined;
+    const formatShort = EXPORT_FORMATS.find((f) => f.id === exportFormat)?.short ?? '';
+
+    let main;
+    if (resultLive && !resultOpened) {
+      main = (
         <a
-          href={resultUrl}
+          href={downloadUrl ?? resultUrl}
           onClick={() => setResultOpened(true)}
           target="_blank"
           rel="noopener noreferrer"
           className="f2s-btn f2s-btn--primary f2s-btn--icon-end"
-          title={isDeck ? 'Open the presentation in Google Slides.' : 'Open the template in Google Slides.'}
+          title={
+            downloadUrl
+              ? `Download the deck as ${formatShort}. The Google Slides copy stays in your Drive.`
+              : isDeck
+                ? 'Open the presentation in Google Slides.'
+                : 'Open the template in Google Slides.'
+          }
         >
-          Open in Slides
-          <ArrowUpRightIcon />
+          {downloadUrl ? `Download ${formatShort}` : 'Open in Slides'}
+          {downloadUrl ? <DownloadIcon /> : <ArrowUpRightIcon />}
         </a>
       );
+    } else {
+      const disabled = busyFromOtherMode || (isDeck ? order.length === 0 : templateOrder.length === 0);
+      const title = busyFromOtherMode ? busyTitle : exportedHere ? againTitle : undefined;
+      const label = isDeck && exportFormat !== 'slides' ? `${startLabel} as ${formatShort}` : startLabel;
+      main = (
+        <button type="button" className="f2s-btn f2s-btn--primary" disabled={disabled} title={title} onClick={isDeck ? startExport : startTemplateCreate}>
+          {label}
+        </button>
+      );
     }
+    if (!isDeck) return main;
 
-    const disabled = busyFromOtherMode || (isDeck ? order.length === 0 : templateOrder.length === 0);
-    const title = busyFromOtherMode ? busyTitle : exportedHere ? againTitle : undefined;
+    // Chevron : choix de la sortie. Avant un export il règle ce que le
+    // prochain export produit ; une fois la présentation créée, ses entrées
+    // ouvrent ou téléchargent directement ce qui existe déjà.
+    const chevronDisabled = busyFromOtherMode || (order.length === 0 && !resultLive);
     return (
-      <button type="button" className="f2s-btn f2s-btn--primary" disabled={disabled} title={title} onClick={isDeck ? startExport : startTemplateCreate}>
-        {startLabel}
-      </button>
+      <div className="f2s-split" ref={formatMenuRef}>
+        {main}
+        <button
+          type="button"
+          className="f2s-btn f2s-btn--primary f2s-split-toggle"
+          aria-haspopup="menu"
+          aria-expanded={formatMenuOpen}
+          aria-label="Choose the export format"
+          title="Choose the export format"
+          disabled={chevronDisabled}
+          onClick={() => setFormatMenuOpen((open) => !open)}
+        >
+          <ChevronDownIcon />
+        </button>
+        {formatMenuOpen && (
+          <div className="f2s-split-menu" role="menu">
+            {EXPORT_FORMATS.map((format) => {
+              const href = resultLive ? (format.id === 'slides' ? resultUrl : exportDownloadUrl(resultUrl, format.id)) : undefined;
+              const content = (
+                <>
+                  <span className="f2s-split-item-label">{format.label}</span>
+                  <span className="f2s-split-item-hint">{format.hint}</span>
+                </>
+              );
+              if (href) {
+                return (
+                  <a
+                    key={format.id}
+                    role="menuitem"
+                    className="f2s-split-item"
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => {
+                      setExportFormat(format.id);
+                      setResultOpened(true);
+                      setFormatMenuOpen(false);
+                    }}
+                  >
+                    {content}
+                  </a>
+                );
+              }
+              return (
+                <button
+                  key={format.id}
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked={exportFormat === format.id}
+                  className="f2s-split-item"
+                  onClick={() => {
+                    setExportFormat(format.id);
+                    setFormatMenuOpen(false);
+                  }}
+                >
+                  {content}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
     );
   }
 
