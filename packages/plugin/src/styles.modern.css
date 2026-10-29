@@ -289,3 +289,8 @@ html.f2s-skin--modern .f2s-retro-bar {
   background: var(--color-field);
   box-shadow: var(--hyb-well);
 }
+
+/* Chevron visé : le bouton garde son relief de repos (voir styles.css). */
+html.f2s-skin--modern .f2s-btn.f2s-btn--primary.f2s-btn--has-chevron:has(.f2s-btn-chevron:hover):not(:disabled) {
+  box-shadow: var(--hyb-out);
+}

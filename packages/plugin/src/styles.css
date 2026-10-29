@@ -645,6 +645,32 @@ html .f2s-topbar .f2s-btn.f2s-btn--has-chevron {
   background: hsl(22deg 100% 35% / 50%);
 }
 
+/* Le chevron est une action à part (ouvrir le menu) : tant qu'il est visé,
+   le bouton reste à l'état de repos (ni survol, ni enfoncement, ni
+   réduction) et seul le segment réagit. Hors du chevron, tout le bouton
+   suit l'animation habituelle, segment compris. */
+html .f2s-btn.f2s-btn--primary.f2s-btn--has-chevron:has(.f2s-btn-chevron:hover):not(:disabled) {
+  background-color: var(--color-orange);
+  transform: none;
+}
+
+.f2s-btn-chevron {
+  cursor: pointer;
+}
+
+.f2s-btn-chevron:hover {
+  background: hsl(22deg 100% 35% / 28%);
+}
+
+.f2s-btn-chevron:active {
+  background: hsl(22deg 100% 35% / 66%);
+  box-shadow: inset 1px 1px 0 rgb(18 15 13 / 0.4);
+}
+
+.f2s-btn-chevron:active svg {
+  transform: translate(1px, 1px);
+}
+
 .f2s-split {
   position: relative;
   display: inline-flex;

@@ -792,6 +792,32 @@ html .f2s-topbar .f2s-btn.f2s-btn--has-chevron {
   background: hsl(22deg 100% 35% / 50%);
 }
 
+/* Le chevron est une action à part (ouvrir le menu) : tant qu'il est visé,
+   le bouton reste à l'état de repos (ni survol, ni enfoncement, ni
+   réduction) et seul le segment réagit. Hors du chevron, tout le bouton
+   suit l'animation habituelle, segment compris. */
+html .f2s-btn.f2s-btn--primary.f2s-btn--has-chevron:has(.f2s-btn-chevron:hover):not(:disabled) {
+  background-color: var(--color-orange);
+  transform: none;
+}
+
+.f2s-btn-chevron {
+  cursor: pointer;
+}
+
+.f2s-btn-chevron:hover {
+  background: hsl(22deg 100% 35% / 28%);
+}
+
+.f2s-btn-chevron:active {
+  background: hsl(22deg 100% 35% / 66%);
+  box-shadow: inset 1px 1px 0 rgb(18 15 13 / 0.4);
+}
+
+.f2s-btn-chevron:active svg {
+  transform: translate(1px, 1px);
+}
+
 .f2s-split {
   position: relative;
   display: inline-flex;
@@ -3585,6 +3611,29 @@ html.f2s-skin--win95 .f2s-btn-chevron {
   background: rgb(0 0 0 / 0.14);
 }
 
+/* L'enfoncement décale le libellé d'un pixel : le padding droit réservé au
+   segment du chevron doit rester à 38px. */
+html.f2s-skin--win95 .f2s-topbar .f2s-btn.f2s-btn--has-chevron:active:not(:disabled) {
+  padding: 5px 38px 3px 13px;
+}
+
+/* Chevron visé : le bouton reste au repos, seul le segment s'éclaircit puis
+   s'enfonce. */
+html.f2s-skin--win95 .f2s-topbar .f2s-btn.f2s-btn--primary.f2s-btn--has-chevron:has(.f2s-btn-chevron:hover):not(:disabled) {
+  background-color: var(--w95-face);
+  box-shadow: var(--w95-out);
+  padding: 4px 38px 4px 12px;
+}
+
+html.f2s-skin--win95 .f2s-btn-chevron:hover {
+  background: rgb(0 0 0 / 0.07);
+}
+
+html.f2s-skin--win95 .f2s-btn-chevron:active {
+  background: rgb(0 0 0 / 0.24);
+  box-shadow: inset 1px 1px 0 rgb(0 0 0 / 0.5);
+}
+
 /* ============================================================================
    Skin Modern — palette et typographie de marque (styles.css), biseaux et
    angles droits empruntés au skin Windows 95 (styles.win95.css). Skin PAR
@@ -3875,6 +3924,11 @@ html.f2s-skin--modern .f2s-retro-bar {
   border: none;
   background: var(--color-field);
   box-shadow: var(--hyb-well);
+}
+
+/* Chevron visé : le bouton garde son relief de repos (voir styles.css). */
+html.f2s-skin--modern .f2s-btn.f2s-btn--primary.f2s-btn--has-chevron:has(.f2s-btn-chevron:hover):not(:disabled) {
+  box-shadow: var(--hyb-out);
 }
 </style>
 </head>
