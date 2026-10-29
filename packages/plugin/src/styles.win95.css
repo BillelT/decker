@@ -650,3 +650,9 @@ html.f2s-skin--win95 .f2s-font-combobox-list::-webkit-scrollbar {
 html.f2s-skin--win95 .f2s-logo-link {
   transition: none;
 }
+
+/* Le bouton principal est gris en Win 95 : le segment du chevron s'assombrit
+   dans la même teinte neutre plutôt que d'y poser de l'orange. */
+html.f2s-skin--win95 .f2s-btn-chevron {
+  background: rgb(0 0 0 / 0.14);
+}
