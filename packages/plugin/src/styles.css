@@ -632,14 +632,17 @@ html .f2s-topbar .f2s-btn.f2s-btn--has-chevron {
 
 .f2s-btn-chevron {
   position: absolute;
-  top: 0;
+  /* 1px d'inset en haut et en bas : le segment ne mord pas sur la bordure ni
+     l'ombre du bouton (bas = hauteur du bouton moins 2, quel que soit le skin).
+     Fond : l'orange de marque assombri (teinte 22), pas du noir. */
+  top: 1px;
   right: 0;
-  bottom: 0;
+  bottom: 1px;
   width: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgb(18 15 13 / 0.16);
+  background: hsl(22deg 100% 35% / 50%);
 }
 
 .f2s-split {
