@@ -280,9 +280,16 @@ html.f2s-skin--win95 .f2s-font-combobox-list {
    --w95-navy déjà utilisé partout ailleurs dans ce skin en lieu et place
    de --color-orange. */
 html.f2s-skin--win95 .f2s-font-combobox-option--active,
+html.f2s-skin--win95 .f2s-font-combobox-option--selected,
 html.f2s-skin--win95 .f2s-split-option:hover {
   background: var(--w95-navy);
   color: var(--w95-white);
+}
+
+html.f2s-skin--win95 .f2s-font-combobox-list:has(.f2s-font-combobox-option--active:not(.f2s-font-combobox-option--selected)) .f2s-font-combobox-option--selected,
+html.f2s-skin--win95 .f2s-split-menu:has(.f2s-split-option:hover:not(.f2s-font-combobox-option--selected)) .f2s-font-combobox-option--selected {
+  background: transparent;
+  color: inherit;
 }
 
 html.f2s-skin--win95 .f2s-title-input::placeholder {

@@ -475,6 +475,13 @@ a {
 
 .f2s-font-combobox-option--selected {
   font-weight: 700;
+  background: var(--color-gray-200);
+}
+
+/* L'option choisie garde son fond tant qu'aucune autre n'est survolée ou
+   sélectionnée au clavier : il passe alors à l'option visée. */
+.f2s-font-combobox-list:has(.f2s-font-combobox-option--active:not(.f2s-font-combobox-option--selected)) .f2s-font-combobox-option--selected {
+  background: transparent;
 }
 
 .f2s-font-combobox-empty {
@@ -635,7 +642,7 @@ html .f2s-topbar .f2s-btn.f2s-btn--has-chevron {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgb(18 15 13 / 0.08);
+  background: rgb(18 15 13 / 0.16);
 }
 
 .f2s-split {
@@ -676,8 +683,8 @@ html .f2s-topbar .f2s-btn.f2s-btn--has-chevron {
   background: var(--color-gray-200);
 }
 
-.f2s-split-option.f2s-font-combobox-option--selected {
-  font-weight: 700;
+.f2s-split-menu:has(.f2s-split-option:hover:not(.f2s-font-combobox-option--selected)) .f2s-font-combobox-option--selected {
+  background: transparent;
 }
 
 .f2s-split-hint {
